@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>LAMS 대시보드 디자인 비교 (Original / Dense Console)</title>
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --surface:#ffffff;
+      --line:#d1d5db;
+      --line-soft:#e5e7eb;
+      --text:#111827;
+      --muted:#6b7280;
+      --blue:#175cd3;
+      --blue-soft:#eff8ff;
+      --amber:#b54708;
+      --amber-soft:#fffaeb;
+      --focus:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-width:1260px;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .page{
+      width:1220px;
+      margin:0 auto;
+      padding:28px 0 46px;
+    }
+    .top{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:18px;
+    }
+    h1{margin:0; font-size:30px; letter-spacing:-.4px}
+    .meta{color:var(--muted); font-size:13px; font-weight:650}
+    .toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .tabs{display:flex; gap:8px}
+    .tab{
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:#fff;
+      color:#374151;
+      padding:9px 14px;
+      font:inherit;
+      font-size:13px;
+      font-weight:850;
+      cursor:pointer;
+    }
+    .tab.active{border-color:#b2ddff; background:var(--blue-soft); color:var(--blue)}
+    .rule{display:flex; gap:8px}
+    .rule span{
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+      padding:9px 11px;
+      color:#374151;
+      font-size:12px;
+      font-weight:750;
+    }
+    .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+    .card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .card-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px;
+      border-bottom:1px solid var(--line-soft);
+    }
+    .name{margin:0; font-size:17px; font-weight:850}
+    .tag{
+      display:inline-block;
+      margin-top:7px;
+      border:1px solid var(--line-soft);
+      border-radius:999px;
+      padding:4px 8px;
+      font-size:11px;
+      font-weight:800;
+      background:#f9fafb;
+      color:#4b5563;
+    }
+    .tag.original{
+      color:var(--amber);
+      background:var(--amber-soft);
+      border-color:#fde4c7;
+    }
+    .tag.current{
+      color:var(--blue);
+      background:var(--blue-soft);
+      border-color:#b2ddff;
+    }
+    .open{
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:var(--blue-soft);
+      color:var(--blue);
+      padding:7px 10px;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:850;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .preview{
+      height:302px;
+      overflow:hidden;
+      background:#f9fafb;
+    }
+    iframe{
+      width:1280px;
+      height:860px;
+      border:0;
+      transform:scale(.36);
+      transform-origin:0 0;
+      pointer-events:none;
+      background:#fff;
+    }
+    .tab:focus-visible,.open:focus-visible{
+      outline:2px solid var(--focus);
+      outline-offset:2px;
+    }
+    .viewer{
+      position:fixed;
+      inset:0;
+      z-index:100;
+      display:none;
+      background:rgba(17,24,39,.7);
+      padding:24px;
+    }
+    .viewer.open{display:block}
+    .viewer-panel{
+      width:1220px;
+      max-height:calc(100vh - 48px);
+      margin:0 auto;
+      border-radius:16px;
+      overflow:hidden;
+      background:#fff;
+      box-shadow:0 24px 80px rgba(0,0,0,.3);
+    }
+    .viewer-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:12px 16px;
+      border-bottom:1px solid var(--line-soft);
+    }
+    .viewer-title{margin:0; font-size:16px; font-weight:850}
+    .viewer-close{
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+      color:#374151;
+      padding:7px 11px;
+      font:inherit;
+      font-size:12px;
+      font-weight:850;
+      cursor:pointer;
+    }
+    .viewer-body{
+      max-height:calc(100vh - 108px);
+      background:#f3f4f6;
+      overflow:auto;
+      padding:12px;
+    }
+    .viewer-body iframe{
+      transform:none;
+      width:100%;
+      min-height:860px;
+      pointer-events:auto;
+      background:#fff;
+      border-radius:10px;
+      box-shadow:0 0 0 1px rgba(17,24,39,.08);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="top">
+      <h1>LAMS 대시보드 디자인 비교</h1>
+      <div class="meta">링크형 프리뷰 / Original + Dense Console</div>
+    </section>
+    <section class="toolbar">
+      <div class="tabs">
+        <button class="tab active" type="button" data-role="admin">관리자 화면</button>
+        <button class="tab" type="button" data-role="user">사용자 화면</button>
+      </div>
+      <div class="rule"><span>데스크톱 기준</span><span>외부 리소스 없음</span><span>원본 파일 링크 방식</span></div>
+    </section>
+    <section class="grid" id="gallery"></section>
+  </main>
+  <div class="viewer" id="viewer" aria-hidden="true">
+    <section class="viewer-panel" role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
+      <div class="viewer-head">
+        <h2 class="viewer-title" id="viewerTitle">크게 보기</h2>
+        <button class="viewer-close" id="viewerClose" type="button">닫기</button>
+      </div>
+      <div class="viewer-body" id="viewerBody"></div>
+    </section>
+  </div>
+
+  <script>
+    const gallery = document.getElementById("gallery");
+    const viewer = document.getElementById("viewer");
+    const viewerTitle = document.getElementById("viewerTitle");
+    const viewerBody = document.getElementById("viewerBody");
+    const viewerClose = document.getElementById("viewerClose");
+    const map = {
+      admin: [
+        { name: "Original", tag: "기존 화면", tagClass: "original", path: "../samples/admin/original.html" },
+        { name: "Operations Console", tag: "최종안 (Dense Console)", tagClass: "current", path: "../samples/admin/dense-operations-console.html" },
+      ],
+      user: [
+        { name: "Original", tag: "기존 화면", tagClass: "original", path: "../samples/user/original.html" },
+        { name: "Operations Console", tag: "최종안 (Dense Console)", tagClass: "current", path: "../samples/user/dense-operations-console.html" },
+      ],
+    };
+
+    function render(role) {
+      gallery.replaceChildren();
+      map[role].forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML =
+          `<div class="card-head">` +
+            `<div><h2 class="name">${item.name}</h2><span class="tag ${item.tagClass}">${item.tag}</span></div>` +
+            `<button class="open" type="button">크게 보기</button>` +
+          `</div>` +
+          `<div class="preview"><iframe title="${role} ${item.name} preview" src="${item.path}"></iframe></div>`;
+        card.querySelector(".open").addEventListener("click", () => openViewer(role, item));
+        gallery.appendChild(card);
+      });
+    }
+
+    function openViewer(role, item) {
+      viewerTitle.textContent = `${role === "admin" ? "관리자" : "사용자"} / ${item.name}`;
+      viewerBody.innerHTML = `<iframe title="${viewerTitle.textContent}" src="${item.path}"></iframe>`;
+      viewer.classList.add("open");
+      viewer.setAttribute("aria-hidden", "false");
+      viewerClose.focus();
+    }
+
+    function closeViewer() {
+      viewer.classList.remove("open");
+      viewer.setAttribute("aria-hidden", "true");
+      viewerBody.innerHTML = "";
+    }
+
+    viewerClose.addEventListener("click", closeViewer);
+    viewer.addEventListener("click", (event) => {
+      if (event.target === viewer) closeViewer();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && viewer.classList.contains("open")) closeViewer();
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((button) => button.classList.toggle("active", button === tab));
+        render(tab.dataset.role);
+      });
+    });
+
+    render("admin");
+  </script>
+</body>
+</html>

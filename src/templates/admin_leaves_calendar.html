@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% macro fmt_hours(v) -%}
+{%- set n = (v | float) -%}
+{%- if n == (n | int) -%}{{ n | int }}{%- else -%}{{ n }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<style>
+    .cal-table { border-collapse: collapse; width: 100%; }
+    .cal-table.cal-month-view { table-layout: auto; width: max-content; min-width: 100%; }
+    .cal-table.cal-month-view.cal-one-line { table-layout: fixed; width: 100%; max-width: 100%; }
+    .cal-table.cal-year-view { table-layout: fixed; }
+    .cal-table th, .cal-table td { border: 1px solid #d0d5dd; text-align: center; vertical-align: middle; }
+    .cal-table .col-day { width: auto; min-width: 30px; padding: 2px 1px; }
+    .cal-table.cal-year-view .col-month-sum { padding: 6px 2px; font-size: 10px; line-height: 1.3; font-weight: 600; color: #175cd3; }
+    .cal-table.cal-year-view thead .col-month-sum { color: #475467; }
+    .cal-table .stat-compact { display: inline; white-space: nowrap; font-size: 8px; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; font-weight: 700; vertical-align: middle; }
+    .cal-table.cal-one-line td.col-stat,
+    .cal-table.cal-one-line td.col-month-sum {
+        white-space: nowrap !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 4.5rem;
+        line-height: 1.15 !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+    .cal-table.cal-year-view.cal-one-line td.col-month-sum { max-width: 3.75rem; font-size: 9px !important; }
+    .cal-table.cal-year-view.cal-one-line .col-month-sum .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
+    .cal-table.cal-year-view.cal-one-line .col-stat { width: auto; min-width: 2.65rem; max-width: 3.35rem; padding: 2px 1px; box-sizing: border-box; }
+    .cal-table.cal-year-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
+    .cal-table.cal-one-line .col-info-compact { padding-top: 4px !important; padding-bottom: 4px !important; line-height: 1.2 !important; }
+    .cal-table.cal-one-line .col-info-compact .info-one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 600; }
+    /* 월별: 일·요일·공휴일 3줄 + 좁은 열로 한 달 한눈에 */
+    .cal-table.cal-month-view.cal-one-line thead th.col-day {
+        white-space: normal;
+        padding: 3px 1px;
+        font-size: 7px;
+        line-height: 1.15;
+        vertical-align: middle;
+        word-break: keep-all;
+        width: 2.30%;
+        min-width: 0;
+        max-width: 2.30%;
+    }
+    .cal-table.cal-month-view.cal-one-line thead th.col-day .day-num { display: block; font-weight: 700; font-size: 9px; line-height: 1.1; }
+    .cal-table.cal-month-view.cal-one-line thead th.col-day .weekday-label { display: block; font-size: 7px; line-height: 1.1; margin-top: 1px; }
+    .cal-table.cal-month-view.cal-one-line thead th.col-day .holiday-chip {
+        display: block;
+        margin: 2px auto 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 6px;
+        line-height: 1.15;
+        padding: 0 1px;
+    }
+    .cal-table.cal-month-view.cal-one-line tbody td.col-day {
+        width: 2.30%;
+        min-width: 0;
+        max-width: 2.30%;
+        padding: 2px;
+        vertical-align: middle;
+    }
+    /* 일별: 칸 전체 채움 — 잔여·월사용과 동일 9px / 700 */
+    .cal-table.cal-month-view.cal-one-line .day-block {
+        width: 100%;
+        min-height: 1.45rem;
+        height: 1.45rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        cursor: default;
+        background: #175cd3;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    /* 빈 일자: 값 있는 칸과 동일 높이·폭 유지(시각적 줄바꿈 없음) */
+    .cal-table.cal-month-view.cal-one-line .day-block.day-block--empty {
+        background: transparent;
+        border-color: transparent;
+        color: transparent;
+        text-shadow: none;
+        box-shadow: none;
+        cursor: default;
+        pointer-events: none;
+    }
+    .cal-table.cal-month-view.cal-one-line .day-block.half {
+        background: linear-gradient(180deg, #fde68a 0%, #f79009 100%);
+        border-color: rgba(181,71,8,0.35);
+        color: #1c1917;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .cal-table.cal-month-view.cal-one-line .day-block.full {
+        background: linear-gradient(180deg, #f97066 0%, #d92d20 100%);
+        border-color: rgba(217,45,32,0.45);
+    }
+    .cal-table.cal-year-view.cal-one-line .sticky-col.col-info { width: 8rem; min-width: 8rem; max-width: 8rem; }
+    .cal-table.cal-month-view.cal-one-line .sticky-col.col-info { width: 11%; min-width: 6.75rem; max-width: 11%; }
+    .cal-table.cal-month-view.cal-one-line thead th.col-meta,
+    .cal-table.cal-month-view.cal-one-line tbody td.col-meta { width: 5%; min-width: 0; max-width: 5%; }
+    /* 잔여·월사용: 14일6h 수준만 필요 → 열 축소 후 일자 칸 확대 */
+    .cal-table.cal-month-view.cal-one-line thead th.col-stat,
+    .cal-table.cal-month-view.cal-one-line tbody td.col-stat {
+        width: 3.75%;
+        min-width: 0;
+        max-width: none;
+        padding-left: 1px !important;
+        padding-right: 1px !important;
+    }
+    .cal-table.cal-month-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
+    .cal-table thead th.col-meta { text-align: center !important; vertical-align: middle; }
+    .cal-table tbody td.col-meta { text-align: center !important; }
+    .cal-table .col-meta { max-width: 5rem; min-width: 2.75rem; font-size: 9px; padding: 2px 2px; }
+    .cal-table .col-meta .meta-txt { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 auto; max-width: 100%; }
+    .cal-table thead th.col-meta a.cal-sort-head { justify-content: center; width: 100%; }
+    .cal-table thead th { background: #f9fafb; font-size: 10px; font-weight: 600; color: #475467; padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
+    .cal-table tbody td { padding: 3px 1px; font-size: 10px; }
+    .cal-table.cal-one-line tbody td.col-day { font-size: 9px; }
+    .cal-table.cal-one-line thead th.col-stat,
+    .cal-table.cal-one-line thead th.col-month-sum { white-space: nowrap; font-size: 9px; padding: 3px 2px; }
+    .cal-table .sticky-col { position: sticky; left: 0; z-index: 10; background: #ffffff; }
+    .cal-table thead .sticky-col { z-index: 15; background: #f9fafb; }
+    .day-block { display: inline-block; background: #175cd3; color: #fff; border-radius: 3px; padding: 1px 3px; font-size: 9px; line-height: 1.3; margin: 1px 0; cursor: default; }
+    .day-block.full { background: #d92d20; }
+    .day-block.half { background: #f79009; }
+    .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
+    .holiday-head { color: #d92d20 !important; background: #fef3f2 !important; }
+    .weekday-label { display: block; font-size: 9px; line-height: 1.1; margin-top: 1px; }
+    .holiday-chip {
+        display: inline-block;
+        margin-top: 2px;
+        padding: 0 2px;
+        border-radius: 3px;
+        font-size: 8px;
+        line-height: 1.2;
+        background: #d92d20;
+        color: #fff;
+    }
+    .cal-table thead th a.cal-sort-head { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 2px; justify-content: center; max-width: 100%; }
+    .cal-table thead th a.cal-sort-head:hover { color: #175cd3; }
+    .cal-table thead th.sticky-col a.cal-sort-head { justify-content: flex-start; padding-left: 2px; }
+</style>
+
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <!-- Header -->
+    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">연차 캘린더</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">
+                {% if is_year_view %}
+                {{ selected_year }}년 전체 · 전 사원 월별 사용 합계 (8시간 = 1일)
+                {% else %}
+                {{ selected_year }}년 {{ selected_month }}월 사원별 일자별 연차 현황
+                {% endif %}
+                <span class="mt-1 block text-xs font-semibold text-dense-muted">위에서 사용자·회사·팀으로 좁힌 뒤, 표 머리글(사원·회사·팀·잔여·{% if is_year_view %}연사용{% else %}월사용{% endif %})을 눌러 오름·내림차순을 바꿀 수 있습니다.</span>
+            </p>
+        </div>
+        <div class="mt-4 shrink-0 md:mt-0">
+            <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view={% if is_year_view %}year{% else %}month{% endif %}" class="inline-flex items-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터·정렬 초기화</a>
+        </div>
+    </div>
+
+    <form method="get" action="/admin/leave/calendar" id="cal-form" class="mb-4 rounded-xl border border-dense-line bg-dense-surface-soft py-3 px-4 sm:px-6 lg:px-8">
+        <input type="hidden" name="sort" value="{{ sort_key or '' }}">
+        <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+        <div class="flex flex-wrap md:flex-nowrap items-end justify-between gap-x-3 gap-y-3 sm:gap-x-4 w-full max-w-[90rem] mx-auto min-w-0">
+            <div class="flex flex-nowrap items-end gap-2 sm:gap-3 min-w-0">
+                <div class="flex shrink-0 flex-col gap-0.5">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">연도</span>
+                    <select name="year" onchange="document.getElementById('cal-form').submit()" class="w-[5.5rem] rounded-xl bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        {% for y in year_options %}
+                        <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex shrink-0 flex-col gap-0.5">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">보기</span>
+                    <select name="view" onchange="document.getElementById('cal-form').submit()" class="w-[4.5rem] rounded-xl bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="month" {% if not is_year_view %}selected{% endif %}>월별</option>
+                        <option value="year" {% if is_year_view %}selected{% endif %}>연간</option>
+                    </select>
+                </div>
+                {% if is_year_view %}
+                <input type="hidden" name="month" value="{{ selected_month }}">
+                {% else %}
+                <div class="flex shrink-0 flex-col gap-0.5">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">월</span>
+                    <select name="month" onchange="document.getElementById('cal-form').submit()" class="w-[4.5rem] rounded-xl bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex flex-nowrap items-end gap-2 sm:gap-3 min-w-0 pl-0 sm:pl-2">
+                <div class="mr-1 hidden min-h-[2.25rem] w-px shrink-0 self-stretch bg-dense-line sm:mr-2 sm:block" aria-hidden="true"></div>
+                <div class="flex min-w-0 flex-col gap-0.5 w-[8.5rem] sm:w-[10rem]">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">사용자</span>
+                    <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="w-full rounded-xl bg-dense-surface py-1.5 px-1.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
+                        {% for u in users %}
+                        <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — {{ u.team or '—' }} / {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex min-w-0 flex-col gap-0.5 w-[7.5rem] sm:w-[8.5rem]">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">회사</span>
+                    <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="w-full rounded-xl bg-dense-surface py-1.5 px-1.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_company %}selected{% endif %}>전체</option>
+                        {% for c in company_options %}
+                        <option value="{{ c }}" {% if selected_company == c %}selected{% endif %} title="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex min-w-0 flex-col gap-0.5 w-[7.5rem] sm:w-[8.5rem]">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">팀</span>
+                    <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="w-full rounded-xl bg-dense-surface py-1.5 px-1.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_team %}selected{% endif %}>전체</option>
+                        {% for t in team_options %}
+                        <option value="{{ t }}" {% if selected_team == t %}selected{% endif %} title="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex min-w-0 flex-col gap-0.5 w-[6.5rem] sm:w-[7.5rem]">
+                    <span class="whitespace-nowrap text-[10px] font-bold leading-none text-dense-muted">상태</span>
+                    <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="w-full rounded-xl bg-dense-surface py-1.5 px-1.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
+                        <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성</option>
+                        <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Calendar Grid -->
+    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-4">
+        {% if not is_year_view %}
+        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-dense-muted">
+            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-blue"></span>반일 이하</span>
+            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-[#f79009]"></span>반일(4h)</span>
+            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-danger"></span>전일(8h)</span>
+            <span class="w-full font-semibold text-dense-muted sm:w-auto">해당 셀에 마우스를 올리면 상세내역이 표시됩니다.</span>
+      
+        </div>
+        {% else %}
+        <p class="mb-3 text-xs font-semibold text-dense-muted">잔여·연사용·월별 칸은 모두 <strong class="text-dense-text">8시간 = 1일</strong> 기준입니다. 사용이 없는 달·0인 값은 <strong class="text-dense-text">-</strong> 입니다. 표기는 <code class="rounded bg-dense-gray-soft px-1 text-[11px]">9일2h</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">8일</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">4h</code>처럼 생략하며, 마우스를 올리면 읽기 쉬운 전체 문구를 볼 수 있습니다.</p>
+        {% endif %}
+        <div class="overflow-x-auto">
+            <table class="cal-table cal-one-line {% if is_year_view %}cal-year-view{% else %}cal-month-view{% endif %}">
+                <thead>
+                    <tr>
+                        <th class="sticky-col col-info text-left">
+                            <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th class="col-meta">
+                            <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th class="col-meta">
+                            <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th class="col-stat" title="올해 잔여 (8시간=1일)">
+                            <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th class="col-stat" title="{% if is_year_view %}해당 연도 누적 사용 (8시간=1일){% else %}이번 달 사용 (8시간=1일){% endif %}">
+                            <a href="{{ sort_urls.period_used }}" class="cal-sort-head">{% if is_year_view %}연사용{% else %}월사용{% endif %}{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        {% if is_year_view %}
+                        {% for m in range(1, 13) %}
+                        <th class="col-month-sum">{{ m }}월</th>
+                        {% endfor %}
+                        {% else %}
+                        {% for day in days %}
+                        <th class="col-day {% if day in holiday_day_map %}holiday-head{% elif day in weekend_days %}weekend-head{% endif %}"
+                            title="{% if day in holiday_day_map %}{{ holiday_day_map[day].name }}{% elif day in weekend_days %}주말{% endif %}">
+                            <span class="day-num">{{ day }}</span>
+                            <span class="weekday-label">({{ day_weekday_map[day] }})</span>
+                            {% if day in holiday_day_map %}
+                            <span class="holiday-chip">{{ holiday_day_map[day].name }}</span>
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in user_stats %}
+                    <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
+                        <!-- 사원 정보 (고정 컬럼, 한 줄) -->
+                        <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
+                            <div class="info-one-line text-dense-text">
+                                {{ stat.user_name }}<span class="font-normal text-dense-muted">({{ stat.user_id }})</span>{% if not stat.is_active %}<span class="ml-0.5 text-[9px] font-bold text-dense-danger">비활성</span>{% endif %}
+                            </div>
+                        </td>
+                        <td class="col-meta text-dense-nav-text" title="{{ stat.company or '' }}"><span class="meta-txt">{{ stat.company or '—' }}</span></td>
+                        <td class="col-meta text-dense-nav-text" title="{{ stat.team or '' }}"><span class="meta-txt">{{ stat.team or '—' }}</span></td>
+                        <!-- 잔여 -->
+                        <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
+                            <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
+                        </td>
+                        <!-- 월/연 사용량 -->
+                        <td class="col-stat font-semibold text-dense-blue">
+                            <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
+                        </td>
+                        {% if is_year_view %}
+                        {% for m in range(1, 13) %}
+                        <td class="col-month-sum text-dense-text">
+                            <span class="stat-compact text-dense-blue" title="{{ stat.month_used_labels[m] }}">{{ stat.month_used_short_labels[m] }}</span>
+                        </td>
+                        {% endfor %}
+                        {% else %}
+                        {% for day in days %}
+                        <td class="col-day">
+                            {% if day in user_leaves_map[stat.user_id] %}
+                                {% set dl = user_leaves_map[stat.user_id][day] %}
+                                {% set ns = namespace(total_h=0) %}
+                                {% for lv in dl %}{% if lv.status != "CANCELED" %}{% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
+                                <div class="day-block {% if ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %}"
+                                     title="{% for lv in dl %}{{ lv.snapshot_slot_label }}(-{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
+                                     data-user-name="{{ stat.user_name }}"
+                                     data-month="{{ selected_month }}"
+                                     data-day="{{ day }}"
+                                     data-slots="{% for lv in dl %}{{ lv.snapshot_slot_label }}{% if not loop.last %}|{% endif %}{% endfor %}"
+                                     onclick="showLeaveTimeDetails(this)">
+                                    {{ fmt_hours(ns.total_h) }}h
+                                </div>
+                            {% else %}
+                                <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        {% endif %}
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{% if is_year_view %}17{% else %}{{ days|length + 5 }}{% endif %}" class="py-8 text-sm font-semibold text-dense-muted">표시할 사원 데이터가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+function slotLabelToTimeRange(label) {
+    const match = label.match(/\(([^)]+)\)/);
+    if (match) return match[1];
+    const map = {
+        '오전 1시간': '09:00 ~ 10:00',
+        '오전 2시간': '09:00 ~ 11:00',
+        '오후 1시간': '13:00 ~ 14:00',
+        '오후 2시간': '13:00 ~ 15:00',
+        '오후 반차': '14:00 ~ 18:00',
+        '오후 4시간': '14:00 ~ 18:00',
+        '전일유급(8시간)': '09:00 ~ 18:00'
+    };
+    return map[label] || '시간대 정보 없음';
+}
+
+function showLeaveTimeDetails(el) {
+    const userName = el.dataset.userName || '사원';
+    const month = el.dataset.month || '';
+    const day = el.dataset.day || '';
+    const slots = (el.dataset.slots || '').split('|').filter(Boolean);
+
+    if (!slots.length) {
+        alert('상세 시간 정보가 없습니다.');
+        return;
+    }
+
+    const when = month ? `${month}월 ${day}일` : `${day}일`;
+    const details = slots.map((slot, idx) => `${idx + 1}. ${slot} -> ${slotLabelToTimeRange(slot)}`).join('\n');
+    alert(`${userName} / ${when} 연차 사용 시간\n\n${details}`);
+}
+</script>
+{% endblock %}

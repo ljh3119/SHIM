@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@source "../../templates/**/*.html";
+@source "../../app/**/*.py";
+
+/*
+ * Dense UI 팔레트 — design/ui-handoff/samples/reference/dense-tokens.css 와 동일 값.
+ * 유틸 예: bg-dense-bg, text-dense-text, border-dense-line, bg-dense-blue-soft 등
+ */
+@theme {
+  --color-dense-bg: #f7f8fb;
+  --color-dense-surface: #ffffff;
+  --color-dense-surface-soft: #f9fafb;
+  --color-dense-line: #d0d5dd;
+  --color-dense-line-strong: #d0d5dd;
+  --color-dense-text: #101828;
+  --color-dense-muted: #475467;
+  --color-dense-nav-text: #1d2939;
+  --color-dense-blue: #175cd3;
+  --color-dense-blue-soft: #eff8ff;
+  --color-dense-amber: #b54708;
+  --color-dense-amber-soft: #fffaeb;
+  --color-dense-green: #067647;
+  --color-dense-green-soft: #ecfdf3;
+  --color-dense-gray-soft: #f2f4f7;
+  --color-dense-danger: #d92d20;
+  --color-dense-danger-soft: #fef3f2;
+}

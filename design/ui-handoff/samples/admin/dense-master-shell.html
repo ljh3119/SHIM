@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!--
+  목적: 마스터 데이터 관리 화면 Dense 레이아웃 시안 (업무 규칙 · 백업 · 안내).
+  대응: src/templates/admin_master.html
+  토큰: ../reference/dense-tokens.css · CDN 없음 · 정적 샘플
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAMS 마스터 관리 — Dense 샘플</title>
+  <link rel="stylesheet" href="../reference/dense-tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 1180px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .app {
+      width: 1160px;
+      margin: 0 auto;
+      padding: 24px 0 44px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .sidebar {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      min-height: calc(100vh - 48px);
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      background: var(--surface-soft);
+      font-size: 11px;
+      font-weight: 850;
+      margin-bottom: 16px;
+    }
+    .side-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 850;
+      letter-spacing: -0.02em;
+    }
+    .side-nav { display: grid; gap: 5px; }
+    .side-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      color: var(--nav-text);
+      padding: 10px 11px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .side-nav a.active {
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+    .main { display: grid; gap: 16px; min-width: 0; }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 850;
+      letter-spacing: -0.04em;
+    }
+    .sub {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .master-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 1100px) {
+      .master-grid {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      }
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      padding: 20px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .callout-amber {
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      background: var(--amber-soft);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .callout-amber p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .callout-amber .small {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .callout-blue {
+      border: 1px solid #b2ddff;
+      border-radius: 12px;
+      background: var(--blue-soft);
+      padding: 14px;
+    }
+    .callout-blue > p:first-child {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    section.block {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    section.block:last-child { margin-bottom: 0; }
+    section.block h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    select {
+      max-width: 14rem;
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      background: #fff;
+      color: var(--text);
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .micro-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .note {
+      margin: 8px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .btn-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: default;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      color: var(--text);
+    }
+    .btn.primary {
+      border-color: #84caff;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+    .btn.amber {
+      border-color: #f79009;
+      background: #fff;
+      color: var(--amber);
+    }
+    .ops-muted {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--gray-soft);
+      padding: 14px;
+      margin-top: 14px;
+    }
+    .ops-muted ul {
+      margin: 8px 0 0;
+      padding-left: 1.1rem;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .footer-panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface-soft);
+      padding: 18px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .footer-panel h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .footer-panel ul { margin: 8px 0 0; padding-left: 1.1rem; }
+    code.inline {
+      font-size: 11px;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar" aria-label="관리자 네비게이션(샘플)">
+      <div class="logo">LAMS</div>
+      <h2 class="side-title">LAMS Admin</h2>
+      <nav class="side-nav">
+        <a href="#">대시보드</a>
+        <a href="#">연차 캘린더</a>
+        <a href="#">연차 타임라인</a>
+        <a href="#">공휴일 관리</a>
+        <a href="#" class="active">마스터 관리</a>
+        <a href="#">사원 관리</a>
+      </nav>
+    </aside>
+
+    <section class="main">
+      <header>
+        <h1>마스터 데이터 관리</h1>
+        <p class="sub">연차 신청에 쓰이는 시간대와 결재·백업 같은 시스템 설정을 한곳에서 다룹니다.</p>
+      </header>
+
+      <div class="master-grid">
+        <div class="panel">
+          <h2>업무 규칙 설정</h2>
+          <div class="callout-amber">
+            <p><strong>승인 워크플로우</strong> — 현재: <strong>켜짐 (결재 필요)</strong></p>
+            <p class="small">
+              꺼짐: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br />
+              켜짐: 신규 신청은 «결재 대기»로 들어가며, 관리자가 타임라인에서 승인·반려·취소 처리합니다.
+            </p>
+            <div class="btn-row">
+              <button type="button" class="btn amber">승인 워크플로우 변경</button>
+            </div>
+          </div>
+
+          <div class="callout-blue">
+            <p>시간 단위 / 업무시간 / 점심시간 정책</p>
+
+            <section class="block">
+              <h3>1) 시간 단위</h3>
+              <select disabled aria-readonly="true">
+                <option selected>60분</option>
+                <option>30분</option>
+                <option>120분</option>
+              </select>
+              <p class="note">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+            </section>
+
+            <section class="block">
+              <h3>2) 업무시간 범위</h3>
+              <div class="grid2">
+                <div>
+                  <span class="micro-label">시작</span>
+                  <select disabled><option selected>09:00</option></select>
+                </div>
+                <div>
+                  <span class="micro-label">종료</span>
+                  <select disabled><option selected>18:00</option></select>
+                </div>
+              </div>
+              <p class="note">신청 화면은 이 구간만 표시됩니다.</p>
+            </section>
+
+            <section class="block">
+              <h3>3) 점심시간 제외 (선택)</h3>
+              <div class="grid2">
+                <div>
+                  <span class="micro-label">시작</span>
+                  <select disabled><option selected>12:00</option></select>
+                </div>
+                <div>
+                  <span class="micro-label">종료</span>
+                  <select disabled><option selected>13:00</option></select>
+                </div>
+              </div>
+              <p class="note">각 값은 차감시간 계산에서 자동 제외됩니다.</p>
+            </section>
+
+            <div class="btn-row">
+              <button type="button" class="btn primary">시간 정책 저장</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>시스템 운영 작업</h2>
+          <div class="callout-blue" style="background: var(--blue-soft); margin-bottom: 0;">
+            <p style="margin:0;font-weight:650;font-size:13px;">데이터 보호를 위해 현재 DB를 수동 백업합니다.</p>
+            <p class="note" style="margin-top:10px;">
+              백업 파일은 <code class="inline">data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
+            </p>
+            <div class="btn-row">
+              <button type="button" class="btn primary">DB 백업 생성</button>
+            </div>
+          </div>
+          <div class="ops-muted">
+            <strong style="font-size:12px;color:var(--text)">운영 메모</strong>
+            <ul>
+              <li>정책 변경 전후로 수동 백업을 권장합니다.</li>
+              <li>복구 리허설은 운영 복제 DB에서 먼저 확인합니다.</li>
+              <li>운영 절차 상세는 docs/1-2_백업_복구_유지보수_가이드.md를 참고합니다.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-panel">
+        <h3>운영 / 상태 안내</h3>
+        <p style="margin:0;color:var(--muted);font-size:12px;">
+          마스터 관리 화면은 시간 정책 원칙과 연차 신청 상태 의미를 함께 안내합니다.
+        </p>
+        <ul>
+          <li>연차 신청은 시작/종료 시각 기반으로 1건 스냅샷으로 저장됩니다.</li>
+          <li>입력 시각은 정책 단위 경계(30/60/120분)만 허용됩니다.</li>
+          <li><strong>결재 대기</strong> · <strong>승인됨</strong> · <strong>반려</strong> · <strong>신청 취소</strong> 상태는 타임라인과 집계에 반영됩니다.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

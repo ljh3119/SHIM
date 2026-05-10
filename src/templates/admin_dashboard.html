@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% macro fmt_hours(v) -%}
+{%- set n = (v | float) -%}
+{%- if n == (n | int) -%}{{ n | int }}{%- else -%}{{ n }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h2 class="text-[28px] font-extrabold tracking-tight text-dense-text">관리자 대시보드</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">시스템 전체 운영 현황을 한눈에 파악합니다.</p>
+        </div>
+        {% if is_approval_required %}
+        <span class="inline-flex items-center whitespace-nowrap rounded-full border border-[#fedf89] bg-dense-amber-soft px-3 py-2 text-xs font-extrabold text-dense-amber">결재 대기 {{ pending_leaves_count }}건</span>
+        {% endif %}
+    </header>
+
+    <section class="grid grid-cols-1 gap-3 {% if is_approval_required %}md:grid-cols-4{% else %}md:grid-cols-3{% endif %}">
+        <a href="/admin/users" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-3 text-xs font-extrabold text-dense-muted">활성 사원 수</span>
+            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-text">{{ active_users_count }}<span class="ml-1 text-sm font-bold text-dense-muted">명</span></span>
+        </a>
+        <a href="/admin/leave/timeline" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-3 text-xs font-extrabold text-dense-muted">금일 신청 건수</span>
+            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-text">{{ leaves_today_count }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        </a>
+        {% if is_approval_required %}
+        <a href="/admin/leave/timeline?leave_status=PENDING" class="flex flex-col rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 transition-colors hover:bg-dense-amber-soft">
+            <span class="mb-3 text-xs font-extrabold text-dense-muted">결재 대기 건수</span>
+            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-amber">{{ pending_leaves_count }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        </a>
+        {% endif %}
+        <a href="/admin/leave/calendar" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-3 text-xs font-extrabold text-dense-muted">금일 사용 연차(h)</span>
+            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(today_used_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </a>
+    </section>
+
+    <section class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dense-line px-4 py-4 sm:px-5">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">
+                <a href="/admin/leave/timeline" class="text-dense-text hover:text-dense-blue transition-colors">최근 7일 신청 타임라인</a>
+            </h3>
+            <nav class="flex flex-wrap gap-2" aria-label="상태로 타임라인 이동">
+                <a href="/admin/leave/timeline" class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-3 py-1.5 text-xs font-extrabold text-dense-blue">전체</a>
+                <a href="/admin/leave/timeline?leave_status=PENDING" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">결재 대기</a>
+                <a href="/admin/leave/timeline?leave_status=APPROVED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">승인됨</a>
+                <a href="/admin/leave/timeline?leave_status=REJECTED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">반려</a>
+            </nav>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 시각</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용자</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">연차 사용일</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용 시간대</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감(h)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for leave in recent_leaves %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">{{ leave.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm text-dense-text">
+                            <span class="font-bold">{{ leave.user.user_name }}</span><span class="text-dense-muted">({{ leave.user.user_id }})</span>
+                        </td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left">
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-bold text-dense-nav-text">{{ leave.date }}</span>
+                        </td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">{{ leave.snapshot_slot_label }} (-{{ fmt_hours(leave.snapshot_deduction_hours) }}h)</td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm">
+                            {% if leave.status == 'PENDING' %}
+                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber">결재 대기</span>
+                            {% elif leave.status == 'APPROVED' %}
+                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green">승인됨</span>
+                            {% elif leave.status == 'REJECTED' %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]">반려</span>
+                            {% elif leave.status == 'CANCELED' %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">신청 취소</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status or '—' }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-right text-sm font-bold tabular-nums text-dense-text">{{ fmt_hours(leave.snapshot_deduction_hours) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-10 text-center text-sm font-semibold text-dense-muted">최근 일주일간 연차 내역이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

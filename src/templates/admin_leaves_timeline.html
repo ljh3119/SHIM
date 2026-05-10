@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% macro fmt_hours(v) -%}
+{%- set n = (v | float) -%}
+{%- if n == (n | int) -%}{{ n | int }}{%- else -%}{{ n }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">연차 타임라인</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">연도·월·사용자·회사·팀으로 좁힌 뒤, 표 헤더를 눌러 열별로 정렬할 수 있습니다.</p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <a href="/admin/leave/timeline/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
+            <a href="/admin/leave/timeline" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터 초기화</a>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
+        <div class="flex flex-col gap-3 border-b border-dense-line px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">
+                {{ selected_year }}년 {% if selected_month > 0 %}{{ selected_month }}월{% else %}전체 월{% endif %} 연차 기록
+                <span class="text-sm font-semibold text-dense-muted">({{ leaves|length }}건)</span>
+            </h3>
+            <nav class="flex flex-wrap gap-2" aria-label="결재 상태 필터">
+                <a href="{{ timeline_chip_url_all }}" class="inline-flex rounded-full border px-3 py-1.5 text-xs font-extrabold transition-colors {% if not selected_leave_status %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">전체</a>
+                <a href="{{ timeline_chip_url_pending }}" class="inline-flex rounded-full border px-3 py-1.5 text-xs font-extrabold transition-colors {% if selected_leave_status == 'PENDING' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">결재 대기</a>
+                <a href="{{ timeline_chip_url_approved }}" class="inline-flex rounded-full border px-3 py-1.5 text-xs font-extrabold transition-colors {% if selected_leave_status == 'APPROVED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">승인됨</a>
+                <a href="{{ timeline_chip_url_rejected }}" class="inline-flex rounded-full border px-3 py-1.5 text-xs font-extrabold transition-colors {% if selected_leave_status == 'REJECTED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">반려</a>
+            </nav>
+        </div>
+
+        <div class="border-b border-dense-line p-4 sm:p-5">
+            <form method="get" id="tl-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+                <input type="hidden" name="sort" value="{{ sort_key }}">
+                <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+                {% if selected_leave_status %}
+                <input type="hidden" name="leave_status" value="{{ selected_leave_status }}">
+                {% endif %}
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div>
+                        <label for="tl-year" class="mb-1 block text-xs font-bold text-dense-muted">연도</label>
+                        <select id="tl-year" name="year" onchange="document.getElementById('tl-filter-form').submit()" class="block w-[6.5rem] rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            {% for y in year_options %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-month" class="mb-1 block text-xs font-bold text-dense-muted">월</label>
+                        <select id="tl-month" name="month" onchange="document.getElementById('tl-filter-form').submit()" class="block w-[7rem] rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="0" {% if selected_month == 0 %}selected{% endif %}>전체 월</option>
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-user" class="mb-1 block text-xs font-bold text-dense-muted">사용자</label>
+                        <select id="tl-user" name="user_id" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
+                            {% for u in users %}
+                            <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-company" class="mb-1 block text-xs font-bold text-dense-muted">회사</label>
+                        <select id="tl-company" name="company" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
+                            {% for c in company_options %}
+                            <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-team" class="mb-1 block text-xs font-bold text-dense-muted">팀</label>
+                        <select id="tl-team" name="team" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
+                            {% for t in team_options %}
+                            <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <p class="border-b border-dense-line px-4 py-3 text-xs font-semibold text-dense-muted sm:px-5">정렬은 표 머리글 링크를 누르면 됩니다. 같은 열을 다시 누르면 오름·내림이 전환됩니다. 필터를 바꿔도 현재 정렬이 유지됩니다.</p>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line text-sm">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.created_at }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">신청 시각{% if sort_key == 'created_at' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[1%] max-w-[11rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.user_name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용자{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[5.5rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.company }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[7.75rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.date }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">연차 사용일{% if sort_key == 'date' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[10.5rem] max-w-[14rem] px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.slot }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용 시간대{% if sort_key == 'slot' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[11rem] min-w-0 max-w-[11rem] whitespace-normal px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted" title="반려: 승인 불가 판정 / 신청 취소: 철회·무효">상태</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for leave in leaves %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft" id="row-{{ leave.id }}">
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="max-w-[13rem] w-[1%] px-3 py-3" title="{{ leave.user.user_name }} ({{ leave.user.user_id }}){% if leave.user.team or leave.user.company %} — {{ leave.user.team or '—' }} / {{ leave.user.company or '—' }}{% endif %}">
+                            <span class="inline-flex max-w-full items-center whitespace-nowrap text-xs font-bold text-dense-text">
+                                <span class="shrink-0">{{ leave.user.user_name }}</span><span class="min-w-0 truncate font-semibold text-dense-muted">({{ leave.user.user_id }})</span>
+                            </span>
+                        </td>
+                        <td class="max-w-[10rem] truncate px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.company or '' }}">{{ leave.user.company or '—' }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.team or '' }}">{{ leave.user.team or '—' }}</td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-xs font-bold text-dense-nav-text">{{ leave.date }}</span>
+                        </td>
+                        <td class="min-w-0 max-w-[14rem] truncate px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.snapshot_slot_label }} (-{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
+                            {{ leave.snapshot_slot_label }} (-{{ fmt_hours(leave.snapshot_deduction_hours) }}h)
+                        </td>
+                        <td class="w-[11rem] min-w-0 max-w-[11rem] whitespace-normal px-3 py-3 align-top text-xs">
+                            <select onchange="changeStatus({{ leave.id }}, this)" data-current-status="{{ leave.status }}" class="max-w-full rounded-xl border-0 bg-dense-surface py-1 px-1.5 text-[11px] font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                                <option value="PENDING" {% if leave.status == "PENDING" %}selected{% endif %} title="승인 전">결재 대기</option>
+                                <option value="APPROVED" {% if leave.status == "APPROVED" %}selected{% endif %} title="연차 반영">승인됨</option>
+                                <option value="REJECTED" {% if leave.status == "REJECTED" %}selected{% endif %} title="관리자가 승인 불가">반려</option>
+                                <option value="CANCELED" {% if leave.status == "CANCELED" %}selected{% endif %} title="철회·무효">신청 취소</option>
+                            </select>
+                            {% if leave.status == "REJECTED" and leave.rejection_reason %}
+                            {# 말줄임(…)·최대 2줄 / 전체는 호버 title #}
+                            <div class="mt-1 max-w-full overflow-hidden text-[11px] font-semibold leading-snug text-[#b42318] line-clamp-2" title="사유 전체: {{ leave.rejection_reason }}">
+                                사유: {{ leave.rejection_reason }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <button type="button" onclick="deleteLeave({{ leave.id }})" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-2 py-1 text-xs font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-10 text-center text-sm font-semibold text-dense-muted">해당 기간의 연차 내역이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function deleteLeave(id) {
+    if(!confirm('정말 이 연차 기록을 삭제하시겠습니까?')) return;
+    try {
+        const response = await fetch('/admin/leave/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `leave_id=${id}`
+        });
+        const result = await response.json();
+        if(response.ok) {
+            window.location.reload();
+        } else {
+            alert(result.message || '오류 발생');
+        }
+    } catch(err) {
+        alert('네트워크 오류');
+    }
+}
+
+async function changeStatus(leaveId, selectEl) {
+    const newStatus = selectEl.value;
+    const previousStatus = selectEl.dataset.currentStatus || '';
+    let rejectionReason = '';
+
+    if(newStatus === 'REJECTED') {
+        rejectionReason = prompt('반려 사유를 입력해 주세요. (최대 500자)') || '';
+        rejectionReason = rejectionReason.trim();
+        if(!rejectionReason) {
+            alert('반려 사유를 입력해야 합니다.');
+            selectEl.value = previousStatus;
+            return;
+        }
+        if(rejectionReason.length > 500) {
+            alert('반려 사유는 최대 500자까지 입력할 수 있습니다.');
+            selectEl.value = previousStatus;
+            return;
+        }
+    }
+
+    try {
+        const body = new URLSearchParams({
+            leave_id: String(leaveId),
+            status_value: newStatus,
+            rejection_reason: rejectionReason
+        });
+        const response = await fetch('/admin/leave/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        });
+        const result = await response.json();
+        if(response.ok) {
+            selectEl.dataset.currentStatus = newStatus;
+            window.location.reload();
+        } else {
+            alert(result.message || '오류 발생');
+            window.location.reload();
+        }
+    } catch(err) {
+        alert('네트워크 오류');
+    }
+}
+</script>
+{% endblock %}

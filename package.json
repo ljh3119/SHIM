@@ -1,0 +1,21 @@
+{
+  "name": "shim",
+  "version": "1.2.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/static/css/app.css -o ./src/static/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./src/static/css/app.css -o ./src/static/css/tailwind.css --watch",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/scripts/dev.ps1",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "4.2.3",
+    "concurrently": "9.2.1",
+    "tailwindcss": "4.2.3"
+  }
+}

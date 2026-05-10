@@ -1,0 +1,25 @@
+/**
+ * LAMS Dense Operations Console — samples/ 공통 디자인 토큰
+ * 모든 samples/*.html 이 이 파일을 참조해 동일 팔레트를 씁니다.
+ * (CDN 없음 · 로컬 file:// 에서도 상대 경로로 로드)
+ *
+ * 제품(Tailwind 빌드) 기준: src/static/css/app.css 의 @theme 블록과 값을 동기화할 것.
+ */
+:root {
+  --bg: #f7f8fb;
+  --surface: #ffffff;
+  --surface-soft: #f9fafb;
+  --line: #e4e7ec;
+  --line-strong: #d0d5dd;
+  --text: #101828;
+  --muted: #667085;
+  --nav-text: #344054;
+  --blue: #175cd3;
+  --blue-soft: #eff8ff;
+  --amber: #b54708;
+  --amber-soft: #fffaeb;
+  --green: #067647;
+  --green-soft: #ecfdf3;
+  --gray-soft: #f2f4f7;
+  --focus: #175cd3;
+}
