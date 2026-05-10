@@ -35,3 +35,6 @@ Copy-Item portable\README_PORTABLE.md dist\SHIM_Portable\README_PORTABLE.md -For
 
 Write-Host "Done: The final package is ready in 'dist\SHIM_Portable'."
 Write-Host "Copy 'dist\SHIM_Portable' to the target offline PC."
+
+Write-Host "Done: The final package is ready in 'dist\SHIM_Portable'."
+Write-Host "Copy 'dist\SHIM_Portable' to the target offline PC."
