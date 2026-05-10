@@ -29,3 +29,12 @@ build/
 # IDE
 .idea/
 .vscode/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Docker (혹시 나중에 Docker를 쓰신다면)
+.docker/
