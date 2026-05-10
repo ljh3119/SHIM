@@ -1,0 +1,27 @@
+# 런타임 DB·로컬 데이터 (볼륨 마운트로만 사용)
+var/data/
+data/
+
+# 운영 비밀값은 이미지에 포함하지 않음(.env.example은 문서용 샘플이라 포함 가능)
+.env
+
+# 로컬 개발
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.git/
+.gitignore
+
+# Node (이미지에는 불필요, 정적 CSS는 빌드 후 static에 포함하거나 별도 처리)
+node_modules/
+
+# 포터블 빌드 산출물
+dist/
+build/
+*.spec
+
+# IDE
+.idea/
+.vscode/

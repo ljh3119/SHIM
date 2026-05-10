@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>LAMS 관리자/사용자 대시보드 디자인 후보 - 단일 파일</title>
+  <style>
+    :root{
+      --page-bg:#f3f4f6;
+      --page-text:#111827;
+      --page-muted:#6b7280;
+      --page-line:#d1d5db;
+      --page-blue:#1d4ed8;
+      --page-blue-soft:#eff6ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-width:1280px;
+      background:var(--page-bg);
+      color:var(--page-text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .page{width:1220px; margin:0 auto; padding:28px 0 48px}
+    .page-top{display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:18px}
+    .page-title{margin:0; font-size:30px; letter-spacing:-.4px}
+    .page-meta{color:var(--page-muted); font-size:13px; font-weight:650}
+    .toolbar{display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px}
+    .tabs{display:flex; gap:8px}
+    .tab{
+      border:1px solid var(--page-line);
+      border-radius:999px;
+      background:#fff;
+      color:#374151;
+      padding:9px 14px;
+      font:inherit;
+      font-size:13px;
+      font-weight:850;
+      cursor:pointer;
+    }
+    .tab.active{border-color:#bfdbfe; background:var(--page-blue-soft); color:var(--page-blue)}
+    .rules{display:flex; gap:8px}
+    .rules span{
+      border:1px solid var(--page-line);
+      border-radius:10px;
+      background:#fff;
+      padding:9px 11px;
+      color:#374151;
+      font-size:12px;
+      font-weight:750;
+    }
+    .gallery{display:grid; grid-template-columns:repeat(2,1fr); gap:16px}
+    .candidate{border:1px solid var(--page-line); border-radius:18px; background:#fff; overflow:hidden}
+    .candidate-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid #e5e7eb}
+    .candidate-name{margin:0; font-size:18px; font-weight:850; letter-spacing:-.2px}
+    .candidate-tag{
+      display:inline-block;
+      margin-top:7px;
+      border:1px solid #e5e7eb;
+      border-radius:999px;
+      background:#f9fafb;
+      padding:4px 8px;
+      color:#4b5563;
+      font-size:11px;
+      font-weight:800;
+    }
+    .candidate-tag.original{color:#b45309; background:#fffbeb; border-color:#fde4c7}
+    .open-large{
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:var(--page-blue-soft);
+      color:var(--page-blue);
+      padding:7px 10px;
+      font:inherit;
+      font-size:12px;
+      font-weight:850;
+      cursor:pointer;
+    }
+    .tab:focus-visible,.open-large:focus-visible,.viewer-close:focus-visible{outline:2px solid var(--page-blue); outline-offset:2px}
+    .mock-frame{height:430px; overflow:hidden; background:#f9fafb}
+    .mock{
+      width:1160px;
+      min-height:840px;
+      height:auto;
+      transform:scale(.5);
+      transform-origin:0 0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .mock *{box-sizing:border-box}
+    .nav{height:62px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; border-bottom:1px solid var(--line); background:var(--nav)}
+    .brand{display:flex; align-items:center; gap:10px; color:var(--text); font-size:19px; font-weight:850}
+    .brand-box{width:32px; height:32px; display:grid; place-items:center; border-radius:var(--brand-radius); background:var(--brand-bg); color:var(--brand-text); font-size:16px; font-weight:850}
+    .menu{display:flex; align-items:center; gap:8px}
+    .menu span{border-radius:var(--radius-sm); padding:7px 10px; color:var(--menu); font-size:13px; font-weight:750}
+    .menu span.active{color:var(--active); background:var(--active-bg)}
+    .body{padding:24px 28px 30px}
+    .side{display:none; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); padding:16px; min-height:700px}
+    .side-title{margin:0 0 14px; font-size:18px; font-weight:850}
+    .side span{display:block; border-radius:var(--radius-sm); padding:10px; color:var(--menu); font-size:13px; font-weight:750}
+    .side span.active{color:var(--active); background:var(--active-bg)}
+    .header{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; padding:var(--header-pad); border:var(--header-border); border-radius:var(--radius); background:var(--header-bg); box-shadow:var(--shadow)}
+    .title{margin:0; color:var(--text); font-size:30px; line-height:1.2; letter-spacing:-.5px}
+    .sub{margin:6px 0 0; color:var(--muted); font-size:14px; font-weight:600}
+    .status,.year{border:1px solid var(--pending-line); border-radius:var(--pill); background:var(--pending-bg); color:var(--pending); padding:7px 12px; font-size:12px; font-weight:850; white-space:nowrap}
+    .year{border-color:var(--line); background:var(--surface); color:var(--text)}
+    .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px}
+    .stat{position:relative; min-height:122px; overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); padding:16px}
+    .stat.decor:after{content:""; position:absolute; right:-24px; top:-24px; width:96px; height:96px; border-radius:50%; background:var(--decor); opacity:.55}
+    .label{position:relative; z-index:1; color:var(--muted); font-size:12px; font-weight:800; margin-bottom:14px}
+    .value{position:relative; z-index:1; color:var(--text); font-size:34px; line-height:1; font-weight:850; letter-spacing:-.7px}
+    .unit{margin-left:4px; color:var(--muted); font-size:15px; font-weight:700}
+    .note{position:relative; z-index:1; margin-top:13px; color:var(--muted); font-size:12px; font-weight:650}
+    .pending-value{color:var(--pending)}
+    .used-value{color:var(--used)}
+    .remain-value,.ok-value{color:var(--ok)}
+    .content-grid{display:grid; grid-template-columns:1.2fr .8fr; gap:16px}
+    .panel{overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow)}
+    .panel-head{display:flex; justify-content:space-between; align-items:center; padding:15px 16px; border-bottom:1px solid var(--line)}
+    .panel-title{margin:0; color:var(--text); font-size:17px; font-weight:850}
+    .count{color:var(--muted); font-size:12px; font-weight:800}
+    .filters{display:flex; gap:7px}
+    .filters span{border:1px solid var(--line); border-radius:var(--pill); background:var(--input-bg); color:var(--menu); padding:7px 11px; font-size:12px; font-weight:800}
+    .filters span.active{border-color:var(--active-line); background:var(--active-bg); color:var(--active)}
+    table{width:100%; border-collapse:collapse; color:var(--text); font-size:14px}
+    th{text-align:left; padding:11px 14px; color:var(--muted); background:var(--table-head); border-bottom:1px solid var(--line); font-size:12px; font-weight:850; white-space:nowrap}
+    td{padding:12px 14px; border-bottom:1px solid var(--line-soft); white-space:nowrap}
+    .deduct{color:var(--used); font-weight:850}
+    .badge{display:inline-block; border:1px solid transparent; border-radius:var(--pill); padding:5px 9px; font-size:12px; font-weight:850}
+    .badge.pending{color:var(--pending); background:var(--pending-bg); border-color:var(--pending-line)}
+    .badge.approved{color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line)}
+    .badge.rejected{color:var(--rejected); background:var(--rejected-bg); border-color:var(--line)}
+    .apply{padding:16px}
+    .field{margin-bottom:12px}
+    .field label{display:block; margin-bottom:6px; color:var(--muted); font-size:12px; font-weight:850}
+    .input,.slot{border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--input-bg); color:var(--text); padding:10px 11px; font-size:13px; font-weight:750}
+    .slot-list{display:grid; gap:8px}
+    .btn{width:100%; border:1px solid var(--active); border-radius:var(--radius-sm); background:var(--active); color:var(--button-text); padding:10px 12px; font-size:13px; font-weight:850; text-align:center}
+    .original-apply-grid{display:grid; grid-template-columns:1fr 2fr; gap:16px; align-items:start}
+    .original-helper{margin:6px 0 0; color:var(--muted); font-size:12px; font-weight:600}
+    .check-list{display:grid; gap:8px; max-height:152px; overflow:auto; border:1px solid var(--line); border-radius:var(--radius-sm); background:rgba(255,255,255,.7); padding:9px}
+    .check-row{display:flex; align-items:center; gap:8px; color:var(--text); font-size:13px; font-weight:650}
+    .check-box{width:14px; height:14px; border:1px solid #9ca3af; border-radius:4px; background:#fff}
+    .original-actions{display:flex; justify-content:flex-end; margin-top:16px}
+    .original-actions .btn{width:auto; padding:10px 16px}
+    .calendar-panel{margin-top:16px}
+    .calendar-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:16px}
+    .month{border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--input-bg); padding:10px}
+    .month-title{margin:0 0 8px; color:var(--text); font-size:14px; font-weight:850}
+    .week,.days{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+    .week span{color:var(--muted); text-align:center; font-size:10px; font-weight:850}
+    .day{min-height:26px; border:1px solid var(--line-soft); border-radius:6px; background:var(--surface); color:var(--text); padding:3px; font-size:10px; font-weight:750}
+    .day.muted{opacity:.35}
+    .day.used{background:var(--active-bg); border-color:var(--active-line); color:var(--active)}
+    .day.holiday{color:#dc2626}
+    .day strong{display:block; margin-top:2px; border-radius:4px; background:var(--active); color:var(--button-text); text-align:center; font-size:9px; line-height:1.4}
+    .original{--bg:#f3f4f6;--nav:rgba(255,255,255,.85);--surface:rgba(255,255,255,.85);--header-bg:transparent;--header-border:0;--header-pad:0;--text:#111827;--muted:#6b7280;--line:rgba(255,255,255,.35);--line-soft:#e5e7eb;--menu:#4f46e5;--active:#4f46e5;--active-bg:transparent;--active-line:#c7d2fe;--used:#4f46e5;--ok:#059669;--pending:#ca8a04;--pending-bg:#fef3c7;--pending-line:#fef3c7;--ok-bg:#dcfce7;--ok-line:#bbf7d0;--rejected:#b91c1c;--rejected-bg:#fee2e2;--table-head:rgba(249,250,251,.7);--input-bg:#fff;--decor:#dbeafe;--radius:16px;--radius-sm:8px;--pill:999px;--shadow:0 1px 2px rgba(15,23,42,.05);--brand-bg:#4f46e5;--brand-text:#fff;--brand-radius:8px;--button-text:#fff}
+    .rams{--bg:#f5f5f3;--nav:#fff;--surface:#fff;--header-bg:transparent;--header-border:0;--header-pad:0;--text:#1f1f1f;--muted:#6f6f68;--line:#c9c9c3;--line-soft:#e3e3df;--menu:#374151;--active:#2459a6;--active-bg:#eef3fa;--active-line:#bfdbfe;--used:#2459a6;--ok:#256a3a;--pending:#9a5b10;--pending-bg:#fff8e8;--pending-line:#f3d3b2;--ok-bg:#edf7ef;--ok-line:#ccebd6;--rejected:#4b5563;--rejected-bg:#f9fafb;--table-head:#f7f7f5;--input-bg:#fff;--decor:transparent;--radius:2px;--radius-sm:2px;--pill:2px;--shadow:none;--brand-bg:#1f1f1f;--brand-text:#fff;--brand-radius:2px;--button-text:#fff}
+    .modern{--bg:#f6f7fb;--nav:#fff;--surface:#fff;--header-bg:#fff;--header-border:1px solid #e5e7eb;--header-pad:22px;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--line-soft:#f1f5f9;--menu:#4b5563;--active:#2563eb;--active-bg:#eff6ff;--active-line:#bfdbfe;--used:#2563eb;--ok:#15803d;--pending:#b45309;--pending-bg:#fff7ed;--pending-line:#fed7aa;--ok-bg:#f0fdf4;--ok-line:#bbf7d0;--rejected:#4b5563;--rejected-bg:#f3f4f6;--table-head:#f9fafb;--input-bg:#fff;--decor:transparent;--radius:18px;--radius-sm:12px;--pill:999px;--shadow:0 14px 34px rgba(15,23,42,.07);--brand-bg:#2563eb;--brand-text:#fff;--brand-radius:10px;--button-text:#fff}
+    .console{--bg:#f7f8fb;--nav:#fff;--surface:#fff;--header-bg:transparent;--header-border:0;--header-pad:0;--text:#101828;--muted:#667085;--line:#e4e7ec;--line-soft:#f2f4f7;--menu:#344054;--active:#175cd3;--active-bg:#eff8ff;--active-line:#b2ddff;--used:#175cd3;--ok:#067647;--pending:#b54708;--pending-bg:#fffaeb;--pending-line:#fedf89;--ok-bg:#ecfdf3;--ok-line:#abefc6;--rejected:#475467;--rejected-bg:#f2f4f7;--table-head:#fcfcfd;--input-bg:#fff;--decor:transparent;--radius:12px;--radius-sm:10px;--pill:999px;--shadow:none;--brand-bg:#101828;--brand-text:#fff;--brand-radius:8px;--button-text:#fff}
+    .soft{--bg:#f8fafc;--nav:#fff;--surface:#fff;--header-bg:#fff;--header-border:1px solid #e2e8f0;--header-pad:18px;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--line-soft:#f1f5f9;--menu:#334155;--active:#0369a1;--active-bg:#e0f2fe;--active-line:#7dd3fc;--used:#0369a1;--ok:#15803d;--pending:#b45309;--pending-bg:#fffbeb;--pending-line:#fde68a;--ok-bg:#dcfce7;--ok-line:#bbf7d0;--rejected:#475569;--rejected-bg:#f1f5f9;--table-head:#f8fafc;--input-bg:#fff;--decor:transparent;--radius:18px;--radius-sm:999px;--pill:999px;--shadow:none;--brand-bg:#0369a1;--brand-text:#fff;--brand-radius:12px;--button-text:#fff}
+    .dark{--bg:#0f172a;--nav:#111827;--surface:#111827;--header-bg:transparent;--header-border:0;--header-pad:0;--text:#e5e7eb;--muted:#94a3b8;--line:#334155;--line-soft:#263244;--menu:#cbd5e1;--active:#60a5fa;--active-bg:#172554;--active-line:#2563eb;--used:#60a5fa;--ok:#4ade80;--pending:#fbbf24;--pending-bg:#422006;--pending-line:#92400e;--ok-bg:#052e16;--ok-line:#166534;--rejected:#cbd5e1;--rejected-bg:#1f2937;--table-head:#1f2937;--input-bg:#0f172a;--decor:transparent;--radius:14px;--radius-sm:10px;--pill:999px;--shadow:none;--brand-bg:#60a5fa;--brand-text:#0f172a;--brand-radius:10px;--button-text:#0f172a}
+    .mock.admin.original .filters,.mock.admin.original .status{display:none}
+    .mock.original .note{display:none}
+    .mock.original .stats{gap:24px}
+    .mock.original .stat{min-height:142px; padding:24px}
+    .mock.original .panel{padding:24px; margin-top:32px}
+    .mock.original .panel-head{padding:0 0 16px; border-bottom:0}
+    .mock.original .panel-title{font-size:18px}
+    .mock.original th{padding:12px 24px; color:#374151; font-size:14px; font-weight:750}
+    .mock.original td{padding:16px 24px; font-weight:650}
+    .mock.original .content-grid{display:block}
+    .mock.original .apply-panel{margin-top:32px}
+    .mock.admin .apply-panel{display:none}
+    .mock.user .filters{display:none}
+    .mock.user .status{display:none}
+    .mock.admin.console .body{display:grid; grid-template-columns:220px 1fr; gap:16px}
+    .mock.admin.console .side{display:block}
+    .mock.admin.console .nav{display:none}
+    .mock.admin.soft .nav{display:none}
+    .mock.admin.soft .body{display:grid; grid-template-columns:240px 1fr; gap:16px}
+    .mock.admin.soft .side{display:block}
+    .mock.user .side{display:none}
+    .viewer{position:fixed; inset:0; z-index:100; display:none; background:rgba(17,24,39,.72); padding:26px}
+    .viewer.open{display:block}
+    .viewer-panel{width:1220px; max-height:calc(100vh - 52px); margin:0 auto; overflow:hidden; border-radius:18px; background:#fff; box-shadow:0 24px 80px rgba(0,0,0,.32)}
+    .viewer-head{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; border-bottom:1px solid #e5e7eb}
+    .viewer-title{margin:0; font-size:18px; font-weight:850}
+    .viewer-close{border:1px solid #d1d5db; border-radius:10px; background:#fff; color:#374151; padding:8px 12px; font:inherit; font-size:13px; font-weight:850; cursor:pointer}
+    .viewer-body{max-height:calc(100vh - 116px); overflow:auto; background:#f3f4f6; padding:20px}
+    .viewer-body .mock{transform:none; margin:0 auto; box-shadow:0 0 0 1px rgba(17,24,39,.08)}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="page-top">
+      <h1 class="page-title">LAMS 대시보드 디자인 후보</h1>
+      <div class="page-meta">관리자/사용자 통합 단일 파일</div>
+    </section>
+    <section class="toolbar">
+      <div class="tabs">
+        <button class="tab active" type="button" data-role="admin">관리자 화면</button>
+        <button class="tab" type="button" data-role="user">사용자 화면</button>
+      </div>
+      <div class="rules"><span>폐쇄망</span><span>장기 사용이 가능한 디자인</span><span>정보구조가 뚜렷한 디자인</span></div>
+    </section>
+    <section class="gallery" id="gallery"></section>
+  </main>
+  <template id="adminOriginalTemplate">
+    <div class="nav"><div class="brand"><span class="brand-box">L</span><span>LAMS</span></div><div class="menu"><span class="active">대시보드</span><span>연차 캘린더</span><span>연차 타임라인</span><span>공휴일 관리</span><span>마스터 관리</span><span>사원 관리</span><span>비밀번호 변경</span><span>로그아웃</span></div></div>
+    <div class="body"><div class="header"><div><h3 class="title">관리자 대시보드 👑</h3><p class="sub">시스템 전체 운영 현황을 한눈에 파악합니다.</p></div></div><div class="stats"><div class="stat decor"><div class="label">활성 사원 수</div><div class="value">128<span class="unit">명</span></div></div><div class="stat decor"><div class="label">금일 신청 건수</div><div class="value" style="color:#dc2626">21<span class="unit">건</span></div></div><div class="stat decor"><div class="label">결재 대기 건수</div><div class="value pending-value">7<span class="unit">건</span></div></div><div class="stat decor"><div class="label">금일 사용 연차(h)</div><div class="value" style="color:#4f46e5">34<span class="unit">h</span></div></div></div><div class="panel"><div class="panel-head"><h3 class="panel-title">최근 7일 신청 타임라인</h3></div><table><thead><tr><th>신청 시각</th><th>사용자</th><th>연차 사용일</th><th>사용 시간대</th></tr></thead><tbody><tr><td>2026-04-29 18:42:10</td><td>김민수<span style="color:#9ca3af">(mkim)</span></td><td><span class="badge approved" style="background:#dbeafe;color:#1e40af;border-color:#dbeafe">2026-05-02</span></td><td>오후 4시간 (-4h)</td></tr><tr><td>2026-04-29 16:10:03</td><td>이지은<span style="color:#9ca3af">(jlee)</span></td><td><span class="badge approved" style="background:#dbeafe;color:#1e40af;border-color:#dbeafe">2026-04-30</span></td><td>오전 2시간 (-2h)</td></tr><tr><td>2026-04-29 11:21:55</td><td>박현우<span style="color:#9ca3af">(hpark)</span></td><td><span class="badge approved" style="background:#dbeafe;color:#1e40af;border-color:#dbeafe">2026-05-03</span></td><td>종일 (-8h)</td></tr></tbody></table></div></div>
+  </template>
+  <template id="userOriginalTemplate">
+    <div class="nav"><div class="brand"><span class="brand-box">L</span><span>LAMS</span></div><div class="menu"><span class="active">대시보드</span><span>비밀번호 변경</span><span>로그아웃</span></div></div>
+    <div class="body"><div class="header"><div><h3 class="title">안녕하세요, 김민수님 👋</h3><p class="sub">ABC Company / 개발팀</p></div><span class="year">2026년</span></div><div class="stats"><div class="stat decor"><div class="label">2026년 총 연차 시간</div><div class="value">120<span class="unit">h</span></div></div><div class="stat decor"><div class="label">사용 시간</div><div class="value" style="color:#4f46e5">46<span class="unit">h</span></div></div><div class="stat decor"><div class="label">잔여 시간</div><div class="value" style="color:#7c3aed">74<span class="unit">h</span></div></div><div class="stat decor"><div class="label">2026년 신청 건수</div><div class="value" style="color:#059669">8<span class="unit">건</span></div></div></div><div class="content-grid"><div class="panel"><div class="panel-head"><h3 class="panel-title">2026년 신청 내역 전체</h3><span class="count">총 8건</span></div><table><thead><tr><th>신청일</th><th>사용 시간대</th><th>차감</th><th>상태</th><th>등록시각</th></tr></thead><tbody><tr><td>2026-05-02</td><td>오후 4시간</td><td class="deduct">-4h</td><td><span class="badge pending">결재 대기</span></td><td>2026-04-29 18:42</td></tr><tr><td>2026-04-30</td><td>오전 2시간</td><td class="deduct">-2h</td><td><span class="badge approved">승인됨</span></td><td>2026-04-29 16:10</td></tr><tr><td>2026-04-18</td><td>종일</td><td class="deduct">-8h</td><td><span class="badge rejected">반려</span></td><td>2026-04-15 09:22</td></tr></tbody></table></div><div class="panel apply-panel"><div class="panel-head"><h3 class="panel-title">연차 신청</h3></div><div class="apply"><div class="field"><label>날짜</label><div class="input">2026-05-02</div></div><div class="field"><label>연차 시간대 (복수 선택 가능)</label><div class="slot-list"><div class="slot">오전 2시간 (-2h)</div><div class="slot">오후 4시간 (-4h)</div><div class="slot">종일 (-8h)</div></div></div><div class="btn">직접 등록하기</div></div></div></div></div>
+  </template>
+  <template id="adminTemplate">
+    <div class="nav"><div class="brand"><span class="brand-box">L</span><span>LAMS</span></div><div class="menu"><span class="active">대시보드</span><span>연차 캘린더</span><span>연차 타임라인</span><span>공휴일 관리</span><span>마스터 관리</span><span>사원 관리</span></div></div>
+    <div class="body"><aside class="side"><h3 class="side-title">LAMS Admin</h3><span class="active">대시보드</span><span>연차 캘린더</span><span>연차 타임라인</span><span>공휴일 관리</span><span>마스터 관리</span><span>사원 관리</span><span>로그아웃</span></aside><section><div class="header"><div><h3 class="title">관리자 대시보드</h3><p class="sub original-only">시스템 전체 운영 현황을 한눈에 파악합니다.</p></div><span class="status">결재 대기 7건</span></div><div class="stats"><div class="stat decor"><div class="label">활성 사원 수</div><div class="value">128<span class="unit">명</span></div><div class="note">활성 96%</div></div><div class="stat"><div class="label">금일 신청 건수</div><div class="value">21<span class="unit">건</span></div><div class="note">전일 대비 +2</div></div><div class="stat"><div class="label">결재 대기 건수</div><div class="value pending-value">7<span class="unit">건</span></div><div class="note">미처리</div></div><div class="stat"><div class="label">금일 사용 연차(h)</div><div class="value ok-value">34<span class="unit">h</span></div><div class="note">최근 7일 평균 29h</div></div></div><div class="panel"><div class="panel-head"><h3 class="panel-title">최근 7일 신청 타임라인</h3><div class="filters"><span class="active">전체</span><span>결재 대기</span><span>승인됨</span><span>반려</span></div></div><table><thead><tr><th>신청 시각</th><th>사용자</th><th>연차 사용일</th><th>사용 시간대</th><th>상태</th><th class="right">차감(h)</th></tr></thead><tbody><tr><td>2026-04-29 18:42:10</td><td>김민수</td><td>2026-05-02</td><td>오후 4시간</td><td><span class="badge pending">결재 대기</span></td><td>4</td></tr><tr><td>2026-04-29 16:10:03</td><td>이지은</td><td>2026-04-30</td><td>오전 2시간</td><td><span class="badge approved">승인됨</span></td><td>2</td></tr><tr><td>2026-04-29 11:21:55</td><td>박현우</td><td>2026-05-03</td><td>종일</td><td><span class="badge rejected">반려</span></td><td>8</td></tr></tbody></table></div></section></div>
+  </template>
+  <template id="userTemplate">
+    <div class="nav"><div class="brand"><span class="brand-box">L</span><span>LAMS</span></div><div class="menu"><span class="active">대시보드</span><span>비밀번호 변경</span><span>로그아웃</span></div></div>
+    <div class="body"><aside class="side"><h3 class="side-title">LAMS</h3><span class="active">대시보드</span><span>연차 신청</span><span>신청 내역</span><span>연차 캘린더</span><span>로그아웃</span></aside><section><div class="header"><div><h3 class="title">안녕하세요, 김민수님</h3><p class="sub">ABC Company / 개발팀</p></div><span class="year">2026년</span></div><div class="stats"><div class="stat decor"><div class="label">2026년 총 연차 시간</div><div class="value">120<span class="unit">h</span></div><div class="note">연간 부여</div></div><div class="stat"><div class="label">사용 시간</div><div class="value used-value">46<span class="unit">h</span></div><div class="note">승인 반영</div></div><div class="stat"><div class="label">잔여 시간</div><div class="value ok-value">74<span class="unit">h</span></div><div class="note">사용 가능</div></div><div class="stat"><div class="label">2026년 신청 건수</div><div class="value ok-value">8<span class="unit">건</span></div><div class="note">전체 신청</div></div></div><div class="content-grid"><div class="panel"><div class="panel-head"><h3 class="panel-title">2026년 신청 내역 전체</h3><span class="count">총 8건</span></div><table><thead><tr><th>신청일</th><th>사용 시간대</th><th>차감</th><th>상태</th><th>등록시각</th></tr></thead><tbody><tr><td>2026-05-02</td><td>오후 4시간</td><td class="deduct">-4h</td><td><span class="badge pending">결재 대기</span></td><td>2026-04-29 18:42</td></tr><tr><td>2026-04-30</td><td>오전 2시간</td><td class="deduct">-2h</td><td><span class="badge approved">승인됨</span></td><td>2026-04-29 16:10</td></tr><tr><td>2026-04-18</td><td>종일</td><td class="deduct">-8h</td><td><span class="badge rejected">반려</span></td><td>2026-04-15 09:22</td></tr></tbody></table></div><div class="panel"><div class="panel-head"><h3 class="panel-title">연차 신청</h3></div><div class="apply"><div class="field"><label>날짜</label><div class="input">2026-05-02</div></div><div class="field"><label>연차 시간대</label><div class="slot-list"><div class="slot">오전 2시간 (-2h)</div><div class="slot">오후 4시간 (-4h)</div><div class="slot">종일 (-8h)</div></div></div><div class="btn">직접 등록하기</div></div></div></div></section></div>
+  </template>
+  <template id="calendarTemplate">
+    <div class="panel calendar-panel"><div class="panel-head"><h3 class="panel-title">2026년 연차 캘린더</h3></div><div class="calendar-grid"><div class="month"><h4 class="month-title">4월</h4><div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="days"><div class="day muted"></div><div class="day muted"></div><div class="day">1</div><div class="day">2</div><div class="day">3</div><div class="day">4</div><div class="day holiday">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day">9</div><div class="day used">10<strong>2h</strong></div><div class="day">11</div><div class="day holiday">12</div><div class="day">13</div><div class="day">14</div><div class="day rejected">15</div><div class="day">16</div><div class="day">17</div><div class="day used">18<strong>8h</strong></div><div class="day holiday">19</div></div></div><div class="month"><h4 class="month-title">5월</h4><div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="days"><div class="day muted"></div><div class="day muted"></div><div class="day muted"></div><div class="day muted"></div><div class="day muted"></div><div class="day holiday">1</div><div class="day used">2<strong>4h</strong></div><div class="day holiday">3</div><div class="day">4</div><div class="day holiday">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day">9</div><div class="day holiday">10</div><div class="day">11</div><div class="day">12</div><div class="day">13</div><div class="day">14</div><div class="day">15</div><div class="day">16</div></div></div><div class="month"><h4 class="month-title">6월</h4><div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="days"><div class="day muted"></div><div class="day">1</div><div class="day">2</div><div class="day">3</div><div class="day">4</div><div class="day">5</div><div class="day holiday">6</div><div class="day holiday">7</div><div class="day">8</div><div class="day">9</div><div class="day">10</div><div class="day used">11<strong>4h</strong></div><div class="day">12</div><div class="day">13</div><div class="day holiday">14</div><div class="day">15</div><div class="day">16</div><div class="day">17</div><div class="day">18</div><div class="day">19</div><div class="day">20</div></div></div></div></div>
+  </template>
+  <div class="viewer" id="viewer" aria-hidden="true"><section class="viewer-panel" role="dialog" aria-modal="true" aria-labelledby="viewerTitle"><div class="viewer-head"><h2 class="viewer-title" id="viewerTitle">디자인 크게 보기</h2><button class="viewer-close" type="button" id="viewerClose">닫기</button></div><div class="viewer-body" id="viewerBody"></div></section></div>
+  <script>
+    const candidates = [
+      ['Original','현재 화면 기준','original'],
+      ['Dieter Rams','Functional Minimal','rams'],
+      ['Modern SaaS','Enterprise SaaS','modern'],
+      ['Operations Console','Dense Console','console'],
+      ['Soft Institutional','Calm Work Tool','soft'],
+      ['Dark Solid','Solid Dark Theme','dark'],
+    ];
+    const gallery = document.getElementById('gallery');
+    const templates = {
+      admin: document.getElementById('adminTemplate'),
+      user: document.getElementById('userTemplate'),
+      adminOriginal: document.getElementById('adminOriginalTemplate'),
+      userOriginal: document.getElementById('userOriginalTemplate'),
+      calendar: document.getElementById('calendarTemplate'),
+    };
+    let currentRole = 'admin';
+
+    function render(role) {
+      gallery.replaceChildren();
+      candidates.forEach(([name, tag, className]) => {
+        const card = document.createElement('article');
+        card.className = 'candidate';
+        const tagClass = className === 'original' ? 'candidate-tag original' : 'candidate-tag';
+        card.innerHTML = `<div class="candidate-head"><div><h2 class="candidate-name">${name}</h2><span class="${tagClass}">${tag}</span></div></div><div class="mock-frame"><div class="mock ${role} ${className}"></div></div>`;
+        const mock = card.querySelector('.mock');
+        const templateKey = className === 'original' ? `${role}Original` : role;
+        mock.appendChild(templates[templateKey].content.cloneNode(true));
+        if (role === 'user' && className === 'original') {
+          const apply = mock.querySelector('.apply-panel .apply');
+          if (apply) {
+            apply.innerHTML = '<div class="original-apply-grid"><div class="field"><label>날짜</label><div class="input">2026-05-02</div><p class="original-helper">* 주말/공휴일은 신청할 수 없습니다.</p></div><div class="field"><label>연차 시간대 (복수 선택 가능)</label><div class="check-list"><div class="check-row"><span class="check-box"></span><span>오전 2시간 (-2h)</span></div><div class="check-row"><span class="check-box"></span><span>오후 2시간 (-2h)</span></div><div class="check-row"><span class="check-box"></span><span>오후 4시간 (-4h)</span></div><div class="check-row"><span class="check-box"></span><span>종일 (-8h)</span></div></div><p class="original-helper">* 시간이 겹치는 시간대는 함께 신청할 수 없습니다.</p></div></div><div class="original-actions"><div class="btn">직접 등록하기</div></div>';
+          }
+        }
+        if (role === 'user') {
+          const section = mock.querySelector('.body > section') || mock.querySelector('.body');
+          section.appendChild(templates.calendar.content.cloneNode(true));
+        }
+        const button = document.createElement('button');
+        button.className = 'open-large';
+        button.type = 'button';
+        button.textContent = '크게 보기';
+        button.addEventListener('click', () => openViewer(`${role === 'admin' ? '관리자' : '사용자'} / ${name}`, mock));
+        card.querySelector('.candidate-head').appendChild(button);
+        gallery.appendChild(card);
+      });
+    }
+
+    const viewer = document.getElementById('viewer');
+    const viewerTitle = document.getElementById('viewerTitle');
+    const viewerBody = document.getElementById('viewerBody');
+    const viewerClose = document.getElementById('viewerClose');
+
+    function openViewer(title, sourceMock) {
+      viewerTitle.textContent = title;
+      viewerBody.replaceChildren(sourceMock.cloneNode(true));
+      viewer.classList.add('open');
+      viewer.setAttribute('aria-hidden', 'false');
+      viewerClose.focus();
+    }
+    function closeViewer() {
+      viewer.classList.remove('open');
+      viewer.setAttribute('aria-hidden', 'true');
+      viewerBody.replaceChildren();
+    }
+    viewerClose.addEventListener('click', closeViewer);
+    viewer.addEventListener('click', (event) => {
+      if (event.target === viewer) closeViewer();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && viewer.classList.contains('open')) closeViewer();
+    });
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        currentRole = tab.dataset.role;
+        document.querySelectorAll('.tab').forEach((item) => item.classList.toggle('active', item === tab));
+        render(currentRole);
+      });
+    });
+    render(currentRole);
+  </script>
+</body>
+</html>

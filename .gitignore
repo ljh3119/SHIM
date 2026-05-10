@@ -1,0 +1,31 @@
+# Local operation secrets
+.env
+*.env*
+!.env.example
+
+# Runtime data
+data/
+var/
+*.db
+*.sqlite
+*.sqlite3
+
+# Local environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node dependencies
+node_modules/
+
+# Build outputs
+artifacts/
+dist/
+build/
+*.spec
+
+# IDE
+.idea/
+.vscode/

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>LAMS 관리자 대시보드 - Original</title>
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --surface:rgba(255,255,255,0.78);
+      --line:#f3f4f6;
+      --line-strong:#e5e7eb;
+      --text:#111827;
+      --muted:#6b7280;
+      --indigo:#4f46e5;
+      --blue:#2563eb;
+      --red:#dc2626;
+      --yellow:#ca8a04;
+      --emerald:#059669;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-width:1280px;
+      color:var(--text);
+      background:var(--bg);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .glass-panel{
+      background:rgba(255,255,255,0.85);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,0.3);
+    }
+    .nav{
+      position:sticky;
+      top:0;
+      z-index:50;
+      border-bottom:1px solid var(--line-strong);
+      box-shadow:0 1px 2px rgba(15,23,42,0.05);
+    }
+    .nav-inner{
+      width:1280px;
+      height:64px;
+      margin:0 auto;
+      padding:0 32px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      color:#111827;
+    }
+    .brand-mark{
+      width:32px;
+      height:32px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:8px;
+      background:#4f46e5;
+      color:#fff;
+      font-size:20px;
+      font-weight:800;
+    }
+    .brand-text{
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:-.4px;
+    }
+    .nav-links{
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .nav-links a,
+    .nav-links button{
+      border:0;
+      background:transparent;
+      padding:0;
+      color:#4f46e5;
+      text-decoration:none;
+      font-size:14px;
+      font-weight:650;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .nav-links .green{color:var(--emerald)}
+    .nav-links .gray{color:#6b7280}
+    .divider{
+      width:1px;
+      height:16px;
+      background:#c7d2fe;
+      margin:0 4px;
+    }
+    .divider.gray{background:#d1d5db}
+    .wrap{
+      flex:1;
+      width:1280px;
+      margin:0 auto;
+      padding:32px;
+    }
+    .content{
+      animation:none;
+    }
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:32px;
+    }
+    h1{
+      margin:0;
+      font-size:24px;
+      font-weight:800;
+    }
+    .sub{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:24px;
+    }
+    .kpi{
+      position:relative;
+      min-height:142px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      padding:24px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:var(--surface);
+      box-shadow:0 1px 2px rgba(15,23,42,0.05);
+      color:inherit;
+      text-decoration:none;
+    }
+    .kpi:after{
+      content:"";
+      position:absolute;
+      right:-24px;
+      top:-24px;
+      width:96px;
+      height:96px;
+      border-radius:50%;
+      opacity:.5;
+    }
+    .kpi.blue:after{background:#dbeafe}
+    .kpi.red:after{background:#fee2e2}
+    .kpi.yellow:after{background:#fef3c7}
+    .kpi.indigo:after{background:#e0e7ff}
+    .label{
+      color:var(--muted);
+      font-size:14px;
+      font-weight:650;
+      margin-bottom:8px;
+      z-index:1;
+    }
+    .value{
+      font-size:30px;
+      line-height:1;
+      font-weight:800;
+      z-index:1;
+    }
+    .value.red{color:var(--red)}
+    .value.yellow{color:var(--yellow)}
+    .value.indigo{color:var(--indigo)}
+    .panel{
+      margin-top:32px;
+      padding:24px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:var(--surface);
+      box-shadow:0 1px 2px rgba(15,23,42,0.05);
+    }
+    .panel h2{
+      margin:0 0 16px;
+      font-size:18px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    th{
+      text-align:left;
+      padding:12px 24px;
+      color:#374151;
+      background:rgba(249,250,251,0.5);
+      border-bottom:1px solid #e5e7eb;
+      font-size:14px;
+      font-weight:750;
+    }
+    td{
+      padding:16px 24px;
+      border-bottom:1px solid #e5e7eb;
+      font-size:14px;
+      font-weight:650;
+    }
+    tbody tr:hover{background:rgba(249,250,251,0.5)}
+    .user-id{color:#9ca3af}
+    .date{
+      display:inline-flex;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#dbeafe;
+      color:#1e40af;
+      font-size:12px;
+      font-weight:800;
+    }
+    .slot{color:#4b5563}
+    .footer{
+      margin-top:auto;
+      background:#fff;
+      border-top:1px solid var(--line-strong);
+    }
+    .footer-inner{
+      width:1280px;
+      margin:0 auto;
+      padding:24px 32px;
+      text-align:center;
+      color:#6b7280;
+      font-size:14px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav glass-panel">
+    <div class="nav-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark">L</span>
+        <span class="brand-text">LAMS</span>
+      </a>
+      <div class="nav-links">
+        <a href="#">대시보드</a>
+        <a href="#">연차 캘린더</a>
+        <a href="#">연차 타임라인</a>
+        <span class="divider"></span>
+        <a class="green" href="#">공휴일 관리</a>
+        <a class="green" href="#">마스터 관리</a>
+        <a class="green" href="#">사원 관리</a>
+        <span class="divider gray"></span>
+        <button type="button">비밀번호 변경</button>
+        <a class="gray" href="#">로그아웃</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <div class="content">
+      <section class="header">
+        <div>
+          <h1>관리자 대시보드 👑</h1>
+          <p class="sub">시스템 전체 운영 현황을 한눈에 파악합니다.</p>
+        </div>
+      </section>
+
+      <section class="kpis">
+        <a class="kpi blue glass-panel" href="#">
+          <span class="label">활성 사원 수</span>
+          <span class="value">128명</span>
+        </a>
+        <a class="kpi red glass-panel" href="#">
+          <span class="label">금일 신청 건수</span>
+          <span class="value red">21건</span>
+        </a>
+        <a class="kpi yellow glass-panel" href="#">
+          <span class="label">결재 대기 건수</span>
+          <span class="value yellow">7건</span>
+        </a>
+        <a class="kpi indigo glass-panel" href="#">
+          <span class="label">금일 사용 연차(h)</span>
+          <span class="value indigo">34h</span>
+        </a>
+      </section>
+
+      <section class="panel glass-panel">
+        <h2>최근 7일 신청 타임라인</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>신청 시각</th>
+              <th>사용자</th>
+              <th>연차 사용일</th>
+              <th>사용 시간대</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-04-29 18:42:10</td>
+              <td>김민수<span class="user-id">(mkim)</span></td>
+              <td><span class="date">2026-05-02</span></td>
+              <td class="slot">오후 4시간 (-4h)</td>
+            </tr>
+            <tr>
+              <td>2026-04-29 16:10:03</td>
+              <td>이지은<span class="user-id">(jlee)</span></td>
+              <td><span class="date">2026-04-30</span></td>
+              <td class="slot">오전 2시간 (-2h)</td>
+            </tr>
+            <tr>
+              <td>2026-04-29 11:21:55</td>
+              <td>박현우<span class="user-id">(hpark)</span></td>
+              <td><span class="date">2026-05-03</span></td>
+              <td class="slot">종일 (-8h)</td>
+            </tr>
+            <tr>
+              <td>2026-04-28 17:02:31</td>
+              <td>최서윤<span class="user-id">(sychoi)</span></td>
+              <td><span class="date">2026-05-01</span></td>
+              <td class="slot">오후 2시간 (-2h)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+  <footer class="footer">
+    <div class="footer-inner">&copy; 2026 LAMS. Closed Network Leave Application System. v1.1.6</div>
+  </footer>
+</body>
+</html>

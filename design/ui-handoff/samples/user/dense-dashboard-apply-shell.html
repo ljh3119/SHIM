@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!--
+  목적: 사용자 대시보드 내 «연도·잔여 KPI + 캘린더 + 신청 패널» 배치 샘플.
+  디자인 토큰: ../reference/dense-tokens.css
+  실반영: src/templates/user_dashboard.html. 폼 제출·모달 미연동.
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAMS 사용자 · 신청·캘린더 배치 샘플</title>
+  <link rel="stylesheet" href="../reference/dense-tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      min-width: 1180px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page { max-width: 1120px; margin: 0 auto; }
+    .banner {
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #92400e;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 16px;
+    }
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -0.03em; }
+    .meta { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--surface);
+    }
+    .kpi span:first-child { font-size: 11px; font-weight: 800; color: var(--muted); display: block; }
+    .kpi strong { font-size: 22px; font-weight: 850; letter-spacing: -0.03em; margin-top: 6px; display: block; font-variant-numeric: tabular-nums; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .split { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      padding: 16px;
+    }
+    .panel h2 { margin: 0 0 12px; font-size: 15px; font-weight: 800; }
+
+    .mini-cal {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .mini-cal .w { padding: 6px 0; }
+    .mini-cal .d {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 750;
+      border: 1px solid transparent;
+      color: var(--text);
+    }
+    .mini-cal .d.muted { color: #d1d5db; }
+    .mini-cal .d.pick {
+      background: var(--blue-soft);
+      border-color: #b2ddff;
+      color: var(--blue);
+      font-weight: 850;
+    }
+    .mini-cal .d.dot { box-shadow: inset 0 -3px 0 var(--blue); }
+
+    label { display: block; font-size: 12px; font-weight: 750; color: var(--muted); margin-bottom: 4px; }
+    .field {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+      font-size: 13px;
+      background: var(--surface-soft);
+      color: var(--muted);
+    }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+    .btn.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="banner">입력 필드·버튼은 비활성 스타일입니다. 실제 검증·모달은 서비스 코드를 따릅니다.</div>
+
+    <div class="title-row">
+      <div>
+        <h1>사용자 대시보드</h1>
+        <p class="meta">홍길동 · 기술팀 · <strong style="color:var(--text)">2026년</strong></p>
+      </div>
+      <span style="border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:800;background:#fff">연도 선택 ▾</span>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><span>총 연차</span><strong>120h</strong></div>
+      <div class="kpi"><span>사용</span><strong style="color:var(--blue)">44h</strong></div>
+      <div class="kpi"><span>잔여</span><strong style="color:var(--green)">76h</strong></div>
+      <div class="kpi"><span>결재 대기</span><strong style="color:var(--amber)">1건</strong></div>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <h2>2026년 5월 · 신청용 미니 캘린더</h2>
+        <div class="mini-cal" aria-hidden="true">
+          <div class="w">일</div><div class="w">월</div><div class="w">화</div><div class="w">수</div><div class="w">목</div><div class="w">금</div><div class="w">토</div>
+          <div class="d muted">26</div><div class="d muted">27</div><div class="d muted">28</div><div class="d muted">29</div><div class="d muted">30</div>
+          <div class="d">1</div><div class="d">2</div>
+          <div class="d">3</div><div class="d">4</div><div class="d pick dot">5</div><div class="d">6</div><div class="d">7</div><div class="d">8</div><div class="d">9</div>
+          <div class="d">10</div><div class="d">11</div><div class="d">12</div><div class="d">13</div><div class="d">14</div><div class="d">15</div><div class="d">16</div>
+          <div class="d">17</div><div class="d">18</div><div class="d">19</div><div class="d">20</div><div class="d">21</div><div class="d">22</div><div class="d">23</div>
+          <div class="d">24</div><div class="d">25</div><div class="d">26</div><div class="d">27</div><div class="d">28</div><div class="d">29</div><div class="d">30</div>
+          <div class="d">31</div><div class="d muted">1</div><div class="d muted">2</div><div class="d muted">3</div><div class="d muted">4</div><div class="d muted">5</div><div class="d muted">6</div>
+        </div>
+        <p style="margin:12px 0 0;font-size:12px;color:var(--muted);font-weight:650">선택일 5일: 서비스에서는 해당 날짜로 신청 모달 또는 폼이 열립니다.</p>
+      </div>
+
+      <div class="panel">
+        <h2>연차 신청</h2>
+        <label for="d">사용일</label>
+        <input id="d" class="field" type="text" value="2026-05-05" readonly disabled />
+
+        <label for="s">시작</label>
+        <select id="s" class="field" disabled><option>09:00</option></select>
+
+        <label for="e">종료</label>
+        <select id="e" class="field" disabled><option>13:00</option></select>
+
+        <div class="btn-row">
+          <button type="button" class="btn primary" disabled>신청하기</button>
+          <button type="button" class="btn" disabled>초기화</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

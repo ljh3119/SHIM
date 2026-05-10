@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>LAMS 관리자 대시보드 - Dark Solid</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --surface:#111827;
+      --surface-soft:#1f2937;
+      --line:#334155;
+      --line-soft:#263244;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --blue:#60a5fa;
+      --blue-soft:#172554;
+      --amber:#fbbf24;
+      --amber-soft:#422006;
+      --green:#4ade80;
+      --green-soft:#052e16;
+      --focus:#93c5fd;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-width:1180px;
+      color:var(--text);
+      background:var(--bg);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+
+    .nav{
+      background:#111827;
+      border-bottom:1px solid var(--line);
+    }
+    .nav-inner{
+      width:1160px;
+      height:62px;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{font-size:18px; font-weight:800}
+    .menu{display:flex; gap:8px}
+    .menu a{
+      color:#cbd5e1;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:650;
+      padding:8px 10px;
+      border-radius:10px;
+    }
+    .menu a.active{color:#bfdbfe; background:var(--blue-soft)}
+
+    .wrap{
+      width:1160px;
+      margin:0 auto;
+      padding:26px 0 42px;
+    }
+    .header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      margin-bottom:16px;
+    }
+    h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+      letter-spacing:-.4px;
+    }
+    .status{
+      border:1px solid #92400e;
+      background:var(--amber-soft);
+      color:#fde68a;
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .kpi{
+      min-height:122px;
+      padding:16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--surface);
+      color:inherit;
+      text-decoration:none;
+      display:block;
+    }
+    .kpi:hover{background:#172033}
+    .kpi:focus-visible,
+    .filter-btn:focus-visible,
+    .menu a:focus-visible{
+      outline:2px solid var(--focus);
+      outline-offset:2px;
+    }
+    .kpi-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:750;
+      margin-bottom:14px;
+    }
+    .kpi-value{
+      font-size:34px;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:-.6px;
+    }
+    .kpi-unit{margin-left:4px; color:var(--muted); font-size:15px}
+    .kpi-note{margin-top:13px; color:var(--muted); font-size:12px; font-weight:650}
+    .kpi.pending{border-color:#92400e; background:#1f1a10}
+    .kpi.pending .kpi-value{color:var(--amber)}
+    .kpi.approved .kpi-value{color:var(--green)}
+
+    .panel{
+      background:var(--surface);
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .panel-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:16px;
+      border-bottom:1px solid var(--line);
+    }
+    .panel-title{margin:0; font-size:17px}
+    .filters{display:flex; gap:7px}
+    .filter-btn{
+      border:1px solid var(--line);
+      background:#0f172a;
+      color:#cbd5e1;
+      font-size:12px;
+      font-weight:750;
+      border-radius:999px;
+      padding:7px 11px;
+      cursor:pointer;
+    }
+    .filter-btn.active{
+      border-color:#2563eb;
+      color:#bfdbfe;
+      background:var(--blue-soft);
+    }
+
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    th{
+      text-align:left;
+      color:var(--muted);
+      background:var(--surface-soft);
+      border-bottom:1px solid var(--line);
+      padding:11px 16px;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    td{
+      padding:13px 16px;
+      border-bottom:1px solid var(--line-soft);
+      color:#e2e8f0;
+      vertical-align:middle;
+    }
+    tbody tr:hover{background:#172033}
+    .right{text-align:right}
+    .time,.slot{white-space:nowrap}
+    .user-id{color:#94a3b8}
+    .date-tag{
+      display:inline-block;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:3px 8px;
+      font-size:12px;
+      font-weight:700;
+      color:#cbd5e1;
+      background:#0f172a;
+    }
+    .badge{
+      display:inline-block;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      padding:4px 8px;
+      border:1px solid transparent;
+      white-space:nowrap;
+    }
+    .badge.pending{color:#fde68a; background:var(--amber-soft); border-color:#92400e}
+    .badge.approved{color:#bbf7d0; background:var(--green-soft); border-color:#166534}
+    .badge.rejected{color:#cbd5e1; background:#1f2937; border-color:#475569}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand">LAMS Admin</div>
+      <div class="menu">
+        <a href="#" class="active">대시보드</a>
+        <a href="#">연차 캘린더</a>
+        <a href="#">연차 타임라인</a>
+        <a href="#">공휴일 관리</a>
+        <a href="#">마스터 관리</a>
+        <a href="#">사원 관리</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section class="header">
+      <h1>관리자 대시보드</h1>
+      <div class="status">결재 대기 7건</div>
+    </section>
+
+    <section class="kpi-grid">
+      <a class="kpi" href="#">
+        <div class="kpi-label">활성 사원 수</div>
+        <div class="kpi-value">128<span class="kpi-unit">명</span></div>
+        <div class="kpi-note">활성 96%</div>
+      </a>
+      <a class="kpi" href="#">
+        <div class="kpi-label">금일 신청 건수</div>
+        <div class="kpi-value">21<span class="kpi-unit">건</span></div>
+        <div class="kpi-note">전일 대비 +2</div>
+      </a>
+      <a class="kpi pending" href="#">
+        <div class="kpi-label">결재 대기 건수</div>
+        <div class="kpi-value">7<span class="kpi-unit">건</span></div>
+        <div class="kpi-note">미처리</div>
+      </a>
+      <a class="kpi approved" href="#">
+        <div class="kpi-label">금일 사용 연차(h)</div>
+        <div class="kpi-value">34<span class="kpi-unit">h</span></div>
+        <div class="kpi-note">최근 7일 평균 29h</div>
+      </a>
+    </section>
+
+    <section class="panel">
+      <div class="panel-top">
+        <h2 class="panel-title">최근 7일 신청 타임라인</h2>
+        <div class="filters" aria-label="상태 필터">
+          <button class="filter-btn active" type="button">전체</button>
+          <button class="filter-btn" type="button">결재 대기</button>
+          <button class="filter-btn" type="button">승인됨</button>
+          <button class="filter-btn" type="button">반려</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>신청 시각</th>
+            <th>사용자</th>
+            <th>연차 사용일</th>
+            <th>사용 시간대</th>
+            <th>상태</th>
+            <th class="right">차감(h)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="time">2026-04-29 18:42:10</td>
+            <td>김민수 <span class="user-id">(mkim)</span></td>
+            <td><span class="date-tag">2026-05-02</span></td>
+            <td class="slot">오후 4시간</td>
+            <td><span class="badge pending">결재 대기</span></td>
+            <td class="right">4</td>
+          </tr>
+          <tr>
+            <td class="time">2026-04-29 16:10:03</td>
+            <td>이지은 <span class="user-id">(jlee)</span></td>
+            <td><span class="date-tag">2026-04-30</span></td>
+            <td class="slot">오전 2시간</td>
+            <td><span class="badge approved">승인됨</span></td>
+            <td class="right">2</td>
+          </tr>
+          <tr>
+            <td class="time">2026-04-29 11:21:55</td>
+            <td>박현우 <span class="user-id">(hpark)</span></td>
+            <td><span class="date-tag">2026-05-03</span></td>
+            <td class="slot">종일</td>
+            <td><span class="badge rejected">반려</span></td>
+            <td class="right">8</td>
+          </tr>
+          <tr>
+            <td class="time">2026-04-28 17:02:31</td>
+            <td>최서윤 <span class="user-id">(sychoi)</span></td>
+            <td><span class="date-tag">2026-05-01</span></td>
+            <td class="slot">오후 2시간</td>
+            <td><span class="badge approved">승인됨</span></td>
+            <td class="right">2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

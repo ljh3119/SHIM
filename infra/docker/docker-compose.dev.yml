@@ -1,0 +1,15 @@
+services:
+  shim:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    image: ${SHIM_IMAGE:-shim:1.2.1}
+    container_name: shim
+    ports:
+      - "8000:8000"
+    environment:
+      # Dev: optional `.env` with SHIM_SECRET_KEY
+      SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
+    volumes:
+      - ../../var/data:/app/data
+    restart: unless-stopped

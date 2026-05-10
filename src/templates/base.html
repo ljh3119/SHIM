@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.2.1') }} - 연차 관리 시스템</title>
+    <!-- Closed-network mode: use local Tailwind CSS only -->
+    <link href="/static/css/tailwind.css" rel="stylesheet">
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        /* Dense layout shared style block */
+        .glass-panel {
+            background: #ffffff;
+            border: 1px solid #d0d5dd;
+            border-radius: 1rem;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .shim-side-link {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            box-sizing: border-box;
+            min-height: 2.625rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 0.7rem;
+            text-decoration: none;
+            font-size: 0.8125rem;
+            line-height: 1.25;
+        }
+        .shim-side-svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .shim-sidebar.is-collapsed {
+            width: 76px !important;
+            padding-left: 0.625rem;
+            padding-right: 0.625rem;
+        }
+        /* Hide heading emoji when sidebar is expanded */
+        .shim-sidebar:not(.is-collapsed) .shim-sidebar-heading-emoji {
+            display: none;
+        }
+        .shim-sidebar.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
+            visibility: visible;
+            pointer-events: none;
+            user-select: none;
+            justify-content: center;
+        }
+        .shim-sidebar.is-collapsed .shim-sidebar-heading-stack {
+            display: none !important;
+        }
+        /* In collapsed mode, hide heading text and show only emoji */
+        .shim-sidebar.is-collapsed .shim-sidebar-heading-text {
+            display: none !important;
+        }
+        .shim-sidebar.is-collapsed .shim-sidebar-heading-sub {
+            display: none !important;
+        }
+        .shim-sidebar.is-collapsed .shim-sidebar-heading-emoji {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 1.75rem;
+            font-size: 1.125rem;
+            line-height: 1;
+        }
+        /* Keep admin sidebar icon color aligned with design tokens */
+        #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
+            color: #475467;
+        }
+        /* Adjust heading spacing in collapsed admin sidebar */
+        #shim-sidebar-admin.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
+            min-height: 2.75rem;
+            margin-bottom: 0.625rem;
+            align-items: center;
+            justify-content: center;
+        }
+        #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
+            min-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .shim-sidebar-heading-icon-svg {
+            width: 1.125rem;
+            height: 1.125rem;
+            flex-shrink: 0;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.85;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .shim-sidebar.is-collapsed .shim-nav-label {
+            display: none !important;
+        }
+        .shim-sidebar.is-collapsed .shim-side-link {
+            justify-content: center;
+            gap: 0;
+            min-height: 2.625rem;
+            padding: 0.5rem;
+        }
+        .shim-sidebar-toggle:focus-visible {
+            outline: 2px solid #175cd3;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
+
+    {# Top bar only handles branding/account actions. #}
+    <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+        <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center min-w-0">
+                <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/dashboard{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
+                    <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
+                        <span class="truncate text-center text-xs font-bold leading-tight text-white sm:text-sm">{{ brand_badge_display | default('S') }}</span>
+                    </div>
+                    <span class="flex min-w-0 flex-col justify-center gap-0.5 leading-tight">
+                        <span class="truncate text-lg font-bold tracking-tight text-dense-text sm:text-xl">{{ product_nav_short | default('SHIM') }}</span>
+                        {% if brand_nav_show_subtitle %}
+                        <span class="truncate text-[11px] font-semibold text-dense-muted">{{ product_display_name | default('SHIM') }}</span>
+                        {% endif %}
+                    </span>
+                </a>
+            </div>
+            <div class="flex flex-shrink-0 items-center gap-3 sm:gap-4">
+                {% if request.cookies.get('access_token') and admin %}
+                    <button type="button" onclick="window.shimModal.open('adminPwdModal', 'admin_current_password', this)" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
+                {% endif %}
+                {% if request.cookies.get('access_token') and not admin %}
+                    <button type="button" onclick="if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/dashboard'}" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
+                {% endif %}
+                {% if request.cookies.get('access_token') %}
+                    <a href="/logout" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors">로그아웃</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 overflow-x-hidden px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+        {% if admin %}
+            {% include "partials/sidebar_admin.html" %}
+        {% endif %}
+        <main class="relative min-w-0 flex-1 {% if not admin and not request.cookies.get('access_token') %}max-w-none{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer class="mt-auto border-t border-dense-line bg-dense-surface">
+        <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-dense-muted">
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.2.1') }}
+            </p>
+        </div>
+    </footer>
+
+    {% if admin %}
+    <div id="adminPwdModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('adminPwdModal')"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">관리자 비밀번호 변경</h3>
+                    <form id="adminPwdForm" class="space-y-4">
+                        <div>
+                            <label for="admin_current_password" class="block text-sm font-bold text-dense-nav-text">현재 비밀번호</label>
+                            <input type="password" id="admin_current_password" name="current_password" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="admin_new_password" class="block text-sm font-bold text-dense-nav-text">새 비밀번호</label>
+                            <input type="password" id="admin_new_password" name="new_password" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
+                    </form>
+                </div>
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                    <button type="button" onclick="submitAdminPasswordChange()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                        변경하기
+                    </button>
+                    <button type="button" onclick="window.shimModal.close('adminPwdModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        취소
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    async function submitAdminPasswordChange() {
+        const form = document.getElementById('adminPwdForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        const formData = new FormData(form);
+        try {
+            const response = await fetch('/admin/change-password', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message || '비밀번호가 변경되었습니다.');
+                window.shimModal.close('adminPwdModal');
+                form.reset();
+            } else {
+                alert(result.message || result.detail || '오류가 발생했습니다.');
+            }
+        } catch (err) {
+            alert('네트워크 오류가 발생했습니다.');
+        }
+    }
+    </script>
+    {% endif %}
+    <script>
+    (() => {
+        const modalState = new Map();
+
+        function hasOpenModal() {
+            return [...modalState.values()].some((v) => v && v.isOpen);
+        }
+
+        function setBodyScrollLock(locked) {
+            document.body.style.overflow = locked ? 'hidden' : '';
+        }
+
+        function open(id, focusId, triggerEl) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modalState.set(id, { isOpen: true, triggerEl: triggerEl || document.activeElement || null });
+            setBodyScrollLock(true);
+            if (focusId) {
+                const target = document.getElementById(focusId);
+                if (target) target.focus();
+            }
+        }
+
+        function close(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            const state = modalState.get(id);
+            modalState.set(id, { isOpen: false, triggerEl: state ? state.triggerEl : null });
+            if (!hasOpenModal()) {
+                setBodyScrollLock(false);
+            }
+            if (state && state.triggerEl && typeof state.triggerEl.focus === 'function') {
+                state.triggerEl.focus();
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            const opened = [...modalState.entries()].filter(([, v]) => v && v.isOpen).map(([k]) => k);
+            if (!opened.length) return;
+            close(opened[opened.length - 1]);
+        });
+
+        window.shimModal = { open, close };
+    })();
+    </script>
+    <script>
+    (function () {
+        function setSidebarToggleIcon(btn, collapsed) {
+            btn.innerHTML = collapsed
+                ? '<svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4"><path d="M8 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                : '<svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4"><path d="M12 6l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+
+        document.querySelectorAll(".shim-sidebar-toggle").forEach(function (btn) {
+            setSidebarToggleIcon(btn, false);
+            btn.addEventListener("click", function () {
+                var aside = btn.closest("[data-shim-sidebar]");
+                if (!aside) return;
+                aside.classList.toggle("is-collapsed");
+                var collapsed = aside.classList.contains("is-collapsed");
+                btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+                setSidebarToggleIcon(btn, collapsed);
+            });
+        });
+    })();
+    </script>
+
+</body>
+</html>
+

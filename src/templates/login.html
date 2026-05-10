@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in flex min-h-[70vh] items-center justify-center bg-dense-bg px-4">
+    <div class="glass-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-dense-line bg-dense-surface p-8 shadow-sm">
+        <div class="pointer-events-none absolute -right-16 -top-16 h-28 w-28 rounded-full bg-dense-blue-soft opacity-60 blur-2xl"></div>
+        <div class="pointer-events-none absolute -bottom-16 -left-16 h-24 w-24 rounded-full bg-dense-blue-soft opacity-40 blur-2xl"></div>
+
+        <div class="relative z-10 mb-8 text-center">
+            <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-dense-text">환영합니다</h1>
+            <p class="text-sm font-semibold text-dense-muted">계정으로 <span class="text-dense-text">{{ product_nav_short | default('SHIM') }}</span>에 로그인하세요.</p>
+            {% if brand_nav_show_subtitle %}
+            <p class="mx-auto mt-1 max-w-[22rem] truncate text-center text-[11px] font-semibold text-dense-muted" title="{{ product_display_name | default('SHIM') }}">{{ product_display_name | default('SHIM') }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs font-semibold text-dense-muted">시스템 버전 v{{ app_version | default('1.2.0') }}</p>
+        </div>
+
+        {% if error %}
+        <div class="relative z-10 mb-4 rounded-xl border border-dense-danger-soft bg-dense-danger-soft p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-dense-danger" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-semibold text-[#b42318]">{{ error }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form action="/login" method="POST" class="relative z-10 space-y-6">
+            <div>
+                <label for="user_id" class="block text-sm font-bold leading-6 text-dense-text">아이디</label>
+                <div class="mt-2">
+                    <input id="user_id" name="user_id" type="text" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong placeholder:text-dense-muted focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue sm:text-sm sm:leading-6">
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-bold leading-6 text-dense-text">비밀번호</label>
+                <div class="mt-2">
+                    <input id="password" name="password" type="password" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong placeholder:text-dense-muted focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue sm:text-sm sm:leading-6">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="mt-4 flex w-full justify-center rounded-xl bg-dense-blue px-3 py-2.5 text-sm font-bold text-white shadow-sm hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dense-blue">
+                    로그인
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
