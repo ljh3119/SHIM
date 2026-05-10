@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!--
+  목적: 관리자 «신청 타임라인» 화면의 테이블 밀도·정렬 표시·필터 영역만 분리 샘플.
+  디자인 토큰: ../reference/dense-tokens.css
+  실반영: src/templates/admin_leaves_timeline.html 등. 서버·정렬 로직 미연동.
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAMS 관리자 · 타임라인 Dense 샘플</title>
+  <link rel="stylesheet" href="../reference/dense-tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      min-width: 1180px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page { max-width: 1160px; margin: 0 auto; }
+    .banner {
+      border: 1px solid #fedf89;
+      background: var(--amber-soft);
+      color: var(--amber);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 16px;
+    }
+    .top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; }
+    .sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 650; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .select-like {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 750;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff;
+      color: #475467;
+    }
+    .chip.is-active { border-color: #b2ddff; background: var(--blue-soft); color: var(--blue); }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 850;
+      color: var(--muted);
+      background: #f9fafb;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    th button.fake-sort {
+      font: inherit;
+      font-weight: 850;
+      color: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: default;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    th .hint { font-weight: 800; color: var(--blue); font-size: 11px; }
+    td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--gray-soft);
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: #fcfcfd; }
+    .mono { font-variant-numeric: tabular-nums; }
+    .person strong { display: block; font-size: 14px; }
+    .person span { display: block; font-size: 12px; color: #98a2b3; margin-top: 2px; }
+    .badge {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      border: 1px solid transparent;
+    }
+    .badge.p { color: var(--amber); background: var(--amber-soft); border-color: #fedf89; }
+    .badge.a { color: var(--green); background: var(--green-soft); border-color: #abefc6; }
+    .badge.r { color: #475467; background: var(--gray-soft); border-color: var(--line); }
+    td.right { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="banner">정적 샘플입니다. 연도·필터·정렬은 동작하지 않습니다.</div>
+
+    <header class="top">
+      <div>
+        <h1>연차 신청 타임라인</h1>
+        <p class="sub">전체 신청 목록 · 상태·정렬은 서비스 템플릿과 동일 역할을 가정합니다.</p>
+      </div>
+      <span class="select-like" aria-hidden="true">연도 2026 ▾</span>
+    </header>
+
+    <div class="toolbar">
+      <div class="chips" aria-label="상태 필터(표시만)">
+        <span class="chip is-active">전체</span>
+        <span class="chip">결재 대기</span>
+        <span class="chip">승인됨</span>
+        <span class="chip">반려</span>
+        <span class="chip">신청 취소</span>
+      </div>
+    </div>
+
+    <section class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th><button type="button" class="fake-sort" disabled>신청 시각 <span class="hint">▼ 최신</span></button></th>
+            <th><button type="button" class="fake-sort" disabled>사용자</button></th>
+            <th><button type="button" class="fake-sort" disabled>연차 사용일</button></th>
+            <th>시간대</th>
+            <th>상태</th>
+            <th class="right">차감(h)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">2026-05-02 09:14:22</td>
+            <td class="person"><strong>김연차</strong><span>user001</span></td>
+            <td class="mono">2026-05-05</td>
+            <td class="mono">09:00–13:00</td>
+            <td><span class="badge p">결재 대기</span></td>
+            <td class="right">4</td>
+          </tr>
+          <tr>
+            <td class="mono">2026-05-01 16:02:01</td>
+            <td class="person"><strong>이승인</strong><span>user014</span></td>
+            <td class="mono">2026-05-03</td>
+            <td class="mono">종일</td>
+            <td><span class="badge a">승인됨</span></td>
+            <td class="right">8</td>
+          </tr>
+          <tr>
+            <td class="mono">2026-04-30 11:45:33</td>
+            <td class="person"><strong>박반려</strong><span>user022</span></td>
+            <td class="mono">2026-05-01</td>
+            <td class="mono">13:00–18:00</td>
+            <td><span class="badge r">반려</span></td>
+            <td class="right">4</td>
+          </tr>
+          <tr>
+            <td class="mono">2026-04-28 08:01:00</td>
+            <td class="person"><strong>최취소</strong><span>user031</span></td>
+            <td class="mono">2026-04-29</td>
+            <td class="mono">오전 반차</td>
+            <td><span class="badge r">신청 취소</span></td>
+            <td class="right">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>

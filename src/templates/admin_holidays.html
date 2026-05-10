@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">공휴일/연휴 관리</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">관리자가 공휴일을 등록, 수정, 삭제할 수 있습니다.</p>
+        </div>
+        <form action="/admin/holidays" method="GET" class="flex items-center gap-2">
+            <select name="year" onchange="this.form.submit()" class="w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                {% for y in year_options %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <h3 class="mb-3 text-base font-extrabold text-dense-text">공휴일 신규 등록</h3>
+        <form id="holidayCreateForm" class="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <input type="date" name="holiday_date" required
+                   class="rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue"
+                   value="{{ '%04d-01-01'|format(selected_year) }}">
+            <input type="text" name="holiday_name" required maxlength="50" placeholder="예: 설 연휴, 어린이날"
+                   class="md:col-span-2 rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+            <button type="submit"
+                    class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">
+                등록
+            </button>
+        </form>
+    </div>
+
+    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <h3 class="mb-3 text-base font-extrabold text-dense-text">{{ selected_year }}년 등록 목록</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">날짜</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">이름</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for h in holidays %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ h.date.strftime('%Y-%m-%d') }}</td>
+                        <td class="px-4 py-3">
+                            <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
+                                   class="w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3">
+                            <div class="flex flex-wrap gap-2">
+                                <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
+                                       class="rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                                <button type="button" onclick="updateHoliday({{ h.id }})"
+                                        class="rounded-xl border border-[#fedf89] bg-dense-amber-soft px-3 py-1.5 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">
+                                    수정
+                                </button>
+                                <button type="button" onclick="deleteHoliday({{ h.id }})"
+                                        class="rounded-xl border border-dense-danger-soft bg-dense-danger-soft px-3 py-1.5 text-sm font-bold text-[#b42318] hover:brightness-95">
+                                    삭제
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">등록된 공휴일이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function postForm(url, formData) {
+    const res = await fetch(url, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.message || data.detail || '요청 처리 중 오류가 발생했습니다.');
+    }
+    return data;
+}
+
+document.getElementById('holidayCreateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+        const data = await postForm('/admin/holiday/create', formData);
+        alert(data.message || '등록되었습니다.');
+        location.reload();
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
+async function updateHoliday(id) {
+    const holidayName = document.getElementById(`name-${id}`).value.trim();
+    const holidayDate = document.getElementById(`date-${id}`).value;
+
+    const formData = new FormData();
+    formData.append('holiday_id', id);
+    formData.append('holiday_name', holidayName);
+    formData.append('holiday_date', holidayDate);
+
+    try {
+        const data = await postForm('/admin/holiday/update', formData);
+        alert(data.message || '수정되었습니다.');
+        location.reload();
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+async function deleteHoliday(id) {
+    if (!confirm('해당 공휴일을 삭제하시겠습니까?')) {
+        return;
+    }
+    const formData = new FormData();
+    formData.append('holiday_id', id);
+
+    try {
+        const data = await postForm('/admin/holiday/delete', formData);
+        alert(data.message || '삭제되었습니다.');
+        location.reload();
+    } catch (err) {
+        alert(err.message);
+    }
+}
+</script>
+{% endblock %}

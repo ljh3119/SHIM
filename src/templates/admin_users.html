@@ -1,0 +1,292 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in space-y-8 bg-dense-bg pb-2">
+    <!-- Header Section -->
+    <div class="mb-6 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0 shrink">
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">사원 계정 관리</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">사원 목록을 조회하고 권한 및 상태를 관리합니다.</p>
+        </div>
+        <div class="flex min-w-0 w-full shrink-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+            <form action="/admin/users" method="GET" class="flex shrink-0 items-center gap-2">
+                <input type="hidden" name="sort_key" value="{{ sort_key }}">
+                <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+                <select name="filter" onchange="this.form.submit()" class="w-[7.25rem] shrink-0 rounded-lg border-0 bg-dense-surface py-1.5 px-2 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <option value="all" {% if current_filter == 'all' %}selected{% endif %}>전체 계정</option>
+                    <option value="active" {% if current_filter == 'active' %}selected{% endif %}>활성</option>
+                    <option value="inactive" {% if current_filter == 'inactive' %}selected{% endif %}>비활성</option>
+                </select>
+                <select name="year" onchange="this.form.submit()" class="w-[4.75rem] shrink-0 rounded-lg border-0 bg-dense-surface py-1.5 px-2 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    {% for y in year_options %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <button type="button" onclick="window.shimModal.open('addUserModal', 'new_user_id', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-dense-blue px-2.5 py-1.5 text-xs font-bold text-white hover:brightness-95">
+                + 신규 등록
+            </button>
+            <button type="button" onclick="window.shimModal.open('bulkLeaveModal', 'bulk_year', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-[#fedf89] bg-dense-amber-soft px-2.5 py-1.5 text-xs font-bold text-dense-amber hover:bg-[#fffdf6]">
+                연차 일괄
+            </button>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
+        {# 행 높이는 한 줄 유지; 화면이 좁으면 이 영역 안에서만 가로 스크롤 #}
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[56rem] table-fixed divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th scope="col" class="w-[16%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.user_name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">이름{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[10%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.user_id }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">ID{% if sort_key == 'user_id' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[12%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.company }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">소속회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[10%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[14%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.leave_days }}" class="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-dense-nav-text hover:text-dense-blue">연차일수({{ selected_year }}년){% if sort_key == 'leave_days' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[7%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">권한</th>
+                        <th scope="col" class="w-[7%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
+                        <th scope="col" class="w-[24%] min-w-0 px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for u in users %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft {% if not u.is_active %}bg-dense-gray-soft/80 opacity-70{% endif %}">
+                        <td class="min-w-0 max-w-0 px-2 py-2">
+                            <div class="flex min-w-0 items-center">
+                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold {% if u.is_admin %}border border-dense-line-strong bg-dense-blue-soft text-dense-blue{% elif u.is_active %}border border-dense-line bg-dense-blue-soft text-dense-blue{% else %}border border-dense-line bg-dense-gray-soft text-dense-muted{% endif %}">
+                                    {{ u.user_name[:1] }}
+                                </div>
+                                <div class="ml-2 min-w-0">
+                                    <div class="truncate text-sm font-bold text-dense-text" title="{{ u.user_name }}">{{ u.user_name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="min-w-0 max-w-0 px-2 py-2 text-sm font-semibold text-dense-muted">
+                            <div class="truncate" title="{{ u.user_id }}">{{ u.user_id }}</div>
+                        </td>
+                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.company or '-' }}">{{ u.company or '-' }}</td>
+                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.team or '-' }}">{{ u.team or '-' }}</td>
+                        <td class="whitespace-nowrap px-2 py-2 text-sm font-semibold text-dense-nav-text">
+                            {% if not u.is_admin %}
+                            <div class="flex items-center gap-1">
+                                <input id="leave-days-{{ u.user_id }}" type="number" min="0" step="1" value="{{ user_leave_days_map.get(u.user_id, (u.total_leave_hours // 8)) }}" class="w-14 rounded-lg border-0 bg-dense-surface py-1 px-1 text-sm font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                                <button onclick="updateLeaveDays('{{ u.user_id }}')" type="button" class="shrink-0 rounded-lg border border-dense-line-strong bg-dense-blue-soft px-1.5 py-0.5 text-[11px] font-bold text-dense-blue hover:bg-dense-blue-soft/80">저장</button>
+                            </div>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-2 py-2 text-center">
+                            {% if u.is_admin %}
+                            <span class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-blue">관리자</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-nav-text">일반</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-2 py-2 text-center">
+                            {% if u.is_active %}
+                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-green">재직 중</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-[#b42318]">비활성</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-2 py-2 text-right text-sm font-medium">
+                            <div class="flex flex-nowrap items-center justify-end gap-1">
+                                <button type="button" onclick="resetPassword('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-[#fedf89] bg-dense-amber-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-amber hover:bg-[#fffdf6]">비밀번호 초기화</button>
+                                <button type="button" onclick="toggleUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-nav-text hover:bg-dense-surface-soft">상태 변경</button>
+                                <button type="button" onclick="hardDeleteUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-[#b42318] hover:brightness-95">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Leave Days Modal -->
+<div id="bulkLeaveModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('bulkLeaveModal')"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 일괄 설정</h3>
+                <form id="bulkLeaveForm" class="space-y-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="bulk_year" class="block text-sm font-bold text-dense-nav-text">적용 연도</label>
+                            <select id="bulk_year" name="year" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                                {% for y in year_options %}
+                                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bulk_leave_days" class="block text-sm font-bold text-dense-nav-text">연차일수</label>
+                            <input type="number" id="bulk_leave_days" name="total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-dense-nav-text">대상</label>
+                        <p class="mt-1 text-xs font-semibold text-dense-muted">현재 필터(`{{ current_filter }}`) 기준 일반 사용자에게 적용됩니다.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="button" onclick="submitBulkLeaveDays()" class="inline-flex w-full justify-center rounded-xl border border-[#fedf89] bg-dense-amber-soft px-4 py-2 text-base font-bold text-dense-amber hover:bg-[#fffdf6] sm:ml-3 sm:w-auto sm:text-sm">
+                    일괄 반영
+                </button>
+                <button type="button" onclick="window.shimModal.close('bulkLeaveModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('addUserModal')"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="modal-title">신규 사원 등록</h3>
+                <form id="addUserForm" class="space-y-4">
+                    <input type="hidden" name="year" value="{{ selected_year }}">
+                    <div>
+                        <label for="new_user_id" class="block text-sm font-bold text-dense-nav-text">사용자 ID (필수)</label>
+                        <input type="text" name="user_id" id="new_user_id" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="new_user_name" class="block text-sm font-bold text-dense-nav-text">이름 (필수)</label>
+                        <input type="text" name="user_name" id="new_user_name" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="new_company" class="block text-sm font-bold text-dense-nav-text">소속회사</label>
+                        <input type="text" name="company" id="new_company" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="new_team" class="block text-sm font-bold text-dense-nav-text">팀</label>
+                        <input type="text" name="team" id="new_team" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="new_total_leave_days" class="block text-sm font-bold text-dense-nav-text">연차일수(해당년도)</label>
+                        <input type="number" name="total_leave_days" id="new_total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                </form>
+                <div class="mt-3">
+                    <p class="text-xs font-semibold text-dense-muted">등록 완료 시 초기 비밀번호는 <span class="font-extrabold text-dense-text">0000</span> 으로 자동 설정됩니다.</p>
+                </div>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="button" onclick="submitAddUser()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                    등록하기
+                </button>
+                <button type="button" onclick="window.shimModal.close('addUserModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function apiCall(url, data, confirmMsg) {
+    if(confirmMsg && !confirm(confirmMsg)) return;
+    
+    const formData = new FormData();
+    for (const key in data) {
+        formData.append(key, data[key]);
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if(response.ok) {
+            alert(result.message);
+            window.location.reload();
+        } else {
+            alert(result.message || result.detail || '오류 발생');
+        }
+    } catch(err) {
+        alert('네트워크 오류');
+    }
+}
+
+function toggleUser(id) {
+    apiCall('/admin/user/toggle', { target_user_id: id }, '사원의 활성/비활성 상태를 전환하시겠습니까?');
+}
+
+function hardDeleteUser(id) {
+    apiCall('/admin/user/hard-delete', { target_user_id: id }, '정말 이 계정을 삭제하시겠습니까?\n이 사용자에 귀속된 모든 연차 내역도 함께 영구히 삭제됩니다!');
+}
+
+function resetPassword(id) {
+    apiCall('/admin/user/reset-password', { target_user_id: id }, '비밀번호를 초기화하시겠습니까?');
+}
+
+function updateLeaveDays(id) {
+    const input = document.getElementById(`leave-days-${id}`);
+    if(!input) return;
+    const days = Number(input.value);
+    if(!Number.isInteger(days) || days < 0) {
+        alert('연차일수는 0 이상의 정수여야 합니다.');
+        return;
+    }
+    apiCall('/admin/user/update-leave-days', { target_user_id: id, total_leave_days: days, year: '{{ selected_year }}' });
+}
+
+function submitAddUser() {
+    const form = document.getElementById('addUserForm');
+    if(!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((value, key) => data[key] = value);
+    apiCall('/admin/user/create', data);
+}
+
+function submitBulkLeaveDays() {
+    const form = document.getElementById('bulkLeaveForm');
+    if(!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const days = Number(document.getElementById('bulk_leave_days').value);
+    if(!Number.isInteger(days) || days < 0) {
+        alert('연차일수는 0 이상의 정수여야 합니다.');
+        return;
+    }
+    const targetYear = document.getElementById('bulk_year').value;
+    apiCall(
+        '/admin/user/bulk-update-leave-days',
+        {
+            total_leave_days: days,
+            year: targetYear,
+            filter_scope: '{{ current_filter }}'
+        },
+        `${targetYear}년 기준으로 현재 필터 대상에 연차 ${days}일을 일괄 반영하시겠습니까?`
+    );
+}
+</script>
+{% endblock %}
+

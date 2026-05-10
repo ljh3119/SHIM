@@ -1,0 +1,458 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+{% macro fmt_hours(v) -%}
+{%- if v == (v|int) -%}{{ v|int }}{%- else -%}{{ '%.1f'|format(v) }}{%- endif -%}
+{%- endmacro %}
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <!-- Header Section -->
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">안녕하세요, {{ user.user_name }}님</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">
+                {{ user.company or '회사 미지정' }}
+                {% if user.team %} / {{ user.team }}{% endif %}
+            </p>
+        </div>
+        <div class="mt-4 flex gap-2 md:mt-0">
+            <form action="/user/dashboard" method="GET" class="flex items-center gap-2">
+                <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    {% for y in year_options %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 총 연차 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text">{{ fmt_hours(total_allocated_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">사용 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(used_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">잔여 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-green">{{ fmt_hours(remaining_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 신청 건수</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-nav-text">{{ leaves|length }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        </div>
+    </div>
+
+    <div class="mt-6 overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 신청 내역 전체</h3>
+            <span class="text-xs font-bold text-dense-muted">총 {{ leaves|length }}건</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청일</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용 시간대</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">등록시각</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for leave in leaves %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.date.strftime('%Y-%m-%d') }} ({{ ['월', '화', '수', '목', '금', '토', '일'][leave.date.weekday()] }})</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.snapshot_slot_label }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold text-dense-blue">-{{ fmt_hours(leave.snapshot_deduction_hours) }}h</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm">
+                            {% if leave.status == "PENDING" %}
+                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber" title="관리자 승인 대기">결재 대기</span>
+                            {% elif leave.status == "APPROVED" %}
+                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green" title="승인 완료, 연차 반영">승인됨</span>
+                            {% elif leave.status == "REJECTED" %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]" title="관리자가 신청을 반려">반려</span>
+                            {% if leave.rejection_reason %}
+                            <div class="mt-1 max-w-[18rem] truncate text-xs font-semibold text-[#b42318]" title="{{ leave.rejection_reason }}">
+                                사유: {{ leave.rejection_reason }}
+                            </div>
+                            {% endif %}
+                            {% elif leave.status == "CANCELED" %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted" title="신청 철회·무효 처리">신청 취소</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">해당 연도 신청 내역이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Direct Apply Panel -->
+    <div class="mt-6 overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">연차 신청</h3>
+        </div>
+        <form id="directApplyForm" class="space-y-3">
+            <div class="grid grid-cols-1 items-end gap-4 md:grid-cols-[1.2fr_1fr_1fr_auto]">
+                <div>
+                    <label for="direct_date_str" class="block text-sm font-bold text-dense-nav-text">날짜</label>
+                    <input type="date" id="direct_date_str" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                </div>
+                <div>
+                    <label for="direct_start_time" class="block text-sm font-bold text-dense-nav-text">시작 시간</label>
+                    <select id="direct_start_time" name="start_time" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        <option value="">선택</option>
+                        {% for t in time_options %}
+                        <option value="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="direct_end_time" class="block text-sm font-bold text-dense-nav-text">종료 시간</label>
+                    <select id="direct_end_time" name="end_time" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        <option value="">선택</option>
+                        {% for t in time_options %}
+                        <option value="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex justify-end md:justify-start">
+                    <button type="button" onclick="submitDirectApply()" class="inline-flex w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95 focus:outline-none md:w-auto md:min-w-[120px]">
+                        직접 등록하기
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs font-semibold text-dense-muted">
+                * 주말/공휴일은 신청할 수 없습니다.
+                <span class="mx-1 text-dense-line-strong">|</span>
+                * 업무시간: {{ "%02d:%02d"|format((work_start_minute // 60), (work_start_minute % 60)) }}~{{ "%02d:%02d"|format((work_end_minute // 60), (work_end_minute % 60)) }}
+                / 단위: {{ time_granularity_minutes }}분
+                {% if lunch_start_minute is not none and lunch_end_minute is not none %}
+                / 점심 제외: {{ "%02d:%02d"|format((lunch_start_minute // 60), (lunch_start_minute % 60)) }}~{{ "%02d:%02d"|format((lunch_end_minute // 60), (lunch_end_minute % 60)) }}
+                {% endif %}
+                / 실제 차감: 선택 구간에서 점심 제외 후 계산
+            </p>
+        </form>
+    </div>
+
+    <!-- Yearly Calendar View -->
+    <div class="mt-6 overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 연차 캘린더</h3>
+        </div>
+        <div class="mb-4 text-xs font-semibold text-dense-muted">
+            날짜를 클릭하면 해당 날짜로 연차를 바로 신청할 수 있습니다.
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {% for m in range(1, 13) %}
+            {% set month_meta = month_calendar_meta[m] %}
+            {% set day_map = yearly_day_leaves_map[m] %}
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3">
+                <div class="mb-2 text-sm font-extrabold text-dense-text">{{ m }}월</div>
+                <div class="mb-1 grid grid-cols-7 gap-1">
+                    {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
+                    <div class="text-center text-[11px] font-extrabold {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
+                        {{ wd }}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-7 gap-1">
+                    {% for _ in range(month_meta.offset) %}
+                    <div class="h-10 rounded bg-dense-gray-soft"></div>
+                    {% endfor %}
+
+                    {% for day in range(1, month_meta.num_days + 1) %}
+                    {% set weekday_idx = (month_meta.offset + day - 1) % 7 %}
+                    {% set leaves_of_day = day_map.get(day, []) %}
+                    {% set ns = namespace(total_h=0) %}
+                    {% for lv in leaves_of_day %}{% if lv.status != "CANCELED" %}{% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
+                    {% set holiday_name = holiday_map.get((m, day)) %}
+                    {% set is_blocked_day = weekday_idx in [0, 6] or holiday_name %}
+                    <button type="button"
+                         class="h-10 w-full rounded border p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}border-dense-line-strong bg-dense-blue-soft{% else %}border-dense-line bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed opacity-70{% endif %}"
+                         title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ lv.snapshot_slot_label }}(-{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
+                         {% if not is_blocked_day %}
+                         onclick="openCalendarApplyModal('{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
+                         {% endif %}
+                         {% if is_blocked_day %}disabled{% endif %}>
+                        <div class="leading-none {% if weekday_idx in [0, 6] or holiday_name %}font-bold text-dense-danger{% else %}font-semibold text-dense-nav-text{% endif %}">
+                            {{ day }}
+                        </div>
+                        {% if holiday_name %}
+                        <div class="mt-0.5 h-1 w-1 rounded-full bg-dense-danger" title="{{ holiday_name }}"></div>
+                        {% endif %}
+                        {% if leaves_of_day %}
+                        <div class="mt-1 inline-block rounded px-1 py-0.5 text-[9px] font-extrabold text-white {% if ns.total_h >= 8 %}bg-dense-danger{% elif ns.total_h >= 4 %}bg-[#f79009]{% else %}bg-dense-blue{% endif %}">
+                            {{ fmt_hours(ns.total_h) }}h
+                        </div>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="mt-3 text-right text-xs font-semibold text-dense-muted">* 주말(토/일)과 공휴일은 빨간색이며, 해당 날짜는 선택할 수 없습니다.</p>
+    </div>
+</div>
+
+<!-- Calendar Apply Modal -->
+<div id="calendarApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('calendarApplyModal')"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 신청</h3>
+                <form id="calendarApplyForm" class="space-y-4">
+                    <div>
+                        <label for="calendar_date_str" class="block text-sm font-bold text-dense-nav-text">날짜</label>
+                        <input type="date" id="calendar_date_str" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
+                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <div>
+                                <label for="calendar_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
+                                <select id="calendar_start_time" name="start_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                    <option value="">선택</option>
+                                    {% for t in time_options %}
+                                    <option value="{{ t }}">{{ t }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="calendar_end_time" class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
+                                <select id="calendar_end_time" name="end_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                    <option value="">선택</option>
+                                    {% for t in time_options %}
+                                    <option value="{{ t }}">{{ t }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 {{ time_granularity_minutes }}분 단위만 신청 가능하며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="button" onclick="submitCalendarApply()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    신청하기
+                </button>
+                <button type="button" onclick="closeCalendarApplyModal()" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Change Modal -->
+<div id="pwdModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('pwdModal')"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="modal-title">비밀번호 변경</h3>
+                <form id="pwdForm" class="space-y-4">
+                    <div>
+                        <label for="current_password" class="block text-sm font-bold text-dense-nav-text">현재 비밀번호</label>
+                        <input type="password" name="current_password" id="current_password" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="new_password" class="block text-sm font-bold text-dense-nav-text">새 비밀번호</label>
+                        <input type="password" name="new_password" id="new_password" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                </form>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="button" onclick="submitPasswordChange()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    변경하기
+                </button>
+                <button type="button" onclick="window.shimModal.close('pwdModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function parseHHMMToMinutes(value) {
+    if (!value) return null;
+    const [hh, mm] = String(value).split(':');
+    const h = Number(hh);
+    const m = Number(mm);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+}
+
+function overlapMinutes(startA, endA, startB, endB) {
+    return Math.max(0, Math.min(endA, endB) - Math.max(startA, startB));
+}
+
+function formatHoursForConfirm(hours) {
+    if (Math.abs(hours - Math.round(hours)) < 1e-9) return String(Math.round(hours));
+    return hours.toFixed(1);
+}
+
+function evaluateLeaveDraft(startTime, endTime) {
+    const startMin = parseHHMMToMinutes(startTime);
+    const endMin = parseHHMMToMinutes(endTime);
+    if (startMin === null || endMin === null || endMin <= startMin) {
+        return { ok: false, message: '시작/종료 시간을 다시 확인해 주세요.' };
+    }
+    const granularity = Number({{ time_granularity_minutes }});
+    const totalMinutes = endMin - startMin;
+    if (totalMinutes < granularity) {
+        return { ok: false, message: `선택 구간이 최소 시간 단위(${granularity}분)보다 짧습니다.` };
+    }
+
+    const lunchStartRaw = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
+    const lunchEndRaw = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
+    let excludedLunch = 0;
+    if (lunchStartRaw >= 0 && lunchEndRaw > lunchStartRaw) {
+        excludedLunch = overlapMinutes(startMin, endMin, lunchStartRaw, lunchEndRaw);
+    }
+    const effectiveMinutes = totalMinutes - excludedLunch;
+    if (effectiveMinutes <= 0) return { ok: false, message: '점심시간 제외 후 차감 시간이 0 이하입니다. 시간을 다시 확인해 주세요.' };
+    const deductionHours = effectiveMinutes / 60;
+    return {
+        ok: true,
+        confirmMessage: `신청하시겠습니까? (예상 차감: -${formatHoursForConfirm(deductionHours)}h)`,
+    };
+}
+
+async function submitPasswordChange() {
+    const form = document.getElementById('pwdForm');
+    if(!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/user/change-password', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if(response.ok) {
+            alert(result.message);
+            window.shimModal.close('pwdModal');
+            form.reset();
+        } else {
+            alert(result.message || result.detail || '오류 발생');
+        }
+    } catch(err) {
+        alert('네트워크 오류');
+    }
+}
+
+function openCalendarApplyModal(dateStr) {
+    const dateInput = document.getElementById('calendar_date_str');
+    dateInput.value = dateStr;
+    document.getElementById('calendar_start_time').value = '';
+    document.getElementById('calendar_end_time').value = '';
+    window.shimModal.open('calendarApplyModal', 'calendar_date_str', document.activeElement);
+}
+
+function closeCalendarApplyModal() {
+    window.shimModal.close('calendarApplyModal');
+}
+
+async function submitCalendarApply() {
+    const form = document.getElementById('calendarApplyForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('date_str', document.getElementById('calendar_date_str').value);
+    formData.append('start_time', document.getElementById('calendar_start_time').value);
+    formData.append('end_time', document.getElementById('calendar_end_time').value);
+    const draft = evaluateLeaveDraft(
+        document.getElementById('calendar_start_time').value,
+        document.getElementById('calendar_end_time').value
+    );
+    if (!draft.ok) {
+        alert(draft.message || '입력값을 다시 확인해 주세요.');
+        return;
+    }
+    if (!confirm(draft.confirmMessage)) {
+        return;
+    }
+    try {
+        const response = await fetch('/user/leave', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.message || '연차가 성공적으로 신청되었습니다.');
+            window.location.reload();
+        } else {
+            alert(result.message || result.detail || '오류가 발생했습니다.');
+        }
+    } catch (err) {
+        alert('네트워크 오류가 발생했습니다.');
+    }
+}
+
+async function submitDirectApply() {
+    const form = document.getElementById('directApplyForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('date_str', document.getElementById('direct_date_str').value);
+    formData.append('start_time', document.getElementById('direct_start_time').value);
+    formData.append('end_time', document.getElementById('direct_end_time').value);
+    const draft = evaluateLeaveDraft(
+        document.getElementById('direct_start_time').value,
+        document.getElementById('direct_end_time').value
+    );
+    if (!draft.ok) {
+        alert(draft.message || '입력값을 다시 확인해 주세요.');
+        return;
+    }
+    if (!confirm(draft.confirmMessage)) {
+        return;
+    }
+    try {
+        const response = await fetch('/user/leave', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.message || '연차가 성공적으로 신청되었습니다.');
+            window.location.reload();
+        } else {
+            alert(result.message || result.detail || '오류가 발생했습니다.');
+        }
+    } catch (err) {
+        alert('네트워크 오류가 발생했습니다.');
+    }
+}
+
+</script>
+{% endblock %}
+
