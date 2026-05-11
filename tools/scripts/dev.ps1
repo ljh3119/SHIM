@@ -17,7 +17,7 @@ $tailwind = Start-Process -FilePath "npx.cmd" `
     -NoNewWindow
 
 try {
-    python -m uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+    python -m uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir src
 }
 finally {
     if ($tailwind -and -not $tailwind.HasExited) {
