@@ -1,8 +1,8 @@
 # [SHIM] 가변형 연차 관리 시스템 설계서
 
 **문서 성격**: 구현 기준(코드·DB·배포)과 일치하도록 유지하는 기술 설계·산출물 인덱스  
-**애플리케이션 버전**: 1.2.1  
-**최종 동기화 기준일**: 2026-05-09
+**애플리케이션 버전**: 1.3.0  
+**최종 동기화 기준일**: 2026-05-12
 
 ---
 
@@ -71,7 +71,9 @@
 | `password` | String | bcrypt 해시 |
 | `total_leave_hours` | Integer | 연간 부여 시간(기본 120h = 15일×8h) |
 | `is_active` | Boolean | 재직 여부 |
-| `is_admin` | Boolean | 관리자 여부 |
+| `role` | String | 역할 (`STAFF`, `TEAM_LEAD`, `PM`, `ADMIN`) |
+| `position` | String, nullable | 표시용 직급명 (예: 선임연구원) |
+| `is_admin` | Boolean | 관리자 여부 (레거시/ADMIN role과 동기화) |
 
 ### 5.2 `leaves`
 
@@ -130,6 +132,20 @@
 
 - 제약: `user_id + year` 유니크(연도별 1건)
 
+### 5.6 `system_settings`
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | Integer, PK | |
+| `is_approval_required` | Boolean | 승인 워크플로우 활성화 여부 |
+| `team_calendar_visible` | Boolean | 팀 캘린더 공유 활성화 여부 |
+| `time_granularity_minutes` | Integer | 신청 시간 단위 (30/60/120) |
+| `work_start_minute` / `work_end_minute` | Integer | 업무 시간 범위 |
+| `lunch_start_minute` / `lunch_end_minute` | Integer | 점심 시간 범위 |
+| `product_display_name` | String | 공식 제품명 |
+| `product_nav_short` | String | 상단 바 짧은 이름 |
+| `brand_initial` | String | 브랜딩 배지 문자 |
+
 ---
 
 ## 6. 핵심 비즈니스 로직
@@ -150,7 +166,9 @@
 ### 6.2 승인 상태 전이
 
 - 기본 상태는 `SystemSettings.is_approval_required=false`면 `APPROVED`, `true`면 `PENDING`이다.
+- **결재권자**: `ADMIN` 역할 또는 해당 팀의 `TEAM_LEAD` 역할이 결재권을 가진다.
 - 허용 전이: `PENDING -> APPROVED`, `PENDING -> REJECTED`, `PENDING -> CANCELED`, `APPROVED -> CANCELED`.
+- **보안 규칙**: 본인의 신청 건에 대해서는 `TEAM_LEAD`라 하더라도 직접 결재할 수 없다. (셀프 결재 금지)
 - 기본 차단 전이: `REJECTED -> APPROVED`, `CANCELED -> APPROVED`.
 - `REJECTED` 처리 시 반려 사유는 필수이며, 공백-only 입력은 허용하지 않고 최대 500자로 제한한다.
 - 반려 사유는 사용자 본인 화면과 관리자 타임라인에서 확인할 수 있다.
@@ -257,6 +275,7 @@ Dense 정적 시안·디렉팅(비번들): `design/ui-handoff/`(`README.md`, `ga
 
 상세 릴리즈 증적과 검증 결과는 `docs/2-1_운영_릴리즈_통합_산출물.md`에서 관리합니다. 이 설계서에는 현재 구현 기준을 이해하는 데 필요한 구조 변화만 남깁니다.
 
+- `v1.3.0`: **역할 기반 권한 체계(RBAC)** 도입. `role` (STAFF/TEAM_LEAD/PM/ADMIN) 및 `position` 필드 추가. 팀장 결재 위젯 및 API 구현. 팀 캘린더 공유(`team_calendar_visible`) 설정 추가. 로그인 후 역할별 대시보드 자동 라우팅. 사용자 목록 UI 역할 배지 적용.
 - `v1.2.0`: 시스템 브랜딩 필드 및 마스터 저장 API·UI 확장, `create_all` 직후 `ensure_sqlite_system_schema()`로 기존 SQLite 컬럼 보강, `product_user_sidebar_title` 계열 제거, 일반 레이아웃 사이드바 정리. **Dense UI 1차 범위**를 반영: 로그인·공통 shell, 관리자 대시보드→타임라인→월·연 캘린더, 사용자 대시보드, 사원·공휴일·마스터 등. 타임라인 가독성, KR 공휴일 노동절 시드 등 포함.
 - `v1.1.7`: 슬롯 기반 신청/관리(`time_slots`, `LeavePolicies`)를 제거하고 시작/종료시간 입력 기반으로 전환, 시간 정책(30/60/120/업무시간/점심 제외), 신청 전 예상 차감 확인 UX를 반영함.
 - `v1.1.6`: 문서/폴더 구조를 `src`, `infra/docker`, `tools/scripts`, `var/data`, `artifacts` 기준으로 표준화하고 릴리즈 자동화 인코딩을 보정함.
@@ -270,9 +289,7 @@ Dense 정적 시안·디렉팅(비번들): `design/ui-handoff/`(`README.md`, `ga
 
 향후 작업 목록은 `docs/3-1_향후_개선계획.md`에서 관리합니다. 이 설계서에서는 현재 구현과 분리해야 하는 큰 설계 과제만 명시합니다.
 
-- 결재 권한 분리(`is_admin`과 별도 `can_approve`) 기반 추가 결재자 지정
-- 셀프 결재 금지
-- 다단계 결재, 대리결재, 결재권자 풀/순번 기반 확장은 현재 범위에서 제외
+- PM 전용 전사 대시보드 및 통계 위젯 (읽기 전용 모니터링)
 - Alembic 등 정식 DB 마이그레이션 도구 도입 검토
 
 ### 13.1 자유시간 입력 계약(설계 초안)
