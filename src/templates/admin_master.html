@@ -24,10 +24,24 @@
             </p>
             <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
                 <strong class="text-dense-text">꺼짐</strong>: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br>
-                <strong class="text-dense-text">켜짐</strong>: 신규 신청은 «결재 대기»로 들어가며, 관리자가 타임라인에서 승인·반려·취소 처리합니다.
+                <strong class="text-dense-text">켜짐</strong>: 신규 신청은 «결재 대기»로 들어가며, 관리자 또는 팀장이 타임라인에서 승인·반려·취소 처리합니다.
             </p>
             <div class="mt-3 flex flex-wrap gap-2">
                 <button type="button" onclick="toggleApprovalWorkflow()" class="inline-flex items-center justify-center rounded-xl border border-[#fedf89] bg-dense-surface px-3 py-2 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">승인 워크플로우 변경</button>
+            </div>
+        </div>
+        <div class="mb-4 rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+            <p class="text-sm font-semibold text-dense-text">
+                <span class="font-extrabold">팀 캘린더 공유</span>
+                — 현재:
+                <strong id="team-cal-current-label" class="text-dense-blue">{% if team_calendar_visible %}켜짐{% else %}꺼짐{% endif %}</strong>
+            </p>
+            <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
+                <strong class="text-dense-text">켜짐</strong>: 일반 사원과 팀장이 같은 팀 내 다른 사원의 월별 휴가 현황을 조회할 수 있습니다.<br>
+                <strong class="text-dense-text">꺼짐</strong>: 본인의 연차만 조회 가능합니다.
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" onclick="toggleTeamCalendar()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">팀 캘린더 공유 변경</button>
             </div>
         </div>
         <div class="rounded-xl border border-dense-line-strong bg-dense-blue-soft p-4">
@@ -206,6 +220,26 @@ async function toggleApprovalWorkflow() {
     if (resp.ok) refreshApprovalLabel();
 }
 
+async function toggleTeamCalendar() {
+    const r = await fetch('/admin/settings/approval');
+    const j = await r.json();
+    const cur = !!j.team_calendar_visible;
+    const next = !cur;
+    const curLabel = cur ? '켜짐' : '꺼짐';
+    const nextLabel = next ? '켜짐' : '꺼짐';
+    if (!confirm('팀 캘린더 공유 설정을 변경할까요?\n\n현재: ' + curLabel + '\n변경 후: ' + nextLabel)) return;
+    const resp = await fetch('/admin/settings/team-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'team_calendar_visible=' + (next ? 'true' : 'false')
+    });
+    const result = await resp.json();
+    alert(result.message || '처리되었습니다.');
+    if (resp.ok) {
+        const el = document.getElementById('team-cal-current-label');
+        if (el) el.textContent = next ? '켜짐' : '꺼짐';
+    }
+}
 async function runDbBackup() {
     if (!confirm('지금 DB 백업을 생성할까요?')) return;
     const resp = await fetch('/admin/ops/backup', { method: 'POST' });

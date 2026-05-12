@@ -1,6 +1,6 @@
 # 쉼(休) SHIM / 연차 관리 시스템
 
-**릴리스 버전:** 1.2.1
+**릴리스 버전:** 1.3.0
 
 폐쇄망 환경에서 사용 가능한 FastAPI 기반 연차 관리 시스템입니다.
 사용자/관리자 화면, 월별/연간 캘린더, 시간 슬롯 기반 차감, 타임라인 검증 기능을 제공합니다.
@@ -30,7 +30,7 @@
 ### 1. 기능적 제약 (Functional)
 - **동시성**: SQLite를 사용하므로 수백 명 이상의 동시 쓰기가 발생하는 환경에는 적합하지 않습니다.
 - **알림**: 외부망 차단을 전제로 하므로 이메일, 슬랙 등 외부 연동 알림 기능이 없습니다.
-- **워크플로우**: 1단계(관리자 직접 승인/반려)의 단순한 결재 구조만 지원합니다.
+- **워크플로우**: 2단계 결재 체계(관리자 직접 승인 또는 팀장 승인/반려)를 지원합니다. 다단계 결재나 복잡한 위임 기능은 제외되어 있습니다.
 - **인사 연동**: AD/LDAP 등 외부 인사 시스템과의 자동 동기화 기능이 없습니다.
 
 ### 2. 보안적 제약 (Security)
@@ -59,7 +59,7 @@ Docker 실행(운영/개발 분리):
 
 ```powershell
 # 운영(실행 전용): 먼저 버전 태그로 이미지 빌드 후 compose 실행
-docker build -f infra/docker/Dockerfile -t shim:1.2.1 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.3.0 -t shim:latest .
 docker compose -f infra/docker/docker-compose.yml up -d
 
 # 개발(compose에서 빌드 포함)
@@ -81,8 +81,8 @@ python tools\scripts\performance_rehearsal.py
 # Docker 단축 명령 도움말
 .\tools\scripts\docker.ps1 help
 
-# 릴리즈 버전 동기화(예: 1.2.1)
-.\tools\scripts\release.ps1 -Version 1.2.1
+# 릴리즈 버전 동기화(예: 1.3.0)
+.\tools\scripts\release.ps1 -Version 1.3.0
 
 # package.json 기준으로 코드·README·포터블 README 버전 일치 검사
 .\tools\scripts\verify_version_sync.ps1
@@ -126,8 +126,9 @@ docker compose -f infra/docker/docker-compose.yml up -d
 
 상세 릴리즈 증적과 검증 결과는 `docs/2-1_운영_릴리즈_통합_산출물.md`에서 관리합니다.
 
-- 최신 릴리즈: `1.2.1` (2026-05-07)
-- 주요 변경: dense UI 가독성 보정(텍스트 대비 토큰 상향, 사이드바 토글 아이콘/밸런스 개선), 승인 워크플로우 OFF 시 관리자 대시보드의 결재 대기 강조/위젯 숨김(상세·검증은 `docs/2-1_운영_릴리즈_통합_산출물.md`)
+- 최신 릴리즈: `1.3.0` (2026-05-12)
+- 주요 변경: 역할 기반 권한 체계(RBAC: STAFF/TEAM_LEAD/PM/ADMIN) 도입, 팀장 결재 워크플로우 및 팀 캘린더 공유 기능 추가, 사용자 관리 UI 역할 표시 보강 (상세·검증은 `docs/2-1_운영_릴리즈_통합_산출물.md`)
+- 이전 릴리즈: `1.2.1` (2026-05-07) - dense UI 가독성 보정, 승인 워크플로우 OFF 시 대시보드 정리 등
 
 ## 문서 목록
 
