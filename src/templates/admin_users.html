@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="fade-in space-y-8 bg-dense-bg pb-2">
@@ -64,7 +64,7 @@
                     <tr class="transition-colors hover:bg-dense-surface-soft {% if not u.is_active %}bg-dense-gray-soft/80 opacity-70{% endif %}">
                         <td class="min-w-0 max-w-0 px-2 py-2">
                             <div class="flex min-w-0 items-center">
-                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold {% if u.is_admin %}border border-dense-line-strong bg-dense-blue-soft text-dense-blue{% elif u.is_active %}border border-dense-line bg-dense-blue-soft text-dense-blue{% else %}border border-dense-line bg-dense-gray-soft text-dense-muted{% endif %}">
+                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold {% if u.role == 'ADMIN' %}border border-dense-line-strong bg-dense-blue-soft text-dense-blue{% elif u.role == 'TEAM_LEAD' %}border border-[#fedf89] bg-dense-amber-soft text-dense-amber{% elif u.role == 'PM' %}border border-[#d6bbfb] bg-[#f4f3ff] text-[#7c3aed]{% elif u.is_active %}border border-dense-line bg-dense-blue-soft text-dense-blue{% else %}border border-dense-line bg-dense-gray-soft text-dense-muted{% endif %}">
                                     {{ u.user_name[:1] }}
                                 </div>
                                 <div class="ml-2 min-w-0">
@@ -88,10 +88,17 @@
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-center">
-                            {% if u.is_admin %}
+                            {% if u.role == 'ADMIN' %}
                             <span class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-blue">관리자</span>
+                            {% elif u.role == 'TEAM_LEAD' %}
+                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-amber">팀장</span>
+                            {% elif u.role == 'PM' %}
+                            <span class="inline-flex rounded-full border border-[#d6bbfb] bg-[#f4f3ff] px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-[#7c3aed]">PM</span>
                             {% else %}
                             <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-1.5 py-0.5 text-[11px] font-extrabold leading-5 text-dense-nav-text">일반</span>
+                            {% endif %}
+                            {% if u.position %}
+                            <div class="mt-0.5 text-[10px] font-semibold text-dense-muted">{{ u.position }}</div>
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-center">
@@ -182,6 +189,20 @@
                     <div>
                         <label for="new_team" class="block text-sm font-bold text-dense-nav-text">팀</label>
                         <input type="text" name="team" id="new_team" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="new_role" class="block text-sm font-bold text-dense-nav-text">역할</label>
+                            <select name="role" id="new_role" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                <option value="STAFF" selected>일반 (STAFF)</option>
+                                <option value="TEAM_LEAD">팀장 (TEAM_LEAD)</option>
+                                <option value="PM">PM</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="new_position" class="block text-sm font-bold text-dense-nav-text">직급명 (표시용)</label>
+                            <input type="text" name="position" id="new_position" placeholder="예: 선임연구원" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
                     </div>
                     <div>
                         <label for="new_total_leave_days" class="block text-sm font-bold text-dense-nav-text">연차일수(해당년도)</label>

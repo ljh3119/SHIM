@@ -13,7 +13,9 @@ class Users(Base):
     password = Column(String, nullable=False)
     total_leave_hours = Column(Integer, default=120) # 15일 * 8시간 = 120시간
     is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)  # 레거시 호환 — 새 코드는 role 기반
+    role = Column(String, default="STAFF", nullable=False)  # STAFF | TEAM_LEAD | PM | ADMIN
+    position = Column(String(60), nullable=True)  # 표시용 직급명 (자유 입력)
 
     leaves = relationship("Leaves", back_populates="user")
     audits = relationship("AuditLogs", back_populates="actor")
@@ -94,6 +96,8 @@ class SystemSettings(Base):
     product_nav_short = Column(String(80), default="", nullable=False)
     # 파란 배지 안 텍스트(약칭·기호 등). SQLite 실제 길이 제한은 스키마 마이그레이션과 맞춤.
     brand_initial = Column(String(32), default="L", nullable=False)
+    # 팀원 간 팀 캘린더 공유 활성화 (일반 사용자도 같은 팀 휴가 조회 가능)
+    team_calendar_visible = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 

@@ -28,16 +28,14 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 - `dist/SHIM_Portable/README_PORTABLE.md`
 - `dist/SHIM_Portable/data/shim_internal.db` (초기 DB)
 
-최신 반영 사항(2026-05-07, v1.2.1):
+최신 반영 사항(2026-05-12, v1.3.0):
 
-- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.2.1` 반영(빌드 시 `package.json` 버전과 동일)
-- dense UI 가독성 개선: 텍스트/경계선 대비 토큰 상향(`dense-muted`, `dense-nav-text`, `dense-line`)
-- 관리자 사이드바 토글 버튼을 문자(`<`/`>`) 대신 chevron 아이콘으로 교체하고 위치/크기 밸런스 조정
-- 승인 워크플로우 OFF 시 관리자 대시보드에서 결재 대기 배지/카드 숨김 처리
-- 시스템 브랜딩(공식명·내비 표기·배지)·마스터 저장·기존 SQLite 스키마 부트 보강(`ensure_sqlite_system_schema`) 반영
-- 일반 사용자 레이아웃 사이드바 정리, 관리자 사이드바·마스터·사원·타임라인 등 dense UI 정렬
-- 타임라인 표 가로 스크롤 완화, 반려 사유 `line-clamp`+`title`로 요약 및 전체 확인
-- KR 공휴일 시드에 5월 1일 노동절 포함(연도별 최초 시드 경로)
+- **역할 기반 권한 체계(RBAC)** 도입: `role` (STAFF/TEAM_LEAD/PM/ADMIN) 필드 기반의 차등 권한 적용
+- **팀장 결재 워크플로우**: 팀장(`TEAM_LEAD`) 권한 사용자가 본인 팀원의 휴가 신청을 직접 승인/반려할 수 있는 대시보드 위젯 및 API 반영
+- **팀 캘린더 공유**: 대시보드 내 같은 팀원의 월별 휴가 현황을 한눈에 파악할 수 있는 매트릭스 뷰 추가
+- **관리자 UI 개선**: 사원 관리 목록에서 역할별 배지(관리자/팀장/PM/일반) 및 직급 표시, 신규 등록 시 역할 지정 지원
+- **마스터 설정 확장**: 팀 캘린더 공유 여부를 글로벌하게 제어할 수 있는 설정 토글 추가
+- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.0` 반영(빌드 시 `package.json` 버전과 동일)
 - 폐쇄망 기준: Tailwind CDN/Google Fonts 없음, 로컬 `tailwind.css` 사용 유지
 - 포터블 빌드(2026-05-03): `build_portable.ps1`로 재빌드 완료, `dist/SHIM_Portable` 갱신. 실행 점검은 `run_portable.bat`(필요 시 포트 지정) 후 위 URL 순서를 권장합니다.
 

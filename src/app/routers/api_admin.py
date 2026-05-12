@@ -1115,6 +1115,8 @@ async def create_user(
     user_name: str = Form(...),
     company: str = Form(""),
     team: str = Form(""),
+    role: str = Form("STAFF"),
+    position: str = Form(""),
     total_leave_days: int = Form(15),
     year: int = Form(None),
     db: Session = Depends(get_db)
@@ -1128,6 +1130,16 @@ async def create_user(
     if total_leave_days < 0:
         return JSONResponse(status_code=400, content={"message": "연차일수는 0 이상이어야 합니다."})
 
+    # role 검증
+    from ..main import VALID_ROLES
+    role_value = (role or "STAFF").strip().upper()
+    if role_value not in VALID_ROLES:
+        role_value = "STAFF"
+    # ADMIN role은 사용자 생성에서 지정 불가
+    if role_value == "ADMIN":
+        return JSONResponse(status_code=400, content={"message": "관리자 역할은 직접 지정할 수 없습니다."})
+    position_value = (position or "").strip()[:60]
+
     exist = db.query(models.Users).filter(models.Users.user_id == user_id).first()
     if exist:
         return JSONResponse(status_code=400, content={"message": "이미 존재하는 ID입니다."})
@@ -1140,7 +1152,9 @@ async def create_user(
         team=team,
         total_leave_hours=total_leave_days * 8,
         password=auth.get_password_hash("0000"),
-        is_active=True
+        is_active=True,
+        role=role_value,
+        position=position_value if position_value else None,
     )
     db.add(new_user)
     db.flush()
@@ -1157,7 +1171,7 @@ async def create_user(
         action="CREATE_USER",
         target_info=f"User:{user_id}",
         old_data="None",
-        new_data=user_name
+        new_data=f"{user_name};role={role_value}"
     )
     db.add(audit)
     db.commit()
@@ -1381,6 +1395,7 @@ async def get_approval_setting(request: Request, db: Session = Depends(get_db)):
             "product_display_name": getattr(setting, "product_display_name", None) or "SHIM",
             "product_nav_short": getattr(setting, "product_nav_short", None) or "",
             "brand_initial": getattr(setting, "brand_initial", None) or "S",
+            "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
         },
     )
 
@@ -1438,6 +1453,32 @@ async def set_branding_setting(
     )
     db.commit()
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
+
+
+@router.post("/settings/team-calendar")
+async def set_team_calendar_setting(
+    request: Request,
+    team_calendar_visible: bool = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        admin = get_current_admin(request, db)
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+    setting = _ensure_system_setting(db)
+    old_val = bool(getattr(setting, "team_calendar_visible", True))
+    setting.team_calendar_visible = team_calendar_visible
+    db.add(
+        models.AuditLogs(
+            actor_id=admin.user_id,
+            action="UPDATE_TEAM_CALENDAR_SETTING",
+            target_info="SystemSettings",
+            old_data=str(old_val),
+            new_data=str(team_calendar_visible),
+        )
+    )
+    db.commit()
+    return JSONResponse(status_code=200, content={"message": "팀 캘린더 공유 설정이 변경되었습니다."})
 
 
 @router.post("/settings/approval")
@@ -1571,6 +1612,7 @@ async def admin_master(request: Request, db: Session = Depends(get_db)):
             "lunch_start_minute": getattr(setting, "lunch_start_minute", None),
             "lunch_end_minute": getattr(setting, "lunch_end_minute", None),
             "half_hour_options": build_half_hour_options(),
+            "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
         },
     )
 
