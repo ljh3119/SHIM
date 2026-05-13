@@ -222,8 +222,8 @@ Dense 정적 시안·디렉팅(비번들): `design/ui-handoff/`(`README.md`, `ga
 
 ### 9.1 Docker
 
-- 운영 경로: `docker build -f infra/docker/Dockerfile -t shim:1.2.0 -t shim:latest .` 후 `docker compose -f infra/docker/docker-compose.yml up -d`.
-- `infra/docker/docker-compose.yml`은 기본값으로 `shim:1.2.0` 이미지를 실행하며(필요 시 `SHIM_IMAGE`로 오버라이드), 호스트 `../../var/data`를 컨테이너 `/app/data`에 마운트한다.
+- 운영 경로: `docker build -f infra/docker/Dockerfile -t shim:1.3.2 -t shim:latest .` 후 `docker compose -f infra/docker/docker-compose.yml up -d`.
+- `infra/docker/docker-compose.yml`은 기본값으로 `shim:1.3.2` 이미지를 실행하며(필요 시 `SHIM_IMAGE`로 오버라이드), 호스트 `../../var/data`를 컨테이너 `/app/data`에 마운트한다.
 - `SHIM_SECRET_KEY`는 compose 환경 변수 매핑으로 컨테이너에 전달한다. 운영 배포 전 PowerShell 세션 또는 `.env`에 운영용 값을 설정한다.
 - 개발 경로: `infra/docker/docker-compose.dev.yml`은 루트 context 빌드를 포함하므로 개발자가 필요할 때 `docker compose -f infra/docker/docker-compose.dev.yml up -d --build`로 사용할 수 있다.
 - 폐쇄망: `pip download`로 wheel 디렉터리 구성 후 Dockerfile에서 `--no-index` 설치하는 방식이 주석으로 안내되어 있다.
