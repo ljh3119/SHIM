@@ -13,7 +13,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.3.1")
+app = FastAPI(title="SHIM", version="1.3.2")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "SHIM"
 DEFAULT_BRAND_INITIAL = "쉼"
@@ -129,7 +129,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.3.1"
+templates.env.globals["app_version"] = "1.3.2"
 app.state.templates = templates
 
 from .routers import api_user, api_admin
