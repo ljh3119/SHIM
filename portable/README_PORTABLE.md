@@ -1,115 +1,89 @@
-# SHIM Portable (폐쇄망 PC 무설치 실행)
+# SHIM Portable 가이드 (Offline Deployment Guide)
 
-이 폴더는 Docker 설치가 불가능한 폐쇄망 Windows PC에서 SHIM를 실행하기 위한 전용 산출물입니다.
+이 문서는 Docker 설치가 불가능하거나 외부망이 완전히 차단된 **폐쇄망 Windows PC** 환경에서 SHIM 시스템을 무설치(Portable) 형태로 구동하기 위한 통합 운영 가이드입니다.
 
-## 0) 빌드 전 준비(개발 PC)
+---
 
-- Python 3.11 이상
-- Node.js + npm
-- 프로젝트 루트에서 `npm install` 1회 수행
+## 1. 개요 (Overview)
+SHIM Portable은 Python 런타임과 모든 의존성을 단일 패키지로 묶어, 대상 PC에 별도의 소프트웨어 설치 없이 즉시 서비스를 제공할 수 있도록 설계되었습니다.
 
-## 1) 빌드(인터넷 가능한 개발 PC)
+- **대상 OS**: Windows 10/11 (64-bit)
+- **주요 특징**: 제로 디펜던시(Zero-dependency), 데이터 격리 저장, 포트 가변형 실행 지원
 
-`build_portable.ps1`는 Tailwind 빌드 직후 `package.json`의 버전으로 `tools/scripts/release.ps1`을 한 번 호출해 `main.py`·`base.html`·Compose 기본 태그와 동기화합니다(묶는 실행본이 항상 패키지 버전과 맞도록).
+---
 
-프로젝트 루트에서 아래 실행:
+## 2. 빌드 절차 (Build Process)
+*이 작업은 인터넷이 가능한 개발 환경(Local PC)에서 수행합니다.*
 
+### 사전 요구사항
+- **Python**: 3.11 이상
+- **Node.js**: 18 이상 (Tailwind CSS 빌드용)
+- **의존성**: 프로젝트 루트에서 `npm install` 및 `pip install -r requirements.txt` 완료 상태
+
+### 빌드 실행
+프로젝트 루트에서 다음 PowerShell 스크립트를 실행합니다. 이 스크립트는 CSS 빌드, 버전 동기화, 바이너리 패키징을 일괄 처리합니다.
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 ```
+- **결과물**: `artifacts/dist/SHIM_Portable/` 폴더 생성
 
-완료되면 `dist/SHIM_Portable` 폴더가 생성됩니다.
+---
 
-생성 산출물:
+## 3. 배포 및 전달 (Deployment)
+빌드된 산출물을 대상 폐쇄망 PC로 이동하는 단계입니다.
 
-- `dist/SHIM_Portable/SHIM_Portable.exe`
-- `dist/SHIM_Portable/run_portable.bat`
-- `dist/SHIM_Portable/stop_portable.bat`
-- `dist/SHIM_Portable/README_PORTABLE.md`
-- `dist/SHIM_Portable/data/shim_internal.db` (초기 DB)
+1.  **폴더 복사**: `artifacts/dist/SHIM_Portable/` 폴더 **전체**를 USB 또는 보안 전달 매체를 통해 대상 PC로 복사합니다.
+    - ⚠️ **주의**: `SHIM_Portable.exe` 단독 파일만 복사할 경우 실행되지 않습니다. 반드시 `_internal`, `data` 폴더를 함께 포함해야 합니다.
+2.  **권한 확인**: 실행 대상 폴더에 읽기/쓰기 권한이 있는지 확인하십시오. (SQLite DB 기록을 위해 필수)
 
-최신 반영 사항(2026-05-13, v1.3.2):
+---
 
-- **PM 승인 로직 개선**: PM 역할의 사용자가 연차 신청 시 결재 라인을 타지 않고 즉시 자동 승인되도록 로직 개선
-- **사용자 대시보드 통계 강화**: 대시보드 상단에 총 연차, 사용, 잔여 시간 및 신청 건수 요약 카드 추가
-- **팀 캘린더 UI 최적화**: 조회 필터(연/월 선택)를 상단 별도 박스 패널 영역으로 분리하여 가독성 향상
-- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.2` 반영(빌드 시 `package.json` 버전과 동일)
-- (이전 v1.3.1) Tailwind CSS v4 통합, 결재 역할 확장(PM), 대시보드 메뉴 분리 반영
-- (이전 v1.3.0) 역할 기반 권한 체계(RBAC) 도입 및 팀장 결재 워크플로우 반영
-- 폐쇄망 기준: Tailwind CDN/Google Fonts 없음, 로컬 `tailwind.css` 사용 유지
-- 포터블 빌드(2026-05-13): `build_portable.ps1`로 재빌드 완료, `dist/SHIM_Portable` 갱신.
+## 4. 실행 및 종료 (Execution)
 
-## 2) 전달(폐쇄망 PC)
+### 최초 실행 및 보안 설정
+1.  **`run_portable.bat` 실행**: 더블 클릭하여 기동합니다.
+2.  **보안키 입력**: 최초 1회에 한해 JWT 서명키(`SHIM_SECRET_KEY`)를 입력받습니다. 입력된 키는 `data/secret.key`에 암호화되어 저장됩니다.
+3.  **포트 지정**: 기본값은 `8000`입니다. 다른 포트를 원할 경우 입력창에 번호를 기입하십시오.
 
-`dist/SHIM_Portable` 폴더를 **통째로** 복사합니다.
+### 서비스 확인
+- **URL**: `http://localhost:포트번호`
+- **관리자 계정**: `admin / 0000` (접속 후 즉시 비밀번호 변경 필수)
+- **상태 점검**: `http://localhost:포트번호/docs` 접속 시 Swagger 문서가 보이면 정상입니다.
 
-- `SHIM_Portable.exe`만 단독 복사하면 실행되지 않습니다.
-- 반드시 `_internal`, `data`, `run_portable.bat`, `stop_portable.bat`를 함께 전달하세요.
+### 서비스 종료
+- **`stop_portable.bat` 실행**: 백그라운드에서 동작 중인 `SHIM_Portable.exe` 프로세스를 안전하게 종료합니다.
 
-## 3) 실행(폐쇄망 PC)
+---
 
-- `run_portable.bat` 더블클릭 실행
-  - 최초 1회는 `SHIM_SECRET_KEY`를 입력받아 `data/secret.key`로 저장합니다.
-  - 2회차부터는 저장된 키를 자동으로 사용합니다.
-  - 실행 시 `Port [default 8000]:`가 표시됩니다.
-  - 그냥 엔터를 누르면 `8000`으로 실행됩니다.
-  - 예: `8010` 입력 후 엔터 → `8010` 포트로 실행
-- 선택한 포트가 다른 프로그램에서 이미 사용 중이면 실행이 중단되고 안내 메시지가 표시됩니다.
-- 명령줄 직접 실행도 가능: `run_portable.bat 8080`
-- 브라우저 접속: `http://localhost:포트번호` (기본 `8000`)
-- 관리자 초기 계정: `admin / 0000`
-- 운영 인수 후 관리자 비밀번호를 즉시 변경하세요.
-- 점검 URL(권장): `http://localhost:포트번호/docs` (200 응답이면 서버 정상 기동)
+## 5. 운영 및 유지관리 (Maintenance)
 
-## 4) 종료
+### 데이터 백업
+- **대상**: `data/shim_internal.db` 파일
+- **방법**: 앱 종료 상태에서 해당 파일을 별도 저장소로 복사하여 타임스탬프와 함께 보관하십시오.
 
-- `stop_portable.bat` 실행
-- `SHIM_Portable.exe` 프로세스를 종료합니다.
-- 업데이트/재실행 전에는 먼저 `stop_portable.bat`를 실행하세요.
+### 비상 전환 시나리오 (NAS ↔ PC 데이터 동기화)
+서버(NAS) 장애 시 로컬 PC로 운영권을 전환해야 하는 경우 다음 절차를 따르십시오.
 
-## 5) 데이터 백업/복원
+#### 시나리오 A: NAS → PC 전환
+1.  NAS의 최신 `shim_internal.db` 파일을 확보합니다.
+2.  PC의 `SHIM_Portable/data/` 폴더에 해당 파일을 덮어씁니다.
+3.  PC에서 `run_portable.bat`를 실행하여 운영을 재개합니다.
 
-- DB 파일: `data/shim_internal.db`(기본). 고급: 실행 전에 환경 변수 `SHIM_DATA_DIR`을 지정하면 해당 폴더에 동일 파일명으로 저장됨(`src/app/database.py` 참고)
-- 백업: 해당 파일을 별도 저장소에 복사
-- 복원: 앱 종료 후 백업 파일로 덮어쓰기
+#### 시나리오 B: PC → NAS 복귀
+1.  PC에서 `stop_portable.bat`로 서비스를 종료합니다.
+2.  PC의 최신 `shim_internal.db` 파일을 NAS의 운영 경로로 복사합니다.
+3.  NAS 서버를 재기동하고 데이터 정합성을 확인합니다.
 
-## 6) 주의사항
+---
 
-- 포터블 실행 대상 PC에는 **Python/Node.js/Docker 설치가 필요 없습니다.**
-- 전제 조건: Windows 64bit 환경에서 폴더 쓰기 권한이 있어야 합니다.
-- `data/secret.key`는 JWT 서명키 파일이므로 외부 공유 금지, 접근 권한 최소화를 권장합니다.
-- 보안 솔루션(백신/실행제한 정책)이 `SHIM_Portable.exe` 실행을 차단할 수 있습니다.
-- 포트 충돌(기본 8000)이 있으면 `run_portable.bat 8010`처럼 다른 포트를 사용하세요.
-- NAS와 PC를 동시에 운영하면 데이터가 분기됩니다.
-- 비상 운영 시 최신 DB를 기준으로 단일 원본을 유지하세요.
-- 실행은 `SHIM_Portable.exe` 직접 실행보다 `run_portable.bat` 사용을 권장합니다(포트 선택/환경 일관성 확보).
+## 6. 주의사항 및 정책 (Policies)
 
-## 7) NAS <-> PC 비상 전환 절차 (DB 동기화)
+- **보안**: `data/secret.key` 파일이 삭제되거나 유출되지 않도록 관리하십시오. 분실 시 기존 쿠키 세션이 모두 무효화됩니다.
+- **포트**: 8000 포트가 점유 중인 경우 `run_portable.bat 8010`과 같이 인자를 주어 즉시 실행 포트를 변경할 수 있습니다.
+- **호환성**: 본 패키지는 Windows 64-bit 환경 전용입니다. 타 OS에서는 Docker 배포 방식을 이용하십시오.
+- **데이터 무결성**: NAS와 PC를 동시에 운영할 경우 데이터가 분기되어 동기화가 불가능해질 수 있습니다. 반드시 **단일 운영 원칙**을 고수하십시오.
 
-동시에 두 곳을 운영하지 말고, 항상 "단일 원본 DB"만 유지합니다.
+---
 
-### 7-1. NAS -> PC 비상 전환
-
-1. NAS SHIM를 중지합니다.
-2. NAS의 최신 `shim_internal.db`를 백업/복사합니다.
-3. 폐쇄망 PC의 `SHIM_Portable\data\shim_internal.db`에 덮어씁니다.
-4. PC에서 `run_portable.bat` 실행 후 정상 동작 확인합니다.
-
-체크:
-
-- 로그인 가능 여부
-- 최근 신청 데이터 존재 여부
-- 관리자 공휴일/캘린더 화면 정상 여부
-
-### 7-2. PC -> NAS 복귀 전환
-
-1. PC SHIM를 `stop_portable.bat`로 종료합니다.
-2. PC의 최신 `SHIM_Portable\data\shim_internal.db`를 복사합니다.
-3. NAS의 DB 파일을 백업한 뒤, 복사본으로 교체합니다.
-4. NAS SHIM를 재시작하고 기능 점검합니다.
-
-### 7-3. 권장 운영 규칙
-
-- 전환 시각과 담당자를 기록합니다.
-- 전환 전/후 DB 파일명을 타임스탬프로 보관합니다.
-- 최소 월 1회 복구 리허설을 수행합니다.
+**최신 업데이트**: 2026-05-13 (v1.3.2)  
+**지원**: 시스템 관리자 / SHIM 개발팀
