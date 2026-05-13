@@ -3,7 +3,7 @@
 **릴리스 버전:** 1.3.2
 
 폐쇄망 환경에서 사용 가능한 FastAPI 기반 연차 관리 시스템입니다.
-사용자/관리자 화면, 월별/연간 캘린더, 시간 슬롯 기반 차감, 타임라인 검증 기능을 제공합니다.
+사용자/관리자 화면, 월별/연간 캘린더, 사용자 시각 입력 기반 차감, 타임라인 검증 기능을 제공합니다.
 
 ## 프로젝트 개요
 
@@ -15,10 +15,10 @@
 ## 주요 기능
 
 - 사용자 로그인/로그아웃
-- 사용자 연차 신청 및 조회
+- 사용자 연차 신청 및 조회 (시작/종료 시각 입력 방식)
 - 관리자 대시보드
 - 사용자/회사/팀 필터 기반 연차 캘린더(월별/연간)
-- 시간 슬롯(예: 오전 2시간, 전일) 관리
+- 유연한 시간 정책 설정 (30/60/120분 단위, 점심시간 제외 등)
 - 퇴사자 비활성화 관리
 - 사용자별 연차 지급값 관리
 - 다국어(한국어) 및 공휴일 자동 시딩
@@ -47,7 +47,7 @@
 2. `docs/1-2_백업_복구_유지보수_가이드.md`
 3. `docs/0_문서_인덱스.md`
 
-개발 PC에서 즉시 실행:
+### 1. 개발 환경 실행 (Local)
 
 ```powershell
 pip install -r requirements.txt
@@ -55,18 +55,19 @@ npm install
 npm run dev
 ```
 
-Docker 실행(운영/개발 분리):
+### 2. 운영 환경 실행 (Docker)
+
+운영 환경에서는 보안을 위해 **JWT 서명키 설정**이 필수입니다. 아래 [보안 설정](#보안-설정-jwt-서명키) 섹션을 먼저 확인하세요.
 
 ```powershell
-# 운영(실행 전용): 먼저 버전 태그로 이미지 빌드 후 compose 실행
+# 이미지 빌드
 docker build -f infra/docker/Dockerfile -t shim:1.3.2 -t shim:latest .
-docker compose -f infra/docker/docker-compose.yml up -d
 
-# 개발(compose에서 빌드 포함)
-docker compose -f infra/docker/docker-compose.dev.yml up -d --build
+# 컨테이너 실행
+docker compose -f infra/docker/docker-compose.yml up -d
 ```
 
-스크립트 단축 명령:
+### 3. 스크립트 단축 명령
 
 ```powershell
 # 로컬 개발 서버(Tailwind watch + Uvicorn)
@@ -88,39 +89,26 @@ python tools\scripts\performance_rehearsal.py
 .\tools\scripts\verify_version_sync.ps1
 ```
 
-## 실행 포트
+## 접속 및 계정
 
-- 기본 포트: `8000`
-- 접속 주소: `http://localhost:8000`
+- **접속 주소**: `http://localhost:8000`
+- **기본 관리자 계정**: `admin / 0000`
 
-## 기본 관리자 계정
+처음 로그인 후 반드시 관리자 비밀번호를 변경하세요.
 
-- ID: `admin`
-- PW: `0000`
+## 보안 설정 (JWT 서명키)
 
-처음 로그인 후 반드시 비밀번호를 변경하세요.
-운영 배포 전에는 JWT 서명키(`SHIM_SECRET_KEY`)도 반드시 고정하세요.
-
-권장 방식은 `.env.example`을 `.env`로 복사한 뒤 긴 랜덤 문자열을 넣는 것입니다.
+운영 배포 전에는 로그인 토큰 위조 방지를 위해 JWT 서명키(`SHIM_SECRET_KEY`)를 반드시 설정해야 합니다. `infra/docker/.env.example` 파일을 루트의 `.env`로 복사하여 사용하세요.
 
 ```powershell
-Copy-Item .\.env.example .\.env
+# 설정 파일 복사
+Copy-Item ./infra/docker/.env.example ./.env
+
+# 랜덤 서명키 생성 (PowerShell 예시)
 [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
-생성된 값을 `.env`에 넣습니다.
-
-```env
-SHIM_SECRET_KEY=여기에_생성한_긴_랜덤_문자열
-```
-
-그 뒤 Docker를 실행합니다.
-
-```powershell
-docker compose -f infra/docker/docker-compose.yml up -d
-```
-
-설정하지 않아도 기본값으로 실행은 되지만, 실제 운영에서는 보안상 `.env` 설정을 권장합니다.
+생성된 값을 `.env` 파일의 `SHIM_SECRET_KEY` 항목에 넣습니다. 설정하지 않아도 기본값으로 실행은 되지만, 실제 운영 환경에서는 보안상 설정을 강력히 권장합니다.
 
 ## 기여하기 (Contributing)
 
@@ -171,4 +159,4 @@ SHIM은 오픈소스 프로젝트로서 여러분의 기여를 환영합니다. 
 - Docker 단축 스크립트: `tools/scripts/docker.ps1`
 - DB 백업 스크립트: `tools/scripts/backup_db.ps1`
 - 운영 규모 성능 리허설 스크립트: `tools/scripts/performance_rehearsal.py`
-- Docker 운영 환경 변수 샘플: `.env.example`
+- Docker 운영 환경 변수 샘플: `infra/docker/.env.example`
