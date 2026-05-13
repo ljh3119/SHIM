@@ -28,13 +28,13 @@ pyinstaller `
   --add-data "var/data;data" `
   portable/shim_portable.py
 
-Write-Host "[4/4] Copy runtime scripts to dist folder"
+Write-Host "[4/4] Copy runtime scripts and initial data to dist folder"
 Copy-Item portable\run_portable.bat dist\SHIM_Portable\run_portable.bat -Force
 Copy-Item portable\stop_portable.bat dist\SHIM_Portable\stop_portable.bat -Force
 Copy-Item portable\README_PORTABLE.md dist\SHIM_Portable\README_PORTABLE.md -Force
-
-Write-Host "Done: The final package is ready in 'dist\SHIM_Portable'."
-Write-Host "Copy 'dist\SHIM_Portable' to the target offline PC."
+if (Test-Path var\data) {
+    Copy-Item var\data dist\SHIM_Portable\data -Recurse -Force
+}
 
 Write-Host "Done: The final package is ready in 'dist\SHIM_Portable'."
 Write-Host "Copy 'dist\SHIM_Portable' to the target offline PC."
