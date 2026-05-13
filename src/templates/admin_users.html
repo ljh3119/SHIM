@@ -110,6 +110,7 @@
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-right text-sm font-medium">
                             <div class="flex flex-nowrap items-center justify-end gap-1">
+                                <button type="button" onclick="openEditUserModal('{{ u.user_id }}', '{{ u.user_name }}', '{{ u.company or '' }}', '{{ u.team or '' }}', '{{ u.role }}', '{{ u.position or '' }}', {{ 'true' if u.is_active else 'false' }})" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-blue hover:bg-dense-surface-soft">수정</button>
                                 <button type="button" onclick="resetPassword('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-[#fedf89] bg-dense-amber-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-amber hover:bg-[#fffdf6]">비밀번호 초기화</button>
                                 <button type="button" onclick="toggleUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-nav-text hover:bg-dense-surface-soft">상태 변경</button>
                                 <button type="button" onclick="hardDeleteUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-[#b42318] hover:brightness-95">삭제</button>
@@ -225,6 +226,73 @@
     </div>
 </div>
 
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('editUserModal')"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="modal-title">사원 정보 수정</h3>
+                <form id="editUserForm" class="space-y-4">
+                    <input type="hidden" name="target_user_id" id="edit_user_id">
+                    <div>
+                        <label class="block text-sm font-bold text-dense-muted">사용자 ID</label>
+                        <div id="edit_user_id_display" class="mt-1 block w-full rounded-xl bg-dense-surface-soft py-2 px-3 text-sm font-bold text-dense-muted ring-1 ring-inset ring-dense-line"></div>
+                    </div>
+                    <div>
+                        <label for="edit_user_name" class="block text-sm font-bold text-dense-nav-text">이름 (필수)</label>
+                        <input type="text" name="user_name" id="edit_user_name" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="edit_company" class="block text-sm font-bold text-dense-nav-text">소속회사</label>
+                        <input type="text" name="company" id="edit_company" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="edit_team" class="block text-sm font-bold text-dense-nav-text">팀</label>
+                        <input type="text" name="team" id="edit_team" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="edit_role" class="block text-sm font-bold text-dense-nav-text">역할</label>
+                            <div id="edit_role_selector_container">
+                                <select name="role" id="edit_role" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                    <option value="STAFF">일반 (STAFF)</option>
+                                    <option value="TEAM_LEAD">팀장 (TEAM_LEAD)</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                            <div id="edit_role_admin_display" class="hidden">
+                                <div class="mt-1 block w-full rounded-xl bg-dense-blue-soft py-2 px-3 text-sm font-extrabold text-dense-blue ring-1 ring-inset ring-dense-line-strong">관리자 (ADMIN)</div>
+                                <input type="hidden" id="edit_role_hidden_admin" value="ADMIN">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="edit_position" class="block text-sm font-bold text-dense-nav-text">직급명 (표시용)</label>
+                            <input type="text" name="position" id="edit_position" placeholder="예: 선임연구원" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit_is_active" class="block text-sm font-bold text-dense-nav-text">상태</label>
+                        <select name="is_active" id="edit_is_active" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                            <option value="true">재직 중 (활성)</option>
+                            <option value="false">비활성</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="button" onclick="submitEditUser()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                    저장하기
+                </button>
+                <button type="button" onclick="window.shimModal.close('editUserModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 async function apiCall(url, data, confirmMsg) {
     if(confirmMsg && !confirm(confirmMsg)) return;
@@ -272,6 +340,54 @@ function updateLeaveDays(id) {
         return;
     }
     apiCall('/admin/user/update-leave-days', { target_user_id: id, total_leave_days: days, year: '{{ selected_year }}' });
+}
+
+function openEditUserModal(id, name, company, team, role, position, isActive) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_user_id_display').textContent = id;
+    document.getElementById('edit_user_name').value = name;
+    document.getElementById('edit_company').value = company;
+    document.getElementById('edit_team').value = team;
+    document.getElementById('edit_position').value = position;
+    document.getElementById('edit_is_active').value = isActive ? 'true' : 'false';
+
+    const roleSelectContainer = document.getElementById('edit_role_selector_container');
+    const roleAdminDisplay = document.getElementById('edit_role_admin_display');
+    const roleHiddenAdmin = document.getElementById('edit_role_hidden_admin');
+
+    if (role === 'ADMIN') {
+        roleSelectContainer.classList.add('hidden');
+        roleAdminDisplay.classList.remove('hidden');
+        roleHiddenAdmin.name = 'role'; // name 부여하여 전송되게 함
+        document.getElementById('edit_role').name = ''; // select name 제거
+    } else {
+        roleSelectContainer.classList.remove('hidden');
+        roleAdminDisplay.classList.add('hidden');
+        roleHiddenAdmin.name = ''; // name 제거
+        const roleSelect = document.getElementById('edit_role');
+        roleSelect.name = 'role'; // select name 부여
+        roleSelect.value = role;
+    }
+    
+    window.shimModal.open('editUserModal', 'edit_user_name', document.activeElement);
+}
+
+function submitEditUser() {
+    const form = document.getElementById('editUserForm');
+    if(!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((value, key) => {
+        if (key === 'is_active') {
+            data[key] = (value === 'true');
+        } else {
+            data[key] = value;
+        }
+    });
+    apiCall('/admin/user/update', data);
 }
 
 function submitAddUser() {

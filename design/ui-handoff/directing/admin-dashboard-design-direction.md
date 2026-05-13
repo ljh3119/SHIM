@@ -1,7 +1,7 @@
-# LAMS Dense UI 스타일 변경 실행 가이드 (Dense Console 확정본)
+# SHIM Dense UI 스타일 변경 실행 가이드 (Dense Console 확정본)
 
 ## 문서 목적
-- 이 문서는 `LAMS` 본 프로그램의 스타일을 **Dense Operations Console** 방향으로 이식하기 위한 **실행 가이드**다.
+- 이 문서는 `SHIM` 본 프로그램의 스타일을 **Dense Operations Console** 방향으로 이식하기 위한 **실행 가이드**다.
 - 대상 독자는 다른 AI(또는 신규 작업자)이며, 이 문서만 읽고도 안전하게 작업할 수 있어야 한다.
 - 목표는 "새로운 기능 추가"가 아니라 **기존 기능/데이터를 유지한 스타일 변경**이다.
 - 아래 **[레이아웃·적용 범위 (프로젝트 확정)]** 에 따라 템플릿에 순차 반영한다.
@@ -212,14 +212,11 @@
 ---
 
 ## 참고 시안 파일 (디자인 레퍼런스)
-- 구버전 갤러리(참고만): `design/ui-handoff/legacy/_deprecated/galleries/all-design-gallery-single.html`
-- 전체 페이지 비교 템플릿(레거시·참고): `design/ui-handoff/legacy/_deprecated/galleries/all-pages-compare-template.html`
 - 관리자 Dense 시안: `design/ui-handoff/samples/admin/dense-operations-console.html`
 - 사용자 Dense 시안: `design/ui-handoff/samples/user/dense-operations-console.html`
 - 로그인 Dense 시안: `design/ui-handoff/samples/reference/dense-login-shell.html`
 - 마스터 관리 Dense 시안: `design/ui-handoff/samples/admin/dense-master-shell.html`
 - 사원 관리 표 Dense 시안: `design/ui-handoff/samples/admin/dense-users-table-shell.html`
-- Original 보관본(구): `design/ui-handoff/legacy/_deprecated/samples/admin/original.html`, `design/ui-handoff/legacy/_deprecated/samples/user/original.html`
 
 > 이 파일들은 "모양 참고" 용도다. 실반영은 반드시 `src/templates/*`에서 한다.
 
@@ -242,7 +239,7 @@
 다음 작업을 수행해줘.
 
 [목표]
-- LAMS 전역 템플릿을 Dense Operations Console 스타일로 반영한다.
+- SHIM 전역 템플릿을 Dense Operations Console 스타일로 반영한다.
 - 기능 추가가 아니라 스타일 이식이 목적이다.
 
 [레이아웃 전제]

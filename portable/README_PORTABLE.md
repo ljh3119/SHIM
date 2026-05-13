@@ -28,16 +28,17 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 - `dist/SHIM_Portable/README_PORTABLE.md`
 - `dist/SHIM_Portable/data/shim_internal.db` (초기 DB)
 
-최신 반영 사항(2026-05-12, v1.3.0):
+최신 반영 사항(2026-05-13, v1.3.1):
 
-- **역할 기반 권한 체계(RBAC)** 도입: `role` (STAFF/TEAM_LEAD/PM/ADMIN) 필드 기반의 차등 권한 적용
-- **팀장 결재 워크플로우**: 팀장(`TEAM_LEAD`) 권한 사용자가 본인 팀원의 휴가 신청을 직접 승인/반려할 수 있는 대시보드 위젯 및 API 반영
-- **팀 캘린더 공유**: 대시보드 내 같은 팀원의 월별 휴가 현황을 한눈에 파악할 수 있는 매트릭스 뷰 추가
-- **관리자 UI 개선**: 사원 관리 목록에서 역할별 배지(관리자/팀장/PM/일반) 및 직급 표시, 신규 등록 시 역할 지정 지원
-- **마스터 설정 확장**: 팀 캘린더 공유 여부를 글로벌하게 제어할 수 있는 설정 토글 추가
-- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.0` 반영(빌드 시 `package.json` 버전과 동일)
+- **Tailwind CSS v4 통합 및 엔진 업그레이드**: Tailwind CSS v4.x 도입 및 `@tailwindcss/cli` 기반 빌드 시스템 전환
+- **의존성 최신화**: `tailwindcss`, `@tailwindcss/cli` 최신 버전(v4.3.0) 반영
+- **결재 권한 확장**: `PM`(프로젝트 매니저) 역할에 결재 권한 부여 및 승인/반려 로직 고도화
+- **사용자 UI 개선**: 전용 결재 관리 페이지 신설 및 대시보드 메뉴 분리(결재·팀 캘린더·히스토리)
+- **로직 안정화**: 반려된 연차 신청 건의 시간대 점유 해제 로직 반영
+- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.1` 반영(빌드 시 `package.json` 버전과 동일)
+- (이전 v1.3.0) 역할 기반 권한 체계(RBAC) 도입 및 팀장 결재 워크플로우 반영
 - 폐쇄망 기준: Tailwind CDN/Google Fonts 없음, 로컬 `tailwind.css` 사용 유지
-- 포터블 빌드(2026-05-03): `build_portable.ps1`로 재빌드 완료, `dist/SHIM_Portable` 갱신. 실행 점검은 `run_portable.bat`(필요 시 포트 지정) 후 위 URL 순서를 권장합니다.
+- 포터블 빌드(2026-05-13): `build_portable.ps1`로 재빌드 완료, `dist/SHIM_Portable` 갱신.
 
 ## 2) 전달(폐쇄망 PC)
 

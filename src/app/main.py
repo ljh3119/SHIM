@@ -13,7 +13,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.3.0")
+app = FastAPI(title="SHIM", version="1.3.1")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "SHIM"
 DEFAULT_BRAND_INITIAL = "쉼"
@@ -23,69 +23,11 @@ BRANDING_BADGE_MAX_LEN = 24
 VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
 
 
-def ensure_sqlite_system_schema(db: Session) -> None:
-    """Ensure SQLite schema has required columns for current app."""
-    user_columns = [row[1] for row in db.execute(text("PRAGMA table_info(users)")).fetchall()]
-    if "company" not in user_columns:
-        db.execute(text("ALTER TABLE users ADD COLUMN company VARCHAR"))
-    if "team" not in user_columns:
-        db.execute(text("ALTER TABLE users ADD COLUMN team VARCHAR"))
-    if "role" not in user_columns:
-        db.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'STAFF'"))
-    if "position" not in user_columns:
-        db.execute(text("ALTER TABLE users ADD COLUMN position VARCHAR(60)"))
-    setting_columns = [row[1] for row in db.execute(text("PRAGMA table_info(system_settings)")).fetchall()]
-    if "time_granularity_minutes" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN time_granularity_minutes INTEGER DEFAULT 60"))
-    if "work_start_minute" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN work_start_minute INTEGER DEFAULT 540"))
-    if "work_end_minute" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN work_end_minute INTEGER DEFAULT 1080"))
-    if "lunch_start_minute" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN lunch_start_minute INTEGER"))
-    if "lunch_end_minute" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN lunch_end_minute INTEGER"))
-    if "product_display_name" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN product_display_name VARCHAR(120)"))
-    if "product_nav_short" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN product_nav_short VARCHAR(80)"))
-    if "brand_initial" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN brand_initial VARCHAR(32)"))
-    if "team_calendar_visible" not in setting_columns:
-        db.execute(text("ALTER TABLE system_settings ADD COLUMN team_calendar_visible BOOLEAN DEFAULT 1"))
-    db.execute(
-        text(
-            """
-            UPDATE system_settings SET
-                product_display_name = COALESCE(NULLIF(TRIM(product_display_name), ''), 'SHIM'),
-                product_nav_short = TRIM(COALESCE(product_nav_short, '')),
-                brand_initial = CASE
-                    WHEN brand_initial IS NULL OR TRIM(brand_initial) = '' THEN 'S'
-                    ELSE TRIM(brand_initial)
-                END,
-                team_calendar_visible = COALESCE(team_calendar_visible, 1)
-            WHERE id IS NOT NULL
-            """
-        )
-    )
-    setting_cols_after = [row[1] for row in db.execute(text("PRAGMA table_info(system_settings)")).fetchall()]
-    if "product_user_sidebar_title" in setting_cols_after:
-        try:
-            db.execute(text("ALTER TABLE system_settings DROP COLUMN product_user_sidebar_title"))
-        except Exception:
-            pass
+
 
 
 models.Base.metadata.create_all(bind=engine)
-_boot_db = database.SessionLocal()
-try:
-    ensure_sqlite_system_schema(_boot_db)
-    _boot_db.commit()
-except Exception:
-    _boot_db.rollback()
-    raise
-finally:
-    _boot_db.close()
+
 
 
 def _normalize_branding_from_row(row: models.SystemSettings | None) -> dict[str, str | bool]:
@@ -187,7 +129,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.3.0"
+templates.env.globals["app_version"] = "1.3.1"
 app.state.templates = templates
 
 from .routers import api_user, api_admin
@@ -251,110 +193,18 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
         )
 
 
-def migrate_legacy_leaves_to_snapshot(db: Session):
-    leave_columns = [row[1] for row in db.execute(text("PRAGMA table_info(leaves)")).fetchall()]
-    if "snapshot_slot_label" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN snapshot_slot_label VARCHAR"))
-    if "snapshot_start_min" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN snapshot_start_min INTEGER"))
-    if "snapshot_end_min" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN snapshot_end_min INTEGER"))
-    if "snapshot_deduction_hours" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN snapshot_deduction_hours FLOAT"))
-    if "status" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN status VARCHAR DEFAULT 'APPROVED'"))
-    if "rejection_reason" not in leave_columns:
-        db.execute(text("ALTER TABLE leaves ADD COLUMN rejection_reason VARCHAR(500)"))
-
-    # Fresh v1 schema may not have legacy slot_id at all.
-    if "slot_id" not in leave_columns:
-        db.execute(
-            text(
-                """
-                UPDATE leaves
-                SET status = COALESCE(status, 'APPROVED')
-                WHERE status IS NULL
-                """
-            )
-        )
-        return
-
-    legacy_rows = db.execute(
-        text(
-            """
-            SELECT l.id, l.slot_id
-            FROM leaves l
-            WHERE l.snapshot_slot_label IS NULL
-            """
-        )
-    ).fetchall()
-
-    for leave_id, slot_id in legacy_rows:
-        db.execute(
-            text(
-                """
-                UPDATE leaves
-                SET snapshot_slot_label = :label,
-                    snapshot_start_min = :start_min,
-                    snapshot_end_min = :end_min,
-                    snapshot_deduction_hours = :deduction,
-                    status = COALESCE(status, 'APPROVED')
-                WHERE id = :leave_id
-                """
-            ),
-            {
-                "leave_id": leave_id,
-                "label": f"LEGACY_SLOT_{slot_id}",
-                "start_min": 0,
-                "end_min": 0,
-                "deduction": 0.0,
-            },
-        )
 
 
-def ensure_operational_indexes(db: Session):
-    for index_sql in [
-        "CREATE INDEX IF NOT EXISTS ix_leaves_user_id_date ON leaves (user_id, date)",
-        "CREATE INDEX IF NOT EXISTS ix_leaves_year_date ON leaves (year, date)",
-        "CREATE INDEX IF NOT EXISTS ix_leaves_year_user_id ON leaves (year, user_id)",
-        "CREATE INDEX IF NOT EXISTS ix_leaves_created_at ON leaves (created_at)",
-    ]:
-        db.execute(text(index_sql))
 
 
-def _migrate_is_admin_to_role(db: Session) -> None:
-    """Migrate legacy is_admin boolean to role-based system.
 
-    - is_admin=True and role is NULL or STAFF → role=ADMIN
-    - is_admin=False and role is NULL → role=STAFF
-    - Already set role (TEAM_LEAD, PM, etc.) is preserved.
-    """
-    db.execute(
-        text(
-            """
-            UPDATE users
-            SET role = 'ADMIN'
-            WHERE is_admin = 1 AND (role IS NULL OR role = '' OR role = 'STAFF')
-            """
-        )
-    )
-    db.execute(
-        text(
-            """
-            UPDATE users
-            SET role = 'STAFF'
-            WHERE role IS NULL OR role = ''
-            """
-        )
-    )
+
+
 
 
 @app.on_event("startup")
 def startup_event():
     db = database.SessionLocal()
-    ensure_sqlite_system_schema(db)
-    migrate_legacy_leaves_to_snapshot(db)
-    ensure_operational_indexes(db)
 
     admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
     if not admin:
@@ -372,8 +222,6 @@ def startup_event():
     elif not admin.user_name or "?" in admin.user_name:
         admin.user_name = "\uc2dc\uc2a4\ud15c\uad00\ub9ac\uc790"
 
-    # is_admin → role 마이그레이션
-    _migrate_is_admin_to_role(db)
     
     if not db.query(models.SystemSettings).first():
         db.add(
@@ -412,7 +260,7 @@ async def read_root(request: Request, db: Session = Depends(get_db)):
     if user_id:
         user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
         if user:
-            user_role = getattr(user, "role", None) or ("ADMIN" if user.is_admin else "STAFF")
+            user_role = getattr(user, "role", "STAFF")
             if user_role == "ADMIN":
                 return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
             return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)

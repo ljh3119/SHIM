@@ -5,7 +5,7 @@
 v1.2.0에서 1차 Dense는 **`src/templates`**·**`src/static/css/app.css`**에 반영되었습니다. 이 폴더는 **브라우저용 목업·디렉팅**만 보관합니다.
 
 - **백로그**: `docs/3-1_향후_개선계획.md`에만 적습니다.
-- **구현 근거**: `docs/4-1_edu_LAMS_프로젝트_설계서.md`, 완료 증적 `docs/2-1_…`
+- **구현 근거**: `docs/4-1_SHIM_프로젝트_설계서.md`, 완료 증적 `docs/2-1_…`
 
 ## 빠른 진입
 
@@ -24,7 +24,6 @@ v1.2.0에서 1차 Dense는 **`src/templates`**·**`src/static/css/app.css`**에 
 | `samples/` | 정적 HTML · CDN 없음 · UTF-8 |
 | `samples/reference/` | `dense-tokens.css`(시안 팔레트; 제품과 맞춤 시 `src/static/css/app.css` 주석 참고) |
 | `galleries/` | `samples-hub.html` |
-| `legacy/_deprecated/` | 구 갤러리·실험 시안 (**참고만**) |
 
 ## 신규 시안 규칙
 
