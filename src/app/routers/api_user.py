@@ -441,16 +441,19 @@ def _get_approver(request: Request, db: Session) -> models.Users:
 
 
 def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db: Session) -> models.Users:
-    """결재 대상 휴가 검증: 같은 팀·셀프 결재 금지."""
+    """결재 대상 휴가 검증: 같은 팀·셀프 결재 금지 (PM은 전사 결재 허용)."""
     if leave.user_id == approver.user_id:
         raise HTTPException(status_code=400, detail="본인 신청에 대해서는 결재할 수 없습니다.")
     target_user = db.query(models.Users).filter(models.Users.user_id == leave.user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="신청자 정보를 찾을 수 없습니다.")
     
-    # PM은 전사 결재 가능? 아니면 팀장과 동일하게 팀내? 
-    # 보통 PM은 프로젝트 단위지만 여기서는 직급 체계이므로 팀장과 동일하게 팀내 결재로 일단 유지 (필요시 전사로 확장)
-    if target_user.team != approver.team or target_user.company != approver.company:
+    # PM은 전사 결재 가능
+    if approver.role == 'PM':
+        return target_user
+        
+    # 그 외(TEAM_LEAD)는 팀내 결재로 제한
+    if target_user.team != approver.team:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="다른 팀의 신청에 대해서는 결재할 수 없습니다.")
     return target_user
 
@@ -467,18 +470,22 @@ async def user_approvals(request: Request, db: Session = Depends(get_db)):
     team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
     is_approval_required = bool(setting.is_approval_required) if setting else False
 
-    pending_leaves = (
-        db.query(models.Leaves)
-        .join(models.Users, models.Leaves.user_id == models.Users.user_id)
-        .filter(
-            models.Users.team == approver.team,
-            models.Users.company == approver.company,
+    query = db.query(models.Leaves).join(models.Users, models.Leaves.user_id == models.Users.user_id)
+    
+    # PM은 전사 대기 건 조회, TEAM_LEAD는 소속 팀 대기 건 조회
+    if user_role == 'PM':
+        query = query.filter(
             models.Leaves.status == "PENDING",
-            models.Leaves.user_id != approver.user_id,
+            models.Leaves.user_id != approver.user_id
         )
-        .order_by(models.Leaves.created_at.desc())
-        .all()
-    )
+    else:
+        query = query.filter(
+            models.Users.team == approver.team,
+            models.Leaves.status == "PENDING",
+            models.Leaves.user_id != approver.user_id
+        )
+
+    pending_leaves = query.order_by(models.Leaves.created_at.desc()).all()
 
     ctx = {
         "user": approver,
@@ -504,6 +511,10 @@ async def team_approve_leave(
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
+
+    # 중복 결재 방지
+    if leave.status != "PENDING":
+        return JSONResponse(status_code=400, content={"message": f"이미 처리된 건입니다. (현재 상태: {leave.status})"})
 
     try:
         _validate_approvable_leave(approver, leave, db)
@@ -543,6 +554,10 @@ async def team_reject_leave(
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
+
+    # 중복 결재 방지
+    if leave.status != "PENDING":
+        return JSONResponse(status_code=400, content={"message": f"이미 처리된 건입니다. (현재 상태: {leave.status})"})
 
     try:
         _validate_approvable_leave(approver, leave, db)
