@@ -78,18 +78,25 @@
     <!-- Header Section -->
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">팀 캘린더</h2>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{{ team_name or '소속 미지정' }} 캘린더</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
-                {{ team_cal_year }}년 {{ team_cal_month }}월 팀원들의 연차 현황입니다.
+                {{ team_cal_year }}년 {{ team_cal_month }}월 {{ team_name or '팀원' }}들의 연차 현황입니다.
             </p>
         </div>
     </div>
 
-    <!-- Filter Panel -->
-    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">조회 설정</h3>
+    <!-- Combined Content Panel -->
+    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6 shadow-sm">
+        <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-dense-line pb-4">
+            <div class="flex items-center gap-4">
+                <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ team_cal_year }}년 {{ team_cal_month }}월</h3>
+                <span class="inline-flex items-center rounded-full bg-dense-blue-soft px-2.5 py-0.5 text-xs font-bold text-dense-blue">
+                    {{ team_members|length }}명 참여 중
+                </span>
+            </div>
+            
             <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
+                <label class="text-xs font-bold text-dense-muted mr-1">조회 설정</label>
                 <select name="year" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                     {% for y in range(current_year - 1, current_year + 2) %}
                     <option value="{{ y }}" {% if team_cal_year == y %}selected{% endif %}>{{ y }}년</option>
@@ -102,25 +109,30 @@
                 </select>
             </form>
         </div>
-    </div>
 
-    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
-        <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ team_cal_year }}년 {{ team_cal_month }}월</h3>
-            <span class="text-xs font-bold text-dense-muted">{{ team_members|length }}명</span>
-        </div>
-        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-dense-muted">
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-blue"></span>반일 이하</span>
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-[#f79009]"></span>반일(4h)</span>
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-danger"></span>전일(8h)</span>
-            <span class="w-full font-semibold text-dense-muted sm:w-auto">해당 셀에 마우스를 올리면 상세내역(시간대)이 표시됩니다.</span>
+        <div class="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-line">
+            <div class="flex items-center">
+                <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-blue shadow-sm"></span>
+                <span>반일 미만</span>
+            </div>
+            <div class="flex items-center">
+                <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-[#f79009] shadow-sm"></span>
+                <span>반일(4h)</span>
+            </div>
+            <div class="flex items-center">
+                <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-danger shadow-sm"></span>
+                <span>전일(8h)</span>
+            </div>
+            <div class="ml-auto font-semibold text-dense-blue">
+                * 해당 셀에 마우스를 올리면 상세 시간대가 표시됩니다.
+            </div>
         </div>
         
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto rounded-xl border border-dense-line">
             <table class="cal-table" style="min-width: 800px;">
                 <thead>
                     <tr>
-                        <th class="sticky-col text-left !px-2 !py-2" style="width: 7rem; min-width: 7rem;">이름</th>
+                        <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style="width: 7rem; min-width: 7rem;">이름</th>
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set wd = team_cal_day_weekday[d] %}
                         {% set holiday_name = team_cal_holiday_map.get(d) %}
@@ -137,15 +149,18 @@
                 </thead>
                 <tbody class="divide-y divide-dense-line">
                     {% for m in team_members %}
-                    <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="sticky-col whitespace-nowrap !px-2 !py-1.5 text-left text-xs font-semibold text-dense-nav-text">{{ m.user_name }}</td>
+                    <tr class="transition-colors hover:bg-dense-surface-soft group">
+                        <td class="sticky-col whitespace-nowrap !px-3 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft">
+                            {{ m.user_name }}
+                        </td>
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set cell_leaves = team_leaves_map.get(m.user_id, {}).get(d, []) %}
-                        <td class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/50{% endif %}">
+                        <td class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
                             {% if cell_leaves %}
                             {% set ns_t = namespace(th=0) %}
                             {% for lv in cell_leaves %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_t.th = ns_t.th + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
-                            <div class="day-block {% if ns_t.th >= 8 %}full{% elif ns_t.th >= 4 %}half{% endif %}" title="{% for lv in cell_leaves %}{{ lv.snapshot_slot_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                            <div class="day-block {% if ns_t.th >= 8 %}full{% elif ns_t.th >= 4 %}half{% endif %} transform transition-transform hover:scale-105" 
+                                 title="{% for lv in cell_leaves %}{{ lv.snapshot_slot_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
                                 {{ fmt_hours(ns_t.th) }}h
                             </div>
                             {% endif %}
@@ -154,13 +169,18 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ team_cal_num_days + 1 }}" class="py-12 text-center text-sm font-semibold text-dense-muted">소속된 팀원이 없거나 팀 정보가 설정되지 않았습니다.</td>
+                        <td colspan="{{ team_cal_num_days + 1 }}" class="py-16 text-center text-sm font-semibold text-dense-muted bg-dense-surface-soft">
+                            표시할 데이터가 없거나 조회 권한이 제한되었습니다.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <p class="mt-2 text-right text-xs font-semibold text-dense-muted">* 승인·대기 상태만 표시됩니다. 사유·상세는 표시되지 않습니다.</p>
+        <div class="mt-4 flex justify-between items-center text-[11px] font-semibold text-dense-muted px-1">
+            <span>* 승인 및 대기 상태의 연차만 표시됩니다.</span>
+            <span>최종 업데이트: {{ now.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
     </div>
 </div>
 {% endblock %}
