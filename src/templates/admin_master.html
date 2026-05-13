@@ -124,15 +124,15 @@
             <div class="mt-3 space-y-3">
                 <div>
                     <label for="brand_product_display_name" class="mb-1 block text-xs font-bold text-dense-muted">공식 이름</label>
-                    <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 블루링크 업무 포털 운영" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
+                    <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
                 </div>
                 <div>
                     <label for="brand_product_nav_short" class="mb-1 block text-xs font-bold text-dense-muted">상단 짧은 이름 · 선택</label>
-                    <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: BL-Portal, Bluelink" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
+                    <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: SHIM" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
                 </div>
                 <div>
                     <label for="brand_initial" class="mb-1 block text-xs font-bold text-dense-muted">파란 배지 · 최대 24자</label>
-                    <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('L') }}" placeholder="예: BL" class="block w-full max-w-[16rem] rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
+                    <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('S') }}" placeholder="예: S" class="block w-full max-w-[16rem] rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
                 </div>
             </div>
             <div class="mt-3">
