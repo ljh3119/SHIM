@@ -78,7 +78,7 @@
     <!-- Header Section -->
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">안녕하세요, {{ user.user_name }}님</h2>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">안녕하세요, {{ user.user_name }} {{ user.position or '' }}님</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
                 {{ user.company or '회사 미지정' }}
                 {% if user.team %} / {{ user.team }}{% endif %}

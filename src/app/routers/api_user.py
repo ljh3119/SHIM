@@ -192,26 +192,34 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     month_start = date_cls(display_year, display_month, 1)
     month_end = date_cls(display_year, display_month, num_days)
 
+    user_role = getattr(user, 'role', 'STAFF')
+
     team_members = []
     team_leaves_map = {}
-    if user.team:
+    
+    # PM은 전사 데이터 조회 (관리자와 동일), 그 외에는 소속 팀 기준 조회
+    if user_role == 'PM':
+        team_members = db.query(models.Users).filter(
+            models.Users.is_active == True,
+            models.Users.user_id != user.user_id,
+            models.Users.is_admin == False,
+        ).order_by(models.Users.user_name.asc()).all()
+    elif user.team:
         team_members = db.query(models.Users).filter(
             models.Users.team == user.team,
-            models.Users.company == user.company,
             models.Users.is_active == True,
             models.Users.user_id != user.user_id,
             models.Users.is_admin == False,
         ).order_by(models.Users.user_name.asc()).all()
 
+    if team_members:
         team_member_ids = [m.user_id for m in team_members]
-        team_leaves_raw = []
-        if team_member_ids:
-            team_leaves_raw = db.query(models.Leaves).filter(
-                models.Leaves.user_id.in_(team_member_ids),
-                models.Leaves.date >= month_start,
-                models.Leaves.date <= month_end,
-                models.Leaves.status.in_(["APPROVED", "PENDING"]),
-            ).all()
+        team_leaves_raw = db.query(models.Leaves).filter(
+            models.Leaves.user_id.in_(team_member_ids),
+            models.Leaves.date >= month_start,
+            models.Leaves.date <= month_end,
+            models.Leaves.status.in_(["APPROVED", "PENDING"]),
+        ).all()
 
         team_leaves_map = {m.user_id: {} for m in team_members}
         for lv in team_leaves_raw:
@@ -234,7 +242,6 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     ).all()
     team_cal_holiday_map = {h.date.day: h.name for h in team_holidays}
     
-    user_role = getattr(user, 'role', 'STAFF')
     is_approval_required = bool(setting.is_approval_required) if setting else False
 
     ctx = {
@@ -244,6 +251,7 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
         "team_calendar_visible": team_calendar_visible,
         "team_members": team_members,
         "team_leaves_map": team_leaves_map,
+        "team_name": user.team if user_role != 'PM' else "전사",
         "team_cal_year": display_year,
         "team_cal_month": display_month,
         "team_cal_num_days": num_days,
