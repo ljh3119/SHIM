@@ -1,6 +1,6 @@
 # 쉼(休) SHIM / 연차 관리 시스템
 
-**릴리스 버전:** 1.3.0
+**릴리스 버전:** 1.3.1
 
 폐쇄망 환경에서 사용 가능한 FastAPI 기반 연차 관리 시스템입니다.
 사용자/관리자 화면, 월별/연간 캘린더, 시간 슬롯 기반 차감, 타임라인 검증 기능을 제공합니다.
@@ -81,8 +81,8 @@ python tools\scripts\performance_rehearsal.py
 # Docker 단축 명령 도움말
 .\tools\scripts\docker.ps1 help
 
-# 릴리즈 버전 동기화(예: 1.3.0)
-.\tools\scripts\release.ps1 -Version 1.3.0
+# 릴리즈 버전 동기화(예: 1.3.1)
+.\tools\scripts\release.ps1 -Version 1.3.1
 
 # package.json 기준으로 코드·README·포터블 README 버전 일치 검사
 .\tools\scripts\verify_version_sync.ps1
@@ -126,8 +126,13 @@ docker compose -f infra/docker/docker-compose.yml up -d
 
 상세 릴리즈 증적과 검증 결과는 `docs/2-1_운영_릴리즈_통합_산출물.md`에서 관리합니다.
 
-- 최신 릴리즈: `1.3.0` (2026-05-12)
-- 주요 변경: 역할 기반 권한 체계(RBAC: STAFF/TEAM_LEAD/PM/ADMIN) 도입, 팀장 결재 워크플로우 및 팀 캘린더 공유 기능 추가, 사용자 관리 UI 역할 표시 보강 (상세·검증은 `docs/2-1_운영_릴리즈_통합_산출물.md`)
+- 최신 릴리즈: `1.3.1` (2026-05-13)
+- 주요 변경:
+    - **엔진/의존성**: Tailwind CSS v4 통합 및 엔진 업그레이드, 의존성 최신화(`tailwindcss`, `@tailwindcss/cli`)
+    - **결재 권한 확장**: 결재 가능 역할에 `PM`(프로젝트 매니저) 추가 및 관련 승인/반려 로직 개선
+    - **UI/UX 개선**: 전용 결재 관리 페이지(`user/approvals`) 신설, 대시보드 구조 슬림화(결재·팀 캘린더·히스토리 분리)
+    - **로직 보정**: 연차 신청 시 반려(`REJECTED`)된 건을 시간 중복 체크 및 잔여 시간 계산에서 제외하도록 수정
+- 이전 릴리즈: `1.3.0` (2026-05-12) - 역할 기반 권한 체계(RBAC) 도입, 팀장 결재 워크플로우 및 팀 캘린더 공유 기능 추가
 - 이전 릴리즈: `1.2.1` (2026-05-07) - dense UI 가독성 보정, 승인 워크플로우 OFF 시 대시보드 정리 등
 
 ## 문서 목록

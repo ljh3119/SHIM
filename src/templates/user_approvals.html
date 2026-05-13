@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% macro fmt_hours(v) -%}
+{%- if v == (v|int) -%}{{ v|int }}{%- else -%}{{ '%.1f'|format(v) }}{%- endif -%}
+{%- endmacro %}
+
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <!-- Header Section -->
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">결재 관리</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">
+                {% if user_role == 'TEAM_LEAD' %}팀장{% elif user_role == 'PM' %}PM{% endif %} 권한으로 팀원들의 연차 신청을 검토하고 승격/반려합니다.
+            </p>
+        </div>
+    </div>
+
+    <!-- Pending Approvals Table -->
+    <div class="overflow-hidden rounded-[18px] border border-[#fedf89] bg-dense-amber-soft/30 p-5 sm:p-6">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text flex items-center gap-2">
+                <svg class="h-5 w-5 text-dense-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                결재 대기 목록
+            </h3>
+            <span class="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-dense-amber px-2 text-xs font-extrabold text-white">{{ pending_leaves|length }}</span>
+        </div>
+
+        {% if pending_leaves %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청자</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청일</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">시간대</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">등록시각</th>
+                        <th class="px-4 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">결재</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for pl in pending_leaves %}
+                    <tr id="pending-row-{{ pl.id }}" class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.user.user_name if pl.user else pl.user_id }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.date.strftime('%Y-%m-%d') }} ({{ ['월','화','수','목','금','토','일'][pl.date.weekday()] }})</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.snapshot_slot_label }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold text-dense-blue">-{{ fmt_hours(pl.snapshot_deduction_hours) }}h</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="teamApprove({{ pl.id }})" class="inline-flex rounded-lg bg-dense-green px-3 py-1.5 text-xs font-bold text-white hover:brightness-95 transition-colors">승인</button>
+                                <button type="button" onclick="teamRejectPrompt({{ pl.id }})" class="inline-flex rounded-lg bg-[#475467] px-3 py-1.5 text-xs font-bold text-white hover:brightness-95 transition-colors">반려</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-12 text-center text-sm font-semibold text-dense-muted">
+            현재 결재 대기 중인 신청 건이 없습니다.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+        <p class="text-xs font-semibold leading-relaxed text-dense-muted">
+            <strong class="text-dense-text">안내</strong>: 본인 소속 팀원의 신청 건만 노출됩니다. 최종 승인 시 해당 팀원의 연차 잔액이 실제로 차감됩니다.
+        </p>
+    </div>
+</div>
+
+<script>
+async function teamApprove(leaveId) {
+    if (!confirm('이 신청을 승인하시겠습니까?')) return;
+    try {
+        const res = await fetch(`/user/team-approve/${leaveId}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || '승인되었습니다.');
+            window.location.reload();
+        } else {
+            alert(data.message || data.detail || '오류가 발생했습니다.');
+        }
+    } catch (e) {
+        alert('네트워크 오류가 발생했습니다.');
+    }
+}
+
+async function teamRejectPrompt(leaveId) {
+    const reason = prompt('반려 사유를 입력해 주세요:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+        alert('반려 사유를 입력해야 합니다.');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('rejection_reason', reason);
+    try {
+        const res = await fetch(`/user/team-reject/${leaveId}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || '반려되었습니다.');
+            window.location.reload();
+        } else {
+            alert(data.message || data.detail || '오류가 발생했습니다.');
+        }
+    } catch (e) {
+        alert('네트워크 오류가 발생했습니다.');
+    }
+}
+</script>
+{% endblock %}
