@@ -95,6 +95,26 @@
         </div>
     </div>
 
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 총 연차 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text">{{ fmt_hours(total_allocated_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">사용 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(used_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">잔여 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-green">{{ fmt_hours(remaining_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 신청 건수</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-nav-text">{{ leaves|length }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        </div>
+    </div>
+
     <!-- Direct Apply Panel -->
     <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
         <div class="mb-4 flex items-center justify-between">

@@ -365,7 +365,12 @@ async def apply_leave(
     if current_day_hours + requested_hours > 8:
         return JSONResponse(status_code=400, content={"message": "하루 최대 8시간을 초과하여 연차를 신청할 수 없습니다."})
 
-    leave_status = get_default_leave_status(db)
+    # PM은 결재를 타지 않고 바로 승인 (사용자 요청 사항)
+    if getattr(user, "role", "STAFF") == "PM":
+        leave_status = "APPROVED"
+    else:
+        leave_status = get_default_leave_status(db)
+
     for snapshot in resolved_snapshots:
         db.add(models.Leaves(
             user_id=user.user_id,

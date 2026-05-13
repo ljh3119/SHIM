@@ -28,14 +28,13 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 - `dist/SHIM_Portable/README_PORTABLE.md`
 - `dist/SHIM_Portable/data/shim_internal.db` (초기 DB)
 
-최신 반영 사항(2026-05-13, v1.3.1):
+최신 반영 사항(2026-05-13, v1.3.2):
 
-- **Tailwind CSS v4 통합 및 엔진 업그레이드**: Tailwind CSS v4.x 도입 및 `@tailwindcss/cli` 기반 빌드 시스템 전환
-- **의존성 최신화**: `tailwindcss`, `@tailwindcss/cli` 최신 버전(v4.3.0) 반영
-- **결재 권한 확장**: `PM`(프로젝트 매니저) 역할에 결재 권한 부여 및 승인/반려 로직 고도화
-- **사용자 UI 개선**: 전용 결재 관리 페이지 신설 및 대시보드 메뉴 분리(결재·팀 캘린더·히스토리)
-- **로직 안정화**: 반려된 연차 신청 건의 시간대 점유 해제 로직 반영
-- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.1` 반영(빌드 시 `package.json` 버전과 동일)
+- **PM 승인 로직 개선**: PM 역할의 사용자가 연차 신청 시 결재 라인을 타지 않고 즉시 자동 승인되도록 로직 개선
+- **사용자 대시보드 통계 강화**: 대시보드 상단에 총 연차, 사용, 잔여 시간 및 신청 건수 요약 카드 추가
+- **팀 캘린더 UI 최적화**: 조회 필터(연/월 선택)를 상단 별도 박스 패널 영역으로 분리하여 가독성 향상
+- 앱·템플릿·Docker compose 기본 태그와 동기화된 `1.3.2` 반영(빌드 시 `package.json` 버전과 동일)
+- (이전 v1.3.1) Tailwind CSS v4 통합, 결재 역할 확장(PM), 대시보드 메뉴 분리 반영
 - (이전 v1.3.0) 역할 기반 권한 체계(RBAC) 도입 및 팀장 결재 워크플로우 반영
 - 폐쇄망 기준: Tailwind CDN/Google Fonts 없음, 로컬 `tailwind.css` 사용 유지
 - 포터블 빌드(2026-05-13): `build_portable.ps1`로 재빌드 완료, `dist/SHIM_Portable` 갱신.
