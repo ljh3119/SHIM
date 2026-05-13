@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% macro fmt_hours(v) -%}
+{%- if v == (v|int) -%}{{ v|int }}{%- else -%}{{ '%.1f'|format(v) }}{%- endif -%}
+{%- endmacro %}
+
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <!-- Header Section -->
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 연차 신청 내역</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">
+                {{ user.user_name }}님의 {{ selected_year }}년도 연차 사용 및 신청 현황입니다.
+            </p>
+        </div>
+        <div class="mt-4 flex gap-2 md:mt-0">
+            <form action="/user/history" method="GET" class="flex items-center gap-2">
+                <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    {% for y in year_options %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 총 연차 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text">{{ fmt_hours(total_allocated_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">사용 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(used_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">잔여 시간</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-green">{{ fmt_hours(remaining_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        </div>
+        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+            <span class="mb-2 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 신청 건수</span>
+            <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-nav-text">{{ leaves|length }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="mt-6 overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">신청 내역 전체</h3>
+            <span class="text-xs font-bold text-dense-muted">총 {{ leaves|length }}건</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청일</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용 시간대</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">등록시각</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for leave in leaves %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.date.strftime('%Y-%m-%d') }} ({{ ['월', '화', '수', '목', '금', '토', '일'][leave.date.weekday()] }})</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.snapshot_slot_label }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold text-dense-blue">-{{ fmt_hours(leave.snapshot_deduction_hours) }}h</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm">
+                            {% if leave.status == "PENDING" %}
+                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber" title="관리자 승인 대기">결재 대기</span>
+                            {% elif leave.status == "APPROVED" %}
+                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green" title="승인 완료, 연차 반영">승인됨</span>
+                            {% elif leave.status == "REJECTED" %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]" title="관리자가 신청을 반려">반려</span>
+                            {% if leave.rejection_reason %}
+                            <div class="mt-1 max-w-[18rem] truncate text-xs font-semibold text-[#b42318]" title="{{ leave.rejection_reason }}">
+                                사유: {{ leave.rejection_reason }}
+                            </div>
+                            {% endif %}
+                            {% elif leave.status == "CANCELED" %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted" title="신청 철회·무효 처리">신청 취소</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">해당 연도 신청 내역이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -206,7 +206,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 
     # 금일 총 사용 연차(date 기준)
     leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date()).all()
-    today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status != "CANCELED")
+    today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
     
     # Last 7 days timeline
     seven_days_ago = today - timedelta(days=7)
@@ -656,7 +656,7 @@ async def admin_leaves_calendar(
                 .filter(models.Leaves.user_id == u.user_id, models.Leaves.year == current_year)
                 .all()
             )
-            yearly_used = sum(float(l.snapshot_deduction_hours or 0) for l in yearly_leaves if l.status != "CANCELED")
+            yearly_used = sum(float(l.snapshot_deduction_hours or 0) for l in yearly_leaves if l.status not in ("CANCELED", "REJECTED"))
 
         allocated_hours = float(allocation_map.get(u.user_id, u.total_leave_hours or 0))
         yearly_remain = allocated_hours - float(yearly_used)
@@ -667,7 +667,7 @@ async def admin_leaves_calendar(
             period_used = 0.0
             if u.user_id in user_leaves_map:
                 for dlist in user_leaves_map[u.user_id].values():
-                    period_used += sum(float(lv.snapshot_deduction_hours or 0) for lv in dlist if lv.status != "CANCELED")
+                    period_used += sum(float(lv.snapshot_deduction_hours or 0) for lv in dlist if lv.status not in ("CANCELED", "REJECTED"))
 
         user_stats.append(
             {
@@ -1107,6 +1107,71 @@ async def delete_leave(
     db.commit()
     
     return JSONResponse(status_code=200, content={"message": "연차가 성공적으로 삭제되었습니다."})
+
+
+@router.post("/user/update")
+async def update_user(
+    request: Request,
+    target_user_id: str = Form(...),
+    user_name: str = Form(...),
+    company: str = Form(""),
+    team: str = Form(""),
+    role: str = Form("STAFF"),
+    position: str = Form(""),
+    is_active: bool = Form(True),
+    db: Session = Depends(get_db),
+):
+    try:
+        admin = get_current_admin(request, db)
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
+    if not user:
+        return JSONResponse(status_code=404, content={"message": "User not found"})
+
+    # role 검증
+    from ..main import VALID_ROLES
+
+    role_value = (role or "STAFF").strip().upper()
+    if role_value not in VALID_ROLES:
+        role_value = "STAFF"
+
+    # ADMIN role은 직접 지정 불가
+    if role_value == "ADMIN" and user.role != "ADMIN":
+        return JSONResponse(
+            status_code=400, content={"message": "관리자 역할은 직접 지정할 수 없습니다."}
+        )
+
+    old_data = (
+        f"name={user.user_name};company={user.company};team={user.team};"
+        f"role={user.role};position={user.position};active={user.is_active}"
+    )
+
+    user.user_name = user_name.strip()
+    user.company = company.strip() if company else None
+    user.team = team.strip() if team else None
+    user.role = role_value
+    user.position = position.strip() if position else None
+    user.is_active = is_active
+
+    new_data = (
+        f"name={user.user_name};company={user.company};team={user.team};"
+        f"role={user.role};position={user.position};active={user.is_active}"
+    )
+
+    audit = models.AuditLogs(
+        actor_id=admin.user_id,
+        action="UPDATE_USER_INFO",
+        target_info=f"User:{target_user_id}",
+        old_data=old_data,
+        new_data=new_data,
+    )
+    db.add(audit)
+    db.commit()
+
+    return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
+
 
 @router.post("/user/create")
 async def create_user(

@@ -94,7 +94,7 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     time_options = _minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
     
     total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
-    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status != "CANCELED")
+    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED"))
     remaining_hours = total_allocated_hours - used_hours
     
     # 연간(12개월) 캘린더 데이터
@@ -153,69 +153,6 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     ctx["team_calendar_visible"] = team_calendar_visible
     ctx["is_approval_required"] = is_approval_required
 
-    if team_calendar_visible and user.team:
-        now_month = now.month
-        display_month = now_month  # 현재 월 기준
-        display_year = now.year
-        num_days = cal_module.monthrange(display_year, display_month)[1]
-        month_start = date_cls(display_year, display_month, 1)
-        month_end = date_cls(display_year, display_month, num_days)
-
-        team_members = db.query(models.Users).filter(
-            models.Users.team == user.team,
-            models.Users.company == user.company,
-            models.Users.is_active == True,
-            models.Users.user_id != user.user_id,
-            models.Users.is_admin == False,
-        ).order_by(models.Users.user_name.asc()).all()
-
-        team_member_ids = [m.user_id for m in team_members]
-        team_leaves_raw = []
-        if team_member_ids:
-            team_leaves_raw = db.query(models.Leaves).filter(
-                models.Leaves.user_id.in_(team_member_ids),
-                models.Leaves.date >= month_start,
-                models.Leaves.date <= month_end,
-                models.Leaves.status.in_(["APPROVED", "PENDING"]),
-            ).all()
-
-        # {user_id: {day: [leave, ...]}} 맵 구성
-        team_leaves_map = {m.user_id: {} for m in team_members}
-        for lv in team_leaves_raw:
-            if lv.user_id in team_leaves_map:
-                d = lv.date.day
-                if d not in team_leaves_map[lv.user_id]:
-                    team_leaves_map[lv.user_id][d] = []
-                team_leaves_map[lv.user_id][d].append(lv)
-
-        ctx["team_members"] = team_members
-        ctx["team_leaves_map"] = team_leaves_map
-        ctx["team_cal_year"] = display_year
-        ctx["team_cal_month"] = display_month
-        ctx["team_cal_num_days"] = num_days
-        weekday_labels = ["월", "화", "수", "목", "금", "토", "일"]
-        ctx["team_cal_day_weekday"] = {
-            d: weekday_labels[cal_module.weekday(display_year, display_month, d)] for d in range(1, num_days + 1)
-        }
-        ctx["team_cal_weekend_days"] = [
-            d for d in range(1, num_days + 1) if cal_module.weekday(display_year, display_month, d) >= 5
-        ]
-        # 공휴일
-        team_holidays = db.query(models.Holidays).filter(
-            models.Holidays.date >= month_start,
-            models.Holidays.date <= month_end
-        ).all()
-        ctx["team_cal_holiday_map"] = {h.date.day: h.name for h in team_holidays}
-    else:
-        ctx["team_members"] = []
-        ctx["team_leaves_map"] = {}
-        ctx["team_cal_year"] = now.year
-        ctx["team_cal_month"] = now.month
-        ctx["team_cal_num_days"] = 0
-        ctx["team_cal_day_weekday"] = {}
-        ctx["team_cal_weekend_days"] = []
-        ctx["team_cal_holiday_map"] = {}
-
     # 팀장: 결재 대기 건 목록 (결재 ON + TEAM_LEAD)
     pending_team_leaves = []
     if user_role == 'TEAM_LEAD' and is_approval_required and user.team:
@@ -234,6 +171,132 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     ctx["pending_team_leaves"] = pending_team_leaves
 
     return _templates(request).TemplateResponse(request=request, name="user_dashboard.html", context=ctx)
+
+@router.get("/team-calendar", response_class=HTMLResponse)
+async def user_team_calendar(request: Request, year: int = None, month: int = None, db: Session = Depends(get_db)):
+    try:
+        user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+    setting = db.query(models.SystemSettings).first()
+    team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
+    if not team_calendar_visible:
+        return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+
+    now = datetime.now()
+    display_year = year if year else now.year
+    display_month = month if month else now.month
+    
+    num_days = cal_module.monthrange(display_year, display_month)[1]
+    month_start = date_cls(display_year, display_month, 1)
+    month_end = date_cls(display_year, display_month, num_days)
+
+    team_members = []
+    team_leaves_map = {}
+    if user.team:
+        team_members = db.query(models.Users).filter(
+            models.Users.team == user.team,
+            models.Users.company == user.company,
+            models.Users.is_active == True,
+            models.Users.user_id != user.user_id,
+            models.Users.is_admin == False,
+        ).order_by(models.Users.user_name.asc()).all()
+
+        team_member_ids = [m.user_id for m in team_members]
+        team_leaves_raw = []
+        if team_member_ids:
+            team_leaves_raw = db.query(models.Leaves).filter(
+                models.Leaves.user_id.in_(team_member_ids),
+                models.Leaves.date >= month_start,
+                models.Leaves.date <= month_end,
+                models.Leaves.status.in_(["APPROVED", "PENDING"]),
+            ).all()
+
+        team_leaves_map = {m.user_id: {} for m in team_members}
+        for lv in team_leaves_raw:
+            if lv.user_id in team_leaves_map:
+                d = lv.date.day
+                if d not in team_leaves_map[lv.user_id]:
+                    team_leaves_map[lv.user_id][d] = []
+                team_leaves_map[lv.user_id][d].append(lv)
+
+    weekday_labels = ["월", "화", "수", "목", "금", "토", "일"]
+    team_cal_day_weekday = {
+        d: weekday_labels[cal_module.weekday(display_year, display_month, d)] for d in range(1, num_days + 1)
+    }
+    team_cal_weekend_days = [
+        d for d in range(1, num_days + 1) if cal_module.weekday(display_year, display_month, d) >= 5
+    ]
+    team_holidays = db.query(models.Holidays).filter(
+        models.Holidays.date >= month_start,
+        models.Holidays.date <= month_end
+    ).all()
+    team_cal_holiday_map = {h.date.day: h.name for h in team_holidays}
+    
+    user_role = getattr(user, 'role', 'STAFF')
+    is_approval_required = bool(setting.is_approval_required) if setting else False
+
+    ctx = {
+        "user": user,
+        "user_role": user_role,
+        "is_approval_required": is_approval_required,
+        "team_calendar_visible": team_calendar_visible,
+        "team_members": team_members,
+        "team_leaves_map": team_leaves_map,
+        "team_cal_year": display_year,
+        "team_cal_month": display_month,
+        "team_cal_num_days": num_days,
+        "team_cal_day_weekday": team_cal_day_weekday,
+        "team_cal_weekend_days": team_cal_weekend_days,
+        "team_cal_holiday_map": team_cal_holiday_map,
+        "current_year": now.year,
+        "current_month": now.month,
+    }
+    return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
+
+@router.get("/history", response_class=HTMLResponse)
+async def user_history(request: Request, year: int = None, db: Session = Depends(get_db)):
+    try:
+        user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+    now = datetime.now()
+    current_year = year if year else now.year
+    leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
+    leave_years = [row[0] for row in leave_year_rows]
+    year_options = build_year_options(now.year, leave_years)
+
+    # 연간 통계
+    yearly_leaves = db.query(models.Leaves).filter(
+        models.Leaves.user_id == user.user_id,
+        models.Leaves.year == current_year
+    ).order_by(models.Leaves.date.desc()).all()
+
+    total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
+    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED"))
+    remaining_hours = total_allocated_hours - used_hours
+
+    setting = db.query(models.SystemSettings).first()
+    team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
+    is_approval_required = bool(setting.is_approval_required) if setting else False
+    user_role = getattr(user, 'role', 'STAFF')
+
+    ctx = {
+        "user": user,
+        "user_role": user_role,
+        "leaves": yearly_leaves,
+        "total_allocated_hours": total_allocated_hours,
+        "used_hours": used_hours,
+        "remaining_hours": remaining_hours,
+        "selected_year": current_year,
+        "current_year": now.year,
+        "year_options": year_options,
+        "team_calendar_visible": team_calendar_visible,
+        "is_approval_required": is_approval_required,
+    }
+    return _templates(request).TemplateResponse(request=request, name="user_history.html", context=ctx)
 @router.post("/leave")
 async def apply_leave(
     request: Request,
@@ -287,6 +350,8 @@ async def apply_leave(
 
     for selected in resolved_snapshots:
         for existing in daily_leaves:
+            if existing.status in ("CANCELED", "REJECTED"):
+                continue
             if existing.snapshot_start_min is None or existing.snapshot_end_min is None:
                 continue
             if selected.start_min < existing.snapshot_end_min and selected.end_min > existing.snapshot_start_min:
@@ -295,7 +360,7 @@ async def apply_leave(
                     content={"message": "기존 신청 내역과 시간이 겹치는 시간대는 신청할 수 없습니다."}
                 )
 
-    current_day_hours = sum(float(l.snapshot_deduction_hours or 0) for l in daily_leaves if l.status != "CANCELED")
+    current_day_hours = sum(float(l.snapshot_deduction_hours or 0) for l in daily_leaves if l.status not in ("CANCELED", "REJECTED"))
     requested_hours = sum(float(s.deduction_hours or 0) for s in resolved_snapshots)
     if current_day_hours + requested_hours > 8:
         return JSONResponse(status_code=400, content={"message": "하루 최대 8시간을 초과하여 연차를 신청할 수 없습니다."})
@@ -346,30 +411,68 @@ async def change_password(
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요."})
 
 
-# ── 팀장 결재 엔드포인트 ────────────────────────────────────────────
+# ── 결재 관리 엔드포인트 (팀장/PM) ────────────────────────────────────────────
 
-def _get_team_lead(request: Request, db: Session) -> models.Users:
-    """TEAM_LEAD 역할 검증. 결재 기능이 OFF이면 403."""
+def _get_approver(request: Request, db: Session) -> models.Users:
+    """TEAM_LEAD 또는 PM 역할 검증. 결재 기능이 OFF이면 403."""
     user = get_current_user(request, db)
     user_role = getattr(user, "role", None) or "STAFF"
-    if user_role != "TEAM_LEAD":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="팀장 권한이 필요합니다.")
+    if user_role not in ["TEAM_LEAD", "PM"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="결재 권한이 필요합니다.")
     setting = db.query(models.SystemSettings).first()
     if not setting or not setting.is_approval_required:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="결재 기능이 비활성화 상태입니다.")
     return user
 
 
-def _validate_team_leave(lead: models.Users, leave: models.Leaves, db: Session) -> models.Users:
+def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db: Session) -> models.Users:
     """결재 대상 휴가 검증: 같은 팀·셀프 결재 금지."""
-    if leave.user_id == lead.user_id:
+    if leave.user_id == approver.user_id:
         raise HTTPException(status_code=400, detail="본인 신청에 대해서는 결재할 수 없습니다.")
     target_user = db.query(models.Users).filter(models.Users.user_id == leave.user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="신청자 정보를 찾을 수 없습니다.")
-    if target_user.team != lead.team or target_user.company != lead.company:
+    
+    # PM은 전사 결재 가능? 아니면 팀장과 동일하게 팀내? 
+    # 보통 PM은 프로젝트 단위지만 여기서는 직급 체계이므로 팀장과 동일하게 팀내 결재로 일단 유지 (필요시 전사로 확장)
+    if target_user.team != approver.team or target_user.company != approver.company:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="다른 팀의 신청에 대해서는 결재할 수 없습니다.")
     return target_user
+
+
+@router.get("/approvals", response_class=HTMLResponse)
+async def user_approvals(request: Request, db: Session = Depends(get_db)):
+    try:
+        approver = _get_approver(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+
+    user_role = getattr(approver, "role", "STAFF")
+    setting = db.query(models.SystemSettings).first()
+    team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
+    is_approval_required = bool(setting.is_approval_required) if setting else False
+
+    pending_leaves = (
+        db.query(models.Leaves)
+        .join(models.Users, models.Leaves.user_id == models.Users.user_id)
+        .filter(
+            models.Users.team == approver.team,
+            models.Users.company == approver.company,
+            models.Leaves.status == "PENDING",
+            models.Leaves.user_id != approver.user_id,
+        )
+        .order_by(models.Leaves.created_at.desc())
+        .all()
+    )
+
+    ctx = {
+        "user": approver,
+        "user_role": user_role,
+        "team_calendar_visible": team_calendar_visible,
+        "is_approval_required": is_approval_required,
+        "pending_leaves": pending_leaves,
+    }
+    return _templates(request).TemplateResponse(request=request, name="user_approvals.html", context=ctx)
 
 
 @router.post("/team-approve/{leave_id}")
@@ -379,7 +482,7 @@ async def team_approve_leave(
     db: Session = Depends(get_db),
 ):
     try:
-        lead = _get_team_lead(request, db)
+        approver = _get_approver(request, db)
     except HTTPException as exc:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
@@ -388,7 +491,7 @@ async def team_approve_leave(
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
 
     try:
-        _validate_team_leave(lead, leave, db)
+        _validate_approvable_leave(approver, leave, db)
     except HTTPException as exc:
         return JSONResponse(status_code=exc.status_code, content={"message": exc.detail})
 
@@ -399,8 +502,8 @@ async def team_approve_leave(
 
     db.add(
         models.AuditLogs(
-            actor_id=lead.user_id,
-            action="TEAM_LEAD_APPROVE_LEAVE",
+            actor_id=approver.user_id,
+            action="APPROVE_LEAVE",
             target_info=f"Leave:{leave_id}",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
@@ -418,7 +521,7 @@ async def team_reject_leave(
     db: Session = Depends(get_db),
 ):
     try:
-        lead = _get_team_lead(request, db)
+        approver = _get_approver(request, db)
     except HTTPException as exc:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
@@ -427,7 +530,7 @@ async def team_reject_leave(
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
 
     try:
-        _validate_team_leave(lead, leave, db)
+        _validate_approvable_leave(approver, leave, db)
     except HTTPException as exc:
         return JSONResponse(status_code=exc.status_code, content={"message": exc.detail})
 
@@ -440,8 +543,8 @@ async def team_reject_leave(
 
     db.add(
         models.AuditLogs(
-            actor_id=lead.user_id,
-            action="TEAM_LEAD_REJECT_LEAVE",
+            actor_id=approver.user_id,
+            action="REJECT_LEAVE",
             target_info=f"Leave:{leave_id}",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,

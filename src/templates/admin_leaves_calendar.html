@@ -327,7 +327,7 @@
                             {% if day in user_leaves_map[stat.user_id] %}
                                 {% set dl = user_leaves_map[stat.user_id][day] %}
                                 {% set ns = namespace(total_h=0) %}
-                                {% for lv in dl %}{% if lv.status != "CANCELED" %}{% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
+                                {% for lv in dl %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
                                 <div class="day-block {% if ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %}"
                                      title="{% for lv in dl %}{{ lv.snapshot_slot_label }}(-{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
                                      data-user-name="{{ stat.user_name }}"
