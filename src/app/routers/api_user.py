@@ -260,6 +260,8 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
         "team_cal_holiday_map": team_cal_holiday_map,
         "current_year": now.year,
         "current_month": now.month,
+        "now": now,
+        "now_str": now.strftime('%Y-%m-%d %H:%M'),
     }
     return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
 
