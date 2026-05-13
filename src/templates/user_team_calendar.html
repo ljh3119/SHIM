@@ -6,13 +6,47 @@
 {%- endmacro %}
 
 <style>
-    .cal-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-    .cal-table th, .cal-table td { border: 1px solid #d0d5dd; text-align: center; vertical-align: middle; }
-    .cal-table thead th { background: #f9fafb; font-size: 10px; font-weight: 600; color: #475467; padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
-    .cal-table tbody td { padding: 3px 1px; font-size: 10px; }
-    .cal-table .sticky-col { position: sticky; left: 0; z-index: 10; background: #ffffff; }
-    .cal-table thead .sticky-col { z-index: 15; background: #f9fafb; }
-    
+    .cal-table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .cal-table th,
+    .cal-table td {
+        border: 1px solid #d0d5dd;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .cal-table thead th {
+        background: #f9fafb;
+        font-size: 10px;
+        font-weight: 600;
+        color: #475467;
+        padding: 4px 2px;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .cal-table tbody td {
+        padding: 3px 1px;
+        font-size: 10px;
+    }
+
+    .cal-table .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: #ffffff;
+    }
+
+    .cal-table thead .sticky-col {
+        z-index: 15;
+        background: #f9fafb;
+    }
+
     .cal-table th.col-day {
         white-space: normal;
         padding: 3px 1px;
@@ -21,8 +55,21 @@
         vertical-align: middle;
         word-break: keep-all;
     }
-    .cal-table th.col-day .day-num { display: block; font-weight: 700; font-size: 9px; line-height: 1.1; }
-    .cal-table th.col-day .weekday-label { display: block; font-size: 7px; line-height: 1.1; margin-top: 1px; }
+
+    .cal-table th.col-day .day-num {
+        display: block;
+        font-weight: 700;
+        font-size: 9px;
+        line-height: 1.1;
+    }
+
+    .cal-table th.col-day .weekday-label {
+        display: block;
+        font-size: 7px;
+        line-height: 1.1;
+        margin-top: 1px;
+    }
+
     .cal-table th.col-day .holiday-chip {
         display: block;
         margin: 2px auto 0;
@@ -37,7 +84,7 @@
         color: #fff;
         border-radius: 2px;
     }
-    
+
     .cal-table .day-block {
         width: 100%;
         min-height: 1.45rem;
@@ -52,26 +99,35 @@
         font-weight: 700;
         line-height: 1;
         letter-spacing: -0.04em;
-        border: 1px solid rgba(255,255,255,0.25);
+        border: 1px solid rgba(255, 255, 255, 0.25);
         color: #fff;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
         cursor: default;
         background: #175cd3;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
+
     .cal-table .day-block.half {
         background: linear-gradient(180deg, #fde68a 0%, #f79009 100%);
-        border-color: rgba(181,71,8,0.35);
+        border-color: rgba(181, 71, 8, 0.35);
         color: #1c1917;
-        text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
     }
+
     .cal-table .day-block.full {
         background: linear-gradient(180deg, #f97066 0%, #d92d20 100%);
-        border-color: rgba(217,45,32,0.45);
+        border-color: rgba(217, 45, 32, 0.45);
     }
-    
-    .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
-    .holiday-head { color: #d92d20 !important; background: #fef3f2 !important; }
+
+    .weekend-head {
+        color: #d92d20 !important;
+        background: #fef3f2 !important;
+    }
+
+    .holiday-head {
+        color: #d92d20 !important;
+        background: #fef3f2 !important;
+    }
 </style>
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
@@ -80,37 +136,43 @@
         <div>
             <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{{ team_name or '소속 미지정' }} 캘린더</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
-                {{ team_cal_year }}년 {{ team_cal_month }}월 {{ team_name or '팀원' }}들의 연차 현황입니다.
+                {{ team_cal_year }}년 {{ team_cal_month }}월 {{ team_name or '팀원' }}팀의 연차 현황입니다.
             </p>
         </div>
     </div>
 
     <!-- Combined Content Panel -->
     <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6 shadow-sm">
-        <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-dense-line pb-4">
+        <div
+            class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-dense-line pb-4">
             <div class="flex items-center gap-4">
-                <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ team_cal_year }}년 {{ team_cal_month }}월</h3>
-                <span class="inline-flex items-center rounded-full bg-dense-blue-soft px-2.5 py-0.5 text-xs font-bold text-dense-blue">
+                <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ team_cal_year }}년 {{ team_cal_month
+                    }}월</h3>
+                <span
+                    class="inline-flex items-center rounded-full bg-dense-blue-soft px-2.5 py-0.5 text-xs font-bold text-dense-blue">
                     {{ team_members|length }}명 참여 중
                 </span>
             </div>
-            
+
             <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
                 <label class="text-xs font-bold text-dense-muted mr-1">조회 설정</label>
-                <select name="year" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                <select name="year"
+                    class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                     {% for y in range(current_year - 1, current_year + 2) %}
-                    <option value="{{ y }}" {% if team_cal_year == y %}selected{% endif %}>{{ y }}년</option>
+                    <option value="{{ y }}" {% if team_cal_year==y %}selected{% endif %}>{{ y }}년</option>
                     {% endfor %}
                 </select>
-                <select name="month" onchange="this.form.submit()" class="block w-[4.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                <select name="month" onchange="this.form.submit()"
+                    class="block w-[4.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                     {% for m in range(1, 13) %}
-                    <option value="{{ m }}" {% if team_cal_month == m %}selected{% endif %}>{{ m }}월</option>
+                    <option value="{{ m }}" {% if team_cal_month==m %}selected{% endif %}>{{ m }}월</option>
                     {% endfor %}
                 </select>
             </form>
         </div>
 
-        <div class="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-line">
+        <div
+            class="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-line">
             <div class="flex items-center">
                 <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-blue shadow-sm"></span>
                 <span>반일 미만</span>
@@ -127,12 +189,13 @@
                 * 해당 셀에 마우스를 올리면 상세 시간대가 표시됩니다.
             </div>
         </div>
-        
+
         <div class="overflow-x-auto rounded-xl border border-dense-line">
             <table class="cal-table" style="min-width: 800px;">
                 <thead>
                     <tr>
-                        <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style="width: 7rem; min-width: 7rem;">이름</th>
+                        <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
+                            style="width: 7rem; min-width: 7rem;">이름</th>
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set wd = team_cal_day_weekday[d] %}
                         {% set holiday_name = team_cal_holiday_map.get(d) %}
@@ -150,17 +213,20 @@
                 <tbody class="divide-y divide-dense-line">
                     {% for m in team_members %}
                     <tr class="transition-colors hover:bg-dense-surface-soft group">
-                        <td class="sticky-col whitespace-nowrap !px-3 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft">
+                        <td
+                            class="sticky-col whitespace-nowrap !px-3 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft">
                             {{ m.user_name }}
                         </td>
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set cell_leaves = team_leaves_map.get(m.user_id, {}).get(d, []) %}
-                        <td class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
+                        <td
+                            class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
                             {% if cell_leaves %}
                             {% set ns_t = namespace(th=0) %}
-                            {% for lv in cell_leaves %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_t.th = ns_t.th + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
-                            <div class="day-block {% if ns_t.th >= 8 %}full{% elif ns_t.th >= 4 %}half{% endif %} transform transition-transform hover:scale-105" 
-                                 title="{% for lv in cell_leaves %}{{ lv.snapshot_slot_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                            {% for lv in cell_leaves %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_t.th
+                            = ns_t.th + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
+                            <div class="day-block {% if ns_t.th >= 8 %}full{% elif ns_t.th >= 4 %}half{% endif %} transform transition-transform hover:scale-105"
+                                title="{% for lv in cell_leaves %}{{ lv.snapshot_slot_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
                                 {{ fmt_hours(ns_t.th) }}h
                             </div>
                             {% endif %}
@@ -169,7 +235,8 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ team_cal_num_days + 1 }}" class="py-16 text-center text-sm font-semibold text-dense-muted bg-dense-surface-soft">
+                        <td colspan="{{ team_cal_num_days + 1 }}"
+                            class="py-16 text-center text-sm font-semibold text-dense-muted bg-dense-surface-soft">
                             표시할 데이터가 없거나 조회 권한이 제한되었습니다.
                         </td>
                     </tr>
