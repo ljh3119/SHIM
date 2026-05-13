@@ -91,6 +91,13 @@ docker build -f infra/docker/Dockerfile -t shim:1.3.2 -t shim:latest .
 docker compose -f infra/docker/docker-compose.yml up -d
 ```
 
+#### 방식 C. 폐쇄망용 포터블 실행 (Portable)
+인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
+1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`
+2.  **배포**: 생성된 `artifacts/dist/SHIM_Portable` 폴더를 대상 PC로 복사합니다.
+3.  **실행**: 해당 폴더 내 `run_portable.bat`을 실행합니다.
+    - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
+
 ### Step 3. 시스템 최초 접속 및 초기 설정
 서버가 정상적으로 기동되었다면 브라우저를 통해 접속합니다.
 
@@ -114,7 +121,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
 ### 주요 문서 및 산출물 목록
-- **운영 가이드**: [초심자 가이드](docs/1-1_초심자_구동_가이드.md), [백업/복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md)
+- **운영 가이드**: [초심자 가이드](docs/1-1_초심자_구동_가이드.md), [백업/복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md), [포터블 가이드](portable/README_PORTABLE.md)
 - **릴리즈 정보**: [통합 산출물 증적](docs/2-1_운영_릴리즈_통합_산출물.md), [변경 이력](docs/1-4_작업_로그.md)
 - **기술 설계**: [프로젝트 설계서](docs/4-1_SHIM_프로젝트_설계서.md), [AI 인수인계 가이드](docs/3-2_AI_인수인계_가이드.md)
 - **데이터베이스**: `var/data/shim_internal.db` (운영 시 정기 백업 필수)
