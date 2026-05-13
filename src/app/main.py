@@ -15,8 +15,8 @@ from .database import engine, get_db
 
 app = FastAPI(title="SHIM", version="1.3.2")
 
-DEFAULT_PRODUCT_DISPLAY_NAME = "SHIM"
-DEFAULT_BRAND_INITIAL = "쉼"
+DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
+DEFAULT_BRAND_INITIAL = "S"
 BRANDING_BADGE_MAX_LEN = 24
 
 
