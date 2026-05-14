@@ -78,7 +78,7 @@
                         <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.company or '-' }}">{{ u.company or '-' }}</td>
                         <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.team or '-' }}">{{ u.team or '-' }}</td>
                         <td class="whitespace-nowrap px-2 py-2 text-sm font-semibold text-dense-nav-text">
-                            {% if not u.is_admin %}
+                            {% if u.role != 'ADMIN' %}
                             <div class="flex items-center gap-1">
                                 <input id="leave-days-{{ u.user_id }}" type="number" min="0" step="1" value="{{ user_leave_days_map.get(u.user_id, (u.total_leave_hours // 8)) }}" class="w-14 rounded-lg border-0 bg-dense-surface py-1 px-1 text-sm font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                                 <button onclick="updateLeaveDays('{{ u.user_id }}')" type="button" class="shrink-0 rounded-lg border border-dense-line-strong bg-dense-blue-soft px-1.5 py-0.5 text-[11px] font-bold text-dense-blue hover:bg-dense-blue-soft/80">저장</button>
@@ -112,9 +112,12 @@
                             <div class="flex flex-nowrap items-center justify-end gap-1">
                                 <button type="button" onclick="openEditUserModal('{{ u.user_id }}', '{{ u.user_name }}', '{{ u.company or '' }}', '{{ u.team or '' }}', '{{ u.role }}', '{{ u.position or '' }}', {{ 'true' if u.is_active else 'false' }})" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-blue hover:bg-dense-surface-soft">수정</button>
                                 <button type="button" onclick="resetPassword('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-[#fedf89] bg-dense-amber-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-amber hover:bg-[#fffdf6]">비밀번호 초기화</button>
+                                {% if u.role != 'ADMIN' %}
                                 <button type="button" onclick="toggleUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-nav-text hover:bg-dense-surface-soft">상태 변경</button>
                                 <button type="button" onclick="hardDeleteUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-[#b42318] hover:brightness-95">삭제</button>
-                            </div>
+                                {% endif %}
+                                </div>
+
                         </td>
                     </tr>
                     {% endfor %}
@@ -272,12 +275,17 @@
                             <input type="text" name="position" id="edit_position" placeholder="예: 선임연구원" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                         </div>
                     </div>
-                    <div>
+                    <div id="edit_is_active_container">
                         <label for="edit_is_active" class="block text-sm font-bold text-dense-nav-text">상태</label>
                         <select name="is_active" id="edit_is_active" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                             <option value="true">재직 중 (활성)</option>
                             <option value="false">비활성</option>
                         </select>
+                    </div>
+                    <div id="edit_is_active_admin_display" class="hidden">
+                        <label class="block text-sm font-bold text-dense-muted">상태</label>
+                        <div class="mt-1 block w-full rounded-xl bg-[#abefc6]/20 py-2 px-3 text-sm font-extrabold text-dense-green ring-1 ring-inset ring-[#abefc6]">재직 중 (관리자 계정은 비활성화 불가)</div>
+                        <input type="hidden" id="edit_is_active_hidden_admin" value="true">
                     </div>
                 </form>
             </div>
@@ -355,11 +363,20 @@ function openEditUserModal(id, name, company, team, role, position, isActive) {
     const roleAdminDisplay = document.getElementById('edit_role_admin_display');
     const roleHiddenAdmin = document.getElementById('edit_role_hidden_admin');
 
+    const isActiveContainer = document.getElementById('edit_is_active_container');
+    const isActiveAdminDisplay = document.getElementById('edit_is_active_admin_display');
+    const isActiveHiddenAdmin = document.getElementById('edit_is_active_hidden_admin');
+
     if (role === 'ADMIN') {
         roleSelectContainer.classList.add('hidden');
         roleAdminDisplay.classList.remove('hidden');
         roleHiddenAdmin.name = 'role'; // name 부여하여 전송되게 함
         document.getElementById('edit_role').name = ''; // select name 제거
+
+        isActiveContainer.classList.add('hidden');
+        isActiveAdminDisplay.classList.remove('hidden');
+        isActiveHiddenAdmin.name = 'is_active';
+        document.getElementById('edit_is_active').name = '';
     } else {
         roleSelectContainer.classList.remove('hidden');
         roleAdminDisplay.classList.add('hidden');
@@ -367,6 +384,12 @@ function openEditUserModal(id, name, company, team, role, position, isActive) {
         const roleSelect = document.getElementById('edit_role');
         roleSelect.name = 'role'; // select name 부여
         roleSelect.value = role;
+
+        isActiveContainer.classList.remove('hidden');
+        isActiveAdminDisplay.classList.add('hidden');
+        isActiveHiddenAdmin.name = '';
+        document.getElementById('edit_is_active').name = 'is_active';
+        document.getElementById('edit_is_active').value = isActive ? 'true' : 'false';
     }
     
     window.shimModal.open('editUserModal', 'edit_user_name', document.activeElement);

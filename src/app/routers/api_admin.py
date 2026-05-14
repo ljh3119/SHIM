@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 from openpyxl import Workbook
 
-from .. import models, database, auth
+from .. import models, database, auth, utils
 from ..database import get_db, DB_PATH
 from ..services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
@@ -20,90 +20,13 @@ from ..services.leave_policy import (
     apply_leave_status_transition,
 )
 from ..services.ops import create_sqlite_backup
+from ..services import admin_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _templates(request: Request):
     return request.app.state.templates
-
-def build_year_options(now_year: int, data_years=None, past_span: int = 5, future_span: int = 10):
-    years = [y for y in (data_years or []) if y is not None]
-    min_data_year = min(years) if years else now_year
-    max_data_year = max(years) if years else now_year
-    start = min(now_year - past_span, min_data_year)
-    end = max(now_year + future_span, max_data_year)
-    return list(range(start, end + 1))
-
-
-def build_half_hour_options() -> list[tuple[int, str]]:
-    options: list[tuple[int, str]] = []
-    minute = 0
-    while minute <= 24 * 60:
-        hh = minute // 60
-        mm = minute % 60
-        label = f"{hh:02d}:{mm:02d}"
-        options.append((minute, label))
-        minute += 30
-    return options
-
-
-def get_yearly_allocation_map(db: Session, user_ids: list[str], year: int) -> dict[str, int]:
-    if not user_ids:
-        return {}
-    try:
-        rows = db.query(models.UserYearlyLeaveAllocations).filter(
-            models.UserYearlyLeaveAllocations.user_id.in_(user_ids),
-            models.UserYearlyLeaveAllocations.year == year
-        ).all()
-        return {row.user_id: int(row.allocated_hours) for row in rows}
-    except SQLAlchemyError:
-        # 스토리지 I/O 오류 시에도 기존 기본 지급값으로 fallback
-        db.rollback()
-        return {}
-
-
-# 연차 표시: 1일 = 8시간 기준 일·시간 문자열
-def hours_to_days_hours_label(total_hours: float, day_hours: int = 8) -> str:
-    th = float(total_hours) if total_hours is not None else 0.0
-    if abs(th) < 1e-9:
-        return "0일 0시간"
-    negative = th < 0
-    t = abs(th)
-    days = int(t // day_hours)
-    rem = t - days * day_hours
-    rem_display = int(round(rem)) if abs(rem - round(rem)) < 1e-6 else round(rem, 1)
-    if negative:
-        if days > 0:
-            return f"-{days}일 {rem_display}시간"
-        return f"-{rem_display}시간"
-    return f"{days}일 {rem_display}시간"
-
-
-# 캘린더 한 줄 표기: 9일2h / 8일 / 4h / - (0은 '-' , 시간만 있을 때만 Nh)
-def hours_to_days_hours_compact(total_hours: float, day_hours: int = 8) -> str:
-    th = float(total_hours) if total_hours is not None else 0.0
-    if abs(th) < 1e-9:
-        return "-"
-
-    def _fmt(d: int, rem: int, neg: bool) -> str:
-        pre = "-" if neg else ""
-        if d > 0 and rem > 0:
-            return f"{pre}{d}일{rem}h"
-        if d > 0 and rem == 0:
-            return f"{pre}{d}일"
-        if d == 0 and rem > 0:
-            return f"{pre}{rem}h"
-        return "-"
-
-    if th < 0:
-        t = abs(th)
-        d = int(t // day_hours)
-        rem = int(round(t - d * day_hours))
-        return _fmt(d, rem, True)
-    d = int(th // day_hours)
-    rem = int(round(th - d * day_hours))
-    return _fmt(d, rem, False)
 
 
 TIMELINE_SORT_COLUMNS = frozenset({"created_at", "user_name", "date", "slot", "company", "team"})
@@ -138,7 +61,7 @@ def get_current_admin(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    if not user or not user.is_active or not user.is_admin:
+    if not user or not user.is_active or (getattr(user, "role", "") != "ADMIN" and not getattr(user, "is_admin", False)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     return user
 
@@ -187,42 +110,17 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     except HTTPException:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
         
-    today = datetime.now()
-    day_start = datetime.combine(today.date(), datetime.min.time())
-    next_day_start = day_start + timedelta(days=1)
-    
-    # KPIs
-    users = db.query(models.Users).filter(models.Users.is_admin == False).all()
-    active_users_count = len([u for u in users if u.is_active])
-    
-    # 오늘 신청 건수(created_at 기준)
-    leaves_today = db.query(models.Leaves).filter(
-        models.Leaves.created_at >= day_start,
-        models.Leaves.created_at < next_day_start
-    ).all()
-    pending_leaves_count = db.query(models.Leaves).filter(models.Leaves.status == "PENDING").count()
-    setting = db.query(models.SystemSettings).first()
-    is_approval_required = bool(setting.is_approval_required) if setting else False
-
-    # 금일 총 사용 연차(date 기준)
-    leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date()).all()
-    today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
-    
-    # Last 7 days timeline
-    seven_days_ago = today - timedelta(days=7)
-    recent_leaves = db.query(models.Leaves).filter(
-        models.Leaves.created_at >= seven_days_ago
-    ).order_by(models.Leaves.created_at.desc()).all()
+    stats = admin_service.get_admin_dashboard_stats(db)
     
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={
         "admin": admin,
-        "active_users_count": active_users_count,
-        "leaves_today_count": len(leaves_today),
-        "pending_leaves_count": pending_leaves_count,
-        "is_approval_required": is_approval_required,
-        "today_used_hours": today_used_hours,
-        "recent_leaves": recent_leaves,
-        "current_year": today.year
+        "active_users_count": stats["active_users_count"],
+        "leaves_today_count": stats["leaves_today_count"],
+        "pending_leaves_count": stats["pending_leaves_count"],
+        "is_approval_required": stats["is_approval_required"],
+        "today_used_hours": stats["today_used_hours"],
+        "recent_leaves": stats["recent_leaves"],
+        "current_year": datetime.now().year
     })
 
 @router.get("/leave/timeline", response_class=HTMLResponse)
@@ -258,24 +156,17 @@ async def admin_leaves_timeline(
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = build_year_options(datetime.now().year, leave_years)
+    year_options = utils.build_year_options(datetime.now().year, leave_years)
 
-    query = (
-        db.query(models.Leaves)
-        .join(models.Users, models.Leaves.user_id == models.Users.user_id)
-        .options(contains_eager(models.Leaves.user))
-        .filter(models.Leaves.year == current_year)
+    query = admin_service.get_leaves_timeline_query(
+        db=db,
+        year=current_year,
+        month=current_month,
+        user_id=selected_user_id,
+        company=selected_company,
+        team=selected_team,
+        leave_status=selected_leave_status,
     )
-    if current_month > 0:
-        query = query.filter(extract("month", models.Leaves.date) == current_month)
-    if selected_user_id:
-        query = query.filter(models.Leaves.user_id == selected_user_id)
-    if selected_company:
-        query = query.filter(models.Users.company == selected_company)
-    if selected_team:
-        query = query.filter(models.Users.team == selected_team)
-    if selected_leave_status:
-        query = query.filter(models.Leaves.status == selected_leave_status)
 
     sort_col = {
         "created_at": models.Leaves.created_at,
@@ -295,7 +186,7 @@ async def admin_leaves_timeline(
 
     users = (
         db.query(models.Users)
-        .filter(models.Users.is_admin == False)
+        .filter(models.Users.role != "ADMIN")
         .order_by(models.Users.user_name.asc())
         .all()
     )
@@ -303,7 +194,7 @@ async def admin_leaves_timeline(
     company_rows = (
         db.query(models.Users.company)
         .filter(
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
             models.Users.company != None,
             models.Users.company != "",
         )
@@ -315,7 +206,7 @@ async def admin_leaves_timeline(
     team_rows = (
         db.query(models.Users.team)
         .filter(
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
             models.Users.team != None,
             models.Users.team != "",
         )
@@ -530,9 +421,9 @@ async def admin_leaves_calendar(
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = build_year_options(datetime.now().year, leave_years)
+    year_options = utils.build_year_options(datetime.now().year, leave_years)
 
-    users_all_q = db.query(models.Users).filter(models.Users.is_admin == False)
+    users_all_q = db.query(models.Users).filter(models.Users.role != "ADMIN")
     if selected_active_state == "active":
         users_all_q = users_all_q.filter(models.Users.is_active == True)
     elif selected_active_state == "inactive":
@@ -541,7 +432,7 @@ async def admin_leaves_calendar(
     company_rows = (
         db.query(models.Users.company)
         .filter(
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
             models.Users.company != None,
             models.Users.company != "",
         )
@@ -553,7 +444,7 @@ async def admin_leaves_calendar(
     team_rows = (
         db.query(models.Users.team)
         .filter(
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
             models.Users.team != None,
             models.Users.team != "",
         )
@@ -563,7 +454,7 @@ async def admin_leaves_calendar(
     )
     team_options = [r[0] for r in team_rows]
 
-    uq = db.query(models.Users).filter(models.Users.is_admin == False)
+    uq = db.query(models.Users).filter(models.Users.role != "ADMIN")
     if selected_active_state == "active":
         uq = uq.filter(models.Users.is_active == True)
     elif selected_active_state == "inactive":
@@ -627,14 +518,14 @@ async def admin_leaves_calendar(
                 user_leaves_map[l.user_id][day] = []
             user_leaves_map[l.user_id][day].append(l)
 
-    allocation_map = get_yearly_allocation_map(db, [u.user_id for u in users], current_year)
+    allocation_map = admin_service.get_yearly_allocation_map(db, [u.user_id for u in users], current_year)
     user_stats = []
     for u in users:
         if is_year_view:
             yearly_used = sum(user_month_hours[u.user_id].values())
             month_used_labels = {
                 m: (
-                    hours_to_days_hours_label(user_month_hours[u.user_id][m])
+                    utils.hours_to_days_hours_label(user_month_hours[u.user_id][m])
                     if user_month_hours[u.user_id][m]
                     else "-"
                 )
@@ -644,7 +535,7 @@ async def admin_leaves_calendar(
                 m: (
                     "-"
                     if not user_month_hours[u.user_id][m]
-                    else hours_to_days_hours_compact(user_month_hours[u.user_id][m])
+                    else utils.hours_to_days_hours_compact(user_month_hours[u.user_id][m])
                 )
                 for m in range(1, 13)
             }
@@ -679,10 +570,10 @@ async def admin_leaves_calendar(
                 "period_used": period_used,
                 "yearly_used": yearly_used,
                 "yearly_remain": yearly_remain,
-                "yearly_remain_label": hours_to_days_hours_label(yearly_remain),
-                "period_used_label": hours_to_days_hours_label(period_used),
-                "yearly_remain_short": hours_to_days_hours_compact(yearly_remain),
-                "period_used_short": hours_to_days_hours_compact(period_used),
+                "yearly_remain_label": utils.hours_to_days_hours_label(yearly_remain),
+                "period_used_label": utils.hours_to_days_hours_label(period_used),
+                "yearly_remain_short": utils.hours_to_days_hours_compact(yearly_remain),
+                "period_used_short": utils.hours_to_days_hours_compact(period_used),
                 "month_used_labels": month_used_labels,
                 "month_used_short_labels": month_used_short_labels,
                 "is_active": u.is_active,
@@ -788,7 +679,7 @@ async def admin_holidays(request: Request, year: int = None, db: Session = Depen
     ).order_by(models.Holidays.date.asc()).all()
     holiday_year_rows = db.query(extract('year', models.Holidays.date)).distinct().all()
     holiday_years = [int(row[0]) for row in holiday_year_rows if row[0] is not None]
-    year_options = build_year_options(now.year, holiday_years)
+    year_options = utils.build_year_options(now.year, holiday_years)
 
     return _templates(request).TemplateResponse(request=request, name="admin_holidays.html", context={
         "admin": admin,
@@ -975,8 +866,8 @@ async def admin_users(
     leave_years = [row[0] for row in leave_year_rows]
     allocation_year_rows = db.query(models.UserYearlyLeaveAllocations.year).distinct().all()
     allocation_years = [row[0] for row in allocation_year_rows]
-    year_options = build_year_options(now_year, leave_years + allocation_years)
-    allocation_map = get_yearly_allocation_map(db, [u.user_id for u in users], selected_year)
+    year_options = utils.build_year_options(now_year, leave_years + allocation_years)
+    allocation_map = admin_service.get_yearly_allocation_map(db, [u.user_id for u in users], selected_year)
     user_leave_days_map = {
         u.user_id: int(allocation_map.get(u.user_id, u.total_leave_hours or 0)) // 8
         for u in users
@@ -1032,6 +923,9 @@ async def toggle_user_active(
         
     if user.user_id == admin.user_id:
         return JSONResponse(status_code=400, content={"message": "본인 계정은 비활성화 할 수 없습니다."})
+
+    if user.role == "ADMIN":
+        return JSONResponse(status_code=400, content={"message": "관리자 계정은 비활성화 할 수 없습니다."})
         
     old_status = user.is_active
     user.is_active = not user.is_active
@@ -1129,6 +1023,11 @@ async def update_user(
     user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
     if not user:
         return JSONResponse(status_code=404, content={"message": "User not found"})
+
+    if user.role == "ADMIN" and is_active is False:
+        return JSONResponse(
+            status_code=400, content={"message": "관리자 계정은 비활성화 할 수 없습니다."}
+        )
 
     # role 검증
     from ..main import VALID_ROLES
@@ -1316,7 +1215,7 @@ async def bulk_update_user_leave_days(
     target_year = year if year else datetime.now().year
     new_hours = total_leave_days * 8
 
-    q = db.query(models.Users).filter(models.Users.is_admin == False)
+    q = db.query(models.Users).filter(models.Users.role != "ADMIN")
     if filter_scope == "active":
         q = q.filter(models.Users.is_active == True)
     elif filter_scope == "inactive":
@@ -1378,6 +1277,9 @@ async def hard_delete_user(
         
     if user.user_id == admin.user_id:
         return JSONResponse(status_code=400, content={"message": "본인 계정은 완전히 삭제할 수 없습니다."})
+
+    if user.role == "ADMIN":
+        return JSONResponse(status_code=400, content={"message": "관리자 계정은 삭제할 수 없습니다."})
         
     # 삭제하려는 사용자의 모든 연차 내역 먼저 삭제 (외래키 제약조건 방지)
     db.query(models.Leaves).filter(models.Leaves.user_id == target_user_id).delete()
@@ -1676,7 +1578,7 @@ async def admin_master(request: Request, db: Session = Depends(get_db)):
             "work_end_minute": int(getattr(setting, "work_end_minute", 18 * 60) or (18 * 60)),
             "lunch_start_minute": getattr(setting, "lunch_start_minute", None),
             "lunch_end_minute": getattr(setting, "lunch_end_minute", None),
-            "half_hour_options": build_half_hour_options(),
+            "half_hour_options": utils.build_half_hour_options(),
             "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
         },
     )

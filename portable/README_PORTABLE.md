@@ -85,5 +85,5 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 ---
 
-**최신 업데이트**: 2026-05-13 (v1.3.2)  
+**최신 업데이트**: 2026-05-14 (v1.3.5)  
 **지원**: 시스템 관리자 / SHIM 개발팀
