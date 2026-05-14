@@ -119,6 +119,14 @@
         border-color: rgba(217, 45, 32, 0.45);
     }
 
+    .cal-table .day-block.pending {
+        opacity: 0.45;
+        border-style: dashed;
+        border-width: 2px;
+        box-shadow: none;
+        filter: grayscale(0.2);
+    }
+
     .weekend-head {
         color: #d92d20 !important;
         background: #fef3f2 !important;
@@ -156,9 +164,9 @@
 
             <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
                 <label class="text-xs font-bold text-dense-muted mr-1">조회 설정</label>
-                <select name="year"
+                <select name="year" onchange="this.form.submit()"
                     class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    {% for y in range(current_year - 1, current_year + 2) %}
+                    {% for y in year_options %}
                     <option value="{{ y }}" {% if team_cal_year==y %}selected{% endif %}>{{ y }}년</option>
                     {% endfor %}
                 </select>
@@ -184,6 +192,10 @@
             <div class="flex items-center">
                 <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-danger shadow-sm"></span>
                 <span>전일(8h)</span>
+            </div>
+            <div class="flex items-center border-l border-dense-line pl-6">
+                <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-blue/60 border border-dashed border-dense-blue-strong shadow-sm"></span>
+                <span class="text-dense-blue font-extrabold">대기 중인 연차 (반투명+점선)</span>
             </div>
             <div class="ml-auto font-semibold text-dense-blue">
                 * 해당 셀에 마우스를 올리면 상세 시간대가 표시됩니다.
@@ -222,13 +234,30 @@
                         <td
                             class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
                             {% if cell_leaves %}
-                            {% set ns_t = namespace(th=0) %}
-                            {% for lv in cell_leaves %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_t.th
-                            = ns_t.th + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
-                            <div class="day-block {% if ns_t.th >= 8 %}full{% elif ns_t.th >= 4 %}half{% endif %} transform transition-transform hover:scale-105"
-                                title="{% for lv in cell_leaves %}{{ lv.snapshot_slot_label }}{% if not loop.last %}, {% endif %}{% endfor %}">
-                                {{ fmt_hours(ns_t.th) }}h
+                            {% set ns_t = namespace(th=0, ph=0) %}
+                            {% for lv in cell_leaves %}
+                                {% if lv.status == "APPROVED" %}
+                                    {% set ns_t.th = ns_t.th + lv.snapshot_deduction_hours %}
+                                {% elif lv.status == "PENDING" %}
+                                    {% set ns_t.ph = ns_t.ph + lv.snapshot_deduction_hours %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% set total_h = ns_t.th + ns_t.ph %}
+                            {% if total_h > 0 %}
+                            {% set tooltip_parts = [] %}
+                            {% for lv in cell_leaves %}
+                                {% if lv.status == "APPROVED" %}
+                                    {% set _unused = tooltip_parts.append(lv.snapshot_slot_label ~ " (승인)") %}
+                                {% elif lv.status == "PENDING" %}
+                                    {% set _unused = tooltip_parts.append(lv.snapshot_slot_label ~ " (대기)") %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="day-block {% if total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 %}pending{% endif %} transform transition-transform hover:scale-105"
+                                title="{{ tooltip_parts|join(', ') }}">
+                                {{ fmt_hours(total_h) }}h
                             </div>
+                            {% endif %}
                             {% endif %}
                         </td>
                         {% endfor %}

@@ -244,6 +244,10 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     
     is_approval_required = bool(setting.is_approval_required) if setting else False
 
+    leave_year_rows = db.query(models.Leaves.year).distinct().all()
+    leave_years = [row[0] for row in leave_year_rows]
+    year_options = build_year_options(now.year, leave_years)
+
     ctx = {
         "user": user,
         "user_role": user_role,
@@ -260,6 +264,7 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
         "team_cal_holiday_map": team_cal_holiday_map,
         "current_year": now.year,
         "current_month": now.month,
+        "year_options": year_options,
         "now": now,
         "now_str": now.strftime('%Y-%m-%d %H:%M'),
     }
