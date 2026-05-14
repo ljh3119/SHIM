@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date as date_cls
 import calendar as cal_module
 
-from .. import models, database, auth
+from .. import models, database, auth, utils
 from ..database import get_db
 from ..services.leave_policy import (
     LeaveInputValidationError,
@@ -21,29 +21,6 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 def _templates(request: Request):
     return request.app.state.templates
-
-def build_year_options(now_year: int, data_years=None, past_span: int = 5, future_span: int = 10):
-    years = [y for y in (data_years or []) if y is not None]
-    min_data_year = min(years) if years else now_year
-    max_data_year = max(years) if years else now_year
-    start = min(now_year - past_span, min_data_year)
-    end = max(now_year + future_span, max_data_year)
-    return list(range(start, end + 1))
-
-
-def _minute_options(start_minute: int, end_minute: int, step_minute: int) -> list[str]:
-    options: list[str] = []
-    cursor = start_minute
-    while cursor <= end_minute:
-        hh = cursor // 60
-        mm = cursor % 60
-        options.append(f"{hh:02d}:{mm:02d}")
-        cursor += step_minute
-    if options:
-        end_label = f"{end_minute // 60:02d}:{end_minute % 60:02d}"
-        if options[-1] != end_label:
-            options.append(end_label)
-    return options
 
 
 def resolve_user_yearly_allocated_hours(db: Session, user: models.Users, year: int) -> int:
@@ -75,14 +52,14 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     except HTTPException:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     
-    if user.is_admin and (getattr(user, 'role', None) or 'ADMIN') == 'ADMIN':
+    if (getattr(user, "role", "") == "ADMIN" or getattr(user, "is_admin", False)):
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
     
     now = datetime.now()
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = build_year_options(now.year, leave_years)
+    year_options = utils.build_year_options(now.year, leave_years)
     
     # 연간 통계
     yearly_leaves = db.query(models.Leaves).filter(
@@ -91,7 +68,7 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     ).order_by(models.Leaves.date.desc()).all()
     
     time_granularity_minutes, lunch_start_minute, lunch_end_minute, work_start_minute, work_end_minute = resolve_time_policy_setting(db)
-    time_options = _minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
+    time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
     
     total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
     used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED"))
@@ -202,14 +179,14 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
         team_members = db.query(models.Users).filter(
             models.Users.is_active == True,
             models.Users.user_id != user.user_id,
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
         ).order_by(models.Users.user_name.asc()).all()
     elif user.team:
         team_members = db.query(models.Users).filter(
             models.Users.team == user.team,
             models.Users.is_active == True,
             models.Users.user_id != user.user_id,
-            models.Users.is_admin == False,
+            models.Users.role != "ADMIN",
         ).order_by(models.Users.user_name.asc()).all()
 
     if team_members:
@@ -246,7 +223,7 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = build_year_options(now.year, leave_years)
+    year_options = utils.build_year_options(now.year, leave_years)
 
     ctx = {
         "user": user,
@@ -281,7 +258,7 @@ async def user_history(request: Request, year: int = None, db: Session = Depends
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = build_year_options(now.year, leave_years)
+    year_options = utils.build_year_options(now.year, leave_years)
 
     # 연간 통계
     yearly_leaves = db.query(models.Leaves).filter(
