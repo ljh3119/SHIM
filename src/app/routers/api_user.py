@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date as date_cls
 import calendar as cal_module
@@ -98,7 +99,7 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
         models.Holidays.date <= year_end
     ).all()
     holiday_map = {(h.date.month, h.date.day): h.name for h in holidays}
-    
+
     ctx = {
         "user": user,
         "leaves": yearly_leaves,
@@ -164,7 +165,7 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     now = datetime.now()
     display_year = year if year else now.year
     display_month = month if month else now.month
-    
+
     num_days = cal_module.monthrange(display_year, display_month)[1]
     month_start = date_cls(display_year, display_month, 1)
     month_end = date_cls(display_year, display_month, num_days)
@@ -173,7 +174,7 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
 
     team_members = []
     team_leaves_map = {}
-    
+
     # PM은 전사 데이터 조회 (관리자와 동일), 그 외에는 소속 팀 기준 조회
     if user_role == 'PM':
         team_members = db.query(models.Users).filter(
@@ -219,9 +220,53 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     
     is_approval_required = bool(setting.is_approval_required) if setting else False
 
+    # 선택 연도의 연도 옵션
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
     year_options = utils.build_year_options(now.year, leave_years)
+
+    # PM인 경우 추가 통계 데이터(잔여, 월사용 등) 계산
+    member_stats = {}
+    if user_role == 'PM' and team_members:
+        member_ids = [m.user_id for m in team_members]
+        
+        # 연간 할당량 맵
+        alloc_rows = db.query(models.UserYearlyLeaveAllocations).filter(
+            models.UserYearlyLeaveAllocations.user_id.in_(member_ids),
+            models.UserYearlyLeaveAllocations.year == display_year
+        ).all()
+        alloc_map = {r.user_id: int(r.allocated_hours) for r in alloc_rows}
+        
+        # 연간 누적 사용 (상태가 CANCELED, REJECTED 아닌 것)
+        yearly_used_rows = db.query(
+            models.Leaves.user_id,
+            func.sum(models.Leaves.snapshot_deduction_hours)
+        ).filter(
+            models.Leaves.user_id.in_(member_ids),
+            models.Leaves.year == display_year,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).group_by(models.Leaves.user_id).all()
+        yearly_used_map = {r[0]: float(r[1]) for r in yearly_used_rows}
+
+        # 당월 사용
+        monthly_used_rows = db.query(
+            models.Leaves.user_id,
+            func.sum(models.Leaves.snapshot_deduction_hours)
+        ).filter(
+            models.Leaves.user_id.in_(member_ids),
+            models.Leaves.date >= month_start,
+            models.Leaves.date <= month_end,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).group_by(models.Leaves.user_id).all()
+        monthly_used_map = {r[0]: float(r[1]) for r in monthly_used_rows}
+
+        for m in team_members:
+            total_alloc = alloc_map.get(m.user_id, int(m.total_leave_hours or 0))
+            used_y = yearly_used_map.get(m.user_id, 0.0)
+            member_stats[m.user_id] = {
+                "remaining": total_alloc - used_y,
+                "monthly_used": monthly_used_map.get(m.user_id, 0.0)
+            }
 
     ctx = {
         "user": user,
@@ -230,7 +275,8 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
         "team_calendar_visible": team_calendar_visible,
         "team_members": team_members,
         "team_leaves_map": team_leaves_map,
-        "team_name": user.team if user_role != 'PM' else "전사",
+        "member_stats": member_stats,
+        "team_name": user.team if user_role != 'PM' else "프로젝트",
         "team_cal_year": display_year,
         "team_cal_month": display_month,
         "team_cal_num_days": num_days,
@@ -268,145 +314,17 @@ async def user_history(request: Request, year: int = None, db: Session = Depends
     used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED"))
     remaining_hours = total_allocated_hours - used_hours
 
-    setting = db.query(models.SystemSettings).first()
-    team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
-    is_approval_required = bool(setting.is_approval_required) if setting else False
-    user_role = getattr(user, 'role', 'STAFF')
-
     ctx = {
         "user": user,
-        "user_role": user_role,
         "leaves": yearly_leaves,
+        "selected_year": current_year,
+        "year_options": year_options,
         "total_allocated_hours": total_allocated_hours,
         "used_hours": used_hours,
         "remaining_hours": remaining_hours,
-        "selected_year": current_year,
-        "current_year": now.year,
-        "year_options": year_options,
-        "team_calendar_visible": team_calendar_visible,
-        "is_approval_required": is_approval_required,
     }
     return _templates(request).TemplateResponse(request=request, name="user_history.html", context=ctx)
-@router.post("/leave")
-async def apply_leave(
-    request: Request,
-    date_str: str = Form(...),
-    start_time: str | None = Form(None),
-    end_time: str | None = Form(None),
-    db: Session = Depends(get_db)
-):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-    
-    leave_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    if leave_date.weekday() >= 5:
-        return JSONResponse(
-            status_code=400,
-            content={"message": f"{leave_date}은(는) 주말이라 연차를 신청할 수 없습니다."}
-        )
 
-    holiday = db.query(models.Holidays).filter(models.Holidays.date == leave_date).first()
-    if holiday:
-        return JSONResponse(
-            status_code=400,
-            content={"message": f"{leave_date}은(는) 공휴일({holiday.name})이라 연차를 신청할 수 없습니다."}
-        )
-
-    if not start_time or not end_time:
-        return JSONResponse(status_code=400, content={"message": "시작/종료 시간을 입력해 주세요."})
-    granularity, lunch_start, lunch_end, work_start, work_end = resolve_time_policy_setting(db)
-    try:
-        resolved_snapshots = [
-            build_snapshot_from_timerange(
-                start_time=start_time,
-                end_time=end_time,
-                granularity_minutes=granularity,
-                lunch_start_minute=lunch_start,
-                lunch_end_minute=lunch_end,
-                work_start_minute=work_start,
-                work_end_minute=work_end,
-            )
-        ]
-    except LeaveInputValidationError as exc:
-        return JSONResponse(status_code=400, content={"message": str(exc)})
-
-    # 8시간 초과 검증
-    daily_leaves = db.query(models.Leaves).filter(
-        models.Leaves.user_id == user.user_id,
-        models.Leaves.date == leave_date
-    ).all()
-
-    for selected in resolved_snapshots:
-        for existing in daily_leaves:
-            if existing.status in ("CANCELED", "REJECTED"):
-                continue
-            if existing.snapshot_start_min is None or existing.snapshot_end_min is None:
-                continue
-            if selected.start_min < existing.snapshot_end_min and selected.end_min > existing.snapshot_start_min:
-                return JSONResponse(
-                    status_code=400,
-                    content={"message": "기존 신청 내역과 시간이 겹치는 시간대는 신청할 수 없습니다."}
-                )
-
-    current_day_hours = sum(float(l.snapshot_deduction_hours or 0) for l in daily_leaves if l.status not in ("CANCELED", "REJECTED"))
-    requested_hours = sum(float(s.deduction_hours or 0) for s in resolved_snapshots)
-    if current_day_hours + requested_hours > 8:
-        return JSONResponse(status_code=400, content={"message": "하루 최대 8시간을 초과하여 연차를 신청할 수 없습니다."})
-
-    # PM은 결재를 타지 않고 바로 승인 (사용자 요청 사항)
-    if getattr(user, "role", "STAFF") == "PM":
-        leave_status = "APPROVED"
-    else:
-        leave_status = get_default_leave_status(db)
-
-    for snapshot in resolved_snapshots:
-        db.add(models.Leaves(
-            user_id=user.user_id,
-            date=leave_date,
-            snapshot_slot_label=snapshot.slot_label,
-            snapshot_start_min=snapshot.start_min,
-            snapshot_end_min=snapshot.end_min,
-            snapshot_deduction_hours=snapshot.deduction_hours,
-            status=leave_status,
-            year=leave_date.year
-        ))
-    db.commit()
-    
-    return JSONResponse(status_code=200, content={"message": f"연차 {len(resolved_snapshots)}건이 성공적으로 신청되었습니다."})
-
-@router.post("/change-password")
-async def change_password(
-    request: Request,
-    current_password: str = Form(...),
-    new_password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-        
-    if not auth.verify_password(current_password, user.password):
-        return JSONResponse(status_code=400, content={"message": "현재 비밀번호가 일치하지 않습니다."})
-        
-    user.password = auth.get_password_hash(new_password)
-    
-    audit = models.AuditLogs(
-        actor_id=user.user_id,
-        action="CHANGE_PASSWORD",
-        target_info=f"User:{user.user_id}",
-        old_data="*****",
-        new_data="*****"
-    )
-    db.add(audit)
-    db.commit()
-    
-    return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요."})
-
-
-# ── 결재 관리 엔드포인트 (팀장/PM) ────────────────────────────────────────────
 
 def _get_approver(request: Request, db: Session) -> models.Users:
     """TEAM_LEAD 또는 PM 역할 검증. 결재 기능이 OFF이면 403."""
@@ -562,4 +480,3 @@ async def team_reject_leave(
     )
     db.commit()
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
-
