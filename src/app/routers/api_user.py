@@ -178,14 +178,12 @@ async def user_team_calendar(request: Request, year: int = None, month: int = No
     if user_role == 'PM':
         team_members = db.query(models.Users).filter(
             models.Users.is_active == True,
-            models.Users.user_id != user.user_id,
             models.Users.role != "ADMIN",
         ).order_by(models.Users.user_name.asc()).all()
     elif user.team:
         team_members = db.query(models.Users).filter(
             models.Users.team == user.team,
             models.Users.is_active == True,
-            models.Users.user_id != user.user_id,
             models.Users.role != "ADMIN",
         ).order_by(models.Users.user_name.asc()).all()
 
