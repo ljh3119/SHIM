@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in space-y-6 bg-dense-bg pb-2">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">감사 로그 (Audit Logs)</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">시스템 설정 변경, 사원 관리, 백업 등 주요 작업 이력을 확인합니다.</p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <a href="/admin/audit/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
+            <a href="/admin/audit" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터 초기화</a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
+        <div class="border-b border-dense-line p-4 sm:p-5">
+            <form method="get" id="audit-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                        <label for="audit-user" class="mb-1 block text-xs font-bold text-dense-muted">수행자</label>
+                        <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not actor_id %}selected{% endif %}>전체</option>
+                            {% for u in users %}
+                            <option value="{{ u.user_id }}" {% if actor_id == u.user_id %}selected{% endif %}>{{ u.user_name }}({{ u.user_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="audit-action" class="mb-1 block text-xs font-bold text-dense-muted">액션</label>
+                        <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="audit-start-date" class="mb-1 block text-xs font-bold text-dense-muted">시작일</label>
+                        <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    </div>
+                    <div>
+                        <label for="audit-end-date" class="mb-1 block text-xs font-bold text-dense-muted">종료일</label>
+                        <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    </div>
+                </div>
+                <div class="mt-3 flex justify-end">
+                    <button type="submit" class="rounded-lg bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">검색하기</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Section -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line text-sm">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">로그 시각</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">수행자</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">액션</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">대상 정보</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">변경 내역 (이전 -> 이후)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for log in logs %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft">
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            <span class="inline-flex items-center text-xs font-bold text-dense-text">
+                                {{ log.actor.user_name if log.actor else '시스템' }}<span class="font-semibold text-dense-muted">({{ log.actor_id }})</span>
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-[11px] font-bold text-dense-nav-text" title="{{ log.action }}">{{ log.action_label }}</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-[11px] font-bold text-dense-nav-text" title="{{ log.target_info }}">{{ log.target_label if log.target_label else log.target_info }}</td>
+                        <td class="px-3 py-3 text-xs font-medium">
+                            <div class="max-w-md break-all flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[#d92d20] line-through decoration-1 opacity-70">{{ log.old_data if log.old_data else '-' }}</span>
+                                <span class="text-dense-muted font-bold">→</span>
+                                <span class="text-dense-blue font-bold">{{ log.new_data if log.new_data else '-' }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-sm font-semibold text-dense-muted">검색 조건에 맞는 로그가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Section -->
+        {% if total_pages > 1 %}
+        <div class="flex items-center justify-between border-t border-dense-line bg-dense-surface px-4 py-3 sm:px-6">
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-dense-muted">
+                        총 <span class="font-extrabold text-dense-text">{{ total_count }}</span>개 중 
+                        <span class="font-extrabold text-dense-text">{{ (page-1)*50 + 1 }}</span> ~ 
+                        <span class="font-extrabold text-dense-text">{{ min(page*50, total_count) }}</span> 표시
+                    </p>
+                </div>
+                <div>
+                    <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm" aria-label="Pagination">
+                        {% if page > 1 %}
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                            <span class="sr-only">이전</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                        </a>
+                        {% endif %}
+                        
+                        {% for p in range(max(1, page-2), min(total_pages, page+2) + 1) %}
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ p }}" class="relative inline-flex items-center border {% if p == page %}z-10 border-dense-blue bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-4 py-2 text-sm font-bold">{{ p }}</a>
+                        {% endfor %}
+
+                        {% if page < total_pages %}
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                            <span class="sr-only">다음</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
