@@ -39,24 +39,24 @@
             <table class="w-full min-w-[56rem] table-fixed divide-y divide-dense-line">
                 <thead class="bg-dense-surface-soft">
                     <tr>
-                        <th scope="col" class="w-[16%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[18%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.user_name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">이름{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[10%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[12%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.user_id }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">ID{% if sort_key == 'user_id' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[12%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[14%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.company }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">소속회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[10%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[12%] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[14%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[16%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.leave_days }}" class="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-dense-nav-text hover:text-dense-blue">연차일수({{ selected_year }}년){% if sort_key == 'leave_days' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[7%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">권한</th>
-                        <th scope="col" class="w-[7%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
-                        <th scope="col" class="w-[24%] min-w-0 px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
+                        <th scope="col" class="w-[9%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">권한</th>
+                        <th scope="col" class="w-[9%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
+                        <th scope="col" class="w-[14%] min-w-0 px-2 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
@@ -109,15 +109,22 @@
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-right text-sm font-medium">
-                            <div class="flex flex-nowrap items-center justify-end gap-1">
-                                <button type="button" onclick="openEditUserModal('{{ u.user_id }}', '{{ u.user_name }}', '{{ u.company or '' }}', '{{ u.team or '' }}', '{{ u.role }}', '{{ u.position or '' }}', {{ 'true' if u.is_active else 'false' }})" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-blue hover:bg-dense-surface-soft">수정</button>
-                                <button type="button" onclick="resetPassword('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-[#fedf89] bg-dense-amber-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-amber hover:bg-[#fffdf6]">비밀번호 초기화</button>
+                            <div class="flex items-center justify-end gap-1">
+                                <button type="button" title="정보 수정" onclick="openEditUserModal('{{ u.user_id }}', '{{ u.user_name }}', '{{ u.company or '' }}', '{{ u.team or '' }}', '{{ u.role }}', '{{ u.position or '' }}', {{ 'true' if u.is_active else 'false' }})" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-line bg-dense-surface text-dense-blue hover:bg-dense-blue-soft transition-colors">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button type="button" title="비밀번호 초기화" onclick="resetPassword('{{ u.user_id }}')" class="flex h-7 w-7 items-center justify-center rounded-lg border border-[#fedf89] bg-dense-amber-soft text-dense-amber hover:bg-[#fffdf6] transition-colors">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                </button>
                                 {% if u.role != 'ADMIN' %}
-                                <button type="button" onclick="toggleUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[11px] font-bold leading-tight text-dense-nav-text hover:bg-dense-surface-soft">상태 변경</button>
-                                <button type="button" onclick="hardDeleteUser('{{ u.user_id }}')" class="shrink-0 rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[11px] font-bold leading-tight text-[#b42318] hover:brightness-95">삭제</button>
+                                <button type="button" title="상태(활성) 전환" onclick="toggleUser('{{ u.user_id }}')" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft transition-colors">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                                </button>
+                                <button type="button" title="계정 삭제" onclick="hardDeleteUser('{{ u.user_id }}')" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-danger-soft bg-dense-danger-soft text-[#b42318] hover:brightness-95 transition-colors">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                </button>
                                 {% endif %}
-                                </div>
-
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

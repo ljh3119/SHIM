@@ -510,7 +510,7 @@ async def team_approve_leave(
         models.AuditLogs(
             actor_id=approver.user_id,
             action="APPROVE_LEAVE",
-            target_info=f"Leave:{leave_id}",
+            target_info=f"Leave:{leave_id} ({leave.user.user_name}, {leave.date})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )
@@ -555,7 +555,7 @@ async def team_reject_leave(
         models.AuditLogs(
             actor_id=approver.user_id,
             action="REJECT_LEAVE",
-            target_info=f"Leave:{leave_id}",
+            target_info=f"Leave:{leave_id} ({leave.user.user_name}, {leave.date})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )

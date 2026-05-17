@@ -135,6 +135,7 @@ async def admin_leaves_timeline(
     sort: str = "created_at",
     sort_dir: str = "desc",
     order: str | None = None,
+    page: int = 1,
     db: Session = Depends(get_db),
 ):
     try:
@@ -168,6 +169,14 @@ async def admin_leaves_timeline(
         leave_status=selected_leave_status,
     )
 
+    per_page = 50
+    total_count = query.count()
+    total_pages = (total_count + per_page - 1) // per_page
+    if page > total_pages and total_pages > 0:
+        page = total_pages
+    if page < 1:
+        page = 1
+
     sort_col = {
         "created_at": models.Leaves.created_at,
         "user_name": models.Users.user_name,
@@ -182,7 +191,7 @@ async def admin_leaves_timeline(
     else:
         query = query.order_by(sort_col.desc().nulls_last(), models.Leaves.id.desc())
 
-    leaves = query.all()
+    leaves = query.offset((page - 1) * per_page).limit(per_page).all()
 
     users = (
         db.query(models.Users)
@@ -273,6 +282,9 @@ async def admin_leaves_timeline(
             "sort_key": sort_key,
             "sort_dir": sort_dir_effective,
             "sort_urls": sort_urls,
+            "page": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
             "export_query": urlencode(
                 {
                     k: v
@@ -987,17 +999,21 @@ async def delete_leave(
     if not leave:
         return JSONResponse(status_code=404, content={"message": "Leave not found"})
         
-    leave_info = f"Date:{leave.date}, Slot:{leave.snapshot_slot_label}, User:{leave.user_id}"
-    db.delete(leave)
+    # Audit log (먼저 데이터 확보)
+    actor_name = leave.user.user_name if leave.user else "알수없음"
+    l_date = str(leave.date)
+    l_status = str(leave.status)
+    l_hours = str(leave.snapshot_deduction_hours)
     
     audit = models.AuditLogs(
         actor_id=admin.user_id,
         action="DELETE_LEAVE",
-        target_info=f"Leave:{leave_id}",
-        old_data=leave_info,
+        target_info=f"Leave:{leave_id} ({actor_name}, {l_date})",
+        old_data=f"Status:{l_status}, Date:{l_date}, Hours:{l_hours}",
         new_data="DELETED"
     )
     db.add(audit)
+    db.delete(leave)
     db.commit()
     
     return JSONResponse(status_code=200, content={"message": "연차가 성공적으로 삭제되었습니다."})
@@ -1330,11 +1346,12 @@ async def update_leave_status(
     except LeaveStatusTransitionError as exc:
         return JSONResponse(status_code=400, content={"message": str(exc)})
 
+    leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     db.add(
         models.AuditLogs(
             actor_id=admin.user_id,
             action="UPDATE_LEAVE_STATUS",
-            target_info=f"Leave:{leave_id}",
+            target_info=f"Leave:{leave_id} ({leave.user.user_name if leave else 'Unknown'}, {leave.date if leave else 'Unknown'})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )
@@ -1581,6 +1598,229 @@ async def admin_master(request: Request, db: Session = Depends(get_db)):
             "half_hour_options": utils.build_half_hour_options(),
             "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
         },
+    )
+
+
+AUDIT_ACTION_LABELS = {
+    "CREATE_USER": "신규 사원 등록",
+    "UPDATE_USER_INFO": "사원 정보 수정",
+    "DELETE_USER": "사원 계정 삭제",
+    "HARD_DELETE_USER": "사원 정보 영구 삭제",
+    "RESET_PASSWORD": "사원 비밀번호 초기화",
+    "TOGGLE_USER_ACTIVE": "사원 활성 상태 변경",
+    "UPDATE_USER_LEAVE_DAYS": "연차 일수 수정",
+    "BULK_UPDATE_USER_LEAVE_DAYS": "연차 일수 일괄 수정",
+    "UPDATE_APPROVAL_SETTING": "승인 워크플로우 설정 변경",
+    "UPDATE_TEAM_CALENDAR_SETTING": "팀 캘린더 공유 설정 변경",
+    "UPDATE_TIME_POLICY_SETTING": "시간 정책 변경",
+    "UPDATE_BRANDING_SETTING": "브랜딩 설정 변경",
+    "MANUAL_DB_BACKUP": "수동 DB 백업",
+    "CREATE_HOLIDAY": "공휴일 등록",
+    "UPDATE_HOLIDAY": "공휴일 정보 수정",
+    "DELETE_HOLIDAY": "공휴일 삭제",
+    "CHANGE_ADMIN_PASSWORD": "관리자 비밀번호 변경",
+    "CHANGE_PASSWORD": "사용자 비밀번호 변경",
+    "DELETE_LEAVE": "연차 신청 삭제",
+    "UPDATE_LEAVE_STATUS": "결재 상태 변경",
+    "APPROVE_LEAVE": "연차 승인(팀장/PM)",
+    "REJECT_LEAVE": "연차 반려(팀장/PM)",
+}
+
+
+@router.get("/audit", response_class=HTMLResponse)
+async def admin_audit_logs(
+    request: Request,
+    actor_id: str = "",
+    action: str = "",
+    start_date: str = "",
+    end_date: str = "",
+    page: int = 1,
+    db: Session = Depends(get_db),
+):
+    try:
+        admin = get_current_admin(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+    per_page = 50
+    s_date = None
+    e_date = None
+    if start_date:
+        try:
+            s_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            e_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    query = admin_service.get_audit_logs_query(
+        db=db,
+        actor_id=actor_id.strip(),
+        action=action.strip(),
+        start_date=s_date,
+        end_date=e_date,
+    )
+
+    total_count = query.count()
+    total_pages = (total_count + per_page - 1) // per_page
+    if page > total_pages and total_pages > 0:
+        page = total_pages
+    if page < 1:
+        page = 1
+
+    logs = (
+        query.order_by(models.AuditLogs.timestamp.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    # 필터용 사용자 목록
+    users = db.query(models.Users).filter(models.Users.is_active == True).order_by(models.Users.user_name).all()
+
+    # 가독성 라벨 추가
+    for log in logs:
+        label = AUDIT_ACTION_LABELS.get(log.action)
+        if not label and log.action and log.action.startswith("SEED_KR_HOLIDAYS_"):
+            year_part = log.action.replace("SEED_KR_HOLIDAYS_", "")
+            label = f"{year_part}년 공휴일 자동 생성"
+        
+        log.action_label = label or log.action
+
+        # 대상 정보 한글화 (원본 보존하며 라벨 생성)
+        raw_target = (log.target_info or "").strip()
+        target = raw_target
+        
+        if target.startswith("User:"):
+            target = target.replace("User:", "사원:")
+        elif target.startswith("Admin:"):
+            target = target.replace("Admin:", "관리자:")
+        elif target.startswith("Holiday:"):
+            target = target.replace("Holiday:", "공휴일:")
+        elif target.startswith("Leave:"):
+            # Leave:ID (Name, Date) 형식 대응
+            if "(" in target and ")" in target:
+                parts = target.replace("Leave:", "").split(" (", 1)
+                leave_id_part = parts[0]
+                detail_part = parts[1].replace(")", "")
+                target = f"연차신청:{detail_part} [ID:{leave_id_part}]"
+            else:
+                target = target.replace("Leave:", "연차신청(ID:") + ")"
+        elif target.startswith("HolidaySeed:"):
+            target = target.replace("HolidaySeed:", "") + "년 공휴일 생성"
+        elif target == "SystemSettings":
+            target = "시스템 설정"
+        elif target == "Database":
+            target = "데이터베이스"
+        elif target.startswith("Scope:"):
+            target = target.replace("Scope:", "범위:").replace("Year:", "연도:").replace("Count:", "건수:")
+        
+        # 만약 변환된게 없으면 원본이라도 나오게 보장
+        log.target_label = target if target else raw_target
+
+    export_q = {
+        "actor_id": actor_id,
+        "action": action,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+    return _templates(request).TemplateResponse(
+        request=request,
+        name="admin_audit.html",
+        context={
+            "admin": admin,
+            "logs": logs,
+            "users": users,
+            "actor_id": actor_id,
+            "action": action,
+            "start_date": start_date,
+            "end_date": end_date,
+            "page": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
+            "current_year": datetime.now().year,
+            "export_query": urlencode({k: v for k, v in export_q.items() if v}),
+        },
+    )
+
+
+@router.get("/audit/export")
+async def admin_audit_export(
+    actor_id: str = "",
+    action: str = "",
+    start_date: str = "",
+    end_date: str = "",
+    db: Session = Depends(get_db),
+):
+    s_date = None
+    e_date = None
+    if start_date:
+        try:
+            s_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            e_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    query = admin_service.get_audit_logs_query(
+        db=db,
+        actor_id=actor_id.strip(),
+        action=action.strip(),
+        start_date=s_date,
+        end_date=e_date,
+    )
+    logs = query.order_by(models.AuditLogs.timestamp.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Audit Logs"
+    headers = ["시각", "수행자(ID)", "수행자(이름)", "액션(코드)", "액션(내용)", "대상 정보", "이전 데이터", "이후 데이터"]
+    ws.append(headers)
+
+    for log in logs:
+        actor_name = log.actor.user_name if log.actor else "System"
+        action_label = AUDIT_ACTION_LABELS.get(log.action, log.action)
+        
+        # 엑셀용 대상 정보 변환 (동일 로직 적용)
+        target = log.target_info or ""
+        if target.startswith("User:"): target = target.replace("User:", "사원:")
+        elif target.startswith("Admin:"): target = target.replace("Admin:", "관리자:")
+        elif target.startswith("Holiday:"): target = target.replace("Holiday:", "공휴일:")
+        elif target.startswith("Leave:"): target = target.replace("Leave:", "연차신청:")
+        elif target.startswith("HolidaySeed:"): target = target.replace("HolidaySeed:", "") + "년 공휴일 생성"
+        elif target == "SystemSettings": target = "시스템 설정"
+        elif target == "Database": target = "데이터베이스"
+        elif target.startswith("Scope:"): target = target.replace("Scope:", "범위:").replace("Year:", "연도:").replace("Count:", "건수:")
+
+        ws.append(
+            [
+                log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                log.actor_id,
+                actor_name,
+                log.action,
+                action_label,
+                target,
+                log.old_data,
+                log.new_data,
+            ]
+        )
+
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+
+    filename = f"audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        out,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

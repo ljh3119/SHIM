@@ -38,6 +38,11 @@
       <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.8 18a5.2 5.2 0 0 1 10.4 0"/><circle cx="17" cy="9" r="2.2"/><path d="M14.9 18a4 4 0 0 1 6.3-3.2"/></svg>
       <span class="shim-nav-label min-w-0 truncate font-semibold">사용자 관리</span>
     </a>
-  </nav>
+    <a href="/admin/audit" class="shim-side-link {% if path.startswith('/admin/audit') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+      <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M12 4h9M3 4h6v6H3zM3 14h6v6H3z"/></svg>
+      <span class="shim-nav-label min-w-0 truncate font-semibold">감사 로그</span>
+    </a>
+    </nav>
+
 </aside>
 
