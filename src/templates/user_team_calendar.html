@@ -142,9 +142,13 @@
     <!-- Header Section -->
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{{ team_name or '소속 미지정' }} 캘린더</h2>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{% if user_role == 'PM' %}프로젝트 캘린더{% else %}{{ team_name or '소속 미지정' }} 캘린더{% endif %}</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
+                {% if user_role == 'PM' %}
+                {{ team_cal_year }}년 {{ team_cal_month }}월 프로젝트 연차 현황입니다.
+                {% else %}
                 {{ team_cal_year }}년 {{ team_cal_month }}월 {{ team_name or '팀원' }}팀의 연차 현황입니다.
+                {% endif %}
             </p>
         </div>
     </div>
@@ -203,11 +207,16 @@
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-dense-line">
-            <table class="cal-table" style="min-width: 800px;">
+            <table class="cal-table" style="min-width: 1000px;">
                 <thead>
                     <tr>
                         <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
                             style="width: 7rem; min-width: 7rem;">이름</th>
+                        {% if user_role == 'PM' %}
+                        <th style="width: 5rem; min-width: 5rem;" class="text-center px-1">팀</th>
+                        <th style="width: 4rem; min-width: 4rem;" class="text-center px-1">잔여</th>
+                        <th style="width: 4rem; min-width: 4rem;" class="text-center px-1">월사용</th>
+                        {% endif %}
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set wd = team_cal_day_weekday[d] %}
                         {% set holiday_name = team_cal_holiday_map.get(d) %}
@@ -229,6 +238,12 @@
                             class="sticky-col whitespace-nowrap !px-3 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft">
                             {{ m.user_name }}
                         </td>
+                        {% if user_role == 'PM' %}
+                        {% set stats = member_stats.get(m.user_id, {}) %}
+                        <td class="text-[10px] font-bold text-dense-muted truncate px-1">{{ m.team or '-' }}</td>
+                        <td class="text-[10px] font-extrabold text-dense-blue px-1">{{ fmt_hours(stats.get('remaining', 0.0)) }}d</td>
+                        <td class="text-[10px] font-bold text-dense-text px-1">{{ fmt_hours(stats.get('monthly_used', 0.0)) }}h</td>
+                        {% endif %}
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set cell_leaves = team_leaves_map.get(m.user_id, {}).get(d, []) %}
                         <td
@@ -264,7 +279,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ team_cal_num_days + 1 }}"
+                        <td colspan="{{ team_cal_num_days + (4 if user_role == 'PM' else 1) }}"
                             class="py-16 text-center text-sm font-semibold text-dense-muted bg-dense-surface-soft">
                             표시할 데이터가 없거나 조회 권한이 제한되었습니다.
                         </td>
