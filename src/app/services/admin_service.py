@@ -82,3 +82,21 @@ def get_yearly_allocation_map(db: Session, user_ids: list[str], year: int) -> di
     except Exception:
         db.rollback()
         return {}
+
+def get_audit_logs_query(
+    db: Session,
+    actor_id: str = "",
+    action: str = "",
+    start_date: date | None = None,
+    end_date: date | None = None,
+):
+    query = db.query(models.AuditLogs)
+    if actor_id:
+        query = query.filter(models.AuditLogs.actor_id == actor_id)
+    if action:
+        query = query.filter(models.AuditLogs.action.contains(action))
+    if start_date:
+        query = query.filter(models.AuditLogs.timestamp >= datetime.combine(start_date, datetime.min.time()))
+    if end_date:
+        query = query.filter(models.AuditLogs.timestamp < datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
+    return query

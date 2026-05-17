@@ -160,6 +160,44 @@
             </table>
         </div>
     </div>
+
+    <!-- Pagination Section -->
+    {% if total_pages > 1 %}
+    <div class="flex items-center justify-between rounded-[18px] border border-dense-line bg-dense-surface px-4 py-3 sm:px-6">
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+                <p class="text-xs font-semibold text-dense-muted">
+                    총 <span class="font-extrabold text-dense-text">{{ total_count }}</span>건 중 
+                    <span class="font-extrabold text-dense-text">{{ (page-1)*50 + 1 }}</span> ~ 
+                    <span class="font-extrabold text-dense-text">{{ min(page*50, total_count) }}</span> 표시
+                </p>
+            </div>
+            <div>
+                <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm" aria-label="Pagination">
+                    {% set base_params = "year=" ~ selected_year ~ "&month=" ~ selected_month ~ "&user_id=" ~ selected_user_id ~ "&company=" ~ selected_company ~ "&team=" ~ selected_team ~ "&leave_status=" ~ (selected_leave_status or '') ~ "&sort=" ~ sort_key ~ "&sort_dir=" ~ sort_dir %}
+                    
+                    {% if page > 1 %}
+                    <a href="?{{ base_params }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <span class="sr-only">이전</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                    </a>
+                    {% endif %}
+                    
+                    {% for p in range(max(1, page-2), min(total_pages, page+2) + 1) %}
+                    <a href="?{{ base_params }}&page={{ p }}" class="relative inline-flex items-center border {% if p == page %}z-10 border-dense-blue bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-4 py-2 text-sm font-bold">{{ p }}</a>
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                    <a href="?{{ base_params }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <span class="sr-only">다음</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
