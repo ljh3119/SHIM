@@ -326,6 +326,114 @@ async def user_history(request: Request, year: int = None, db: Session = Depends
     return _templates(request).TemplateResponse(request=request, name="user_history.html", context=ctx)
 
 
+@router.post("/leave")
+async def apply_leave(
+    request: Request,
+    date_str: str = Form(...),
+    start_time: str = Form(...),
+    end_time: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        user = get_current_user(request, db)
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"message": "인증되지 않은 사용자입니다."})
+
+    try:
+        # 1. 정책 및 데이터 설정 로드
+        (
+            granularity,
+            lunch_start,
+            lunch_end,
+            work_start,
+            work_end,
+        ) = resolve_time_policy_setting(db)
+        
+        # 2. 날짜 객체 변환 및 주말/공휴일 체크
+        req_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        if req_date.weekday() >= 5:
+            return JSONResponse(status_code=400, content={"message": "주말에는 연차를 신청할 수 없습니다."})
+        
+        is_holiday = db.query(models.Holidays).filter(models.Holidays.date == req_date).first()
+        if is_holiday:
+            return JSONResponse(status_code=400, content={"message": f"공휴일({is_holiday.name})에는 연차를 신청할 수 없습니다."})
+
+        # 3. 시간 기반 스냅샷 생성 (점심시간 제외 및 시간 단위 검증 포함)
+        snapshot = build_snapshot_from_timerange(
+            start_time=start_time,
+            end_time=end_time,
+            granularity_minutes=granularity,
+            lunch_start_minute=lunch_start,
+            lunch_end_minute=lunch_end,
+            work_start_minute=work_start,
+            work_end_minute=work_end,
+        )
+
+        if snapshot.deduction_hours <= 0:
+            return JSONResponse(status_code=400, content={"message": "유효한 신청 시간이 아닙니다."})
+
+        # 4. 중복 신청 및 일일 한도 체크
+        existing_leaves = db.query(models.Leaves).filter(
+            models.Leaves.user_id == user.user_id,
+            models.Leaves.date == req_date,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).all()
+        
+        daily_total = snapshot.deduction_hours
+        for el in existing_leaves:
+            # 시간대 중복 체크 (단순화: 이미 신청된 시간 범위와 겹치는지 확인)
+            if not (snapshot.end_min <= el.snapshot_start_min or snapshot.start_min >= el.snapshot_end_min):
+                return JSONResponse(status_code=400, content={"message": "이미 신청된 시간대와 중복됩니다."})
+            daily_total += el.snapshot_deduction_hours
+            
+        if daily_total > 8.01: # 부동소수점 오차 고려
+            return JSONResponse(status_code=400, content={"message": "하루에 8시간을 초과하여 신청할 수 없습니다."})
+
+        # 5. 잔여 연차 체크
+        total_allocated = resolve_user_yearly_allocated_hours(db, user, req_date.year)
+        used_hours = db.query(func.sum(models.Leaves.snapshot_deduction_hours)).filter(
+            models.Leaves.user_id == user.user_id,
+            models.Leaves.year == req_date.year,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).scalar() or 0.0
+        
+        if used_hours + snapshot.deduction_hours > total_allocated:
+            return JSONResponse(status_code=400, content={"message": "잔여 연차가 부족합니다."})
+
+        # 6. 상태 결정 (RBAC v1.4.0)
+        setting = db.query(models.SystemSettings).first()
+        is_approval_required = setting.is_approval_required if setting else True
+        
+        # PM은 무조건 자동 승인, 승인 필요 없으면 자동 승인
+        if not is_approval_required or user.role == "PM":
+            initial_status = "APPROVED"
+        else:
+            initial_status = "PENDING"
+
+        # 7. 저장
+        new_leave = models.Leaves(
+            user_id=user.user_id,
+            date=req_date,
+            snapshot_slot_label=snapshot.slot_label,
+            snapshot_start_min=snapshot.start_min,
+            snapshot_end_min=snapshot.end_min,
+            snapshot_deduction_hours=snapshot.deduction_hours,
+            status=initial_status,
+            year=req_date.year
+        )
+        db.add(new_leave)
+        db.commit()
+        
+        msg = "연차가 신청되었습니다." if initial_status == "PENDING" else "연차가 신청 및 자동 승인되었습니다."
+        return JSONResponse(status_code=200, content={"message": msg})
+
+    except LeaveInputValidationError as e:
+        return JSONResponse(status_code=400, content={"message": str(e)})
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": f"서버 오류: {str(e)}"})
+
+
 def _get_approver(request: Request, db: Session) -> models.Users:
     """TEAM_LEAD 또는 PM 역할 검증. 결재 기능이 OFF이면 403."""
     user = get_current_user(request, db)
