@@ -85,7 +85,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.3.5 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.4.0 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
