@@ -12,24 +12,7 @@ SHIM Portable은 Python 런타임과 모든 의존성을 단일 패키지로 묶
 
 ---
 
-## 2. 빌드 절차 (Build Process)
-*이 작업은 인터넷이 가능한 개발 환경(Local PC)에서 수행합니다.*
-
-### 사전 요구사항
-- **Python**: 3.11 이상
-- **Node.js**: 18 이상 (Tailwind CSS 빌드용)
-- **의존성**: 프로젝트 루트에서 `npm install` 및 `pip install -r requirements.txt` 완료 상태
-
-### 빌드 실행
-프로젝트 루트에서 다음 PowerShell 스크립트를 실행합니다. 이 스크립트는 CSS 빌드, 버전 동기화, 바이너리 패키징을 일괄 처리합니다.
-```powershell
-powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
-```
-- **결과물**: `artifacts/dist/SHIM_Portable/` 폴더 생성
-
----
-
-## 3. 배포 및 전달 (Deployment)
+## 2. 배포 및 전달 (Deployment)
 빌드된 산출물을 대상 폐쇄망 PC로 이동하는 단계입니다.
 
 1.  **폴더 복사**: `artifacts/dist/SHIM_Portable/` 폴더 **전체**를 USB 또는 보안 전달 매체를 통해 대상 PC로 복사합니다.
@@ -38,7 +21,7 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 ---
 
-## 4. 실행 및 종료 (Execution)
+## 3. 실행 및 종료 (Execution)
 
 ### 최초 실행 및 보안 설정
 1.  **`run_portable.bat` 실행**: 더블 클릭하여 기동합니다.
@@ -55,7 +38,7 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 ---
 
-## 5. 운영 및 유지관리 (Maintenance)
+## 4. 운영 및 유지관리 (Maintenance)
 
 ### 데이터 백업
 - **대상**: `data/shim_internal.db` 파일
@@ -76,7 +59,7 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 ---
 
-## 6. 주의사항 및 정책 (Policies)
+## 5. 주의사항 및 정책 (Policies)
 
 - **보안**: `data/secret.key` 파일이 삭제되거나 유출되지 않도록 관리하십시오. 분실 시 기존 쿠키 세션이 모두 무효화됩니다.
 - **포트**: 8000 포트가 점유 중인 경우 `run_portable.bat 8010`과 같이 인자를 주어 즉시 실행 포트를 변경할 수 있습니다.
