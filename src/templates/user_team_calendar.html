@@ -268,7 +268,7 @@
                         <td
                             class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
                             {% if cell_leaves %}
-                            {% set ns_t = namespace(th=0, ph=0, has_non_deductive=false) %}
+                            {% set ns_t = namespace(th=0, ph=0, has_non_deductive=false, has_non_deductive_pending=false) %}
                             {% for lv in cell_leaves %}
                                 {% if lv.status == "APPROVED" %}
                                     {% if lv.is_deductive %}
@@ -277,12 +277,16 @@
                                         {% set ns_t.has_non_deductive = true %}
                                     {% endif %}
                                 {% elif lv.status == "PENDING" %}
-                                    {% set ns_t.ph = ns_t.ph + lv.snapshot_deduction_hours %}
+                                    {% if lv.is_deductive %}
+                                        {% set ns_t.ph = ns_t.ph + lv.snapshot_deduction_hours %}
+                                    {% else %}
+                                        {% set ns_t.has_non_deductive_pending = true %}
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                             
                             {% set total_h = ns_t.th + ns_t.ph %}
-                            {% if total_h > 0 or ns_t.has_non_deductive %}
+                            {% if total_h > 0 or ns_t.has_non_deductive or ns_t.has_non_deductive_pending %}
                             {% set tooltip_parts = [] %}
                             {% set ns_pub_h = namespace(h=0) %}
                             {% for lv in cell_leaves %}
@@ -295,7 +299,7 @@
                                     {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (대기)") %}
                                 {% endif %}
                             {% endfor %}
-                            <div class="day-block {% if ns_t.has_non_deductive and ns_t.th == 0 and ns_t.ph == 0 %}public{% elif total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 %}pending{% endif %} transform transition-transform hover:scale-105"
+                            <div class="day-block {% if (ns_t.has_non_deductive or ns_t.has_non_deductive_pending) and total_h == 0 %}public{% elif total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 or ns_t.has_non_deductive_pending %}pending{% endif %} transform transition-transform hover:scale-105"
                                 title="{{ tooltip_parts|join(', ') }}">
                                 {% if total_h > 0 %}
                                     {{ fmt_hours(total_h) }}h

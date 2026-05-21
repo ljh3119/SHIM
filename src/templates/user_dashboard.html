@@ -204,16 +204,17 @@
                 <label for="direct_reason" class="block text-sm font-bold text-dense-nav-text">신청 사유 <span class="text-dense-danger">*</span></label>
                 <textarea id="direct_reason" name="reason" placeholder="예: 예비군 훈련, 외부 세미나 참석 등" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
             </div>
-            <p class="text-xs font-semibold text-dense-muted">
-                * 주말/공휴일은 신청할 수 없습니다. (기간 선택 시 범위 내 주말/공휴일은 자동 스킵됩니다)
-                <span class="mx-1 text-dense-line-strong">|</span>
-                * 업무시간: {{ "%02d:%02d"|format((work_start_minute // 60), (work_start_minute % 60)) }}~{{ "%02d:%02d"|format((work_end_minute // 60), (work_end_minute % 60)) }}
-                / 단위: {{ time_granularity_minutes }}분
-                {% if lunch_start_minute is not none and lunch_end_minute is not none %}
-                / 점심 제외: {{ "%02d:%02d"|format((lunch_start_minute // 60), (lunch_start_minute % 60)) }}~{{ "%02d:%02d"|format((lunch_end_minute // 60), (lunch_end_minute % 60)) }}
-                {% endif %}
-                / 실제 차감: 선택 구간에서 점심 제외 후 계산
-            </p>
+            <div class="space-y-0.5 text-xs font-semibold text-dense-muted">
+                <p>* 주말/공휴일은 신청할 수 없습니다. (기간 선택 시 범위 내 주말/공휴일은 자동 스킵됩니다)</p>
+                <p>
+                    * 업무시간: {{ "%02d:%02d"|format((work_start_minute // 60), (work_start_minute % 60)) }}~{{ "%02d:%02d"|format((work_end_minute // 60), (work_end_minute % 60)) }}
+                    / 단위: {{ time_granularity_minutes }}분
+                    {% if lunch_start_minute is not none and lunch_end_minute is not none %}
+                    / 점심 제외: {{ "%02d:%02d"|format((lunch_start_minute // 60), (lunch_start_minute % 60)) }}~{{ "%02d:%02d"|format((lunch_end_minute // 60), (lunch_end_minute % 60)) }}
+                    {% endif %}
+                    / 실제 차감: 선택 구간에서 점심 제외 후 계산
+                </p>
+            </div>
         </form>
     </div>
 

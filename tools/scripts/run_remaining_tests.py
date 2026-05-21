@@ -20,10 +20,17 @@ from src.app.main import app, startup_event
 from src.app.database import SessionLocal
 from src.app import models, auth
 
-def next_weekday(start):
+def next_business_day(start, db):
     d = start
-    while d.weekday() >= 5:
-        d += timedelta(days=1)
+    while True:
+        if d.weekday() >= 5:
+            d += timedelta(days=1)
+            continue
+        is_holiday = db.query(models.Holidays).filter(models.Holidays.date == d).first()
+        if is_holiday:
+            d += timedelta(days=1)
+            continue
+        break
     return d
 
 def clear_user_leaves(db, user_id):
@@ -52,10 +59,9 @@ def main():
                 user_id=uid, user_name=name, role=role, team=team,
                 password=auth.get_password_hash("0000"), is_active=True
             ))
+    d1 = next_business_day(date.today() + timedelta(days=1), db)
     db.commit()
     db.close() # 유저 생성 후 닫기
-
-    d1 = next_weekday(date.today() + timedelta(days=1))
     admin_token = auth.create_access_token({"sub": "admin"})
     admin_client = TestClient(app)
     admin_client.cookies.set("access_token", f"Bearer {admin_token}")

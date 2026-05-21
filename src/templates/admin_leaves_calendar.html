@@ -139,6 +139,12 @@
     .day-block { display: inline-block; background: #175cd3; color: #fff; border-radius: 3px; padding: 1px 3px; font-size: 9px; line-height: 1.3; margin: 1px 0; cursor: default; }
     .day-block.full { background: #d92d20; }
     .day-block.half { background: #f79009; }
+    .day-block.pending {
+        opacity: 0.45;
+        border: 2.2px dashed rgba(0, 0, 0, 0.35) !important;
+        box-shadow: none;
+        filter: grayscale(0.2);
+    }
     .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
     .holiday-head { color: #d92d20 !important; background: #fef3f2 !important; }
     .weekday-label { display: block; font-size: 9px; line-height: 1.1; margin-top: 1px; }
@@ -330,9 +336,12 @@
                         <td class="col-day">
                             {% if day in user_leaves_map[stat.user_id] %}
                                 {% set dl = user_leaves_map[stat.user_id][day] %}
-                                {% set ns = namespace(total_h=0, pub_h=0, has_pub=false) %}
+                                {% set ns = namespace(total_h=0, pub_h=0, has_pub=false, has_pending=false) %}
                                 {% for lv in dl %}
                                     {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                        {% if lv.status == "PENDING" %}
+                                            {% set ns.has_pending = true %}
+                                        {% endif %}
                                         {% if lv.is_deductive %}
                                             {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
                                         {% else %}
@@ -343,7 +352,7 @@
                                 {% endfor %}
                                 
                                 {% if ns.total_h > 0 or ns.has_pub %}
-                                <div class="day-block {% if ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %}"
+                                <div class="day-block {% if ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %} {% if ns.has_pending %}pending{% endif %}"
                                      title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
                                      data-user-name="{{ stat.user_name }}"
                                      data-month="{{ selected_month }}"
