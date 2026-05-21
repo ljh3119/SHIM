@@ -119,6 +119,11 @@
         border-color: rgba(217, 45, 32, 0.45);
     }
 
+    .cal-table .day-block.public {
+        background: linear-gradient(180deg, #9333ea 0%, #7e22ce 100%);
+        border-color: rgba(147, 51, 234, 0.45);
+    }
+
     .cal-table .day-block.pending {
         opacity: 0.45;
         border-style: dashed;
@@ -197,6 +202,10 @@
                 <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-danger shadow-sm"></span>
                 <span>전일(8h)</span>
             </div>
+            <div class="flex items-center">
+                <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-purple-600 shadow-sm"></span>
+                <span>공가/출장 (연차 미소모)</span>
+            </div>
             <div class="flex items-center border-l border-dense-line pl-6">
                 <span class="mr-2 inline-block h-3 w-3 rounded align-middle bg-dense-blue/60 border border-dashed border-dense-blue-strong shadow-sm"></span>
                 <span class="text-dense-blue font-extrabold">대기 중인 연차 (반투명+점선)</span>
@@ -211,11 +220,19 @@
                 <thead>
                     <tr>
                         <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
-                            style="width: 7rem; min-width: 7rem;">이름</th>
+                            style="width: 7rem; min-width: 7rem;">
+                            <a href="{{ sort_urls.name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">이름{% if sort_key == 'name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
                         {% if user_role == 'PM' %}
-                        <th style="width: 5rem; min-width: 5rem;" class="text-center px-1">팀</th>
-                        <th style="width: 4rem; min-width: 4rem;" class="text-center px-1">잔여</th>
-                        <th style="width: 4rem; min-width: 4rem;" class="text-center px-1">월사용</th>
+                        <th style="width: 5rem; min-width: 5rem;" class="text-center px-1">
+                            <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th style="width: 4.5rem; min-width: 4.5rem;" class="text-center px-1" title="해당 연도 잔여 연차 (8시간=1일)">
+                            <a href="{{ sort_urls.remaining }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">잔여{% if sort_key == 'remaining' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th style="width: 4.5rem; min-width: 4.5rem;" class="text-center px-1" title="해당 월 누적 사용 시간 (8시간=1일)">
+                            <a href="{{ sort_urls.monthly_used }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">월사용{% if sort_key == 'monthly_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
                         {% endif %}
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set wd = team_cal_day_weekday[d] %}
@@ -241,36 +258,51 @@
                         {% if user_role == 'PM' %}
                         {% set stats = member_stats.get(m.user_id, {}) %}
                         <td class="text-[10px] font-bold text-dense-muted truncate px-1">{{ m.team or '-' }}</td>
-                        <td class="text-[10px] font-extrabold text-dense-blue px-1">{{ fmt_hours(stats.get('remaining', 0.0)) }}d</td>
-                        <td class="text-[10px] font-bold text-dense-text px-1">{{ fmt_hours(stats.get('monthly_used', 0.0)) }}h</td>
+                        <td class="text-[10px] font-extrabold px-1 {% if stats.get('remaining', 0) <= 0 %}text-dense-danger{% else %}text-dense-blue{% endif %}">
+                            {{ stats.get('remaining_label', '-') }}
+                        </td>
+                        <td class="text-[10px] font-bold text-dense-text px-1">{{ stats.get('monthly_used_label', '-') }}</td>
                         {% endif %}
                         {% for d in range(1, team_cal_num_days + 1) %}
                         {% set cell_leaves = team_leaves_map.get(m.user_id, {}).get(d, []) %}
                         <td
                             class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
                             {% if cell_leaves %}
-                            {% set ns_t = namespace(th=0, ph=0) %}
+                            {% set ns_t = namespace(th=0, ph=0, has_non_deductive=false) %}
                             {% for lv in cell_leaves %}
                                 {% if lv.status == "APPROVED" %}
-                                    {% set ns_t.th = ns_t.th + lv.snapshot_deduction_hours %}
+                                    {% if lv.is_deductive %}
+                                        {% set ns_t.th = ns_t.th + lv.snapshot_deduction_hours %}
+                                    {% else %}
+                                        {% set ns_t.has_non_deductive = true %}
+                                    {% endif %}
                                 {% elif lv.status == "PENDING" %}
                                     {% set ns_t.ph = ns_t.ph + lv.snapshot_deduction_hours %}
                                 {% endif %}
                             {% endfor %}
                             
                             {% set total_h = ns_t.th + ns_t.ph %}
-                            {% if total_h > 0 %}
+                            {% if total_h > 0 or ns_t.has_non_deductive %}
                             {% set tooltip_parts = [] %}
+                            {% set ns_pub_h = namespace(h=0) %}
                             {% for lv in cell_leaves %}
+                                {% set prefix = "[공가/출장] " if not lv.is_deductive else "" %}
+                                {% set reason_str = " (사유: " ~ lv.reason ~ ")" if lv.reason else "" %}
+                                {% if not lv.is_deductive and lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_pub_h.h = ns_pub_h.h + lv.snapshot_deduction_hours %}{% endif %}
                                 {% if lv.status == "APPROVED" %}
-                                    {% set _unused = tooltip_parts.append(lv.snapshot_slot_label ~ " (승인)") %}
+                                    {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (승인)") %}
                                 {% elif lv.status == "PENDING" %}
-                                    {% set _unused = tooltip_parts.append(lv.snapshot_slot_label ~ " (대기)") %}
+                                    {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (대기)") %}
                                 {% endif %}
                             {% endfor %}
-                            <div class="day-block {% if total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 %}pending{% endif %} transform transition-transform hover:scale-105"
+                            <div class="day-block {% if ns_t.has_non_deductive and ns_t.th == 0 and ns_t.ph == 0 %}public{% elif total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 %}pending{% endif %} transform transition-transform hover:scale-105"
                                 title="{{ tooltip_parts|join(', ') }}">
-                                {{ fmt_hours(total_h) }}h
+                                {% if total_h > 0 %}
+                                    {{ fmt_hours(total_h) }}h
+                                    {% if ns_pub_h.h > 0 %}<span class="ml-0.5 text-[7px]">+공가/출장</span>{% endif %}
+                                {% else %}
+                                    {{ fmt_hours(ns_pub_h.h) }}h
+                                {% endif %}
                             </div>
                             {% endif %}
                             {% endif %}

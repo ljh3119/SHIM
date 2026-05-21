@@ -21,11 +21,12 @@ def get_admin_dashboard_stats(db: Session):
     
     pending_leaves_count = db.query(models.Leaves).filter(models.Leaves.status == "PENDING").count()
     
-    setting = db.query(models.SystemSettings).first()
+    from .leave_policy import get_system_settings
+    setting = get_system_settings(db)
     is_approval_required = bool(setting.is_approval_required) if setting else False
 
-    # 금일 총 사용 연차(date 기준)
-    leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date()).all()
+    # 금일 총 사용 연차(date 기준, 차감 대상인 것만)
+    leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date(), models.Leaves.is_deductive == True).all()
     today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
     
     # Last 7 days timeline

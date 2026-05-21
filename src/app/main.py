@@ -13,7 +13,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.4.0")
+app = FastAPI(title="SHIM", version="1.5.1")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -27,6 +27,18 @@ VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
 
 
 models.Base.metadata.create_all(bind=engine)
+
+# 자동 스키마 마이그레이션 (company_calendar_visible 컬럼 추가)
+try:
+    with engine.connect() as conn:
+        res = conn.execute(text("PRAGMA table_info(system_settings)"))
+        columns = [row[1] for row in res.fetchall()]
+        if "company_calendar_visible" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN company_calendar_visible BOOLEAN DEFAULT 0 NOT NULL"))
+            conn.commit()
+except Exception as e:
+    print(f"[MIGRATION ERROR] Failed to add company_calendar_visible: {e}")
+
 
 
 
@@ -56,10 +68,12 @@ def _normalize_branding_from_row(row: models.SystemSettings | None) -> dict[str,
     }
 
 
+from .services.leave_policy import get_system_settings
+
 def _load_branding_into_request(request: Request) -> None:
     db = database.SessionLocal()
     try:
-        row = db.query(models.SystemSettings).first()
+        row = get_system_settings(db)
         b = _normalize_branding_from_row(row)
         request.state.product_display_name = b["product_display_name"]
         request.state.product_nav_short = b["product_nav_short"]
@@ -129,7 +143,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.4.0"
+templates.env.globals["app_version"] = "1.5.1"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 app.state.templates = templates
@@ -236,6 +250,7 @@ def startup_event():
                 product_nav_short="",
                 brand_initial=DEFAULT_BRAND_INITIAL,
                 team_calendar_visible=True,
+                company_calendar_visible=False,
             )
         )
     else:
@@ -246,7 +261,8 @@ def startup_event():
                 SET time_granularity_minutes = COALESCE(time_granularity_minutes, 60),
                     work_start_minute = COALESCE(work_start_minute, 540),
                     work_end_minute = COALESCE(work_end_minute, 1080),
-                    team_calendar_visible = COALESCE(team_calendar_visible, 1)
+                    team_calendar_visible = COALESCE(team_calendar_visible, 1),
+                    company_calendar_visible = COALESCE(company_calendar_visible, 0)
                 """
             )
         )

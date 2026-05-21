@@ -34,7 +34,7 @@
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청자</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">팀명</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청일</th>
-                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">시간대</th>
+                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">시간대/사유</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">등록시각</th>
                         <th class="px-4 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">결재</th>
@@ -45,9 +45,23 @@
                     <tr id="pending-row-{{ pl.id }}" class="transition-colors hover:bg-dense-surface-soft">
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.user.user_name if pl.user else pl.user_id }}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.user.team if pl.user else '미지정' }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.date.strftime('%Y-%m-%d') }} ({{ ['월','화','수','목','금','토','일'][pl.date.weekday()] }})</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.snapshot_slot_label }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold text-dense-blue">-{{ fmt_hours(pl.snapshot_deduction_hours) }}h</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
+                            {{ pl.date.strftime('%Y-%m-%d') }} ({{ ['월','화','수','목','금','토','일'][pl.date.weekday()] }})
+                            {% if not pl.is_deductive %}
+                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
+                            {{ pl.snapshot_slot_label }}
+                            {% if pl.reason %}
+                            <div class="max-w-[10rem] truncate text-[11px] font-medium text-dense-muted" title="{{ pl.reason }}">
+                                사유: {{ pl.reason }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold {% if pl.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">
+                            {% if pl.is_deductive %}-{{ fmt_hours(pl.snapshot_deduction_hours) }}h{% else %}0h{% endif %}
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-center">
                             <div class="flex items-center justify-center gap-2">
