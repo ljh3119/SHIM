@@ -32,16 +32,39 @@
         </div>
         <div class="mb-4 rounded-xl border border-dense-line bg-dense-surface-soft p-4">
             <p class="text-sm font-semibold text-dense-text">
-                <span class="font-extrabold">팀 캘린더 공유</span>
+                <span class="font-extrabold">캘린더 공유 범위 설정</span>
                 — 현재:
-                <strong id="team-cal-current-label" class="text-dense-blue">{% if team_calendar_visible %}켜짐{% else %}꺼짐{% endif %}</strong>
+                <strong id="calendar-scope-current-label" class="text-dense-blue">
+                    {% if company_calendar_visible %}
+                        전사 공유
+                    {% elif team_calendar_visible %}
+                        소속 팀원 공유
+                    {% else %}
+                        공유 안 함 (본인 전용)
+                    {% endif %}
+                </strong>
             </p>
             <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
-                <strong class="text-dense-text">켜짐</strong>: 일반 사원과 팀장이 같은 팀 내 다른 사원의 월별 휴가 현황을 조회할 수 있습니다.<br>
-                <strong class="text-dense-text">꺼짐</strong>: 본인의 연차만 조회 가능합니다.
+                일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
             </p>
+            
+            <div class="mt-3 space-y-2">
+                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
+                    <input type="radio" name="calendar_scope" value="none" {% if not team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                    <span>공유 안 함 (본인 전용) — 사원은 자신의 휴가 일정만 조회할 수 있습니다.</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
+                    <input type="radio" name="calendar_scope" value="team" {% if team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                    <span>소속 팀원 공유 — 본인과 동일한 팀 내 사원의 연차를 조회할 수 있습니다.</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
+                    <input type="radio" name="calendar_scope" value="company" {% if company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                    <span>전사 공유 — 일반 사원과 팀장도 전사 모든 사원의 연차를 조회할 수 있습니다.</span>
+                </label>
+            </div>
+            
             <div class="mt-3 flex flex-wrap gap-2">
-                <button type="button" onclick="toggleTeamCalendar()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">팀 캘린더 공유 변경</button>
+                <button type="button" onclick="saveCalendarScope()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">공유 범위 저장</button>
             </div>
         </div>
         <div class="rounded-xl border border-dense-line-strong bg-dense-blue-soft p-4">
@@ -220,24 +243,33 @@ async function toggleApprovalWorkflow() {
     if (resp.ok) refreshApprovalLabel();
 }
 
-async function toggleTeamCalendar() {
-    const r = await fetch('/admin/settings/approval');
-    const j = await r.json();
-    const cur = !!j.team_calendar_visible;
-    const next = !cur;
-    const curLabel = cur ? '켜짐' : '꺼짐';
-    const nextLabel = next ? '켜짐' : '꺼짐';
-    if (!confirm('팀 캘린더 공유 설정을 변경할까요?\n\n현재: ' + curLabel + '\n변경 후: ' + nextLabel)) return;
-    const resp = await fetch('/admin/settings/team-calendar', {
+async function saveCalendarScope() {
+    const radios = document.getElementsByName('calendar_scope');
+    let selectedValue = 'none';
+    for (const radio of radios) {
+        if (radio.checked) {
+            selectedValue = radio.value;
+            break;
+        }
+    }
+
+    let scopeLabel = '';
+    if (selectedValue === 'none') scopeLabel = '공유 안 함 (본인 전용)';
+    else if (selectedValue === 'team') scopeLabel = '소속 팀원 공유';
+    else if (selectedValue === 'company') scopeLabel = '전사 공유';
+
+    if (!confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
+
+    const resp = await fetch('/admin/settings/calendar-scope', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'team_calendar_visible=' + (next ? 'true' : 'false')
+        body: 'scope=' + selectedValue
     });
     const result = await resp.json();
     alert(result.message || '처리되었습니다.');
     if (resp.ok) {
-        const el = document.getElementById('team-cal-current-label');
-        if (el) el.textContent = next ? '켜짐' : '꺼짐';
+        const el = document.getElementById('calendar-scope-current-label');
+        if (el) el.textContent = scopeLabel;
     }
 }
 async function runDbBackup() {

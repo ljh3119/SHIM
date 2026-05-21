@@ -106,6 +106,10 @@
         background: linear-gradient(180deg, #f97066 0%, #d92d20 100%);
         border-color: rgba(217,45,32,0.45);
     }
+    .cal-table.cal-month-view.cal-one-line .day-block.public {
+        background: linear-gradient(180deg, #9333ea 0%, #7e22ce 100%);
+        border-color: rgba(147,51,234,0.45);
+    }
     .cal-table.cal-year-view.cal-one-line .sticky-col.col-info { width: 8rem; min-width: 8rem; max-width: 8rem; }
     .cal-table.cal-month-view.cal-one-line .sticky-col.col-info { width: 11%; min-width: 6.75rem; max-width: 11%; }
     .cal-table.cal-month-view.cal-one-line thead th.col-meta,
@@ -253,8 +257,8 @@
             <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-blue"></span>반일 이하</span>
             <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-[#f79009]"></span>반일(4h)</span>
             <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-danger"></span>전일(8h)</span>
+            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-purple-600"></span>공가/출장 (연차 미소모)</span>
             <span class="w-full font-semibold text-dense-muted sm:w-auto">해당 셀에 마우스를 올리면 상세내역이 표시됩니다.</span>
-      
         </div>
         {% else %}
         <p class="mb-3 text-xs font-semibold text-dense-muted">잔여·연사용·월별 칸은 모두 <strong class="text-dense-text">8시간 = 1일</strong> 기준입니다. 사용이 없는 달·0인 값은 <strong class="text-dense-text">-</strong> 입니다. 표기는 <code class="rounded bg-dense-gray-soft px-1 text-[11px]">9일2h</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">8일</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">4h</code>처럼 생략하며, 마우스를 올리면 읽기 쉬운 전체 문구를 볼 수 있습니다.</p>
@@ -326,17 +330,35 @@
                         <td class="col-day">
                             {% if day in user_leaves_map[stat.user_id] %}
                                 {% set dl = user_leaves_map[stat.user_id][day] %}
-                                {% set ns = namespace(total_h=0) %}
-                                {% for lv in dl %}{% if lv.status not in ["CANCELED", "REJECTED"] %}{% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
-                                <div class="day-block {% if ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %}"
-                                     title="{% for lv in dl %}{{ lv.snapshot_slot_label }}(-{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
+                                {% set ns = namespace(total_h=0, pub_h=0, has_pub=false) %}
+                                {% for lv in dl %}
+                                    {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                        {% if lv.is_deductive %}
+                                            {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
+                                        {% else %}
+                                            {% set ns.pub_h = ns.pub_h + lv.snapshot_deduction_hours %}
+                                            {% set ns.has_pub = true %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if ns.total_h > 0 or ns.has_pub %}
+                                <div class="day-block {% if ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %}"
+                                     title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
                                      data-user-name="{{ stat.user_name }}"
                                      data-month="{{ selected_month }}"
                                      data-day="{{ day }}"
                                      data-slots="{% for lv in dl %}{{ lv.snapshot_slot_label }}{% if not loop.last %}|{% endif %}{% endfor %}"
                                      onclick="showLeaveTimeDetails(this)">
-                                    {{ fmt_hours(ns.total_h) }}h
+                                    {% if ns.total_h > 0 %}
+                                        {{ fmt_hours(ns.total_h) }}h{% if ns.has_pub %}<span class="text-[7px]">+공가/출장</span>{% endif %}
+                                    {% else %}
+                                        {{ fmt_hours(ns.pub_h) }}h
+                                    {% endif %}
                                 </div>
+                                {% else %}
+                                <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
+                                {% endif %}
                             {% else %}
                                 <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
                             {% endif %}

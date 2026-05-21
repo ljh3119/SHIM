@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
-from sqlalchemy import extract
+from sqlalchemy import extract, func
 from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 from openpyxl import Workbook
@@ -18,9 +18,11 @@ from ..services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
     LeaveStatusTransitionError,
     apply_leave_status_transition,
+    invalidate_settings_cache,
 )
 from ..services.ops import create_sqlite_backup
 from ..services import admin_service
+from .api_user import resolve_user_yearly_allocated_hours
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -488,14 +490,27 @@ async def admin_leaves_calendar(
     holiday_day_map = {}
     user_month_hours = {u.user_id: {m: 0.0 for m in range(1, 13)} for u in users}
 
-    if is_year_view:
+    user_ids = [u.user_id for u in users]
+    user_yearly_leaves_map = {uid: [] for uid in user_ids}
+
+    if user_ids:
         year_leaves = (
-            db.query(models.Leaves).filter(extract("year", models.Leaves.date) == current_year).all()
+            db.query(models.Leaves)
+            .filter(
+                models.Leaves.user_id.in_(user_ids),
+                models.Leaves.year == current_year,
+                models.Leaves.status.notin_(["CANCELED", "REJECTED"]),
+                models.Leaves.is_deductive == True
+            )
+            .all()
         )
         for l in year_leaves:
-            if l.user_id not in user_month_hours:
-                continue
-            user_month_hours[l.user_id][l.date.month] += float(l.snapshot_deduction_hours or 0)
+            user_yearly_leaves_map[l.user_id].append(l)
+
+    if is_year_view:
+        for uid, leaves in user_yearly_leaves_map.items():
+            for l in leaves:
+                user_month_hours[uid][l.date.month] += float(l.snapshot_deduction_hours or 0)
     else:
         num_days = calendar.monthrange(current_year, current_month)[1]
         days = list(range(1, num_days + 1))
@@ -514,14 +529,17 @@ async def admin_leaves_calendar(
         )
         holiday_day_map = {h.date.day: h for h in month_holidays}
 
-        month_leaves = (
-            db.query(models.Leaves)
-            .filter(
-                extract("year", models.Leaves.date) == current_year,
-                extract("month", models.Leaves.date) == current_month,
+        month_leaves = []
+        if user_ids:
+            month_leaves = (
+                db.query(models.Leaves)
+                .filter(
+                    models.Leaves.user_id.in_(user_ids),
+                    extract("year", models.Leaves.date) == current_year,
+                    extract("month", models.Leaves.date) == current_month,
+                )
+                .all()
             )
-            .all()
-        )
         for l in month_leaves:
             if l.user_id not in user_leaves_map:
                 continue
@@ -554,12 +572,8 @@ async def admin_leaves_calendar(
         else:
             month_used_labels = {}
             month_used_short_labels = {}
-            yearly_leaves = (
-                db.query(models.Leaves)
-                .filter(models.Leaves.user_id == u.user_id, models.Leaves.year == current_year)
-                .all()
-            )
-            yearly_used = sum(float(l.snapshot_deduction_hours or 0) for l in yearly_leaves if l.status not in ("CANCELED", "REJECTED"))
+            yearly_leaves = user_yearly_leaves_map.get(u.user_id, [])
+            yearly_used = sum(float(l.snapshot_deduction_hours or 0) for l in yearly_leaves)
 
         allocated_hours = float(allocation_map.get(u.user_id, u.total_leave_hours or 0))
         yearly_remain = allocated_hours - float(yearly_used)
@@ -570,7 +584,7 @@ async def admin_leaves_calendar(
             period_used = 0.0
             if u.user_id in user_leaves_map:
                 for dlist in user_leaves_map[u.user_id].values():
-                    period_used += sum(float(lv.snapshot_deduction_hours or 0) for lv in dlist if lv.status not in ("CANCELED", "REJECTED"))
+                    period_used += sum(float(lv.snapshot_deduction_hours or 0) for lv in dlist if lv.status not in ("CANCELED", "REJECTED") and lv.is_deductive == True)
 
         user_stats.append(
             {
@@ -1360,6 +1374,57 @@ async def update_leave_status(
     return JSONResponse(status_code=200, content={"message": "상태가 변경되었습니다."})
 
 
+@router.post("/leave/update-type")
+async def update_leave_type(
+    request: Request,
+    leave_id: int = Form(...),
+    is_deductive: bool = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        admin = get_current_admin(request, db)
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
+    if not leave:
+        return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
+
+    old_type = "연차(차감)" if leave.is_deductive else "공가/출장(비차감)"
+    new_type = "연차(차감)" if is_deductive else "공가/출장(비차감)"
+
+    if leave.is_deductive == is_deductive:
+        return JSONResponse(status_code=400, content={"message": "이미 해당 유형입니다."})
+
+    # 비차감 -> 차감 변경 시 잔여 연차 체크
+    if is_deductive:
+        total_allocated = resolve_user_yearly_allocated_hours(db, leave.user, leave.year)
+        used_hours = db.query(func.sum(models.Leaves.snapshot_deduction_hours)).filter(
+            models.Leaves.user_id == leave.user_id,
+            models.Leaves.year == leave.year,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"]),
+            models.Leaves.is_deductive == True,
+            models.Leaves.id != leave.id
+        ).scalar() or 0.0
+        
+        if used_hours + leave.snapshot_deduction_hours > total_allocated:
+            return JSONResponse(status_code=400, content={"message": "사용자의 잔여 연차가 부족하여 연차로 변경할 수 없습니다."})
+
+    leave.is_deductive = is_deductive
+    
+    db.add(
+        models.AuditLogs(
+            actor_id=admin.user_id,
+            action="UPDATE_LEAVE_TYPE",
+            target_info=f"Leave:{leave_id} ({leave.user.user_name}, {leave.date})",
+            old_data=f"is_deductive={not is_deductive} ({old_type})",
+            new_data=f"is_deductive={is_deductive} ({new_type})",
+        )
+    )
+    db.commit()
+    return JSONResponse(status_code=200, content={"message": f"유형이 {new_type}로 변경되었습니다."})
+
+
 @router.get("/settings/approval")
 async def get_approval_setting(request: Request, db: Session = Depends(get_db)):
     try:
@@ -1380,6 +1445,7 @@ async def get_approval_setting(request: Request, db: Session = Depends(get_db)):
             "product_nav_short": getattr(setting, "product_nav_short", None) or "",
             "brand_initial": getattr(setting, "brand_initial", None) or "S",
             "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
+            "company_calendar_visible": bool(getattr(setting, "company_calendar_visible", False)),
         },
     )
 
@@ -1436,33 +1502,59 @@ async def set_branding_setting(
         )
     )
     db.commit()
+    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
 
 
-@router.post("/settings/team-calendar")
-async def set_team_calendar_setting(
+@router.post("/settings/calendar-scope")
+async def set_calendar_scope_setting(
     request: Request,
-    team_calendar_visible: bool = Form(...),
+    scope: str = Form(...),  # "none", "team", "company"
     db: Session = Depends(get_db),
 ):
     try:
         admin = get_current_admin(request, db)
     except HTTPException:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    if scope not in ("none", "team", "company"):
+        return JSONResponse(status_code=400, content={"detail": "Invalid scope value"})
+
     setting = _ensure_system_setting(db)
-    old_val = bool(getattr(setting, "team_calendar_visible", True))
-    setting.team_calendar_visible = team_calendar_visible
+
+    old_team = bool(getattr(setting, "team_calendar_visible", True))
+    old_company = bool(getattr(setting, "company_calendar_visible", False))
+    if old_company:
+        old_scope = "company"
+    elif old_team:
+        old_scope = "team"
+    else:
+        old_scope = "none"
+
+    if scope == "none":
+        setting.team_calendar_visible = False
+        setting.company_calendar_visible = False
+    elif scope == "team":
+        setting.team_calendar_visible = True
+        setting.company_calendar_visible = False
+    elif scope == "company":
+        setting.team_calendar_visible = True
+        setting.company_calendar_visible = True
+
     db.add(
         models.AuditLogs(
             actor_id=admin.user_id,
-            action="UPDATE_TEAM_CALENDAR_SETTING",
+            action="UPDATE_CALENDAR_SCOPE_SETTING",
             target_info="SystemSettings",
-            old_data=str(old_val),
-            new_data=str(team_calendar_visible),
+            old_data=old_scope,
+            new_data=scope,
         )
     )
     db.commit()
-    return JSONResponse(status_code=200, content={"message": "팀 캘린더 공유 설정이 변경되었습니다."})
+    invalidate_settings_cache()
+    return JSONResponse(status_code=200, content={"message": "캘린더 공유 범위 설정이 변경되었습니다."})
+
+
 
 
 @router.post("/settings/approval")
@@ -1487,6 +1579,7 @@ async def set_approval_setting(
         )
     )
     db.commit()
+    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "승인 설정이 변경되었습니다."})
 
 
@@ -1551,6 +1644,7 @@ async def set_time_policy(
         )
     )
     db.commit()
+    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "시간 단위/점심시간 정책이 저장되었습니다."})
 
 
@@ -1597,6 +1691,7 @@ async def admin_master(request: Request, db: Session = Depends(get_db)):
             "lunch_end_minute": getattr(setting, "lunch_end_minute", None),
             "half_hour_options": utils.build_half_hour_options(),
             "team_calendar_visible": bool(getattr(setting, "team_calendar_visible", True)),
+            "company_calendar_visible": bool(getattr(setting, "company_calendar_visible", False)),
         },
     )
 
@@ -1612,6 +1707,8 @@ AUDIT_ACTION_LABELS = {
     "BULK_UPDATE_USER_LEAVE_DAYS": "연차 일수 일괄 수정",
     "UPDATE_APPROVAL_SETTING": "승인 워크플로우 설정 변경",
     "UPDATE_TEAM_CALENDAR_SETTING": "팀 캘린더 공유 설정 변경",
+    "UPDATE_COMPANY_CALENDAR_SETTING": "전사 캘린더 공유 설정 변경",
+    "UPDATE_CALENDAR_SCOPE_SETTING": "캘린더 공유 범위 변경",
     "UPDATE_TIME_POLICY_SETTING": "시간 정책 변경",
     "UPDATE_BRANDING_SETTING": "브랜딩 설정 변경",
     "MANUAL_DB_BACKUP": "수동 DB 백업",

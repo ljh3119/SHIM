@@ -39,6 +39,8 @@ class Leaves(Base):
     snapshot_deduction_hours = Column(Float, nullable=False)
     status = Column(String, default="APPROVED", nullable=False, index=True)
     rejection_reason = Column(String(500))
+    is_deductive = Column(Boolean, default=True, nullable=False) # 연차 차감 여부 (True: 연차, False: 공가/출장 등)
+    reason = Column(String(500)) # 신청 사유 (특히 비차감 건의 경우 필수 입력 권장)
     created_at = Column(DateTime, default=datetime.datetime.now)
     year = Column(Integer, nullable=False)
 
@@ -98,6 +100,8 @@ class SystemSettings(Base):
     brand_initial = Column(String(32), default="S", nullable=False)
     # 팀원 간 팀 캘린더 공유 활성화 (일반 사용자도 같은 팀 휴가 조회 가능)
     team_calendar_visible = Column(Boolean, default=True, nullable=False)
+    # 전사 캘린더 공유 활성화 (일반 사용자도 전사 인원 휴가 조회 가능)
+    company_calendar_visible = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
