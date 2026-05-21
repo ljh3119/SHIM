@@ -26,8 +26,23 @@
 - **버전 동기화**: 빌드 직전에 `release.ps1`을 호출하여 `main.py`와 `package.json`의 버전이 일치하도록 보장합니다.
 - **자산 복사**: 빌드가 완료된 후 `run_portable.bat` 등 실행에 필요한 부속 파일들을 `dist` 폴더로 자동 복사합니다.
 
-### 3. 배포 주의사항
-- 최종 사용자에게는 `artifacts/dist/SHIM_Portable` 폴더 전체를 전달해야 합니다.
+### 3. 포터블 빌드 실행 방법
+*이 작업은 인터넷이 가능하고 개발 환경이 세팅된 Local PC에서 수행합니다.*
+
+#### 사전 요구사항
+- **Python**: 3.11 이상
+- **Node.js**: 18 이상 (Tailwind CSS 빌드용)
+- **의존성**: 프로젝트 루트에서 `npm install` 및 `pip install -r requirements.txt` 완료 상태
+
+#### 빌드 실행 명령어
+프로젝트 루트에서 다음 PowerShell 스크립트를 실행합니다. 이 스크립트는 CSS 빌드, 버전 동기화, 바이너리 패키징을 일괄 처리합니다.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
+```
+- **결과물**: `dist/SHIM_Portable/` 폴더가 생성됩니다.
+
+### 4. 배포 주의사항
+- 최종 사용자에게는 `dist/SHIM_Portable` 폴더 전체를 전달해야 합니다.
 - `.exe` 파일만 단독으로 전달할 경우, 내부 자산과 런타임 라이브러리가 누락되어 실행되지 않습니다.
 
 ---
