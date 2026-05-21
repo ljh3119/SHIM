@@ -147,9 +147,9 @@
                     <div id="direct_date_range_container" class="hidden">
                         <label class="block text-sm font-bold text-dense-nav-text">기간 범위</label>
                         <div class="mt-1 flex items-center gap-1.5">
-                            <input type="date" id="direct_start_date" lang="en-CA" placeholder="시작일" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <input type="date" id="direct_start_date" lang="en-CA" placeholder="시작일" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                             <span class="text-xs font-bold text-dense-muted">~</span>
-                            <input type="date" id="direct_end_date" lang="en-CA" placeholder="종료일" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <input type="date" id="direct_end_date" lang="en-CA" placeholder="종료일" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                         </div>
                     </div>
                     <!-- 하루 종일 체크박스 (단일 날짜 모드 전용) -->
@@ -187,8 +187,11 @@
                 </div>
 
                 <!-- 하루종일 신청 시 노출할 힌트 레이어 -->
-                <div id="direct_time_hint" class="hidden flex items-center justify-center rounded-xl border border-dashed border-dense-line bg-dense-surface-soft p-4 text-center">
-                    <span class="text-xs font-bold text-dense-blue">선택한 날짜에 대해 하루 종일(Full-day) 신청으로 일괄 등록됩니다.</span>
+                <div id="direct_time_hint_wrapper" class="hidden">
+                    <span class="block text-sm font-bold text-dense-nav-text">사용 시간대</span>
+                    <div id="direct_time_hint" class="mt-1 flex items-center justify-center rounded-xl border border-dashed border-dense-line-strong bg-dense-surface-soft px-3 py-1 text-center min-h-[38px]">
+                        <span class="text-[11px] font-bold text-dense-blue">선택한 날짜에 대해 하루 종일(Full-day) 신청으로 일괄 등록됩니다.</span>
+                    </div>
                 </div>
 
                 <div class="flex h-full items-end justify-end md:justify-start">
@@ -373,8 +376,11 @@
                         <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 {{ time_granularity_minutes }}분 단위만 신청 가능하며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</p>
                     </div>
                     <!-- 캘린더 다중 신청 시 노출할 힌트 레이어 -->
-                    <div id="calendar_time_hint" class="hidden flex items-center justify-center rounded-xl border border-dashed border-dense-line bg-dense-surface-soft p-4 text-center">
-                        <span class="text-xs font-bold text-dense-blue">선택한 날짜들에 대해 하루 종일(Full-day) 신청으로 등록됩니다.</span>
+                    <div id="calendar_time_hint_wrapper" class="hidden">
+                        <label class="block text-sm font-bold text-dense-nav-text">사용 시간대</label>
+                        <div id="calendar_time_hint" class="mt-1 flex items-center justify-center rounded-xl border border-dashed border-dense-line-strong bg-dense-surface-soft px-3 py-1 text-center min-h-[38px]">
+                            <span class="text-[11px] font-bold text-dense-blue">선택한 날짜들에 대해 하루 종일(Full-day) 신청으로 등록됩니다.</span>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -462,20 +468,20 @@ function evaluateLeaveDraft(startTime, endTime, isDeductive) {
 function toggleDirectAllDay() {
     const isAllDay = document.getElementById('direct_all_day').checked;
     const timeContainer = document.getElementById('direct_time_input_container');
-    const timeHint = document.getElementById('direct_time_hint');
+    const timeHint = document.getElementById('direct_time_hint_wrapper');
     const startSelect = document.getElementById('direct_start_time');
     const endSelect = document.getElementById('direct_end_time');
     
     if (isAllDay) {
         timeContainer.classList.add('hidden');
         timeHint.classList.remove('hidden');
-        timeHint.classList.add('flex');
+        timeHint.classList.add('block');
         startSelect.required = false;
         endSelect.required = false;
     } else {
         timeContainer.classList.remove('hidden');
         timeHint.classList.add('hidden');
-        timeHint.classList.remove('flex');
+        timeHint.classList.remove('block');
         startSelect.required = true;
         endSelect.required = true;
     }
@@ -522,9 +528,9 @@ function switchApplyMode(mode) {
         document.getElementById('direct_end_date').required = true;
         
         document.getElementById('direct_time_input_container').classList.add('hidden');
-        const timeHint = document.getElementById('direct_time_hint');
+        const timeHint = document.getElementById('direct_time_hint_wrapper');
         timeHint.classList.remove('hidden');
-        timeHint.classList.add('flex');
+        timeHint.classList.add('block');
         document.getElementById('direct_start_time').required = false;
         document.getElementById('direct_end_time').required = false;
     }
@@ -606,9 +612,9 @@ function openCalendarApplyModal(dateStr) {
     
     document.getElementById('calendar_multi_date_container').classList.add('hidden');
     document.getElementById('calendar_time_input_container').classList.remove('hidden');
-    const timeHint = document.getElementById('calendar_time_hint');
+    const timeHint = document.getElementById('calendar_time_hint_wrapper');
     timeHint.classList.add('hidden');
-    timeHint.classList.remove('flex');
+    timeHint.classList.remove('block');
     
     document.getElementById('calendar_start_time').value = '';
     document.getElementById('calendar_end_time').value = '';
@@ -671,9 +677,9 @@ function openMultiSelectApplyModal() {
     
     multiContainer.classList.remove('hidden');
     document.getElementById('calendar_time_input_container').classList.add('hidden');
-    const timeHint = document.getElementById('calendar_time_hint');
+    const timeHint = document.getElementById('calendar_time_hint_wrapper');
     timeHint.classList.remove('hidden');
-    timeHint.classList.add('flex');
+    timeHint.classList.add('block');
     
     document.getElementById('calendar_start_time').value = '';
     document.getElementById('calendar_end_time').value = '';

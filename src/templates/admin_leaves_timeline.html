@@ -94,47 +94,47 @@
             <table class="min-w-full divide-y divide-dense-line text-sm">
                 <thead class="bg-dense-surface-soft">
                     <tr>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.created_at }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">신청 시각{% if sort_key == 'created_at' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[1%] max-w-[11rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="w-[1%] max-w-[7.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.user_name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용자{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="min-w-[5.5rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="min-w-[4.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.company }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="min-w-[7.75rem] whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="min-w-[4.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.date }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용일{% if sort_key == 'date' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="min-w-[10.5rem] max-w-[14rem] px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="min-w-[8.5rem] max-w-[11rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.slot }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용 시간대{% if sort_key == 'slot' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="min-w-[8rem] max-w-[12rem] px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 사유</th>
-                        <th scope="col" class="w-[11rem] min-w-0 max-w-[11rem] whitespace-normal px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted" title="반려: 승인 불가 판정 / 신청 취소: 철회·무효">상태</th>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
+                        <th scope="col" class="min-w-[7rem] max-w-[10rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 사유</th>
+                        <th scope="col" class="w-[7.5rem] min-w-[7.5rem] max-w-[7.5rem] whitespace-normal px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted" title="반려: 승인 불가 판정 / 신청 취소: 철회·무효">상태</th>
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
                     {% for leave in leaves %}
                     <tr class="transition-colors hover:bg-dense-surface-soft" id="row-{{ leave.id }}">
-                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td class="max-w-[13rem] w-[1%] px-3 py-3" title="{{ leave.user.user_name }} ({{ leave.user.user_id }}){% if leave.user.team or leave.user.company %} — {{ leave.user.team or '—' }} / {{ leave.user.company or '—' }}{% endif %}">
+                        <td class="whitespace-nowrap px-2 py-2 text-xs font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="max-w-[7.5rem] w-[1%] px-2 py-2" title="{{ leave.user.user_name }} ({{ leave.user.user_id }}){% if leave.user.team or leave.user.company %} — {{ leave.user.team or '—' }} / {{ leave.user.company or '—' }}{% endif %}">
                             <span class="inline-flex max-w-full items-center whitespace-nowrap text-xs font-bold text-dense-text">
                                 <span class="shrink-0">{{ leave.user.user_name }}</span><span class="min-w-0 truncate font-semibold text-dense-muted">({{ leave.user.user_id }})</span>
                             </span>
                         </td>
-                        <td class="max-w-[10rem] truncate px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.company or '' }}">{{ leave.user.company or '—' }}</td>
-                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.team or '' }}">{{ leave.user.team or '—' }}</td>
-                        <td class="whitespace-nowrap px-3 py-3">
+                        <td class="max-w-[7rem] truncate px-2 py-2 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.company or '' }}">{{ leave.user.company or '—' }}</td>
+                        <td class="max-w-[7rem] truncate px-2 py-2 text-xs font-semibold text-dense-nav-text" title="{{ leave.user.team or '' }}">{{ leave.user.team or '—' }}</td>
+                        <td class="whitespace-nowrap px-2 py-2">
                             <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-xs font-bold text-dense-nav-text">{{ leave.date }}</span>
                         </td>
-                        <td class="min-w-0 max-w-[14rem] truncate px-3 py-3 text-xs font-semibold text-dense-nav-text" title="{{ leave.snapshot_slot_label }} ({% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
+                        <td class="min-w-0 max-w-[11rem] truncate px-2 py-2 text-xs font-semibold text-dense-nav-text" title="{{ leave.snapshot_slot_label }} ({% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
                             {{ leave.snapshot_slot_label }} (<span class="{% if leave.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">{% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>)
                         </td>
-                        <td class="max-w-[12rem] px-3 py-3 text-xs font-semibold text-dense-nav-text">
+                        <td class="max-w-[10rem] truncate px-2 py-2 text-xs font-semibold text-dense-nav-text">
                             <div class="flex flex-col gap-1">
                                 {% if not leave.is_deductive %}
                                 <div class="flex">
@@ -152,8 +152,8 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="w-[11rem] min-w-0 max-w-[11rem] whitespace-normal px-3 py-3 align-top text-xs">
-                            <select onchange="changeStatus({{ leave.id }}, this)" data-current-status="{{ leave.status }}" class="max-w-full rounded-xl border-0 bg-dense-surface py-1 px-1.5 text-[11px] font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <td class="w-[7.5rem] min-w-[7.5rem] max-w-[7.5rem] px-2 py-2 align-top text-xs">
+                            <select onchange="changeStatus({{ leave.id }}, this)" data-current-status="{{ leave.status }}" class="w-full rounded-xl border-0 bg-dense-surface py-1 px-1.5 text-[11px] font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                                 <option value="PENDING" {% if leave.status == "PENDING" %}selected{% endif %} title="승인 전">결재 대기</option>
                                 <option value="APPROVED" {% if leave.status == "APPROVED" %}selected{% endif %} title="연차 반영">승인됨</option>
                                 <option value="REJECTED" {% if leave.status == "REJECTED" %}selected{% endif %} title="관리자가 승인 불가">반려</option>
@@ -166,20 +166,20 @@
                             </div>
                             {% endif %}
                         </td>
-                        <td class="whitespace-nowrap px-3 py-3 text-center">
-                            <div class="flex items-center justify-center gap-2">
+                        <td class="whitespace-nowrap px-2 py-2 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
                                 <button type="button" onclick="changeType({{ leave.id }}, {{ 'false' if leave.is_deductive else 'true' }})" 
-                                        class="inline-flex rounded-lg border border-dense-line bg-dense-surface px-2 py-1 text-[10px] font-bold {% if leave.is_deductive %}text-purple-700 hover:bg-purple-50{% else %}text-dense-blue hover:bg-dense-blue-soft{% endif %} shadow-sm transition-colors"
+                                        class="inline-flex rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[10px] font-bold {% if leave.is_deductive %}text-purple-700 hover:bg-purple-50{% else %}text-dense-blue hover:bg-dense-blue-soft{% endif %} shadow-sm transition-colors"
                                         title="{% if leave.is_deductive %}공가/출장으로 전환 (연차 복구){% else %}연차로 전환 (연차 차감){% endif %}">
-                                    {% if leave.is_deductive %}공가/출장 전환{% else %}연차 전환{% endif %}
+                                    {% if leave.is_deductive %}공가 전환{% else %}연차 전환{% endif %}
                                 </button>
-                                <button type="button" onclick="deleteLeave({{ leave.id }})" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-2 py-1 text-xs font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
+                                <button type="button" onclick="deleteLeave({{ leave.id }})" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[10px] font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="8" class="px-6 py-10 text-center text-sm font-semibold text-dense-muted">해당 기간의 연차 내역이 없습니다.</td>
+                        <td colspan="9" class="px-6 py-10 text-center text-sm font-semibold text-dense-muted">해당 기간의 연차 내역이 없습니다.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
