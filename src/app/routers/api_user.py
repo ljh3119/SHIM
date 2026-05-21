@@ -703,3 +703,35 @@ async def team_reject_leave(
     )
     db.commit()
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
+
+
+@router.post("/change-password")
+async def user_change_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        user = get_current_user(request, db)
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    if not auth.verify_password(current_password, user.password):
+        return JSONResponse(status_code=400, content={"message": "현재 비밀번호가 일치하지 않습니다."})
+
+    if len(new_password) < 4:
+        return JSONResponse(status_code=400, content={"message": "새 비밀번호는 최소 4자 이상이어야 합니다."})
+
+    user.password = auth.get_password_hash(new_password)
+    audit = models.AuditLogs(
+        actor_id=user.user_id,
+        action="CHANGE_PASSWORD",
+        target_info=f"User:{user.user_id}",
+        old_data="*****",
+        new_data="*****"
+    )
+    db.add(audit)
+    db.commit()
+
+    return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
