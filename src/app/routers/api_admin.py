@@ -849,6 +849,9 @@ async def admin_change_password(
     if not auth.verify_password(current_password, admin.password):
         return JSONResponse(status_code=400, content={"message": "현재 비밀번호가 일치하지 않습니다."})
 
+    if len(new_password) < 4:
+        return JSONResponse(status_code=400, content={"message": "새 비밀번호는 최소 4자 이상이어야 합니다."})
+
     admin.password = auth.get_password_hash(new_password)
     audit = models.AuditLogs(
         actor_id=admin.user_id,

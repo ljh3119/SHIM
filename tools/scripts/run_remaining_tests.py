@@ -363,6 +363,88 @@ def main():
     db.close()
     print("  -> PASS: System settings cache verified.")
 
+    # --- 시나리오 8: 비밀번호 변경 기능 검증 (자가 변경 및 관리자 변경) ---
+    print("[CASE 8] User & Admin Password Self-Service Change")
+    
+    # 1) 일반 사용자 비밀번호 변경 검증
+    # 잘못된 현재 비밀번호 입력 시 실패
+    r = staff_client.post("/user/change-password", data={
+        "current_password": "wrong_password",
+        "new_password": "new_password_123"
+    })
+    assert r.status_code == 400
+    assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
+    
+    # 새 비밀번호 길이 미달(4자 미만) 시 실패
+    r = staff_client.post("/user/change-password", data={
+        "current_password": "0000",
+        "new_password": "abc"
+    })
+    assert r.status_code == 400
+    assert "최소 4자 이상" in r.json()["message"]
+
+    # 성공적인 비밀번호 변경
+    r = staff_client.post("/user/change-password", data={
+        "current_password": "0000",
+        "new_password": "new_staff_password"
+    })
+    assert r.status_code == 200
+    assert "비밀번호가 성공적으로 변경되었습니다." in r.json()["message"]
+    
+    # 변경된 비밀번호로 검증
+    db = SessionLocal()
+    updated_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    assert auth.verify_password("new_staff_password", updated_user.password)
+    
+    # 감사 로그(CHANGE_PASSWORD) 확인
+    audit_pwd = db.query(models.AuditLogs).filter(
+        models.AuditLogs.action == "CHANGE_PASSWORD",
+        models.AuditLogs.actor_id == "u_staff"
+    ).order_by(models.AuditLogs.id.desc()).first()
+    assert audit_pwd is not None
+    assert audit_pwd.old_data == "*****"
+    assert audit_pwd.new_data == "*****"
+    db.close()
+
+    # 2) 관리자 비밀번호 변경 검증
+    # 잘못된 현재 비밀번호
+    r = admin_client.post("/admin/change-password", data={
+        "current_password": "wrong_admin_pwd",
+        "new_password": "new_admin_pwd_123"
+    })
+    assert r.status_code == 400
+    assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
+    
+    # 새 비밀번호 길이 미달(4자 미만)
+    r = admin_client.post("/admin/change-password", data={
+        "current_password": "0000",
+        "new_password": "123"
+    })
+    assert r.status_code == 400
+    assert "최소 4자 이상" in r.json()["message"]
+
+    # 성공적인 변경
+    r = admin_client.post("/admin/change-password", data={
+        "current_password": "0000",
+        "new_password": "new_admin_pwd"
+    })
+    assert r.status_code == 200
+    
+    db = SessionLocal()
+    updated_admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
+    assert auth.verify_password("new_admin_pwd", updated_admin.password)
+    
+    # 감사 로그(CHANGE_ADMIN_PASSWORD) 확인
+    audit_admin = db.query(models.AuditLogs).filter(
+        models.AuditLogs.action == "CHANGE_ADMIN_PASSWORD"
+    ).order_by(models.AuditLogs.id.desc()).first()
+    assert audit_admin is not None
+    assert audit_admin.old_data == "*****"
+    assert audit_admin.new_data == "*****"
+    db.close()
+    
+    print("  -> PASS: User & Admin password change verified.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()
