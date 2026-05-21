@@ -1724,7 +1724,64 @@ AUDIT_ACTION_LABELS = {
     "UPDATE_LEAVE_STATUS": "결재 상태 변경",
     "APPROVE_LEAVE": "연차 승인(팀장/PM)",
     "REJECT_LEAVE": "연차 반려(팀장/PM)",
+    "APPLY_LEAVE_BULK": "다수일 연차 일괄 신청",
+    "UPDATE_LEAVE_TYPE": "휴가 유형 정정(연차↔출장/공가)",
 }
+
+
+def get_audit_action_label(action: str) -> str:
+    if not action:
+        return ""
+    label = AUDIT_ACTION_LABELS.get(action)
+    if not label and action.startswith("SEED_KR_HOLIDAYS_"):
+        year_part = action.replace("SEED_KR_HOLIDAYS_", "")
+        return f"{year_part}년 공휴일 자동 생성"
+    return label or action
+
+
+def get_audit_target_label(target_info: str) -> str:
+    raw_target = (target_info or "").strip()
+    if not raw_target:
+        return ""
+
+    target = raw_target
+    if target.startswith("User:"):
+        target = target.replace("User:", "사원:")
+    elif target.startswith("Admin:"):
+        target = target.replace("Admin:", "관리자:")
+    elif target.startswith("Holiday:"):
+        target = target.replace("Holiday:", "공휴일:")
+    elif target.startswith("Leave:"):
+        if "(" in target and ")" in target:
+            parts = target.replace("Leave:", "").split(" (", 1)
+            leave_id_part = parts[0]
+            detail_part = parts[1].replace(")", "")
+            target = f"연차신청:{detail_part} [ID:{leave_id_part}]"
+        else:
+            target = target.replace("Leave:", "연차신청(ID:") + ")"
+    elif target.startswith("HolidaySeed:"):
+        target = target.replace("HolidaySeed:", "") + "년 공휴일 생성"
+    elif target == "SystemSettings":
+        target = "시스템 설정"
+    elif target == "Database":
+        target = "데이터베이스"
+    elif target.startswith("Scope:"):
+        # Scope:all, Year:2026, Count:5
+        parts = {}
+        for part in target.split(","):
+            if ":" in part:
+                k, v = part.split(":", 1)
+                parts[k.strip()] = v.strip()
+        scope_val = parts.get("Scope", "all")
+        scope_ko = {"all": "전체", "active": "활성 사원", "inactive": "비활성 사원"}.get(scope_val, scope_val)
+        year_val = parts.get("Year", "")
+        count_val = parts.get("Count", "")
+        target = f"범위:{scope_ko}, 연도:{year_val}, 건수:{count_val}"
+    elif target.startswith("Leaves for "):
+        dates_str = target.replace("Leaves for ", "")
+        target = f"다수일 연차 신청: {dates_str}"
+
+    return target
 
 
 @router.get("/audit", response_class=HTMLResponse)
@@ -1783,43 +1840,8 @@ async def admin_audit_logs(
 
     # 가독성 라벨 추가
     for log in logs:
-        label = AUDIT_ACTION_LABELS.get(log.action)
-        if not label and log.action and log.action.startswith("SEED_KR_HOLIDAYS_"):
-            year_part = log.action.replace("SEED_KR_HOLIDAYS_", "")
-            label = f"{year_part}년 공휴일 자동 생성"
-        
-        log.action_label = label or log.action
-
-        # 대상 정보 한글화 (원본 보존하며 라벨 생성)
-        raw_target = (log.target_info or "").strip()
-        target = raw_target
-        
-        if target.startswith("User:"):
-            target = target.replace("User:", "사원:")
-        elif target.startswith("Admin:"):
-            target = target.replace("Admin:", "관리자:")
-        elif target.startswith("Holiday:"):
-            target = target.replace("Holiday:", "공휴일:")
-        elif target.startswith("Leave:"):
-            # Leave:ID (Name, Date) 형식 대응
-            if "(" in target and ")" in target:
-                parts = target.replace("Leave:", "").split(" (", 1)
-                leave_id_part = parts[0]
-                detail_part = parts[1].replace(")", "")
-                target = f"연차신청:{detail_part} [ID:{leave_id_part}]"
-            else:
-                target = target.replace("Leave:", "연차신청(ID:") + ")"
-        elif target.startswith("HolidaySeed:"):
-            target = target.replace("HolidaySeed:", "") + "년 공휴일 생성"
-        elif target == "SystemSettings":
-            target = "시스템 설정"
-        elif target == "Database":
-            target = "데이터베이스"
-        elif target.startswith("Scope:"):
-            target = target.replace("Scope:", "범위:").replace("Year:", "연도:").replace("Count:", "건수:")
-        
-        # 만약 변환된게 없으면 원본이라도 나오게 보장
-        log.target_label = target if target else raw_target
+        log.action_label = get_audit_action_label(log.action)
+        log.target_label = get_audit_target_label(log.target_info) or (log.target_info or "")
 
     export_q = {
         "actor_id": actor_id,
@@ -1886,18 +1908,8 @@ async def admin_audit_export(
 
     for log in logs:
         actor_name = log.actor.user_name if log.actor else "System"
-        action_label = AUDIT_ACTION_LABELS.get(log.action, log.action)
-        
-        # 엑셀용 대상 정보 변환 (동일 로직 적용)
-        target = log.target_info or ""
-        if target.startswith("User:"): target = target.replace("User:", "사원:")
-        elif target.startswith("Admin:"): target = target.replace("Admin:", "관리자:")
-        elif target.startswith("Holiday:"): target = target.replace("Holiday:", "공휴일:")
-        elif target.startswith("Leave:"): target = target.replace("Leave:", "연차신청:")
-        elif target.startswith("HolidaySeed:"): target = target.replace("HolidaySeed:", "") + "년 공휴일 생성"
-        elif target == "SystemSettings": target = "시스템 설정"
-        elif target == "Database": target = "데이터베이스"
-        elif target.startswith("Scope:"): target = target.replace("Scope:", "범위:").replace("Year:", "연도:").replace("Count:", "건수:")
+        action_label = get_audit_action_label(log.action)
+        target = get_audit_target_label(log.target_info) or (log.target_info or "")
 
         ws.append(
             [
