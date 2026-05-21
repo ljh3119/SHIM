@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# 타임존 설정 (기본값: Asia/Seoul)
+ENV TZ=Asia/Seoul
+
 WORKDIR /app
 
 # 폐쇄망 배포 시, 로컬 디렉토리(wheels/)를 만들어 미리 다운받은 pip 파일들을 복사한 뒤 --no-index 옵션으로 설치 할 수 있습니다. 
