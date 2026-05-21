@@ -10,6 +10,7 @@ services:
     environment:
       # Dev: optional `.env` with SHIM_SECRET_KEY
       SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
+      TZ: ${TZ:-Asia/Seoul}
     volumes:
       - ../../var/data:/app/var/data
     restart: unless-stopped
