@@ -66,9 +66,23 @@
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
                     {% for leave in leaves %}
                     <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.date.strftime('%Y-%m-%d') }} ({{ ['월', '화', '수', '목', '금', '토', '일'][leave.date.weekday()] }})</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ leave.snapshot_slot_label }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold text-dense-blue">-{{ fmt_hours(leave.snapshot_deduction_hours) }}h</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
+                            {{ leave.date.strftime('%Y-%m-%d') }} ({{ ['월', '화', '수', '목', '금', '토', '일'][leave.date.weekday()] }})
+                            {% if not leave.is_deductive %}
+                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-700" title="연차가 차감되지 않는 신청입니다.">공가/출장</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
+                            {{ leave.snapshot_slot_label }}
+                            {% if leave.reason %}
+                            <div class="max-w-[12rem] truncate text-[11px] font-medium text-dense-muted" title="{{ leave.reason }}">
+                                사유: {{ leave.reason }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-bold {% if leave.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">
+                            {% if leave.is_deductive %}-{{ fmt_hours(leave.snapshot_deduction_hours) }}h{% else %}0h{% endif %}
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm">
                             {% if leave.status == "PENDING" %}
                             <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber" title="관리자 승인 대기">결재 대기</span>

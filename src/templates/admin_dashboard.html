@@ -73,7 +73,13 @@
                         <td class="whitespace-nowrap px-5 py-3.5 text-left">
                             <span class="inline-flex rounded-full border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-bold text-dense-nav-text">{{ leave.date }}</span>
                         </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">{{ leave.snapshot_slot_label }} (-{{ fmt_hours(leave.snapshot_deduction_hours) }}h)</td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">
+                            {{ leave.snapshot_slot_label }} 
+                            {% if leave.is_deductive %}(-{{ fmt_hours(leave.snapshot_deduction_hours) }}h){% else %}(0h){% endif %}
+                            {% if not leave.is_deductive %}
+                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[10px] font-bold text-purple-700" title="공가/출장 신청 (사유: {{ leave.reason or '없음' }})">공가/출장</span>
+                            {% endif %}
+                        </td>
                         <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm">
                             {% if leave.status == 'PENDING' %}
                             <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber">결재 대기</span>

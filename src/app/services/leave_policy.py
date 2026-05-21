@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from .. import models
 
+from types import SimpleNamespace
+
 LEAVE_STATUSES = frozenset({"PENDING", "APPROVED", "REJECTED", "CANCELED"})
 ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
     {
@@ -17,6 +19,34 @@ ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
 )
 REJECTION_REASON_MAX_LENGTH = 500
 ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120})
+
+_settings_cache = None
+
+def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamespace | None:
+    global _settings_cache
+    if _settings_cache is None or force_reload:
+        setting = db.query(models.SystemSettings).first()
+        if not setting:
+            return None
+        _settings_cache = SimpleNamespace(
+            id=setting.id,
+            is_approval_required=setting.is_approval_required,
+            time_granularity_minutes=setting.time_granularity_minutes,
+            work_start_minute=setting.work_start_minute,
+            work_end_minute=setting.work_end_minute,
+            lunch_start_minute=setting.lunch_start_minute,
+            lunch_end_minute=setting.lunch_end_minute,
+            product_display_name=setting.product_display_name,
+            product_nav_short=setting.product_nav_short,
+            brand_initial=setting.brand_initial,
+            team_calendar_visible=setting.team_calendar_visible,
+            company_calendar_visible=setting.company_calendar_visible,
+        )
+    return _settings_cache
+
+def invalidate_settings_cache():
+    global _settings_cache
+    _settings_cache = None
 
 
 @dataclass
@@ -54,7 +84,9 @@ class LeaveInputValidationError(ValueError):
 
 
 def resolve_time_policy_setting(db: Session) -> tuple[int, int | None, int | None, int, int]:
-    setting = db.query(models.SystemSettings).first()
+    setting = get_system_settings(db)
+    if not setting:
+        return 60, None, None, 9 * 60, 18 * 60
     granularity = int(getattr(setting, "time_granularity_minutes", 60) or 60)
     lunch_start = getattr(setting, "lunch_start_minute", None)
     lunch_end = getattr(setting, "lunch_end_minute", None)
@@ -136,7 +168,7 @@ def build_snapshot_from_timerange(
 
 
 def get_default_leave_status(db: Session) -> str:
-    setting = db.query(models.SystemSettings).first()
+    setting = get_system_settings(db)
     if setting and setting.is_approval_required:
         return "PENDING"
     return "APPROVED"
