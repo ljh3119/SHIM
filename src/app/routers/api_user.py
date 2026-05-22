@@ -656,7 +656,11 @@ async def team_approve_leave(
             new_data=transition.audit_new_data,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     return JSONResponse(status_code=200, content={"message": "승인되었습니다."})
 
 
@@ -701,7 +705,11 @@ async def team_reject_leave(
             new_data=transition.audit_new_data,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
 
 

@@ -55,21 +55,26 @@ def hours_to_days_hours_compact(total_hours: float, day_hours: int = 8) -> str:
     if abs(th) < 1e-9:
         return "-"
 
-    def _fmt(d: int, rem: int, neg: bool) -> str:
+    def _fmt(d: int, rem: float, neg: bool) -> str:
         pre = "-" if neg else ""
-        if d > 0 and rem > 0:
-            return f"{pre}{d}일{rem}h"
-        if d > 0 and rem == 0:
+        if abs(rem - int(rem)) < 1e-9:
+            rem_val = int(rem)
+        else:
+            rem_val = round(rem, 1)
+
+        if d > 0 and rem_val > 0:
+            return f"{pre}{d}일{rem_val}h"
+        if d > 0 and rem_val == 0:
             return f"{pre}{d}일"
-        if d == 0 and rem > 0:
-            return f"{pre}{rem}h"
+        if d == 0 and rem_val > 0:
+            return f"{pre}{rem_val}h"
         return "-"
 
     if th < 0:
         t = abs(th)
         d = int(t // day_hours)
-        rem = int(round(t - d * day_hours))
+        rem = round(t - d * day_hours, 1)
         return _fmt(d, rem, True)
     d = int(th // day_hours)
-    rem = int(round(th - d * day_hours))
+    rem = round(th - d * day_hours, 1)
     return _fmt(d, rem, False)

@@ -968,7 +968,11 @@ async def toggle_user_active(
         new_data=str(user.is_active)
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     
     return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
 
@@ -997,7 +1001,11 @@ async def reset_password(
         new_data="0000"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     
     return JSONResponse(status_code=200, content={"message": "비밀번호가 '0000'으로 초기화되었습니다."})
 
@@ -1100,7 +1108,11 @@ async def update_user(
         new_data=new_data,
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
 
     return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
 
@@ -1171,7 +1183,11 @@ async def create_user(
         new_data=f"{user_name};role={role_value}"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     
     return JSONResponse(status_code=200, content={"message": f"{user_name} 등록 완료! 초기 비번: 0000"})
 
@@ -1373,7 +1389,11 @@ async def update_leave_status(
             new_data=transition.audit_new_data,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     return JSONResponse(status_code=200, content={"message": "상태가 변경되었습니다."})
 
 
