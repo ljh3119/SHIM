@@ -26,6 +26,13 @@ pyinstaller `
   --exclude-module PIL `
   --exclude-module watchfiles `
   --exclude-module setuptools `
+  --exclude-module numpy `
+  --exclude-module matplotlib `
+  --exclude-module tkinter `
+  --exclude-module _tkinter `
+  --exclude-module pytest `
+  --exclude-module unittest `
+  --exclude-module IPython `
   --add-data "src/templates;templates" `
   --add-data "src/static;static" `
   --add-data "var/data;data" `

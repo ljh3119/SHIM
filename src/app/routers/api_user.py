@@ -17,42 +17,25 @@ from ..services.leave_policy import (
     resolve_time_policy_setting,
     get_system_settings,
 )
+from ..dependencies import get_current_user
+from ..services.leave_service import resolve_user_yearly_allocated_hours
 
-router = APIRouter(prefix="/user", tags=["user"])
+page_router = APIRouter(prefix="/user", tags=["user_pages"])
+api_router = APIRouter(prefix="/api/user", tags=["user_api"])
 
 
 def _templates(request: Request):
     return request.app.state.templates
 
 
-def resolve_user_yearly_allocated_hours(db: Session, user: models.Users, year: int) -> int:
-    try:
-        allocation = db.query(models.UserYearlyLeaveAllocations).filter(
-            models.UserYearlyLeaveAllocations.user_id == user.user_id,
-            models.UserYearlyLeaveAllocations.year == year
-        ).first()
-        if allocation:
-            return int(allocation.allocated_hours)
-    except SQLAlchemyError:
-        # 네트워크 스토리지 일시 장애 시에도 대시보드를 fallback 값으로 유지
-        db.rollback()
-    return int(user.total_leave_hours or 0)
-
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    user_id = auth.get_current_user_from_token(request)
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not active")
-    return user
-
-@router.get("/dashboard", response_class=HTMLResponse)
-def user_dashboard(request: Request, year: int = None, month: int = None, db: Session = Depends(get_db)):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+@page_router.get("/dashboard", response_class=HTMLResponse)
+def user_dashboard(
+    request: Request,
+    year: int = None,
+    month: int = None,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
     
     if (getattr(user, "role", "") == "ADMIN" or getattr(user, "is_admin", False)):
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
@@ -153,19 +136,16 @@ def user_dashboard(request: Request, year: int = None, month: int = None, db: Se
 
     return _templates(request).TemplateResponse(request=request, name="user_dashboard.html", context=ctx)
 
-@router.get("/team-calendar", response_class=HTMLResponse)
+@page_router.get("/team-calendar", response_class=HTMLResponse)
 def user_team_calendar(
     request: Request, 
     year: int = None, 
     month: int = None, 
     sort: str = "name",
     sort_dir: str = "asc",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user)
 ):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     setting = get_system_settings(db)
     team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
@@ -326,12 +306,13 @@ def user_team_calendar(
     }
     return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
 
-@router.get("/history", response_class=HTMLResponse)
-def user_history(request: Request, year: int = None, db: Session = Depends(get_db)):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+@page_router.get("/history", response_class=HTMLResponse)
+def user_history(
+    request: Request,
+    year: int = None,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
 
     now = datetime.now()
     current_year = year if year else now.year
@@ -369,7 +350,7 @@ def user_history(request: Request, year: int = None, db: Session = Depends(get_d
     return _templates(request).TemplateResponse(request=request, name="user_history.html", context=ctx)
 
 
-@router.post("/leave")
+@api_router.post("/leave")
 def apply_leave(
     request: Request,
     date_str: str = Form(...),
@@ -378,184 +359,36 @@ def apply_leave(
     is_deductive: bool = Form(True),
     reason: str = Form(""),
     db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
 ):
+    from ..services import leave_service
     try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"message": "인증되지 않은 사용자입니다."})
-
-    # 비차감 신청 시 사유 필수 체크
-    if not is_deductive and not reason.strip():
-        return JSONResponse(status_code=400, content={"message": "연차 비차감 신청 시 사유를 입력해 주세요."})
-
-    # 날짜 목록 파싱
-    raw_dates = [d.strip() for d in date_str.split(",") if d.strip()]
-    if not raw_dates:
-        return JSONResponse(status_code=400, content={"message": "신청할 날짜를 입력해 주세요."})
-
-    is_multiple = len(raw_dates) > 1
-
-    try:
-        # 1. 정책 및 데이터 설정 로드
-        (
-            granularity,
-            lunch_start,
-            lunch_end,
-            work_start,
-            work_end,
-        ) = resolve_time_policy_setting(db)
-
-        # 2. 날짜 필터링 (주말 및 공휴일 체크)
-        valid_dates = []
-        for d_str in raw_dates:
-            try:
-                req_date = datetime.strptime(d_str, "%Y-%m-%d").date()
-            except ValueError:
-                return JSONResponse(status_code=400, content={"message": f"날짜 형식이 올바르지 않습니다: {d_str}"})
-
-            # 단일 신청 시에는 주말/공휴일 즉시 에러
-            if not is_multiple:
-                if req_date.weekday() >= 5:
-                    return JSONResponse(status_code=400, content={"message": "주말에는 신청할 수 없습니다."})
-                is_holiday = db.query(models.Holidays).filter(models.Holidays.date == req_date).first()
-                if is_holiday:
-                    return JSONResponse(status_code=400, content={"message": f"공휴일({is_holiday.name})에는 신청할 수 없습니다."})
-                valid_dates.append(req_date)
-            else:
-                # 다중 신청 시에는 주말/공휴일 자동 건너뛰기
-                if req_date.weekday() >= 5:
-                    continue
-                is_holiday = db.query(models.Holidays).filter(models.Holidays.date == req_date).first()
-                if is_holiday:
-                    continue
-                valid_dates.append(req_date)
-
-        if not valid_dates:
-            return JSONResponse(status_code=400, content={"message": "신청 가능한 영업일이 없습니다."})
-
-        # 시간 지정이 누락되었거나 하루종일 신청 시 설정 기준 시간 자동 매핑
-        if not start_time or not end_time:
-            start_hour = work_start // 60
-            start_min = work_start % 60
-            end_hour = work_end // 60
-            end_min = work_end % 60
-            start_time = f"{start_hour:02d}:{start_min:02d}"
-            end_time = f"{end_hour:02d}:{end_min:02d}"
-
-        # 3. 시간 기반 스냅샷 생성 (공통 스냅샷 생성)
-        snapshot = build_snapshot_from_timerange(
+        msg = leave_service.validate_and_apply_leave(
+            db=db,
+            user=user,
+            date_str=date_str,
             start_time=start_time,
             end_time=end_time,
-            granularity_minutes=granularity,
-            lunch_start_minute=lunch_start,
-            lunch_end_minute=lunch_end,
-            work_start_minute=work_start,
-            work_end_minute=work_end,
+            is_deductive=is_deductive,
+            reason=reason,
         )
-
-        if snapshot.deduction_hours <= 0:
-            return JSONResponse(status_code=400, content={"message": "유효한 신청 시간이 아닙니다."})
-
-        # 4. 검증 및 DB 추가 대상 리스트 생성
-        yearly_new_deductions = {}
-        for req_date in valid_dates:
-            yr = req_date.year
-            yearly_new_deductions[yr] = yearly_new_deductions.get(yr, 0.0) + snapshot.deduction_hours
-
-        # 개별 날짜별 중복 및 일일 한도 체크
-        for req_date in valid_dates:
-            existing_leaves = db.query(models.Leaves).filter(
-                models.Leaves.user_id == user.user_id,
-                models.Leaves.date == req_date,
-                models.Leaves.status.notin_(["CANCELED", "REJECTED"])
-            ).all()
-
-            daily_total = snapshot.deduction_hours
-            for el in existing_leaves:
-                # 시간대 중복 체크
-                if not (snapshot.end_min <= el.snapshot_start_min or snapshot.start_min >= el.snapshot_end_min):
-                    return JSONResponse(status_code=400, content={"message": f"{req_date} 날짜에 이미 신청된 시간대와 중복됩니다."})
-                daily_total += el.snapshot_deduction_hours
-
-            if daily_total > 8.01:
-                return JSONResponse(status_code=400, content={"message": f"{req_date} 날짜의 총 신청 시간이 8시간을 초과합니다."})
-
-        # 5. 잔여 연차 체크 (is_deductive=True 인 경우만, 연도별 검증)
-        if is_deductive:
-            for yr, add_hours in yearly_new_deductions.items():
-                total_allocated = resolve_user_yearly_allocated_hours(db, user, yr)
-                used_hours = db.query(func.sum(models.Leaves.snapshot_deduction_hours)).filter(
-                    models.Leaves.user_id == user.user_id,
-                    models.Leaves.year == yr,
-                    models.Leaves.status.notin_(["CANCELED", "REJECTED"]),
-                    models.Leaves.is_deductive == True
-                ).scalar() or 0.0
-
-                if used_hours + add_hours > total_allocated:
-                    return JSONResponse(status_code=400, content={"message": f"{yr}년도 잔여 연차가 부족합니다."})
-
-        # 6. 상태 결정
-        setting = get_system_settings(db)
-        is_approval_required = setting.is_approval_required if setting else True
-
-        if not is_approval_required or user.role == "PM":
-            initial_status = "APPROVED"
-        else:
-            initial_status = "PENDING"
-
-        # 7. 레코드 일괄 생성 및 DB 저장
-        new_leaves = []
-        for req_date in valid_dates:
-            new_leave = models.Leaves(
-                user_id=user.user_id,
-                date=req_date,
-                snapshot_slot_label=snapshot.slot_label,
-                snapshot_start_min=snapshot.start_min,
-                snapshot_end_min=snapshot.end_min,
-                snapshot_deduction_hours=snapshot.deduction_hours,
-                status=initial_status,
-                year=req_date.year,
-                is_deductive=is_deductive,
-                reason=reason.strip() if reason else None
-            )
-            db.add(new_leave)
-            new_leaves.append(new_leave)
-
-        # 단일 감사 로그 연동
-        comma_dates_str = ",".join([d.strftime("%Y-%m-%d") for d in valid_dates])
-        audit = models.AuditLogs(
-            actor_id=user.user_id,
-            action="APPLY_LEAVE_BULK",
-            target_info=f"Leaves for {comma_dates_str}",
-            old_data="",
-            new_data=f"status={initial_status};is_deductive={is_deductive}"
-        )
-        db.add(audit)
-
-        db.commit()
-
-        msg = "신청되었습니다." if initial_status == "PENDING" else "신청 및 자동 승인되었습니다."
-        if is_multiple:
-            msg = f"{len(valid_dates)}일의 연차가 " + msg
         return JSONResponse(status_code=200, content={"message": msg})
-
     except LeaveInputValidationError as e:
-        db.rollback()
         return JSONResponse(status_code=400, content={"message": str(e)})
     except Exception as e:
-        db.rollback()
         return JSONResponse(status_code=500, content={"message": f"서버 오류: {str(e)}"})
 
 
-def _get_approver(request: Request, db: Session) -> models.Users:
-    """TEAM_LEAD 또는 PM 역할 검증. 결재 기능이 OFF이면 403."""
-    user = get_current_user(request, db)
+def get_current_approver(db: Session = Depends(get_db), user: models.Users = Depends(get_current_user)) -> models.Users:
+    """TEAM_LEAD 또는 PM 역할 검증. 결재 기능이 OFF이면 예외 발생."""
     user_role = getattr(user, "role", None) or "STAFF"
     if user_role not in ["TEAM_LEAD", "PM"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="결재 권한이 필요합니다.")
+        from ..dependencies import PermissionDeniedException
+        raise PermissionDeniedException()
     setting = get_system_settings(db)
     if not setting or not setting.is_approval_required:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="결재 기능이 비활성화 상태입니다.")
+        from ..dependencies import PermissionDeniedException
+        raise PermissionDeniedException()
     return user
 
 
@@ -577,12 +410,12 @@ def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db:
     return target_user
 
 
-@router.get("/approvals", response_class=HTMLResponse)
-def user_approvals(request: Request, db: Session = Depends(get_db)):
-    try:
-        approver = _get_approver(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+@page_router.get("/approvals", response_class=HTMLResponse)
+def user_approvals(
+    request: Request,
+    db: Session = Depends(get_db),
+    approver: models.Users = Depends(get_current_approver),
+):
 
     user_role = getattr(approver, "role", "STAFF")
     setting = get_system_settings(db)
@@ -618,17 +451,13 @@ def user_approvals(request: Request, db: Session = Depends(get_db)):
     return _templates(request).TemplateResponse(request=request, name="user_approvals.html", context=ctx)
 
 
-@router.post("/team-approve/{leave_id}")
+@api_router.post("/team-approve/{leave_id}")
 def team_approve_leave(
     request: Request,
     leave_id: int,
     db: Session = Depends(get_db),
+    approver: models.Users = Depends(get_current_approver),
 ):
-    try:
-        approver = _get_approver(request, db)
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
@@ -664,18 +493,14 @@ def team_approve_leave(
     return JSONResponse(status_code=200, content={"message": "승인되었습니다."})
 
 
-@router.post("/team-reject/{leave_id}")
+@api_router.post("/team-reject/{leave_id}")
 def team_reject_leave(
     request: Request,
     leave_id: int,
     rejection_reason: str = Form(""),
     db: Session = Depends(get_db),
+    approver: models.Users = Depends(get_current_approver),
 ):
-    try:
-        approver = _get_approver(request, db)
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
         return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
@@ -713,18 +538,14 @@ def team_reject_leave(
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
 
 
-@router.post("/change-password")
+@api_router.post("/change-password")
 def user_change_password(
     request: Request,
     current_password: str = Form(...),
     new_password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
 ):
-    try:
-        user = get_current_user(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-
     if not auth.verify_password(current_password, user.password):
         return JSONResponse(status_code=400, content={"message": "현재 비밀번호가 일치하지 않습니다."})
 

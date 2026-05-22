@@ -747,7 +747,7 @@ async function submitCalendarApply() {
     }
     
     try {
-        const response = await fetch('/user/leave', {
+        const response = await fetch('/api/user/leave', {
             method: 'POST',
             body: formData
         });
@@ -829,7 +829,7 @@ async function submitDirectApply() {
     }
     
     try {
-        const response = await fetch('/user/leave', {
+        const response = await fetch('/api/user/leave', {
             method: 'POST',
             body: formData
         });
@@ -849,7 +849,7 @@ async function submitDirectApply() {
 async function teamApprove(leaveId) {
     if (!confirm('이 신청을 승인하시겠습니까?')) return;
     try {
-        const res = await fetch(`/user/team-approve/${leaveId}`, { method: 'POST' });
+        const res = await fetch(`/api/user/team-approve/${leaveId}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
             alert(data.message || '승인되었습니다.');
@@ -872,7 +872,7 @@ async function teamRejectPrompt(leaveId) {
     const formData = new FormData();
     formData.append('rejection_reason', reason);
     try {
-        const res = await fetch(`/user/team-reject/${leaveId}`, { method: 'POST', body: formData });
+        const res = await fetch(`/api/user/team-reject/${leaveId}`, { method: 'POST', body: formData });
         const data = await res.json();
         if (res.ok) {
             alert(data.message || '반려되었습니다.');
