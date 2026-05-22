@@ -106,6 +106,10 @@ def admin_dashboard(
         
     stats = admin_service.get_admin_dashboard_stats(db)
     
+    now = datetime.now()
+    show_year_end_notice = now.month in (12, 1)
+    next_year = now.year + 1 if now.month == 12 else now.year
+    
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={
         "admin": admin,
         "active_users_count": stats["active_users_count"],
@@ -114,7 +118,9 @@ def admin_dashboard(
         "is_approval_required": stats["is_approval_required"],
         "today_used_hours": stats["today_used_hours"],
         "recent_leaves": stats["recent_leaves"],
-        "current_year": datetime.now().year
+        "current_year": now.year,
+        "show_year_end_notice": show_year_end_notice,
+        "next_year": next_year
     })
 
 @page_router.get("/leave/timeline", response_class=HTMLResponse)
@@ -1176,8 +1182,6 @@ def update_user_leave_days(
                 allocated_hours=new_hours
             )
         )
-    # 기본값(레거시 호환)도 함께 갱신
-    user.total_leave_hours = new_hours
 
     audit = models.AuditLogs(
         actor_id=admin.user_id,
@@ -1234,8 +1238,6 @@ def bulk_update_user_leave_days(
                     allocated_hours=new_hours
                 )
             )
-        # 레거시 호환 기본값도 동일하게 맞춘다.
-        user.total_leave_hours = new_hours
         updated_count += 1
 
     audit = models.AuditLogs(
