@@ -450,6 +450,212 @@ def main():
     
     print("  -> PASS: User & Admin password change verified.")
 
+    # --- 시나리오 9: SQLite 외래 키 제약 조건 및 트랜잭션 롤백 무결성 검증 ---
+    print("[CASE 9] SQLite Foreign Key & Rollback Integrity")
+    db = SessionLocal()
+    # 외래 키 위반 시 유발 검증: 존재하지 않는 user_id인 'non_existent_user'로 Leaves 삽입 시도
+    invalid_leave = models.Leaves(
+        user_id="non_existent_user", # 존재하지 않는 사용자 ID
+        date=date.today(),
+        snapshot_slot_label="09:00~18:00",
+        snapshot_start_min=540,
+        snapshot_end_min=1080,
+        snapshot_deduction_hours=8.0,
+        status="APPROVED",
+        year=date.today().year,
+        is_deductive=True
+    )
+    db.add(invalid_leave)
+    from sqlalchemy.exc import IntegrityError
+    try:
+        db.commit()
+        # 실패해야 정상
+        assert False, "외래 키 제약 조건 위반 에러가 발생해야 합니다."
+    except IntegrityError:
+        db.rollback()
+        print("  -> PASS: Foreign key validation error and rollback successfully handled.")
+    db.close()
+
+    # --- 시나리오 10: 소수점 연차 잔여량 표기 및 유틸리티 정밀성 검증 ---
+    print("[CASE 10] Decimal Precision Formatting (utils)")
+    from src.app import utils as shim_utils
+    # 0.5단위 소수점이 온전히 출력되는지 검증 (반올림으로 뭉개지지 않음)
+    assert shim_utils.hours_to_days_hours_compact(7.5) == "7.5h"
+    assert shim_utils.hours_to_days_hours_compact(-4.5) == "-4.5h"
+    assert shim_utils.hours_to_days_hours_compact(8.0) == "1일"
+    assert shim_utils.hours_to_days_hours_compact(12.0) == "1일4h"
+    assert shim_utils.hours_to_days_hours_compact(12.5) == "1일4.5h"
+    print("  -> PASS: Decimal formatting precision verified.")
+
+    # --- 시나리오 11: JWT 쿠키 보안 설정 및 HTTPS 프로토콜 분기 검증 ---
+    print("[CASE 11] JWT Cookie Security Settings")
+    # 1. 일반 로그인 응답에서 SameSite=Lax 확인
+    cookie_client = TestClient(app)
+    r_login = cookie_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"}, follow_redirects=False)
+    assert r_login.status_code == 302
+    cookie_header = r_login.headers.get("set-cookie", "")
+    assert "samesite=lax" in cookie_header.lower()
+    
+    # 2. SHIM_SECURE_COOKIE 활성화 시 Secure=True 주입 검증
+    os.environ["SHIM_SECURE_COOKIE"] = "true"
+    secure_cookie_client = TestClient(app)
+    r_secure_login = secure_cookie_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"}, follow_redirects=False)
+    cookie_header_sec = r_secure_login.headers.get("set-cookie", "")
+    assert "secure" in cookie_header_sec.lower()
+    os.environ.pop("SHIM_SECURE_COOKIE", None)
+    print("  -> PASS: SameSite=Lax and Secure cookie dynamic flag verified.")
+
+    # --- 시나리오 12: SQLite WAL 백업 기능 동작성 검증 ---
+    print("[CASE 12] SQLite WAL Online Backup Operation")
+    from src.app.services import ops
+    from src.app.database import DB_PATH
+    
+    backup_dir = TEST_DATA_DIR / "backups"
+    
+    backup_path = ops.create_sqlite_backup(db_path=DB_PATH, backup_dir=backup_dir)
+    assert backup_path.exists(), "백업 파일이 생성되지 않았습니다."
+    assert backup_path.stat().st_size > 0, "백업 파일 크기가 0 바이트입니다."
+    backup_path.unlink()
+    print("  -> PASS: Online backup using sqlite3.backup() completed successfully.")
+
+    # --- 시나리오 13: 역할 기반 권한 제어(RBAC) 및 보안 정책 우회 차단 검증 ---
+    print("[CASE 13] Role-Based Access Control (RBAC) & Security Bypassing")
+    # 1) 일반 사원(STAFF) 권한으로 어드민 전용 URL 접속 차단 검증
+    staff_client_req = TestClient(app)
+    staff_client_req.cookies.set("access_token", f"Bearer {staff_token}")
+    r_admin_dash = staff_client_req.get("/admin/dashboard", follow_redirects=False)
+    assert r_admin_dash.status_code in (302, 403)
+    
+    # 2) 팀장(TEAM_LEAD)이 자신의 연차 신청 건에 대해 결재(Self-approval)를 시도하는 시나리오 차단 검증
+    lead_token = auth.create_access_token({"sub": "u_lead"})
+    lead_client = TestClient(app)
+    lead_client.cookies.set("access_token", f"Bearer {lead_token}")
+    
+    db = SessionLocal()
+    clear_user_leaves(db, "u_lead")
+    db.commit()
+    db.close()
+    
+    r_lead_apply = lead_client.post("/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "18:00"
+    })
+    assert r_lead_apply.status_code == 200
+    
+    db = SessionLocal()
+    lead_leave = db.query(models.Leaves).filter(models.Leaves.user_id == "u_lead").first()
+    assert lead_leave is not None
+    assert lead_leave.status == "PENDING"
+    db.close()
+    
+    r_self_approve = lead_client.post(f"/user/team-approve/{lead_leave.id}")
+    assert r_self_approve.status_code in (400, 403)
+    
+    # 3) 팀장(TEAM_LEAD)이 다른 팀 소속 사원의 연차에 대해 결재를 시도하는 시나리오 차단 검증
+    db = SessionLocal()
+    lead_b = db.query(models.Users).filter(models.Users.user_id == "u_lead_b").first()
+    if not lead_b:
+        db.add(models.Users(
+            user_id="u_lead_b", user_name="팀장B", role="TEAM_LEAD", team="Team-B",
+            password=auth.get_password_hash("0000"), is_active=True
+        ))
+        db.commit()
+    db.close()
+    
+    db = SessionLocal()
+    clear_user_leaves(db, "u_staff")
+    db.commit()
+    db.close()
+    
+    r_staff_apply = staff_client.post("/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "18:00"
+    })
+    assert r_staff_apply.status_code == 200
+    
+    db = SessionLocal()
+    staff_leave = db.query(models.Leaves).filter(models.Leaves.user_id == "u_staff").first()
+    db.close()
+    
+    lead_b_token = auth.create_access_token({"sub": "u_lead_b"})
+    lead_b_client = TestClient(app)
+    lead_b_client.cookies.set("access_token", f"Bearer {lead_b_token}")
+    
+    r_other_approve = lead_b_client.post(f"/user/team-approve/{staff_leave.id}")
+    assert r_other_approve.status_code == 403
+    print("  -> PASS: RBAC check (Admin page block, self-approval block, other team block) verified.")
+
+    # --- 시나리오 14: 정밀 시간 차감 정책 및 점심시간 제외 바운더리 검증 ---
+    print("[CASE 14] Precise Time Policy Boundaries")
+    # 1) 60분 단위 경계에 어긋나는 신청(예: 09:30 신청) 시 실패 검증
+    r_invalid_time = staff_client.post("/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:30", "end_time": "11:30"
+    })
+    assert r_invalid_time.status_code == 400
+    assert "시간 단위 경계" in r_invalid_time.json()["message"]
+    
+    # 2) 점심시간(12:00~13:00)을 걸쳐 연차를 신청한 경우(예: 11:00~14:00) 1시간 제외하고 2.0시간만 차감 검증
+    db = SessionLocal()
+    clear_user_leaves(db, "u_staff")
+    db.commit()
+    db.close()
+    
+    r_lunch_overlap = staff_client.post("/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "11:00", "end_time": "14:00"
+    })
+    assert r_lunch_overlap.status_code == 200
+    
+    db = SessionLocal()
+    lunch_leave = db.query(models.Leaves).filter(models.Leaves.user_id == "u_staff").first()
+    assert lunch_leave is not None
+    assert lunch_leave.snapshot_deduction_hours == 2.0
+    db.close()
+    print("  -> PASS: Granularity boundaries and lunch exclusion verified.")
+
+    # --- 시나리오 15: 퇴사자(비활성 사원) 로그인 원천 차단 검증 ---
+    print("[CASE 15] Deactivated Employee Login Blocking")
+    db = SessionLocal()
+    staff_user_obj = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    staff_user_obj.is_active = False
+    db.commit()
+    db.close()
+    
+    deactive_client = TestClient(app)
+    r_deactive_login = deactive_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"})
+    assert r_deactive_login.status_code == 200
+    assert "비활성" in r_deactive_login.text
+    
+    db = SessionLocal()
+    staff_user_obj = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    staff_user_obj.is_active = True
+    db.commit()
+    db.close()
+    print("  -> PASS: Deactivated employee login successfully blocked.")
+
+    # --- 시나리오 16: 수동 공휴일 지정에 따른 연차 신청 제한 검증 ---
+    print("[CASE 16] Holiday Date Leave Application Blocking")
+    test_holiday_date = date(2026, 10, 14)
+    db = SessionLocal()
+    db.query(models.Holidays).filter(models.Holidays.date == test_holiday_date).delete()
+    db.commit()
+    db.close()
+    
+    r_add_holiday = admin_client.post("/admin/holiday/create", data={
+        "holiday_name": "테스트창립기념일",
+        "holiday_date": "2026-10-14"
+    })
+    assert r_add_holiday.status_code in (200, 302)
+    
+    r_holiday_apply = staff_client.post("/user/leave", data={
+        "date_str": "2026-10-14", "start_time": "09:00", "end_time": "18:00"
+    })
+    assert r_holiday_apply.status_code == 400
+    assert "\uacf5\ud734\uc77c" in r_holiday_apply.json()["message"]
+    
+    db = SessionLocal()
+    db.query(models.Holidays).filter(models.Holidays.date == test_holiday_date).delete()
+    db.commit()
+    db.close()
+    print("  -> PASS: Leave application on registered holidays successfully blocked.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()
