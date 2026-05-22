@@ -90,7 +90,7 @@ document.getElementById('holidayCreateForm').addEventListener('submit', async (e
     e.preventDefault();
     const formData = new FormData(e.target);
     try {
-        const data = await postForm('/admin/holiday/create', formData);
+        const data = await postForm('/api/admin/holiday/create', formData);
         alert(data.message || '등록되었습니다.');
         location.reload();
     } catch (err) {
@@ -108,7 +108,7 @@ async function updateHoliday(id) {
     formData.append('holiday_date', holidayDate);
 
     try {
-        const data = await postForm('/admin/holiday/update', formData);
+        const data = await postForm('/api/admin/holiday/update', formData);
         alert(data.message || '수정되었습니다.');
         location.reload();
     } catch (err) {
@@ -124,7 +124,7 @@ async function deleteHoliday(id) {
     formData.append('holiday_id', id);
 
     try {
-        const data = await postForm('/admin/holiday/delete', formData);
+        const data = await postForm('/api/admin/holiday/delete', formData);
         alert(data.message || '삭제되었습니다.');
         location.reload();
     } catch (err) {

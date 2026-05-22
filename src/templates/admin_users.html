@@ -335,15 +335,15 @@ async function apiCall(url, data, confirmMsg) {
 }
 
 function toggleUser(id) {
-    apiCall('/admin/user/toggle', { target_user_id: id }, '사원의 활성/비활성 상태를 전환하시겠습니까?');
+    apiCall('/api/admin/user/toggle', { target_user_id: id }, '사원의 활성/비활성 상태를 전환하시겠습니까?');
 }
 
 function hardDeleteUser(id) {
-    apiCall('/admin/user/hard-delete', { target_user_id: id }, '정말 이 계정을 삭제하시겠습니까?\n이 사용자에 귀속된 모든 연차 내역도 함께 영구히 삭제됩니다!');
+    apiCall('/api/admin/user/hard-delete', { target_user_id: id }, '정말 이 계정을 삭제하시겠습니까?\n이 사용자에 귀속된 모든 연차 내역도 함께 영구히 삭제됩니다!');
 }
 
 function resetPassword(id) {
-    apiCall('/admin/user/reset-password', { target_user_id: id }, '비밀번호를 초기화하시겠습니까?');
+    apiCall('/api/admin/user/reset-password', { target_user_id: id }, '비밀번호를 초기화하시겠습니까?');
 }
 
 function updateLeaveDays(id) {
@@ -354,7 +354,7 @@ function updateLeaveDays(id) {
         alert('연차일수는 0 이상의 정수여야 합니다.');
         return;
     }
-    apiCall('/admin/user/update-leave-days', { target_user_id: id, total_leave_days: days, year: '{{ selected_year }}' });
+    apiCall('/api/admin/user/update-leave-days', { target_user_id: id, total_leave_days: days, year: '{{ selected_year }}' });
 }
 
 function openEditUserModal(id, name, company, team, role, position, isActive) {
@@ -417,7 +417,7 @@ function submitEditUser() {
             data[key] = value;
         }
     });
-    apiCall('/admin/user/update', data);
+    apiCall('/api/admin/user/update', data);
 }
 
 function submitAddUser() {
@@ -429,7 +429,7 @@ function submitAddUser() {
     const formData = new FormData(form);
     const data = {};
     formData.forEach((value, key) => data[key] = value);
-    apiCall('/admin/user/create', data);
+    apiCall('/api/admin/user/create', data);
 }
 
 function submitBulkLeaveDays() {
@@ -445,7 +445,7 @@ function submitBulkLeaveDays() {
     }
     const targetYear = document.getElementById('bulk_year').value;
     apiCall(
-        '/admin/user/bulk-update-leave-days',
+        '/api/admin/user/bulk-update-leave-days',
         {
             total_leave_days: days,
             year: targetYear,

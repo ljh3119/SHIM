@@ -69,7 +69,7 @@ def main():
     # --- 시나리오 1: PM 자동 승인 (v1.3.x+ 핵심 로직) ---
     print("[CASE 1] PM Auto-Approval Logic")
     # 승인 필수 옵션 ON
-    admin_client.post("/admin/settings/approval", data={"is_approval_required": "true"})
+    admin_client.post("/api/admin/settings/approval", data={"is_approval_required": "true"})
     
     pm_token = auth.create_access_token({"sub": "u_pm"})
     pm_client = TestClient(app)
@@ -81,7 +81,7 @@ def main():
     db.commit()
     db.close()
 
-    r = pm_client.post("/user/leave", data={
+    r = pm_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "12:00"
     })
     if r.status_code != 200:
@@ -105,7 +105,7 @@ def main():
     db.commit()
     db.close()
 
-    r = staff_client.post("/user/leave", data={
+    r = staff_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "14:00", "end_time": "18:00"
     })
     if r.status_code != 200:
@@ -122,7 +122,7 @@ def main():
 
     # [검증] 공가 전환 후 연차 복구 전환 시 에러 여부 검증
     # 1) 공가(비차감)로 전환
-    r_to_public = admin_client.post("/admin/leave/update-type", data={"leave_id": leave_id, "is_deductive": "false"})
+    r_to_public = admin_client.post("/api/admin/leave/update-type", data={"leave_id": leave_id, "is_deductive": "false"})
     assert r_to_public.status_code == 200
     db = SessionLocal()
     leave_checked = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
@@ -130,7 +130,7 @@ def main():
     db.close()
 
     # 2) 다시 연차(차감)로 복구 전환
-    r_to_deduct = admin_client.post("/admin/leave/update-type", data={"leave_id": leave_id, "is_deductive": "true"})
+    r_to_deduct = admin_client.post("/api/admin/leave/update-type", data={"leave_id": leave_id, "is_deductive": "true"})
     assert r_to_deduct.status_code == 200
     db = SessionLocal()
     leave_checked = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
@@ -143,7 +143,7 @@ def main():
     db.close()
 
     # Admin으로 연차 삭제 수행
-    r = admin_client.post("/admin/leave/delete", data={"leave_id": leave_id})
+    r = admin_client.post("/api/admin/leave/delete", data={"leave_id": leave_id})
     assert r.status_code in (200, 302)
     
     db = SessionLocal()
@@ -177,7 +177,7 @@ def main():
     print("[CASE 5] Company Calendar Sharing & Access Control")
     
     # 1. 캘린더 공유 범위를 '소속 팀원 공유 (team)'로 변경
-    admin_client.post("/admin/settings/calendar-scope", data={"scope": "team"})
+    admin_client.post("/api/admin/settings/calendar-scope", data={"scope": "team"})
     
     from src.app.routers.api_user import user_team_calendar
     from unittest.mock import MagicMock
@@ -197,7 +197,7 @@ def main():
     # 1-1. scope=team 일 때 (본인 팀원만 조회되어야 함)
     api_user_module.get_current_user = lambda r, d: staff_user
     db = SessionLocal()
-    resp = user_team_calendar(request=req, db=db)
+    resp = user_team_calendar(request=req, db=db, user=staff_user)
     context = resp.context
     members = context["team_members"]
     member_ids = [m.user_id for m in members]
@@ -207,7 +207,7 @@ def main():
     db.close()
     
     # 2. 캘린더 공유 범위를 '전사 공유 (company)'로 변경
-    r = admin_client.post("/admin/settings/calendar-scope", data={"scope": "company"})
+    r = admin_client.post("/api/admin/settings/calendar-scope", data={"scope": "company"})
     assert r.status_code == 200
     
     # 2-1. 감사 로그 생성 검증
@@ -219,7 +219,7 @@ def main():
     
     # 2-2. scope=company 일 때 (전사 사원 모두 조회되어야 함)
     db = SessionLocal()
-    resp = user_team_calendar(request=req, db=db)
+    resp = user_team_calendar(request=req, db=db, user=staff_user)
     context = resp.context
     members = context["team_members"]
     member_ids = [m.user_id for m in members]
@@ -229,12 +229,12 @@ def main():
     db.close()
  
     # 3. 캘린더 공유 범위를 '공유 안 함 (none)'으로 변경
-    r = admin_client.post("/admin/settings/calendar-scope", data={"scope": "none"})
+    r = admin_client.post("/api/admin/settings/calendar-scope", data={"scope": "none"})
     assert r.status_code == 200
     
     # 3-1. 리다이렉트 응답 확인
     db = SessionLocal()
-    resp = user_team_calendar(request=req, db=db)
+    resp = user_team_calendar(request=req, db=db, user=staff_user)
     assert resp.status_code == 302
     assert resp.headers.get("location") == "/user/dashboard"
     db.close()
@@ -247,7 +247,7 @@ def main():
     print("[CASE 6] Bulk Leave Application & Rollback (v1.5.0)")
     
     # 점심시간 설정 변경 (12:00 ~ 13:00)
-    admin_client.post("/admin/settings/time-policy", data={
+    admin_client.post("/api/admin/settings/time-policy", data={
         "time_granularity_minutes": 60,
         "work_start_minute": 540,
         "work_end_minute": 1080,
@@ -265,7 +265,7 @@ def main():
     # 콤마로 구분된 날짜 리스트 (주말인 13, 14를 포함시킴)
     bulk_dates = "2026-06-08,2026-06-09,2026-06-10,2026-06-11,2026-06-12,2026-06-13,2026-06-14"
     
-    r = staff_client.post("/user/leave", data={
+    r = staff_client.post("/api/user/leave", data={
         "date_str": bulk_dates, "start_time": "09:00", "end_time": "18:00"
     })
     
@@ -283,7 +283,7 @@ def main():
     
     # 롤백 검증: 기존 등록된 6월 8일이 중복되도록 새로운 일괄 신청
     # 2026-06-08(중복), 2026-06-15(미등록) 신청
-    r_dup = staff_client.post("/user/leave", data={
+    r_dup = staff_client.post("/api/user/leave", data={
         "date_str": "2026-06-08,2026-06-15", "start_time": "09:00", "end_time": "18:00"
     })
     
@@ -301,7 +301,7 @@ def main():
     db.commit()
     
     # 1) 다수일 일괄 신청 시 시간 생략
-    r_all_day_bulk = staff_client.post("/user/leave", data={
+    r_all_day_bulk = staff_client.post("/api/user/leave", data={
         "date_str": "2026-06-08,2026-06-09",
         "start_time": "",
         "end_time": ""
@@ -322,7 +322,7 @@ def main():
     db.commit()
     
     # 2) 단일 날짜 신청 시 시간 생략 (하루종일 체크박스 전송 시나리오)
-    r_all_day_single = staff_client.post("/user/leave", data={
+    r_all_day_single = staff_client.post("/api/user/leave", data={
         "date_str": "2026-06-08",
         "start_time": "",
         "end_time": ""
@@ -355,7 +355,7 @@ def main():
     import time
     new_title = f"SHIM-{int(time.time())}"
     # app.css 등을 로드하는 과정에서 캐시 설정이 변경되므로 설정 API에 요청 보냄
-    r_setting = admin_client.post("/admin/settings/branding", data={
+    r_setting = admin_client.post("/api/admin/settings/branding", data={
         "product_display_name": new_title,
         "product_nav_short": settings_before.product_nav_short or "",
         "brand_initial": settings_before.brand_initial or ""
@@ -373,7 +373,7 @@ def main():
     
     # 1) 일반 사용자 비밀번호 변경 검증
     # 잘못된 현재 비밀번호 입력 시 실패
-    r = staff_client.post("/user/change-password", data={
+    r = staff_client.post("/api/user/change-password", data={
         "current_password": "wrong_password",
         "new_password": "new_password_123"
     })
@@ -381,7 +381,7 @@ def main():
     assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
     
     # 새 비밀번호 길이 미달(4자 미만) 시 실패
-    r = staff_client.post("/user/change-password", data={
+    r = staff_client.post("/api/user/change-password", data={
         "current_password": "0000",
         "new_password": "abc"
     })
@@ -389,7 +389,7 @@ def main():
     assert "최소 4자 이상" in r.json()["message"]
 
     # 성공적인 비밀번호 변경
-    r = staff_client.post("/user/change-password", data={
+    r = staff_client.post("/api/user/change-password", data={
         "current_password": "0000",
         "new_password": "new_staff_password"
     })
@@ -413,7 +413,7 @@ def main():
 
     # 2) 관리자 비밀번호 변경 검증
     # 잘못된 현재 비밀번호
-    r = admin_client.post("/admin/change-password", data={
+    r = admin_client.post("/api/admin/change-password", data={
         "current_password": "wrong_admin_pwd",
         "new_password": "new_admin_pwd_123"
     })
@@ -421,7 +421,7 @@ def main():
     assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
     
     # 새 비밀번호 길이 미달(4자 미만)
-    r = admin_client.post("/admin/change-password", data={
+    r = admin_client.post("/api/admin/change-password", data={
         "current_password": "0000",
         "new_password": "123"
     })
@@ -429,7 +429,7 @@ def main():
     assert "최소 4자 이상" in r.json()["message"]
 
     # 성공적인 변경
-    r = admin_client.post("/admin/change-password", data={
+    r = admin_client.post("/api/admin/change-password", data={
         "current_password": "0000",
         "new_password": "new_admin_pwd"
     })
@@ -536,7 +536,7 @@ def main():
     db.commit()
     db.close()
     
-    r_lead_apply = lead_client.post("/user/leave", data={
+    r_lead_apply = lead_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "18:00"
     })
     assert r_lead_apply.status_code == 200
@@ -547,7 +547,7 @@ def main():
     assert lead_leave.status == "PENDING"
     db.close()
     
-    r_self_approve = lead_client.post(f"/user/team-approve/{lead_leave.id}")
+    r_self_approve = lead_client.post(f"/api/user/team-approve/{lead_leave.id}")
     assert r_self_approve.status_code in (400, 403)
     
     # 3) 팀장(TEAM_LEAD)이 다른 팀 소속 사원의 연차에 대해 결재를 시도하는 시나리오 차단 검증
@@ -566,7 +566,7 @@ def main():
     db.commit()
     db.close()
     
-    r_staff_apply = staff_client.post("/user/leave", data={
+    r_staff_apply = staff_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "18:00"
     })
     assert r_staff_apply.status_code == 200
@@ -579,14 +579,14 @@ def main():
     lead_b_client = TestClient(app)
     lead_b_client.cookies.set("access_token", f"Bearer {lead_b_token}")
     
-    r_other_approve = lead_b_client.post(f"/user/team-approve/{staff_leave.id}")
+    r_other_approve = lead_b_client.post(f"/api/user/team-approve/{staff_leave.id}")
     assert r_other_approve.status_code == 403
     print("  -> PASS: RBAC check (Admin page block, self-approval block, other team block) verified.")
 
     # --- 시나리오 14: 정밀 시간 차감 정책 및 점심시간 제외 바운더리 검증 ---
     print("[CASE 14] Precise Time Policy Boundaries")
     # 1) 60분 단위 경계에 어긋나는 신청(예: 09:30 신청) 시 실패 검증
-    r_invalid_time = staff_client.post("/user/leave", data={
+    r_invalid_time = staff_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:30", "end_time": "11:30"
     })
     assert r_invalid_time.status_code == 400
@@ -598,7 +598,7 @@ def main():
     db.commit()
     db.close()
     
-    r_lunch_overlap = staff_client.post("/user/leave", data={
+    r_lunch_overlap = staff_client.post("/api/user/leave", data={
         "date_str": d1.strftime("%Y-%m-%d"), "start_time": "11:00", "end_time": "14:00"
     })
     assert r_lunch_overlap.status_code == 200
@@ -638,13 +638,13 @@ def main():
     db.commit()
     db.close()
     
-    r_add_holiday = admin_client.post("/admin/holiday/create", data={
+    r_add_holiday = admin_client.post("/api/admin/holiday/create", data={
         "holiday_name": "테스트창립기념일",
         "holiday_date": "2026-10-14"
     })
     assert r_add_holiday.status_code in (200, 302)
     
-    r_holiday_apply = staff_client.post("/user/leave", data={
+    r_holiday_apply = staff_client.post("/api/user/leave", data={
         "date_str": "2026-10-14", "start_time": "09:00", "end_time": "18:00"
     })
     assert r_holiday_apply.status_code == 400

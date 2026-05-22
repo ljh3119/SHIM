@@ -216,7 +216,7 @@
 <script>
 async function refreshApprovalLabel() {
     try {
-        const r = await fetch('/admin/settings/approval');
+        const r = await fetch('/api/admin/settings/approval');
         const j = await r.json();
         const el = document.getElementById('approval-current-label');
         if (el) el.textContent = j.is_approval_required ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
@@ -226,14 +226,14 @@ document.addEventListener('DOMContentLoaded', refreshApprovalLabel);
 document.addEventListener('DOMContentLoaded', initializeTimePolicyInputs);
 
 async function toggleApprovalWorkflow() {
-    const r = await fetch('/admin/settings/approval');
+    const r = await fetch('/api/admin/settings/approval');
     const j = await r.json();
     const cur = !!j.is_approval_required;
     const next = !cur;
     const curLabel = cur ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
     const nextLabel = next ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
     if (!confirm('승인 워크플로우를 변경할까요?\n\n현재: ' + curLabel + '\n변경 후: ' + nextLabel)) return;
-    const resp = await fetch('/admin/settings/approval', {
+    const resp = await fetch('/api/admin/settings/approval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'is_approval_required=' + (next ? 'true' : 'false')
@@ -260,7 +260,7 @@ async function saveCalendarScope() {
 
     if (!confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
 
-    const resp = await fetch('/admin/settings/calendar-scope', {
+    const resp = await fetch('/api/admin/settings/calendar-scope', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'scope=' + selectedValue
@@ -274,14 +274,14 @@ async function saveCalendarScope() {
 }
 async function runDbBackup() {
     if (!confirm('지금 DB 백업을 생성할까요?')) return;
-    const resp = await fetch('/admin/ops/backup', { method: 'POST' });
+    const resp = await fetch('/api/admin/ops/backup', { method: 'POST' });
     const result = await resp.json();
     alert(result.message || '처리되었습니다.');
 }
 
 async function initializeTimePolicyInputs() {
     try {
-        const r = await fetch('/admin/settings/approval');
+        const r = await fetch('/api/admin/settings/approval');
         const j = await r.json();
         const granularityEl = document.getElementById('policy_granularity');
         const workStartEl = document.getElementById('policy_work_start');
@@ -310,7 +310,7 @@ async function saveBranding() {
     body.set('brand_initial', initial.trim());
     let resp;
     try {
-        resp = await fetch('/admin/settings/branding', {
+        resp = await fetch('/api/admin/settings/branding', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
@@ -352,7 +352,7 @@ async function saveTimePolicy() {
     body.set('work_end_minute', String(Number(workEnd)));
     body.set('lunch_start_minute', lunchStart ? String(Number(lunchStart)) : '-1');
     body.set('lunch_end_minute', lunchEnd ? String(Number(lunchEnd)) : '-1');
-    const resp = await fetch('/admin/settings/time-policy', {
+    const resp = await fetch('/api/admin/settings/time-policy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body

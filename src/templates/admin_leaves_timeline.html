@@ -230,7 +230,7 @@
 async function deleteLeave(id) {
     if(!confirm('정말 이 연차 기록을 삭제하시겠습니까?')) return;
     try {
-        const response = await fetch('/admin/leave/delete', {
+        const response = await fetch('/api/admin/leave/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `leave_id=${id}`
@@ -272,7 +272,7 @@ async function changeStatus(leaveId, selectEl) {
             status_value: newStatus,
             rejection_reason: rejectionReason
         });
-        const response = await fetch('/admin/leave/update-status', {
+        const response = await fetch('/api/admin/leave/update-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body
@@ -301,7 +301,7 @@ async function changeType(leaveId, targetIsDeductive) {
             leave_id: String(leaveId),
             is_deductive: targetIsDeductive
         });
-        const response = await fetch('/admin/leave/update-type', {
+        const response = await fetch('/api/admin/leave/update-type', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body

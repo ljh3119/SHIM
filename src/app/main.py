@@ -14,7 +14,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.5.6")
+app = FastAPI(title="SHIM", version="1.5.9")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -29,16 +29,13 @@ VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
 
 models.Base.metadata.create_all(bind=engine)
 
-# 자동 스키마 마이그레이션 (company_calendar_visible 컬럼 추가)
+# 자동 스키마 마이그레이션
+from .migrations import run_all_migrations
 try:
-    with engine.connect() as conn:
-        res = conn.execute(text("PRAGMA table_info(system_settings)"))
-        columns = [row[1] for row in res.fetchall()]
-        if "company_calendar_visible" not in columns:
-            conn.execute(text("ALTER TABLE system_settings ADD COLUMN company_calendar_visible BOOLEAN DEFAULT 0 NOT NULL"))
-            conn.commit()
+    run_all_migrations(engine)
 except Exception as e:
-    print(f"[MIGRATION ERROR] Failed to add company_calendar_visible: {e}")
+    print(f"[MIGRATION ERROR] Schema migration failed: {e}")
+
 
 
 
@@ -144,14 +141,37 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.5.6"
+templates.env.globals["app_version"] = "1.5.9"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 app.state.templates = templates
 
 from .routers import api_user, api_admin
-app.include_router(api_user.router)
-app.include_router(api_admin.router)
+from .dependencies import NotAuthenticatedException, PermissionDeniedException
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(NotAuthenticatedException)
+async def not_authenticated_exception_handler(request: Request, exc: NotAuthenticatedException):
+    path = request.url.path
+    if path.startswith("/static/") or path.startswith("/docs") or path == "/openapi.json" or path == "/favicon.ico":
+        return Response(status_code=404)
+    if path.startswith("/api/"):
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+@app.exception_handler(PermissionDeniedException)
+async def permission_denied_exception_handler(request: Request, exc: PermissionDeniedException):
+    path = request.url.path
+    if path.startswith("/static/") or path.startswith("/docs") or path == "/openapi.json" or path == "/favicon.ico":
+        return Response(status_code=404)
+    if path.startswith("/api/"):
+        return JSONResponse(status_code=401, content={"detail": "Permission denied"})
+    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+app.include_router(api_user.page_router)
+app.include_router(api_user.api_router)
+app.include_router(api_admin.page_router)
+app.include_router(api_admin.api_router)
 
 
 @app.middleware("http")
@@ -310,26 +330,24 @@ def login(
         data={"sub": user.user_id}, expires_delta=access_token_expires
     )
     
-    secure_cookie = False
-    env_secure = os.getenv("SHIM_SECURE_COOKIE", "").lower() in ("true", "1", "yes")
-    if env_secure:
-        secure_cookie = True
-    elif request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").lower() == "https":
-        secure_cookie = True
-        
+    cookie_settings = auth.get_cookie_settings(request)
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
-        httponly=True,
-        samesite="lax",
-        secure=secure_cookie
+        **cookie_settings
     )
     return response
 
 @app.get("/logout")
-def logout():
+def logout(request: Request):
+    cookie_settings = auth.get_cookie_settings(request)
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    response.delete_cookie(key="access_token")
+    response.delete_cookie(
+        key="access_token",
+        httponly=cookie_settings.get("httponly", True),
+        samesite=cookie_settings.get("samesite", "lax"),
+        secure=cookie_settings.get("secure", False)
+    )
     return response
 

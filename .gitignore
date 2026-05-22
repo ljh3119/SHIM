@@ -38,3 +38,6 @@ Thumbs.db
 
 # Docker (혹시 나중에 Docker를 쓰신다면)
 .docker/
+
+# Temporary scratch scripts and files
+scratch/
