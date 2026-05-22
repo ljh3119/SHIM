@@ -20,33 +20,25 @@ ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
 REJECTION_REASON_MAX_LENGTH = 500
 ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120})
 
-_settings_cache = None
-
 def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamespace | None:
-    global _settings_cache
-    if _settings_cache is None or force_reload:
-        setting = db.query(models.SystemSettings).first()
-        if not setting:
-            return None
-        _settings_cache = SimpleNamespace(
-            id=setting.id,
-            is_approval_required=setting.is_approval_required,
-            time_granularity_minutes=setting.time_granularity_minutes,
-            work_start_minute=setting.work_start_minute,
-            work_end_minute=setting.work_end_minute,
-            lunch_start_minute=setting.lunch_start_minute,
-            lunch_end_minute=setting.lunch_end_minute,
-            product_display_name=setting.product_display_name,
-            product_nav_short=setting.product_nav_short,
-            brand_initial=setting.brand_initial,
-            team_calendar_visible=setting.team_calendar_visible,
-            company_calendar_visible=setting.company_calendar_visible,
-        )
-    return _settings_cache
+    setting = db.query(models.SystemSettings).first()
+    if not setting:
+        return None
+    return SimpleNamespace(
+        id=setting.id,
+        is_approval_required=setting.is_approval_required,
+        time_granularity_minutes=setting.time_granularity_minutes,
+        work_start_minute=setting.work_start_minute,
+        work_end_minute=setting.work_end_minute,
+        lunch_start_minute=setting.lunch_start_minute,
+        lunch_end_minute=setting.lunch_end_minute,
+        product_display_name=setting.product_display_name,
+        product_nav_short=setting.product_nav_short,
+        brand_initial=setting.brand_initial,
+        team_calendar_visible=setting.team_calendar_visible,
+        company_calendar_visible=setting.company_calendar_visible,
+    )
 
-def invalidate_settings_cache():
-    global _settings_cache
-    _settings_cache = None
 
 
 @dataclass

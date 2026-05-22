@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Request, Form, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -13,7 +14,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.5.5")
+app = FastAPI(title="SHIM", version="1.5.6")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -143,7 +144,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.5.5"
+templates.env.globals["app_version"] = "1.5.6"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 app.state.templates = templates
@@ -158,7 +159,7 @@ async def branding_middleware(request: Request, call_next):
     p = request.url.path
     if p.startswith("/static") or p == "/favicon.ico":
         return await call_next(request)
-    _load_branding_into_request(request)
+    await run_in_threadpool(_load_branding_into_request, request)
     return await call_next(request)
 
 
@@ -273,7 +274,7 @@ def startup_event():
     db.close()
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, db: Session = Depends(get_db)):
+def read_root(request: Request, db: Session = Depends(get_db)):
     user_id = auth.get_current_user_from_token(request)
     if user_id:
         user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
@@ -287,11 +288,11 @@ async def read_root(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
+def favicon():
     return Response(status_code=204)
 
 @app.post("/login")
-async def login(
+def login(
         request: Request,
         user_id: str = Form(...),
         password: str = Form(...),
@@ -327,7 +328,7 @@ async def login(
     return response
 
 @app.get("/logout")
-async def logout():
+def logout():
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     response.delete_cookie(key="access_token")
     return response

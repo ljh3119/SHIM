@@ -144,7 +144,6 @@ def main():
 
     # Admin으로 연차 삭제 수행
     r = admin_client.post("/admin/leave/delete", data={"leave_id": leave_id})
-    
     assert r.status_code in (200, 302)
     
     db = SessionLocal()
@@ -198,7 +197,7 @@ def main():
     # 1-1. scope=team 일 때 (본인 팀원만 조회되어야 함)
     api_user_module.get_current_user = lambda r, d: staff_user
     db = SessionLocal()
-    resp = asyncio.run(user_team_calendar(request=req, db=db))
+    resp = user_team_calendar(request=req, db=db)
     context = resp.context
     members = context["team_members"]
     member_ids = [m.user_id for m in members]
@@ -220,7 +219,7 @@ def main():
     
     # 2-2. scope=company 일 때 (전사 사원 모두 조회되어야 함)
     db = SessionLocal()
-    resp = asyncio.run(user_team_calendar(request=req, db=db))
+    resp = user_team_calendar(request=req, db=db)
     context = resp.context
     members = context["team_members"]
     member_ids = [m.user_id for m in members]
@@ -228,14 +227,14 @@ def main():
     assert "u_lead" in member_ids
     assert "u_pm" in member_ids, f"전사 캘린더 공유 활성화 시 다른 팀원(PM)도 조회되어야 합니다. (조회 목록: {member_ids})"
     db.close()
-
+ 
     # 3. 캘린더 공유 범위를 '공유 안 함 (none)'으로 변경
     r = admin_client.post("/admin/settings/calendar-scope", data={"scope": "none"})
     assert r.status_code == 200
     
     # 3-1. 리다이렉트 응답 확인
     db = SessionLocal()
-    resp = asyncio.run(user_team_calendar(request=req, db=db))
+    resp = user_team_calendar(request=req, db=db)
     assert resp.status_code == 302
     assert resp.headers.get("location") == "/user/dashboard"
     db.close()
