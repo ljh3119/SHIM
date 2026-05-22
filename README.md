@@ -16,7 +16,7 @@
 ### 핵심 기능
 - **정밀한 연차 신청**: 시작/종료 시각 입력 기반 차감 및 정책 단위(30/60/120분) 검증
 - **조직 관리**: 사용자/회사/팀 필터 기반의 전사 캘린더 및 타임라인 뷰
-- **결재 워크플로우**: 2단계 결재(팀장 승인/반려 및 관리자 최종 승인) 지원
+- **결재 워크플로우**: 단선 결재(팀장 혹은 관리자의 단일 승인/반려) 지원
 - **브랜딩 및 커스터마이징**: 조직의 명칭, 로고 배지, 업무 시간 정책(점심시간 등) 설정
 - **운영 편의성**: 한국 공휴일 자동 시딩, 퇴사자 비활성화, 연도별 연차 할당 관리
 
@@ -94,7 +94,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 #### 방식 C. 폐쇄망용 포터블 실행 (Portable)
 인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
 1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`
-2.  **배포**: 생성된 `artifacts/dist/SHIM_Portable` 폴더를 대상 PC로 복사합니다.
+2.  **배포**: 생성된 `dist/SHIM_Portable` 폴더를 대상 PC로 복사합니다.
 3.  **실행**: 해당 폴더 내 `run_portable.bat`을 실행합니다.
     - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
 
