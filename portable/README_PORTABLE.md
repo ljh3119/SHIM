@@ -15,7 +15,7 @@ SHIM Portable은 Python 런타임과 모든 의존성을 단일 패키지로 묶
 ## 2. 배포 및 전달 (Deployment)
 빌드된 산출물을 대상 폐쇄망 PC로 이동하는 단계입니다.
 
-1.  **폴더 복사**: `artifacts/dist/SHIM_Portable/` 폴더 **전체**를 USB 또는 보안 전달 매체를 통해 대상 PC로 복사합니다.
+1.  **폴더 복사**: `dist/SHIM_Portable/` 폴더 **전체**를 USB 또는 보안 전달 매체를 통해 대상 PC로 복사합니다.
     - ⚠️ **주의**: `SHIM_Portable.exe` 단독 파일만 복사할 경우 실행되지 않습니다. 반드시 `_internal`, `data` 폴더를 함께 포함해야 합니다.
 2.  **권한 확인**: 실행 대상 폴더에 읽기/쓰기 권한이 있는지 확인하십시오. (SQLite DB 기록을 위해 필수)
 
