@@ -23,6 +23,9 @@ pyinstaller `
   --collect-submodules holidays `
   --collect-data holidays `
   --hidden-import src.app.main `
+  --exclude-module PIL `
+  --exclude-module watchfiles `
+  --exclude-module setuptools `
   --add-data "src/templates;templates" `
   --add-data "src/static;static" `
   --add-data "var/data;data" `

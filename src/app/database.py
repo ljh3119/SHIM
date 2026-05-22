@@ -24,7 +24,8 @@ DB_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DB_DIR / "shim_internal.db"
 
 engine = create_engine(
-    f"sqlite:///{DB_PATH.as_posix()}", connect_args={"check_same_thread": False}
+    f"sqlite:///{DB_PATH.as_posix()}",
+    connect_args={"check_same_thread": False, "timeout": 30.0},
 )
 
 
