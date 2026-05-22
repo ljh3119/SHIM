@@ -13,7 +13,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.5.3")
+app = FastAPI(title="SHIM", version="1.5.4")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -143,7 +143,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.5.3"
+templates.env.globals["app_version"] = "1.5.4"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 app.state.templates = templates
@@ -309,8 +309,21 @@ async def login(
         data={"sub": user.user_id}, expires_delta=access_token_expires
     )
     
+    secure_cookie = False
+    env_secure = os.getenv("SHIM_SECURE_COOKIE", "").lower() in ("true", "1", "yes")
+    if env_secure:
+        secure_cookie = True
+    elif request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").lower() == "https":
+        secure_cookie = True
+        
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        samesite="lax",
+        secure=secure_cookie
+    )
     return response
 
 @app.get("/logout")

@@ -27,8 +27,7 @@ def verify_all():
     
     compact = utils.hours_to_days_hours_compact(-4.5)
     print(f" -4.5h compact: {compact}")
-    # Python 3 rounds 4.5 to 4 (nearest even). So -4h or -5h are both possible depending on env
-    assert "-4h" in compact or "-5h" in compact
+    assert "-4.5h" in compact
     
     print("\n--- 2. RBAC / is_admin Legacy Verification ---")
     admin = db.query(models.Users).filter(models.Users.role == "ADMIN").first()
