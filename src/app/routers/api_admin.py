@@ -18,7 +18,6 @@ from ..services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
     LeaveStatusTransitionError,
     apply_leave_status_transition,
-    invalidate_settings_cache,
 )
 from ..services.ops import create_sqlite_backup
 from ..services import admin_service
@@ -106,7 +105,7 @@ def _ensure_system_setting(db: Session) -> models.SystemSettings:
     return setting
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     try:
         admin = get_current_admin(request, db)
     except HTTPException:
@@ -126,7 +125,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.get("/leave/timeline", response_class=HTMLResponse)
-async def admin_leaves_timeline(
+def admin_leaves_timeline(
     request: Request,
     year: int = None,
     month: int = 0,
@@ -315,7 +314,7 @@ async def admin_leaves_timeline(
 
 
 @router.get("/leave/timeline/export")
-async def export_admin_leaves_timeline(
+def export_admin_leaves_timeline(
     request: Request,
     year: int = None,
     month: int = 0,
@@ -404,7 +403,7 @@ async def export_admin_leaves_timeline(
     )
 
 @router.get("/leave/calendar", response_class=HTMLResponse)
-async def admin_leaves_calendar(
+def admin_leaves_calendar(
     request: Request,
     year: int = None,
     month: int = None,
@@ -688,7 +687,7 @@ async def admin_leaves_calendar(
     )
 
 @router.get("/holidays", response_class=HTMLResponse)
-async def admin_holidays(request: Request, year: int = None, db: Session = Depends(get_db)):
+def admin_holidays(request: Request, year: int = None, db: Session = Depends(get_db)):
     try:
         admin = get_current_admin(request, db)
     except HTTPException:
@@ -716,7 +715,7 @@ async def admin_holidays(request: Request, year: int = None, db: Session = Depen
     })
 
 @router.post("/holiday/create")
-async def create_holiday(
+def create_holiday(
     request: Request,
     holiday_name: str = Form(...),
     holiday_date: str = Form(...),
@@ -756,7 +755,7 @@ async def create_holiday(
     return JSONResponse(status_code=200, content={"message": "공휴일이 등록되었습니다."})
 
 @router.post("/holiday/update")
-async def update_holiday(
+def update_holiday(
     request: Request,
     holiday_id: int = Form(...),
     holiday_name: str = Form(...),
@@ -805,7 +804,7 @@ async def update_holiday(
     return JSONResponse(status_code=200, content={"message": "공휴일이 수정되었습니다."})
 
 @router.post("/holiday/delete")
-async def delete_holiday(
+def delete_holiday(
     request: Request,
     holiday_id: int = Form(...),
     db: Session = Depends(get_db)
@@ -835,7 +834,7 @@ async def delete_holiday(
     return JSONResponse(status_code=200, content={"message": "공휴일이 삭제되었습니다."})
 
 @router.post("/change-password")
-async def admin_change_password(
+def admin_change_password(
     request: Request,
     current_password: str = Form(...),
     new_password: str = Form(...),
@@ -867,7 +866,7 @@ async def admin_change_password(
 
 
 @router.get("/users", response_class=HTMLResponse)
-async def admin_users(
+def admin_users(
     request: Request,
     filter: str = "all",
     year: int = None,
@@ -936,7 +935,7 @@ async def admin_users(
     })
 
 @router.post("/user/toggle")
-async def toggle_user_active(
+def toggle_user_active(
     request: Request,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db)
@@ -977,7 +976,7 @@ async def toggle_user_active(
     return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
 
 @router.post("/user/reset-password")
-async def reset_password(
+def reset_password(
     request: Request,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db)
@@ -1010,7 +1009,7 @@ async def reset_password(
     return JSONResponse(status_code=200, content={"message": "비밀번호가 '0000'으로 초기화되었습니다."})
 
 @router.post("/leave/delete")
-async def delete_leave(
+def delete_leave(
     request: Request,
     leave_id: int = Form(...),
     db: Session = Depends(get_db)
@@ -1045,7 +1044,7 @@ async def delete_leave(
 
 
 @router.post("/user/update")
-async def update_user(
+def update_user(
     request: Request,
     target_user_id: str = Form(...),
     user_name: str = Form(...),
@@ -1118,7 +1117,7 @@ async def update_user(
 
 
 @router.post("/user/create")
-async def create_user(
+def create_user(
     request: Request,
     user_id: str = Form(...),
     user_name: str = Form(...),
@@ -1192,7 +1191,7 @@ async def create_user(
     return JSONResponse(status_code=200, content={"message": f"{user_name} 등록 완료! 초기 비번: 0000"})
 
 @router.post("/user/update-leave-days")
-async def update_user_leave_days(
+def update_user_leave_days(
     request: Request,
     target_user_id: str = Form(...),
     total_leave_days: int = Form(...),
@@ -1246,7 +1245,7 @@ async def update_user_leave_days(
 
 
 @router.post("/user/bulk-update-leave-days")
-async def bulk_update_user_leave_days(
+def bulk_update_user_leave_days(
     request: Request,
     total_leave_days: int = Form(...),
     year: int = Form(None),
@@ -1310,7 +1309,7 @@ async def bulk_update_user_leave_days(
     )
 
 @router.post("/user/hard-delete")
-async def hard_delete_user(
+def hard_delete_user(
     request: Request,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db)
@@ -1354,7 +1353,7 @@ async def hard_delete_user(
 
 
 @router.post("/leave/update-status")
-async def update_leave_status(
+def update_leave_status(
     request: Request,
     leave_id: int = Form(...),
     status_value: str = Form(...),
@@ -1398,7 +1397,7 @@ async def update_leave_status(
 
 
 @router.post("/leave/update-type")
-async def update_leave_type(
+def update_leave_type(
     request: Request,
     leave_id: int = Form(...),
     is_deductive: bool = Form(...),
@@ -1449,7 +1448,7 @@ async def update_leave_type(
 
 
 @router.get("/settings/approval")
-async def get_approval_setting(request: Request, db: Session = Depends(get_db)):
+def get_approval_setting(request: Request, db: Session = Depends(get_db)):
     try:
         _ = get_current_admin(request, db)
     except HTTPException:
@@ -1479,7 +1478,7 @@ BRANDING_BADGE_MAX = 24
 
 
 @router.post("/settings/branding")
-async def set_branding_setting(
+def set_branding_setting(
     request: Request,
     product_display_name: str = Form(...),
     product_nav_short: str = Form(""),
@@ -1525,12 +1524,11 @@ async def set_branding_setting(
         )
     )
     db.commit()
-    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
 
 
 @router.post("/settings/calendar-scope")
-async def set_calendar_scope_setting(
+def set_calendar_scope_setting(
     request: Request,
     scope: str = Form(...),  # "none", "team", "company"
     db: Session = Depends(get_db),
@@ -1574,14 +1572,13 @@ async def set_calendar_scope_setting(
         )
     )
     db.commit()
-    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "캘린더 공유 범위 설정이 변경되었습니다."})
 
 
 
 
 @router.post("/settings/approval")
-async def set_approval_setting(
+def set_approval_setting(
     request: Request,
     is_approval_required: bool = Form(...),
     db: Session = Depends(get_db),
@@ -1602,12 +1599,11 @@ async def set_approval_setting(
         )
     )
     db.commit()
-    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "승인 설정이 변경되었습니다."})
 
 
 @router.post("/settings/time-policy")
-async def set_time_policy(
+def set_time_policy(
     request: Request,
     time_granularity_minutes: int = Form(...),
     work_start_minute: int = Form(...),
@@ -1667,12 +1663,11 @@ async def set_time_policy(
         )
     )
     db.commit()
-    invalidate_settings_cache()
     return JSONResponse(status_code=200, content={"message": "시간 단위/점심시간 정책이 저장되었습니다."})
 
 
 @router.post("/ops/backup")
-async def run_backup(request: Request, db: Session = Depends(get_db)):
+def run_backup(request: Request, db: Session = Depends(get_db)):
     try:
         admin = get_current_admin(request, db)
     except HTTPException:
@@ -1693,7 +1688,7 @@ async def run_backup(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/master", response_class=HTMLResponse)
-async def admin_master(request: Request, db: Session = Depends(get_db)):
+def admin_master(request: Request, db: Session = Depends(get_db)):
     try:
         admin = get_current_admin(request, db)
     except HTTPException:
@@ -1805,7 +1800,7 @@ def get_audit_target_label(target_info: str) -> str:
 
 
 @router.get("/audit", response_class=HTMLResponse)
-async def admin_audit_logs(
+def admin_audit_logs(
     request: Request,
     actor_id: str = "",
     action: str = "",
@@ -1891,7 +1886,7 @@ async def admin_audit_logs(
 
 
 @router.get("/audit/export")
-async def admin_audit_export(
+def admin_audit_export(
     actor_id: str = "",
     action: str = "",
     start_date: str = "",
