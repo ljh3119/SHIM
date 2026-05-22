@@ -110,6 +110,14 @@ def admin_dashboard(
     show_year_end_notice = now.month in (12, 1)
     next_year = now.year + 1 if now.month == 12 else now.year
     
+    # 이미 내년도(혹은 새해) 연차 지급 설정이 데이터베이스에 존재한다면 배너를 자동으로 숨김 처리합니다.
+    if show_year_end_notice:
+        has_next_year_allocations = db.query(models.UserYearlyLeaveAllocations).filter(
+            models.UserYearlyLeaveAllocations.year == next_year
+        ).first() is not None
+        if has_next_year_allocations:
+            show_year_end_notice = False
+    
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={
         "admin": admin,
         "active_users_count": stats["active_users_count"],
