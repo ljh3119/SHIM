@@ -23,7 +23,10 @@ from ..services.ops import create_sqlite_backup
 from ..services import admin_service
 from .api_user import resolve_user_yearly_allocated_hours
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+from ..dependencies import get_current_admin
+
+page_router = APIRouter(prefix="/admin", tags=["admin_pages"])
+api_router = APIRouter(prefix="/api/admin", tags=["admin_api"])
 
 
 def _templates(request: Request):
@@ -55,16 +58,6 @@ TIMELINE_LEAVE_STATUS_FILTERS = frozenset({"PENDING", "APPROVED", "REJECTED"})
 def _timeline_leave_status_filter(raw: str | None) -> str:
     s = (raw or "").strip().upper()
     return s if s in TIMELINE_LEAVE_STATUS_FILTERS else ""
-
-
-def get_current_admin(request: Request, db: Session = Depends(get_db)):
-    user_id = auth.get_current_user_from_token(request)
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    if not user or not user.is_active or (getattr(user, "role", "") != "ADMIN" and not getattr(user, "is_admin", False)):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    return user
 
 
 def _ensure_system_setting(db: Session) -> models.SystemSettings:
@@ -104,12 +97,12 @@ def _ensure_system_setting(db: Session) -> models.SystemSettings:
     db.refresh(setting)
     return setting
 
-@router.get("/dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+@page_router.get("/dashboard", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin)
+):
         
     stats = admin_service.get_admin_dashboard_stats(db)
     
@@ -124,7 +117,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "current_year": datetime.now().year
     })
 
-@router.get("/leave/timeline", response_class=HTMLResponse)
+@page_router.get("/leave/timeline", response_class=HTMLResponse)
 def admin_leaves_timeline(
     request: Request,
     year: int = None,
@@ -138,11 +131,8 @@ def admin_leaves_timeline(
     order: str | None = None,
     page: int = 1,
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     current_year = year if year else datetime.now().year
     current_month = month
@@ -313,7 +303,7 @@ def admin_leaves_timeline(
     )
 
 
-@router.get("/leave/timeline/export")
+@api_router.get("/leave/timeline/export")
 def export_admin_leaves_timeline(
     request: Request,
     year: int = None,
@@ -325,11 +315,8 @@ def export_admin_leaves_timeline(
     sort: str = "created_at",
     sort_dir: str = "desc",
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        _ = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     current_year = year if year else datetime.now().year
     selected_user_id = user_id.strip()
@@ -393,6 +380,7 @@ def export_admin_leaves_timeline(
 
     output = io.BytesIO()
     wb.save(output)
+    wb.close()
     output.seek(0)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"leave_timeline_{current_year}_{stamp}.xlsx"
@@ -402,7 +390,7 @@ def export_admin_leaves_timeline(
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
-@router.get("/leave/calendar", response_class=HTMLResponse)
+@page_router.get("/leave/calendar", response_class=HTMLResponse)
 def admin_leaves_calendar(
     request: Request,
     year: int = None,
@@ -415,11 +403,8 @@ def admin_leaves_calendar(
     sort: str = "",
     sort_dir: str = "asc",
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     current_year = year if year else datetime.now().year
     current_month = month if month else datetime.now().month
@@ -686,12 +671,8 @@ def admin_leaves_calendar(
         },
     )
 
-@router.get("/holidays", response_class=HTMLResponse)
-def admin_holidays(request: Request, year: int = None, db: Session = Depends(get_db)):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+@page_router.get("/holidays", response_class=HTMLResponse)
+def admin_holidays(request: Request, year: int = None, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
 
     now = datetime.now()
     current_year = year if year else now.year
@@ -714,17 +695,14 @@ def admin_holidays(request: Request, year: int = None, db: Session = Depends(get
         "year_options": year_options
     })
 
-@router.post("/holiday/create")
+@api_router.post("/holiday/create")
 def create_holiday(
     request: Request,
     holiday_name: str = Form(...),
     holiday_date: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     holiday_name = holiday_name.strip()
     if not holiday_name:
@@ -754,18 +732,15 @@ def create_holiday(
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 등록되었습니다."})
 
-@router.post("/holiday/update")
+@api_router.post("/holiday/update")
 def update_holiday(
     request: Request,
     holiday_id: int = Form(...),
     holiday_name: str = Form(...),
     holiday_date: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     holiday = db.query(models.Holidays).filter(models.Holidays.id == holiday_id).first()
     if not holiday:
@@ -803,16 +778,13 @@ def update_holiday(
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 수정되었습니다."})
 
-@router.post("/holiday/delete")
+@api_router.post("/holiday/delete")
 def delete_holiday(
     request: Request,
     holiday_id: int = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     holiday = db.query(models.Holidays).filter(models.Holidays.id == holiday_id).first()
     if not holiday:
@@ -833,17 +805,14 @@ def delete_holiday(
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 삭제되었습니다."})
 
-@router.post("/change-password")
+@api_router.post("/change-password")
 def admin_change_password(
     request: Request,
     current_password: str = Form(...),
     new_password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     if not auth.verify_password(current_password, admin.password):
         return JSONResponse(status_code=400, content={"message": "현재 비밀번호가 일치하지 않습니다."})
@@ -865,7 +834,7 @@ def admin_change_password(
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
 
 
-@router.get("/users", response_class=HTMLResponse)
+@page_router.get("/users", response_class=HTMLResponse)
 def admin_users(
     request: Request,
     filter: str = "all",
@@ -873,11 +842,8 @@ def admin_users(
     sort_key: str = "user_name",
     sort_dir: str = "asc",
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
         
     query = db.query(models.Users)
     if filter == "active":
@@ -934,16 +900,13 @@ def admin_users(
         "user_leave_days_map": user_leave_days_map
     })
 
-@router.post("/user/toggle")
+@api_router.post("/user/toggle")
 def toggle_user_active(
     request: Request,
     target_user_id: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
     user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
     if not user:
@@ -975,16 +938,13 @@ def toggle_user_active(
     
     return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
 
-@router.post("/user/reset-password")
+@api_router.post("/user/reset-password")
 def reset_password(
     request: Request,
     target_user_id: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
     user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
     if not user:
@@ -1008,16 +968,13 @@ def reset_password(
     
     return JSONResponse(status_code=200, content={"message": "비밀번호가 '0000'으로 초기화되었습니다."})
 
-@router.post("/leave/delete")
+@api_router.post("/leave/delete")
 def delete_leave(
     request: Request,
     leave_id: int = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
@@ -1043,7 +1000,7 @@ def delete_leave(
     return JSONResponse(status_code=200, content={"message": "연차가 성공적으로 삭제되었습니다."})
 
 
-@router.post("/user/update")
+@api_router.post("/user/update")
 def update_user(
     request: Request,
     target_user_id: str = Form(...),
@@ -1054,11 +1011,8 @@ def update_user(
     position: str = Form(""),
     is_active: bool = Form(True),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
     if not user:
@@ -1116,7 +1070,7 @@ def update_user(
     return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
 
 
-@router.post("/user/create")
+@api_router.post("/user/create")
 def create_user(
     request: Request,
     user_id: str = Form(...),
@@ -1127,12 +1081,9 @@ def create_user(
     position: str = Form(""),
     total_leave_days: int = Form(15),
     year: int = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
     user_id = user_id.strip()
     if total_leave_days < 0:
@@ -1190,18 +1141,15 @@ def create_user(
     
     return JSONResponse(status_code=200, content={"message": f"{user_name} 등록 완료! 초기 비번: 0000"})
 
-@router.post("/user/update-leave-days")
+@api_router.post("/user/update-leave-days")
 def update_user_leave_days(
     request: Request,
     target_user_id: str = Form(...),
     total_leave_days: int = Form(...),
     year: int = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     if total_leave_days < 0:
         return JSONResponse(status_code=400, content={"message": "연차일수는 0 이상이어야 합니다."})
@@ -1244,18 +1192,15 @@ def update_user_leave_days(
     return JSONResponse(status_code=200, content={"message": "연차일수가 변경되었습니다."})
 
 
-@router.post("/user/bulk-update-leave-days")
+@api_router.post("/user/bulk-update-leave-days")
 def bulk_update_user_leave_days(
     request: Request,
     total_leave_days: int = Form(...),
     year: int = Form(None),
     filter_scope: str = Form("all"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     if total_leave_days < 0:
         return JSONResponse(status_code=400, content={"message": "연차일수는 0 이상이어야 합니다."})
@@ -1308,16 +1253,13 @@ def bulk_update_user_leave_days(
         content={"message": f"{target_year}년 연차일수를 {updated_count}명에게 일괄 {total_leave_days}일로 반영했습니다."}
     )
 
-@router.post("/user/hard-delete")
+@api_router.post("/user/hard-delete")
 def hard_delete_user(
     request: Request,
     target_user_id: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
     user = db.query(models.Users).filter(models.Users.user_id == target_user_id).first()
     if not user:
@@ -1352,18 +1294,15 @@ def hard_delete_user(
     return JSONResponse(status_code=200, content={"message": "사원 계정이 완전히 삭제되었습니다."})
 
 
-@router.post("/leave/update-status")
+@api_router.post("/leave/update-status")
 def update_leave_status(
     request: Request,
     leave_id: int = Form(...),
     status_value: str = Form(...),
     rejection_reason: str = Form(""),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
@@ -1396,17 +1335,14 @@ def update_leave_status(
     return JSONResponse(status_code=200, content={"message": "상태가 변경되었습니다."})
 
 
-@router.post("/leave/update-type")
+@api_router.post("/leave/update-type")
 def update_leave_type(
     request: Request,
     leave_id: int = Form(...),
     is_deductive: bool = Form(...),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
     if not leave:
@@ -1447,12 +1383,8 @@ def update_leave_type(
     return JSONResponse(status_code=200, content={"message": f"유형이 {new_type}로 변경되었습니다."})
 
 
-@router.get("/settings/approval")
-def get_approval_setting(request: Request, db: Session = Depends(get_db)):
-    try:
-        _ = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+@api_router.get("/settings/approval")
+def get_approval_setting(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
     setting = _ensure_system_setting(db)
     return JSONResponse(
         status_code=200,
@@ -1477,18 +1409,15 @@ BRANDING_NAV_SHORT_MAX = 80
 BRANDING_BADGE_MAX = 24
 
 
-@router.post("/settings/branding")
+@api_router.post("/settings/branding")
 def set_branding_setting(
     request: Request,
     product_display_name: str = Form(...),
     product_nav_short: str = Form(""),
     brand_initial: str = Form(""),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     display = (product_display_name or "").strip()
     nav_short = (product_nav_short or "").strip()
@@ -1527,16 +1456,13 @@ def set_branding_setting(
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
 
 
-@router.post("/settings/calendar-scope")
+@api_router.post("/settings/calendar-scope")
 def set_calendar_scope_setting(
     request: Request,
     scope: str = Form(...),  # "none", "team", "company"
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     if scope not in ("none", "team", "company"):
         return JSONResponse(status_code=400, content={"detail": "Invalid scope value"})
@@ -1577,16 +1503,13 @@ def set_calendar_scope_setting(
 
 
 
-@router.post("/settings/approval")
+@api_router.post("/settings/approval")
 def set_approval_setting(
     request: Request,
     is_approval_required: bool = Form(...),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
     setting = _ensure_system_setting(db)
     setting.is_approval_required = is_approval_required
     db.add(
@@ -1602,7 +1525,7 @@ def set_approval_setting(
     return JSONResponse(status_code=200, content={"message": "승인 설정이 변경되었습니다."})
 
 
-@router.post("/settings/time-policy")
+@api_router.post("/settings/time-policy")
 def set_time_policy(
     request: Request,
     time_granularity_minutes: int = Form(...),
@@ -1611,11 +1534,8 @@ def set_time_policy(
     lunch_start_minute: int = Form(-1),
     lunch_end_minute: int = Form(-1),
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
 
     if time_granularity_minutes not in ALLOWED_TIME_GRANULARITIES:
         return JSONResponse(status_code=400, content={"message": "시간 단위는 30/60/120분만 허용됩니다."})
@@ -1666,12 +1586,8 @@ def set_time_policy(
     return JSONResponse(status_code=200, content={"message": "시간 단위/점심시간 정책이 저장되었습니다."})
 
 
-@router.post("/ops/backup")
-def run_backup(request: Request, db: Session = Depends(get_db)):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+@api_router.post("/ops/backup")
+def run_backup(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
 
     backup_path = create_sqlite_backup(DB_PATH, DB_PATH.parent / "backup")
     db.add(
@@ -1687,12 +1603,8 @@ def run_backup(request: Request, db: Session = Depends(get_db)):
     return JSONResponse(status_code=200, content={"message": f"백업이 생성되었습니다: {backup_path.name}"})
 
 
-@router.get("/master", response_class=HTMLResponse)
-def admin_master(request: Request, db: Session = Depends(get_db)):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+@page_router.get("/master", response_class=HTMLResponse)
+def admin_master(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
     setting = _ensure_system_setting(db)
     is_approval_required = bool(setting.is_approval_required) if setting else False
     return _templates(request).TemplateResponse(
@@ -1799,7 +1711,7 @@ def get_audit_target_label(target_info: str) -> str:
     return target
 
 
-@router.get("/audit", response_class=HTMLResponse)
+@page_router.get("/audit", response_class=HTMLResponse)
 def admin_audit_logs(
     request: Request,
     actor_id: str = "",
@@ -1808,11 +1720,8 @@ def admin_audit_logs(
     end_date: str = "",
     page: int = 1,
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
-    try:
-        admin = get_current_admin(request, db)
-    except HTTPException:
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     per_page = 50
     s_date = None
@@ -1885,13 +1794,14 @@ def admin_audit_logs(
     )
 
 
-@router.get("/audit/export")
+@api_router.get("/audit/export")
 def admin_audit_export(
     actor_id: str = "",
     action: str = "",
     start_date: str = "",
     end_date: str = "",
     db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
 ):
     s_date = None
     e_date = None
@@ -1941,6 +1851,7 @@ def admin_audit_export(
 
     out = io.BytesIO()
     wb.save(out)
+    wb.close()
     out.seek(0)
 
     filename = f"audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
