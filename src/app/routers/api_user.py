@@ -48,7 +48,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     return user
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def user_dashboard(request: Request, year: int = None, month: int = None, db: Session = Depends(get_db)):
+def user_dashboard(request: Request, year: int = None, month: int = None, db: Session = Depends(get_db)):
     try:
         user = get_current_user(request, db)
     except HTTPException:
@@ -154,7 +154,7 @@ async def user_dashboard(request: Request, year: int = None, month: int = None, 
     return _templates(request).TemplateResponse(request=request, name="user_dashboard.html", context=ctx)
 
 @router.get("/team-calendar", response_class=HTMLResponse)
-async def user_team_calendar(
+def user_team_calendar(
     request: Request, 
     year: int = None, 
     month: int = None, 
@@ -327,7 +327,7 @@ async def user_team_calendar(
     return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
 
 @router.get("/history", response_class=HTMLResponse)
-async def user_history(request: Request, year: int = None, db: Session = Depends(get_db)):
+def user_history(request: Request, year: int = None, db: Session = Depends(get_db)):
     try:
         user = get_current_user(request, db)
     except HTTPException:
@@ -370,7 +370,7 @@ async def user_history(request: Request, year: int = None, db: Session = Depends
 
 
 @router.post("/leave")
-async def apply_leave(
+def apply_leave(
     request: Request,
     date_str: str = Form(...),
     start_time: str = Form(""),
@@ -578,7 +578,7 @@ def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db:
 
 
 @router.get("/approvals", response_class=HTMLResponse)
-async def user_approvals(request: Request, db: Session = Depends(get_db)):
+def user_approvals(request: Request, db: Session = Depends(get_db)):
     try:
         approver = _get_approver(request, db)
     except HTTPException:
@@ -619,7 +619,7 @@ async def user_approvals(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/team-approve/{leave_id}")
-async def team_approve_leave(
+def team_approve_leave(
     request: Request,
     leave_id: int,
     db: Session = Depends(get_db),
@@ -665,7 +665,7 @@ async def team_approve_leave(
 
 
 @router.post("/team-reject/{leave_id}")
-async def team_reject_leave(
+def team_reject_leave(
     request: Request,
     leave_id: int,
     rejection_reason: str = Form(""),
@@ -714,7 +714,7 @@ async def team_reject_leave(
 
 
 @router.post("/change-password")
-async def user_change_password(
+def user_change_password(
     request: Request,
     current_password: str = Form(...),
     new_password: str = Form(...),
