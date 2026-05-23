@@ -1286,6 +1286,9 @@ def hard_delete_user(
     db.query(models.UserYearlyLeaveAllocations).filter(
         models.UserYearlyLeaveAllocations.user_id == target_user_id
     ).delete()
+    db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == target_user_id).update(
+        {models.AuditLogs.actor_id: None}, synchronize_session=False
+    )
     
     user_name = user.user_name
     db.delete(user)

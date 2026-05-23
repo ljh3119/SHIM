@@ -7,6 +7,22 @@
         <div class="pointer-events-none absolute -bottom-16 -left-16 h-24 w-24 rounded-full bg-dense-blue-soft opacity-40 blur-2xl"></div>
 
         <div class="relative z-10 mb-8 text-center">
+            <!-- Brand Icon SVG -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="mx-auto mb-4 h-16 w-16">
+              <defs>
+                <linearGradient id="topBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#eff8ff" />
+                  <stop offset="100%" stop-color="#175cd3" />
+                </linearGradient>
+                <linearGradient id="intersectGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#175cd3" />
+                  <stop offset="100%" stop-color="#067647" />
+                </linearGradient>
+              </defs>
+              <path d="M 96 208 C 61 208 32 179 32 144 C 32 109 61 80 96 80 C 131 80 160 109 160 144 L 160 208 Z" fill="#067647" opacity="0.95"/>
+              <path d="M 160 48 C 195 48 224 77 224 112 C 224 147 195 176 160 176 C 125 176 96 147 96 112 L 96 48 Z" fill="url(#topBlueGrad)" opacity="0.95"/>
+              <path d="M 96 112 C 96 147 125 176 160 176 L 160 144 C 160 109 131 80 96 80 L 96 112 Z" fill="url(#intersectGrad)" opacity="0.9"/>
+            </svg>
             <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-dense-text">환영합니다</h1>
             <p class="text-sm font-semibold text-dense-muted">계정으로 <span class="text-dense-text">{{ product_nav_short | default('SHIM') }}</span>에 로그인하세요.</p>
             {% if brand_nav_show_subtitle %}
