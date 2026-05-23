@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="topBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff8ff" />
+      <stop offset="100%" stop-color="#175cd3" />
+    </linearGradient>
+    
+    <linearGradient id="intersectGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#175cd3" />
+      <stop offset="100%" stop-color="#067647" />
+    </linearGradient>
+  </defs>
+
+  <path d="M 96 208 C 61 208 32 179 32 144 C 32 109 61 80 96 80 C 131 80 160 109 160 144 L 160 208 Z" fill="#067647" opacity="0.95"/>
+
+  <path d="M 160 48 C 195 48 224 77 224 112 C 224 147 195 176 160 176 C 125 176 96 147 96 112 L 96 48 Z" fill="url(#topBlueGrad)" opacity="0.95"/>
+
+  <path d="M 96 112 C 96 147 125 176 160 176 L 160 144 C 160 109 131 80 96 80 L 96 112 Z" fill="url(#intersectGrad)" opacity="0.9"/>
+</svg>

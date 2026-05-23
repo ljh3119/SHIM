@@ -656,6 +656,67 @@ def main():
     db.close()
     print("  -> PASS: Leave application on registered holidays successfully blocked.")
 
+    # --- 시나리오 17: 사원 강제 삭제 시 감사 로그 actor_id NULL 처리 및 정합성 검증 ---
+    print("[CASE 17] User Hard-Delete with Audit Logs Integrity")
+    db = SessionLocal()
+    test_uid = "u_temp_delete"
+    
+    # 1. 이전 잔재가 있다면 청소
+    db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == test_uid).delete()
+    db.query(models.Leaves).filter(models.Leaves.user_id == test_uid).delete()
+    db.query(models.UserYearlyLeaveAllocations).filter(models.UserYearlyLeaveAllocations.user_id == test_uid).delete()
+    db.query(models.Users).filter(models.Users.user_id == test_uid).delete()
+    db.commit()
+    
+    # 2. 신규 사용자 및 연관 데이터 생성
+    db.add(models.Users(
+        user_id=test_uid, user_name="임시사원", role="STAFF",
+        password=auth.get_password_hash("0000"), is_active=True
+    ))
+    db.commit()
+    
+    # 3. 감사 로그 생성 (이 사용자가 actor가 됨)
+    db.add(models.AuditLogs(
+        actor_id=test_uid, action="TEST_ACTION_BY_USER",
+        target_info="Test Target", old_data="old", new_data="new"
+    ))
+    # 4. 연차 할당 및 신청 데이터 생성
+    db.add(models.UserYearlyLeaveAllocations(user_id=test_uid, year=2026, allocated_hours=120))
+    db.add(models.Leaves(
+        user_id=test_uid, date=date(2026, 11, 20), snapshot_slot_label="09:00 - 18:00",
+        snapshot_start_min=540, snapshot_end_min=1080, snapshot_deduction_hours=8.0,
+        status="APPROVED", year=2026
+    ))
+    db.commit()
+    
+    # 생성된 감사 로그 ID 확보
+    audit_row = db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == test_uid).first()
+    assert audit_row is not None
+    audit_id = audit_row.id
+    db.close()
+    
+    # 5. 관리자 권한으로 사원 강제 삭제 API 호출
+    r_delete = admin_client.post("/api/admin/user/hard-delete", data={"target_user_id": test_uid})
+    assert r_delete.status_code == 200
+    
+    # 6. DB 정합성 최종 검증
+    db = SessionLocal()
+    # 사원 레코드 삭제 확인
+    assert db.query(models.Users).filter(models.Users.user_id == test_uid).first() is None
+    # 연차 및 할당 삭제 확인
+    assert db.query(models.Leaves).filter(models.Leaves.user_id == test_uid).all() == []
+    assert db.query(models.UserYearlyLeaveAllocations).filter(models.UserYearlyLeaveAllocations.user_id == test_uid).all() == []
+    # 감사 로그는 남아있되, actor_id만 NULL로 정상 업데이트 되었는지 검증
+    audit_after = db.query(models.AuditLogs).filter(models.AuditLogs.id == audit_id).first()
+    assert audit_after is not None
+    assert audit_after.actor_id is None
+    
+    # 청소
+    db.query(models.AuditLogs).filter(models.AuditLogs.id == audit_id).delete()
+    db.commit()
+    db.close()
+    print("  -> PASS: User hard-delete with audit logs integrity verified successfully.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()

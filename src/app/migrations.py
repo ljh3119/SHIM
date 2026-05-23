@@ -46,6 +46,12 @@ def migrate_v1_5_6(conn):
         conn.execute(text("ALTER TABLE system_settings ADD COLUMN company_calendar_visible BOOLEAN DEFAULT 0 NOT NULL"))
         print("[MIGRATION] Added column 'company_calendar_visible' to 'system_settings' table.")
 
+@migration("v1_5_11_leaves_status_deductive_index")
+def migrate_v1_5_11(conn):
+    # SQLite supports CREATE INDEX IF NOT EXISTS
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_leaves_status_is_deductive ON leaves (status, is_deductive)"))
+    print("[MIGRATION] Created index 'ix_leaves_status_is_deductive' on 'leaves' table.")
+
 def run_all_migrations(engine):
     """Ensure schema_versions table exists and run all pending migrations."""
     with engine.connect() as conn:
