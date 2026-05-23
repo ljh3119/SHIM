@@ -28,6 +28,7 @@ class Leaves(Base):
         Index("ix_leaves_year_date", "year", "date"),
         Index("ix_leaves_year_user_id", "year", "user_id"),
         Index("ix_leaves_created_at", "created_at"),
+        Index("ix_leaves_status_is_deductive", "status", "is_deductive"),
     )
 
     id = Column(Integer, primary_key=True, index=True)

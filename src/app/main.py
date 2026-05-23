@@ -14,7 +14,7 @@ import holidays
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.5.10")
+app = FastAPI(title="SHIM", version="1.5.12")
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -141,7 +141,7 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.5.10"
+templates.env.globals["app_version"] = "1.5.12"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 app.state.templates = templates

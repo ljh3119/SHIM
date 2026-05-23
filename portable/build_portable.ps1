@@ -18,6 +18,7 @@ pyinstaller `
   --noconfirm `
   --clean `
   --name SHIM_Portable `
+  --icon "src/static/favicon.ico" `
   --paths "." `
   --collect-submodules src.app `
   --collect-submodules holidays `
@@ -39,7 +40,6 @@ pyinstaller `
   portable/shim_portable.py
 
 Write-Host "[4/4] Copy runtime scripts and initial data to dist folder"
-Copy-Item portable\run_portable.bat dist\SHIM_Portable\run_portable.bat -Force
 Copy-Item portable\stop_portable.bat dist\SHIM_Portable\stop_portable.bat -Force
 Copy-Item portable\README_PORTABLE.md dist\SHIM_Portable\README_PORTABLE.md -Force
 if (Test-Path var\data) {
