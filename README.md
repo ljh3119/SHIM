@@ -85,7 +85,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.5.7 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.5.12 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
@@ -95,7 +95,8 @@ docker compose -f infra/docker/docker-compose.yml up -d
 인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
 1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`
 2.  **배포**: 생성된 `dist/SHIM_Portable` 폴더를 대상 PC로 복사합니다.
-3.  **실행**: 해당 폴더 내 `run_portable.bat`을 실행합니다.
+3.  **실행**: 해당 폴더 내 `SHIM_Portable.exe`를 더블 클릭하여 실행합니다.
+    - 안내창을 확인하고 아무 키나 눌러 창을 닫아도 백그라운드에서 서버가 유지되며, 시스템 트레이 아이콘을 통해 관리(브라우저 열기, 서비스 종료)할 수 있습니다.
     - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
 
 ### Step 3. 시스템 최초 접속 및 초기 설정
@@ -131,7 +132,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.5.5` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.5.12` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
