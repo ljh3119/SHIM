@@ -8,9 +8,8 @@
 |:--- |:--- |:--- |
 | **`build_portable.ps1`** | **빌드 스크립트** | Tailwind CSS 빌드, 버전 동기화, PyInstaller 패키징 및 최종 산출물 구성을 수행하는 PowerShell 스크립트입니다. |
 | **`README_PORTABLE.md`** | **배포용 가이드** | 최종 사용자(폐쇄망 운영자)에게 전달되는 문서입니다. 설치, 실행, 백업 방법이 기술되어 있습니다. |
-| **`run_portable.bat`** | **실행 배치 파일** | 사용자가 포트 번호를 지정하여 시스템을 기동할 수 있게 돕는 래퍼 스크립트입니다. |
-| **`stop_portable.bat`** | **종료 배치 파일** | 백그라운드에서 실행 중인 SHIM 프로세스를 안전하게 종료합니다. |
-| **`shim_portable.py`** | **실행 진입점** | PyInstaller가 바이너리를 만들 때 참조하는 Python 진입점입니다. 런타임 경로 환경 변수 설정 로직을 포함합니다. |
+| **`stop_portable.bat`** | **종료 배치 파일** | 백그라운드에서 실행 중인 SHIM 프로세스를 안전하게 종료합니다 (트레이 아이콘 종료 기능의 비상 백업용). |
+| **`shim_portable.py`** | **실행 진입점** | PyInstaller가 바이너리를 만들 때 참조하는 Python 진입점입니다. 런타임 경로 환경 변수 설정, 시스템 트레이 아이콘 스레드 구동, 포트 탐색 로직을 포함합니다. |
 
 ---
 
@@ -24,7 +23,7 @@
 ### 2. 빌드 스크립트 (`build_portable.ps1`) 수정 시 주의사항
 - **의존성**: 빌드 전 `requirements.txt`와 `pyinstaller`가 설치되어 있어야 합니다.
 - **버전 동기화**: 빌드 직전에 `release.ps1`을 호출하여 `main.py`와 `package.json`의 버전이 일치하도록 보장합니다.
-- **자산 복사**: 빌드가 완료된 후 `run_portable.bat` 등 실행에 필요한 부속 파일들을 `dist` 폴더로 자동 복사합니다.
+- **자산 복사**: 빌드가 완료된 후 `stop_portable.bat` 및 `README_PORTABLE.md` 등 실행에 필요한 부속 파일들을 `dist/SHIM_Portable` 폴더로 자동 복사합니다.
 
 ### 3. 포터블 빌드 실행 방법
 *이 작업은 인터넷이 가능하고 개발 환경이 세팅된 Local PC에서 수행합니다.*
