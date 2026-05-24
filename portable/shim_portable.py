@@ -24,6 +24,15 @@ LRESULT = ctypes.c_ssize_t
 kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
 kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
 
+# Mutex & Window Lookup APIs
+kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+kernel32.CreateMutexW.restype = wintypes.HANDLE
+kernel32.GetLastError.argtypes = []
+kernel32.GetLastError.restype = wintypes.DWORD
+user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+user32.FindWindowW.restype = wintypes.HWND
+
+
 user32.RegisterClassW.argtypes = [ctypes.c_void_p]
 user32.RegisterClassW.restype = wintypes.ATOM
 
@@ -81,6 +90,7 @@ user32.DefWindowProcW.restype = LRESULT
 
 WM_USER = 1024
 WM_TRAYICON = WM_USER + 1
+WM_TRIGGER_BALLOON = WM_USER + 2
 WM_DESTROY = 2
 WM_COMMAND = 273
 WM_LBUTTONDBLCLK = 515
@@ -88,6 +98,8 @@ WM_RBUTTONUP = 517
 
 ID_TRAY_OPEN = 1001
 ID_TRAY_EXIT = 1002
+ID_TRAY_TRIGGER_BALLOON = 1003
+
 
 NIM_ADD = 0
 NIM_MODIFY = 1
@@ -135,6 +147,7 @@ class WNDCLASSW(ctypes.Structure):
 _current_port = 8000
 _nid = NOTIFYICONDATAW()
 _hwnd = None
+_uvicorn_proc = None
 
 def open_browser_url():
     global _current_port
@@ -148,6 +161,48 @@ def cleanup_tray_icon(hwnd):
     nid.hWnd = hwnd
     nid.uID = 1
     shell32.Shell_NotifyIconW(NIM_DELETE, ctypes.byref(nid))
+
+def graceful_exit(hwnd):
+    # 1. 종료 알림 팝업 전송 (NIM_MODIFY)
+    nid = NOTIFYICONDATAW()
+    nid.cbSize = ctypes.sizeof(NOTIFYICONDATAW)
+    nid.hWnd = hwnd
+    nid.uID = 1
+    nid.uFlags = NIF_INFO
+    nid.szInfoTitle = "SHIM 종료"
+    nid.szInfo = "SHIM 서버가 안전하게 종료되었습니다."
+    nid.dwInfoFlags = 1 # NIIF_INFO
+    shell32.Shell_NotifyIconW(NIM_MODIFY, ctypes.byref(nid))
+    
+    # 2. 콘솔 안내 및 지연
+    print("\n[알림] 시스템을 안전하게 종료합니다...")
+    time.sleep(1.5)
+    
+    # 3. Uvicorn 자식 프로세스에게 CTRL_BREAK_EVENT 송신
+    global _uvicorn_proc
+    if _uvicorn_proc:
+        try:
+            import signal
+            _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
+            _uvicorn_proc.wait(timeout=2.0)
+        except Exception as e:
+            print(f"[오류] 자식 프로세스 종료 시그널 전송 실패: {e}")
+    
+    # 4. 트레이 자원 반환 및 메시지 루프 종료
+    cleanup_tray_icon(hwnd)
+    user32.PostQuitMessage(0)
+    os._exit(0)
+
+def trigger_duplicate_warning_balloon(hwnd):
+    nid = NOTIFYICONDATAW()
+    nid.cbSize = ctypes.sizeof(NOTIFYICONDATAW)
+    nid.hWnd = hwnd
+    nid.uID = 1
+    nid.uFlags = NIF_INFO
+    nid.szInfoTitle = "SHIM 실행 중"
+    nid.szInfo = "SHIM 연차 관리 시스템이 이미 이 경로에서 백그라운드로 실행 중입니다."
+    nid.dwInfoFlags = 1 # NIIF_INFO
+    shell32.Shell_NotifyIconW(NIM_MODIFY, ctypes.byref(nid))
 
 def wnd_proc(hwnd, msg, wparam, lparam):
     if msg == WM_TRAYICON:
@@ -165,9 +220,7 @@ def wnd_proc(hwnd, msg, wparam, lparam):
             if cmd == ID_TRAY_OPEN:
                 open_browser_url()
             elif cmd == ID_TRAY_EXIT:
-                cleanup_tray_icon(hwnd)
-                user32.PostQuitMessage(0)
-                os._exit(0)
+                graceful_exit(hwnd)
         elif lparam == WM_LBUTTONDBLCLK:
             open_browser_url()
     elif msg == WM_COMMAND:
@@ -175,12 +228,15 @@ def wnd_proc(hwnd, msg, wparam, lparam):
         if cmd_id == ID_TRAY_OPEN:
             open_browser_url()
         elif cmd_id == ID_TRAY_EXIT:
-            cleanup_tray_icon(hwnd)
-            user32.PostQuitMessage(0)
-            os._exit(0)
+            graceful_exit(hwnd)
+        elif cmd_id == ID_TRAY_TRIGGER_BALLOON:
+            trigger_duplicate_warning_balloon(hwnd)
+    elif msg == WM_TRIGGER_BALLOON:
+        trigger_duplicate_warning_balloon(hwnd)
     elif msg == WM_DESTROY:
         user32.PostQuitMessage(0)
     return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+
 
 _wndproc_delegate = WNDPROC(wnd_proc)
 
@@ -294,10 +350,34 @@ def choice_with_timeout(prompt: str, timeout=5.0, default="Y") -> str:
 
 
 def main():
+    # --uvicorn-worker 인자가 없을 때만 전역 뮤텍스를 통한 경로 단위 단일 기동 체크 수행
+    global _shim_mutex
+    if "--uvicorn-worker" not in sys.argv and sys.platform == "win32":
+        try:
+            import hashlib
+            # 현재 실행 중인 파일 경로의 디렉토리 절대경로 해시를 획득해 로컬 Mutex 생성
+            target_path = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve().parent
+            h = hashlib.md5(str(target_path).encode("utf-8")).hexdigest()[:12]
+            mutex_name = f"Global\\SHIM_Portable_Mutex_{h}"
+            
+            _shim_mutex = kernel32.CreateMutexW(None, True, mutex_name)
+            if kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
+                # 기존 구동 중인 트레이 창 윈도우 룩업
+                hwnd_existing = user32.FindWindowW("SHIMTrayClass", None)
+                if hwnd_existing:
+                    # 기존 마스터 트레이 윈도우에 벌룬 알림 메시지 Post (ID_TRAY_TRIGGER_BALLOON = 1003)
+                    user32.PostMessageW(hwnd_existing, 273, 1003, 0)
+                sys.exit(0)
+        except Exception as e:
+            # 폐쇄망 보안 환경 등에 따라 예기치 않게 뮤텍스 생성이 막히는 경우 무중단 가동 유지
+            print(f"[알림] 뮤텍스 중복 체크 우회 (이유: {e})")
+
     parser = argparse.ArgumentParser()
+
     parser.add_argument("--server", action="store_true", help="Start as background server")
     parser.add_argument("--port", type=int, help="Port to run the server on")
     parser.add_argument("--foreground", "-f", action="store_true", help="Run in foreground mode (do not fork)")
+    parser.add_argument("--uvicorn-worker", action="store_true", help="Start actual Uvicorn worker process")
     args = parser.parse_args()
 
     # Ensure runtime base path is set for PyInstaller execution
@@ -308,8 +388,19 @@ def main():
         if not os.getenv("SHIM_RUNTIME_BASE"):
             os.environ["SHIM_RUNTIME_BASE"] = str(runtime_base)
 
+    if args.uvicorn_worker:
+        # Foreground/Background Uvicorn Worker Process
+        port = args.port if args.port else 8000
+        os.environ["SHIM_PORT"] = str(port)
+        try:
+            from src.app.main import app as fastapi_app
+            uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
+        except KeyboardInterrupt:
+            pass
+        sys.exit(0)
+
     if args.server:
-        # Background Server Instance
+        # Background Server Instance (Master process managing tray icon and worker process)
         port = args.port if args.port else 8000
         os.environ["SHIM_PORT"] = str(port)
 
@@ -317,10 +408,30 @@ def main():
         t = threading.Thread(target=run_tray_icon_thread, args=(port,), daemon=True)
         t.start()
 
+        # Spawn uvicorn worker process
+        exe_path = sys.executable
+        if getattr(sys, "frozen", False):
+            cmd = [exe_path, "--uvicorn-worker", "--port", str(port)]
+        else:
+            script_path = str(Path(__file__).resolve())
+            cmd = [sys.executable, script_path, "--uvicorn-worker", "--port", str(port)]
+
+        # CREATE_NEW_PROCESS_GROUP = 0x00000200, CREATE_NO_WINDOW = 0x08000000
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x08000000
+        
+        global _uvicorn_proc
         try:
-            # Import app object directly
-            from src.app.main import app as fastapi_app
-            uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
+            _uvicorn_proc = subprocess.Popen(cmd, creationflags=flags)
+            _uvicorn_proc.wait()
+        except KeyboardInterrupt:
+            # Handle SIGINT to shutdown graceful
+            if _uvicorn_proc:
+                try:
+                    import signal
+                    _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
+                    _uvicorn_proc.wait(timeout=2.0)
+                except Exception:
+                    pass
         finally:
             if _hwnd:
                 cleanup_tray_icon(_hwnd)
@@ -338,8 +449,11 @@ def main():
         print("=" * 60)
         print()
 
-        from src.app.main import app as fastapi_app
-        uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
+        try:
+            from src.app.main import app as fastapi_app
+            uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
+        except KeyboardInterrupt:
+            pass
         sys.exit(0)
 
     # Launcher Instance (Double-clicked or run without arguments)
