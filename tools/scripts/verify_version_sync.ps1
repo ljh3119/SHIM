@@ -21,7 +21,7 @@ function Add-Err([string]$Message) {
 # Code / config (must match release.ps1 targets)
 $mainPath = Join-Path $ProjectRoot "src\app\main.py"
 $main = [System.IO.File]::ReadAllText($mainPath, $utf8)
-$fastapiNeedle = 'FastAPI(title="SHIM", version="' + $ver + '")'
+$fastapiNeedle = 'FastAPI(title="SHIM", version="' + $ver + '"'
 if ($main.IndexOf($fastapiNeedle, [StringComparison]::Ordinal) -lt 0) {
     Add-Err "src/app/main.py: FastAPI version must equal package.json ($ver)."
 }

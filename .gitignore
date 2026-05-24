@@ -41,3 +41,6 @@ Thumbs.db
 
 # Temporary scratch scripts and files
 scratch/
+
+# Agent/CLI workspace data
+.antigravitycli/
