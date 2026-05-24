@@ -25,3 +25,14 @@ build/
 # IDE
 .idea/
 .vscode/
+
+# 개발/테스트 유산 및 임시 스크립트 격리
+requirements-dev.txt
+scratch/
+.antigravitycli/
+tools/scripts/test_*.py
+tools/scripts/repro_*.py
+tools/scripts/run_remaining_tests.py
+tools/scripts/performance_rehearsal.py
+var/data_test*/
+var/data_test_shutdown/
