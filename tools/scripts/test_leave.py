@@ -1,4 +1,11 @@
-import requests
+import sys
+try:
+    import requests
+except ImportError:
+    print("[ERROR] 'requests' package is required to run this integration test.")
+    print("Please install development dependencies using: pip install -r requirements-dev.txt")
+    sys.exit(1)
+
 
 BASE_URL = "http://localhost:8000"
 
@@ -18,7 +25,7 @@ def test_flow():
     print("Applying for leave...")
     # Today is 2026-05-12 (Tuesday)
     leave_date = "2026-05-13" # Wednesday
-    resp = session.post(f"{BASE_URL}/user/leave", data={
+    resp = session.post(f"{BASE_URL}/api/user/leave", data={
         "date_str": leave_date,
         "start_time": "09:00",
         "end_time": "10:00"

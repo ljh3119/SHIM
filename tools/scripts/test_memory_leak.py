@@ -2,9 +2,15 @@ import os
 import sys
 import gc
 import time
-import psutil
 import tracemalloc
 import asyncio
+try:
+    import psutil
+except ImportError:
+    print("[ERROR] 'psutil' package is required to run this memory leak test.")
+    print("Please install development dependencies using: pip install -r requirements-dev.txt")
+    sys.exit(1)
+
 from httpx import AsyncClient
 
 # 프로젝트 루트 경로를 Python path에 추가하여 src 패키지 로드 보장

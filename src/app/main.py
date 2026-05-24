@@ -10,11 +10,21 @@ import os
 import sys
 from pathlib import Path
 import holidays
+from contextlib import asynccontextmanager
 
 from . import models, database, auth
 from .database import engine, get_db
 
-app = FastAPI(title="SHIM", version="1.5.12")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    startup_event()
+    yield
+    
+    # Shutdown
+    database.engine.dispose()
+    print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
+
+app = FastAPI(title="SHIM", version="1.5.12", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -230,68 +240,58 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
         )
 
 
-
-
-
-
-
-
-
-
-
-@app.on_event("startup")
 def startup_event():
     db = database.SessionLocal()
+    try:
+        admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
+        if not admin:
+            hashed_pw = auth.get_password_hash("0000")
+            new_admin = models.Users(
+                user_id="admin",
+                user_name="시스템관리자",
+                password=hashed_pw,
+                is_admin=True,
+                role="ADMIN",
+            )
+            db.add(new_admin)
+            db.commit()
+            admin = new_admin
+        elif not admin.user_name or "?" in admin.user_name:
+            admin.user_name = "시스템관리자"
 
-    admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
-    if not admin:
-        hashed_pw = auth.get_password_hash("0000")
-        new_admin = models.Users(
-            user_id="admin",
-            user_name="\uc2dc\uc2a4\ud15c\uad00\ub9ac\uc790",
-            password=hashed_pw,
-            is_admin=True,
-            role="ADMIN",
-        )
-        db.add(new_admin)
+        if not db.query(models.SystemSettings).first():
+            db.add(
+                models.SystemSettings(
+                    is_approval_required=False,
+                    time_granularity_minutes=60,
+                    work_start_minute=9 * 60,
+                    work_end_minute=18 * 60,
+                    product_display_name=DEFAULT_PRODUCT_DISPLAY_NAME,
+                    product_nav_short="",
+                    brand_initial=DEFAULT_BRAND_INITIAL,
+                    team_calendar_visible=True,
+                    company_calendar_visible=False,
+                )
+            )
+        else:
+            db.execute(
+                text(
+                    """
+                    UPDATE system_settings
+                    SET time_granularity_minutes = COALESCE(time_granularity_minutes, 60),
+                        work_start_minute = COALESCE(work_start_minute, 540),
+                        work_end_minute = COALESCE(work_end_minute, 1080),
+                        team_calendar_visible = COALESCE(team_calendar_visible, 1),
+                        company_calendar_visible = COALESCE(company_calendar_visible, 0)
+                    """
+                )
+            )
+
+        seed_korean_holidays(db=db, actor_id=admin.user_id, start_year=2020, end_year=2050)
         db.commit()
-        admin = new_admin
-    elif not admin.user_name or "?" in admin.user_name:
-        admin.user_name = "\uc2dc\uc2a4\ud15c\uad00\ub9ac\uc790"
+    finally:
+        db.close()
 
-    
-    if not db.query(models.SystemSettings).first():
-        db.add(
-            models.SystemSettings(
-                is_approval_required=False,
-                time_granularity_minutes=60,
-                work_start_minute=9 * 60,
-                work_end_minute=18 * 60,
-                product_display_name=DEFAULT_PRODUCT_DISPLAY_NAME,
-                product_nav_short="",
-                brand_initial=DEFAULT_BRAND_INITIAL,
-                team_calendar_visible=True,
-                company_calendar_visible=False,
-            )
-        )
-    else:
-        db.execute(
-            text(
-                """
-                UPDATE system_settings
-                SET time_granularity_minutes = COALESCE(time_granularity_minutes, 60),
-                    work_start_minute = COALESCE(work_start_minute, 540),
-                    work_end_minute = COALESCE(work_end_minute, 1080),
-                    team_calendar_visible = COALESCE(team_calendar_visible, 1),
-                    company_calendar_visible = COALESCE(company_calendar_visible, 0)
-                """
-            )
-        )
-
-    seed_korean_holidays(db=db, actor_id=admin.user_id, start_year=2020, end_year=2050)
-
-    db.commit()
-    db.close()
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
