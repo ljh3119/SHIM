@@ -371,33 +371,110 @@ def export_admin_leaves_timeline(
         query = query.order_by(sort_col.desc().nulls_last(), models.Leaves.id.desc())
     leaves = query.all()
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "연차 타임라인"
-    ws.append(["신청 시각", "사용자명", "사용자 ID", "회사", "팀", "연차일", "사용 시간대", "차감시간", "상태", "반려 사유"])
+    # 엑셀 다중 시트 작성 (WriteOnlyWorkbook 메모리 최적화 모드)
+    wb = Workbook(write_only=True)
+    
+    # 1. 사원 리스트 추출 (필터 조건에 부합하는 사원들 대상)
+    user_query = db.query(models.Users)
+    if selected_user_id:
+        user_query = user_query.filter(models.Users.user_id == selected_user_id)
+    if selected_company:
+        user_query = user_query.filter(models.Users.company == selected_company)
+    if selected_team:
+        user_query = user_query.filter(models.Users.team == selected_team)
+    
+    users = user_query.order_by(models.Users.company.asc(), models.Users.team.asc(), models.Users.user_name.asc()).all()
+    user_ids = [u.user_id for u in users]
+
+    # N+1 쿼리 방지: 배정량 Bulk 조회
+    allocations = (
+        db.query(models.UserYearlyLeaveAllocations)
+        .filter(
+            models.UserYearlyLeaveAllocations.user_id.in_(user_ids),
+            models.UserYearlyLeaveAllocations.year == current_year
+        )
+        .all()
+    )
+    alloc_map = {a.user_id: a.allocated_hours for a in allocations}
+
+    # N+1 쿼리 방지: 연도 차감 연차(is_deductive=True) 상태별 집계 조회
+    leaves_summary = (
+        db.query(
+            models.Leaves.user_id,
+            models.Leaves.status,
+            func.sum(models.Leaves.snapshot_deduction_hours).label("total_hours")
+        )
+        .filter(
+            models.Leaves.user_id.in_(user_ids),
+            models.Leaves.year == current_year,
+            models.Leaves.is_deductive == True
+        )
+        .group_by(models.Leaves.user_id, models.Leaves.status)
+        .all()
+    )
+
+    leave_hours_map = {uid: {"APPROVED": 0.0, "PENDING": 0.0} for uid in user_ids}
+    for uid, status, total_hours in leaves_summary:
+        if uid in leave_hours_map and status in ("APPROVED", "PENDING"):
+            leave_hours_map[uid][status] = float(total_hours or 0.0)
+
+    # Sheet 1: 연차 현황 요약 작성
+    ws_summary = wb.create_sheet(title="연차 현황 요약")
+    ws_summary.append([
+
+        "사원 ID", "사원명", "회사", "팀", "직급", "역할", "계정 상태",
+        f"{current_year}년 총 배정 시간 (h)", "사용 완료 시간 (h)", "결재 대기 시간 (h)", "잔여 시간 (h)"
+    ])
+
+    for u in users:
+        allocated = alloc_map.get(u.user_id, u.total_leave_hours or 120)
+        approved = leave_hours_map.get(u.user_id, {}).get("APPROVED", 0.0)
+        pending = leave_hours_map.get(u.user_id, {}).get("PENDING", 0.0)
+        remaining = float(allocated) - approved
+        
+        ws_summary.append([
+            u.user_id,
+            u.user_name,
+            u.company or "",
+            u.team or "",
+            u.position or "",
+            u.role or "",
+            "활성" if u.is_active else "비활성",
+            allocated,
+            approved,
+            pending,
+            remaining
+        ])
+
+    # Sheet 2: 상세 신청 내역
+    ws_timeline = wb.create_sheet(title="상세 신청 내역")
+    ws_timeline.append([
+        "신청 시각", "사용자명", "사용자 ID", "회사", "팀", "연차일", 
+        "사용 시간대", "차감 여부", "차감시간 (h)", "상태", "신청 사유", "반려 사유"
+    ])
 
     for leave in leaves:
-        ws.append(
-            [
-                leave.created_at.strftime("%Y-%m-%d %H:%M:%S") if leave.created_at else "",
-                leave.user.user_name if leave.user else "",
-                leave.user.user_id if leave.user else "",
-                (leave.user.company or "") if leave.user else "",
-                leave.user.team if leave.user else "",
-                leave.date.strftime("%Y-%m-%d") if leave.date else "",
-                leave.snapshot_slot_label or "",
-                leave.snapshot_deduction_hours or "",
-                leave.status or "",
-                leave.rejection_reason or "",
-            ]
-        )
+        ws_timeline.append([
+            leave.created_at.strftime("%Y-%m-%d %H:%M:%S") if leave.created_at else "",
+            leave.user.user_name if leave.user else "",
+            leave.user.user_id if leave.user else "",
+            (leave.user.company or "") if leave.user else "",
+            leave.user.team if leave.user else "",
+            leave.date.strftime("%Y-%m-%d") if leave.date else "",
+            leave.snapshot_slot_label or "",
+            "차감" if leave.is_deductive else "비차감",
+            leave.snapshot_deduction_hours or 0.0,
+            leave.status or "",
+            leave.reason or "",
+            leave.rejection_reason or "",
+        ])
 
     output = io.BytesIO()
     wb.save(output)
     wb.close()
     output.seek(0)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"leave_timeline_{current_year}_{stamp}.xlsx"
+    filename = f"leave_summary_{current_year}_{stamp}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
