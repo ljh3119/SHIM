@@ -19,9 +19,9 @@ def reset_admin_password():
         new_hash = auth.get_password_hash("0000")
         admin.password = new_hash
         
-        # 감사 로그 기록 (누가 했는지 알 수 없으므로 시스템으로 기록)
+        # 감사 로그 기록 (누가 했는지 알 수 없으므로 시스템 초기화 목적을 밝혀 'admin' 계정 ID로 기록)
         db.add(models.AuditLogs(
-            actor_id="system",
+            actor_id="admin",
             action="RESET_ADMIN_PASSWORD",
             target_info="Admin:admin",
             old_data="*****",
