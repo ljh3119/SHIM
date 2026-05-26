@@ -348,8 +348,62 @@ def choice_with_timeout(prompt: str, timeout=5.0, default="Y") -> str:
     sys.stdout.flush()
     return default
 
+def reset_admin_password_cmd():
+    try:
+        # Resolve runtime base path
+        if getattr(sys, "frozen", False):
+            runtime_base = Path(sys.executable).resolve().parent / "_internal"
+            if str(runtime_base) not in sys.path:
+                sys.path.insert(0, str(runtime_base))
+        else:
+            project_root = Path(__file__).resolve().parents[1]
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+
+        from src.app import models, auth
+        from src.app.database import SessionLocal
+
+        db = SessionLocal()
+        admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
+        if not admin:
+            print("[오류] 'admin' 계정이 존재하지 않습니다.")
+            sys.exit(1)
+
+        # 비밀번호를 '0000'으로 초기화
+        new_hash = auth.get_password_hash("0000")
+        admin.password = new_hash
+        
+        # 감사 로그 기록 (누가 했는지 알 수 없으므로 시스템 초기화 목적을 밝혀 'admin' 계정 ID로 기록)
+        db.add(models.AuditLogs(
+            actor_id="admin",
+            action="RESET_ADMIN_PASSWORD",
+            target_info="Admin:admin",
+            old_data="*****",
+            new_data="0000 (Emergency Reset)"
+        ))
+        
+        db.commit()
+        db.close()
+        print("[성공] 'admin' 계정의 비밀번호가 '0000'으로 초기화되었습니다.")
+        sys.exit(0)
+    except Exception as e:
+        print(f"[오류] 초기화 중 문제가 발생했습니다: {str(e)}")
+        sys.exit(1)
+
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--server", action="store_true", help="Start as background server")
+    parser.add_argument("--port", type=int, help="Port to run the server on")
+    parser.add_argument("--foreground", "-f", action="store_true", help="Run in foreground mode (do not fork)")
+    parser.add_argument("--uvicorn-worker", action="store_true", help="Start actual Uvicorn worker process")
+    parser.add_argument("--reset-admin", action="store_true", help="Reset admin password to 0000")
+    args = parser.parse_args()
+
+    if args.reset_admin:
+        reset_admin_password_cmd()
+        sys.exit(0)
+
     # --uvicorn-worker 인자가 없을 때만 전역 뮤텍스를 통한 경로 단위 단일 기동 체크 수행
     global _shim_mutex
     if "--uvicorn-worker" not in sys.argv and sys.platform == "win32":
@@ -362,23 +416,15 @@ def main():
             
             _shim_mutex = kernel32.CreateMutexW(None, True, mutex_name)
             if kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
-                # 기존 구동 중인 트레이 창 윈도우 룩업
-                hwnd_existing = user32.FindWindowW("SHIMTrayClass", None)
-                if hwnd_existing:
-                    # 기존 마스터 트레이 윈도우에 벌룬 알림 메시지 Post (ID_TRAY_TRIGGER_BALLOON = 1003)
-                    user32.PostMessageW(hwnd_existing, 273, 1003, 0)
-                sys.exit(0)
+                 # 기존 구동 중인 트레이 창 윈도우 룩업
+                 hwnd_existing = user32.FindWindowW("SHIMTrayClass", None)
+                 if hwnd_existing:
+                     # 기존 마스터 트레이 윈도우에 벌룬 알림 메시지 Post (ID_TRAY_TRIGGER_BALLOON = 1003)
+                     user32.PostMessageW(hwnd_existing, 273, 1003, 0)
+                 sys.exit(0)
         except Exception as e:
             # 폐쇄망 보안 환경 등에 따라 예기치 않게 뮤텍스 생성이 막히는 경우 무중단 가동 유지
             print(f"[알림] 뮤텍스 중복 체크 우회 (이유: {e})")
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--server", action="store_true", help="Start as background server")
-    parser.add_argument("--port", type=int, help="Port to run the server on")
-    parser.add_argument("--foreground", "-f", action="store_true", help="Run in foreground mode (do not fork)")
-    parser.add_argument("--uvicorn-worker", action="store_true", help="Start actual Uvicorn worker process")
-    args = parser.parse_args()
 
     # Ensure runtime base path is set for PyInstaller execution
     if getattr(sys, "frozen", False):
