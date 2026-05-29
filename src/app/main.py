@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.5.12", lifespan=lifespan)
+app = FastAPI(title="SHIM", version="1.5.14", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -151,9 +151,46 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-templates.env.globals["app_version"] = "1.5.12"
+def string_to_hsl_style(text: str, is_team: bool = False) -> str:
+    if not text or text == "—" or not text.strip():
+        return "background-color: var(--dense-surface-soft); color: var(--dense-muted); border: 1px solid var(--dense-line);"
+    
+    # 해싱 전 고유 접두사를 결합하여 회사와 팀의 해시 씨앗 분리
+    prefix = "team:" if is_team else "company:"
+    salted_text = prefix + text
+    
+    h = 0
+    for char in salted_text:
+        h = ord(char) + ((h << 5) - h)
+    
+    if is_team:
+        # 팀: 더 확실히 봐야 하므로 생동감 있고 강렬한 대역 (파랑, 보라, 마젠타, 핑크: 180 ~ 340도)
+        hue = 180 + (abs(h) % 160)
+        s = 75
+        bg_l = 91
+        text_l = 15
+    else:
+        # 회사: 보조적인 정보이므로 은은하고 차분한 대역 (주황, 노랑, 초록, 청록: 20 ~ 180도)
+        hue = 20 + (abs(h) % 160)
+        s = 52
+        bg_l = 95
+        text_l = 32
+
+    # 노란색, 라임색 등 가시성이 취약한 45~95도 구간 보정
+    if 45 <= hue <= 95:
+        if is_team:
+            bg_l = 88
+            text_l = 10
+        else:
+            bg_l = 93
+            text_l = 22
+        
+    return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
+
+templates.env.globals["app_version"] = "1.5.14"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
+templates.env.globals["string_to_hsl_style"] = string_to_hsl_style
 app.state.templates = templates
 
 from .routers import api_user, api_admin

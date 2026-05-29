@@ -115,6 +115,34 @@ def main():
     db = SessionLocal()
     leave_staff = db.query(models.Leaves).filter(models.Leaves.user_id == "u_staff").first()
     assert leave_staff.status == "PENDING", "일반 사원 연차는 승인 대기 상태여야 합니다."
+
+    # 신규 테스트: 본인 연차 취소 로직 및 타인 연차 취소 시도 검증
+    print("  [SUB-CASE] User Leave Cancellation Logic")
+    # 취소용 연차 신청
+    r_for_cancel = staff_client.post("/api/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "09:00", "end_time": "12:00"
+    })
+    assert r_for_cancel.status_code == 200
+    
+    db = SessionLocal()
+    leave_to_cancel = db.query(models.Leaves).filter(models.Leaves.user_id == "u_staff", models.Leaves.snapshot_start_min == 540).first()
+    assert leave_to_cancel is not None
+    leave_to_cancel_id = leave_to_cancel.id
+    db.close()
+    
+    # 1) 타인(PM)이 u_staff의 연차를 취소 시도 -> 403
+    r_cancel_by_other = pm_client.post(f"/api/user/leave/cancel/{leave_to_cancel_id}")
+    assert r_cancel_by_other.status_code == 403
+    
+    # 2) 본인(u_staff)이 본인의 연차를 취소 -> 200
+    r_cancel_by_self = staff_client.post(f"/api/user/leave/cancel/{leave_to_cancel_id}")
+    assert r_cancel_by_self.status_code == 200
+    
+    db = SessionLocal()
+    canceled_leave = db.query(models.Leaves).filter(models.Leaves.id == leave_to_cancel_id).first()
+    assert canceled_leave.status == "CANCELED"
+    db.close()
+    print("  -> PASS: User cancellation logic verified.")
     
     # --- 시나리오 3: 연차 삭제 시 감사 로그 생성 및 Race Condition 방지 (v1.4.0) ---
     print("[CASE 3] Leave Deletion & Audit Log (v1.4.0)")

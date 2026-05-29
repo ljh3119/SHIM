@@ -75,8 +75,20 @@
                         <td class="min-w-0 max-w-0 px-2 py-2 text-sm font-semibold text-dense-muted">
                             <div class="truncate" title="{{ u.user_id }}">{{ u.user_id }}</div>
                         </td>
-                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.company or '-' }}">{{ u.company or '-' }}</td>
-                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-dense-muted" title="{{ u.team or '-' }}">{{ u.team or '-' }}</td>
+                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-center" title="{{ u.company or '-' }}">
+                            {% if u.company and u.company != '-' %}
+                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold" style="{{ string_to_hsl_style(u.company, is_team=False) }}">{{ u.company }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="min-w-0 max-w-0 truncate px-2 py-2 text-xs font-semibold text-center" title="{{ u.team or '-' }}">
+                            {% if u.team and u.team != '-' %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="{{ string_to_hsl_style(u.team, is_team=True) }}">{{ u.team }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
                         <td class="whitespace-nowrap px-2 py-2 text-sm font-semibold text-dense-nav-text">
                             {% if u.role != 'ADMIN' %}
                             <div class="flex items-center gap-1">
