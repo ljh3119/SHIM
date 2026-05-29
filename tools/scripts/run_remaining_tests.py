@@ -853,6 +853,85 @@ def main():
 
     print("  -> PASS: Excel data type and formatting verified successfully.")
 
+    # --- 시나리오 12: 사원 관리 목록 권한별 정렬 및 비활성 사원 최하단 고정 검증 (v1.5.17) ---
+    print("[CASE 12] Admin Users Sorting & Inactive Exclusion (v1.5.17)")
+    
+    # 1. 테스트 유저 생성
+    db = SessionLocal()
+    
+    # 기존 테스트 유저들 충돌 방지를 위해 임시 유저 삭제
+    temp_uids = ["t_admin", "t_pm", "t_lead", "t_staff1", "t_staff2", "t_inactive1", "t_inactive2"]
+    db.query(models.Users).filter(models.Users.user_id.in_(temp_uids)).delete(synchronize_session=False)
+    db.commit()
+    
+    # 테스트 유저 추가
+    test_users = [
+        models.Users(user_id="t_admin", user_name="가_어드민", role="ADMIN", is_active=True, password="hash"),
+        models.Users(user_id="t_pm", user_name="나_피엠", role="PM", is_active=True, password="hash"),
+        models.Users(user_id="t_lead", user_name="다_팀장", role="TEAM_LEAD", is_active=True, password="hash"),
+        models.Users(user_id="t_staff2", user_name="마_사원", role="STAFF", is_active=True, password="hash"),
+        models.Users(user_id="t_staff1", user_name="라_사원", role="STAFF", is_active=True, password="hash"),
+        models.Users(user_id="t_inactive1", user_name="바_비활성_스태프", role="STAFF", is_active=False, password="hash"),
+        models.Users(user_id="t_inactive2", user_name="사_비활성_어드민", role="ADMIN", is_active=False, password="hash"),
+    ]
+    for tu in test_users:
+        db.add(tu)
+    db.commit()
+    
+    # admin user (get_current_admin Depends에 쓰일 관리자 계정) 확보
+    admin_user = db.query(models.Users).filter(models.Users.role == "ADMIN", models.Users.is_active == True).first()
+    db.close()
+    
+    from src.app.routers.api_admin import admin_users
+    from unittest.mock import MagicMock
+    
+    req_admin = MagicMock()
+    req_admin.app.state.templates = app.state.templates
+    
+    # 2. 기본 정렬 검증 (기본 sort_key="role", sort_dir="asc")
+    db = SessionLocal()
+    resp = admin_users(request=req_admin, filter="all", sort_key="role", sort_dir="asc", db=db, admin=admin_user)
+    users_sorted = resp.context["users"]
+    
+    active_sorted = [u.user_id for u in users_sorted if u.is_active and u.user_id in temp_uids]
+    
+    # 활성 유저 순서 검증
+    expected_active = ["t_admin", "t_pm", "t_lead", "t_staff1", "t_staff2"]
+    assert active_sorted == expected_active, f"기본 정렬 활성 사용자 순서 오류: {active_sorted} != {expected_active}"
+    
+    # 비활성 유저는 무조건 리스트의 맨 마지막 그룹이어야 함
+    last_uids = [u.user_id for u in users_sorted[-2:]]
+    assert "t_inactive1" in last_uids and "t_inactive2" in last_uids, f"비활성 사용자가 맨 아래에 오지 않음: {last_uids}"
+    
+    # 3. 역순 정렬 검증 (sort_key="role", sort_dir="desc")
+    resp_desc = admin_users(request=req_admin, filter="all", sort_key="role", sort_dir="desc", db=db, admin=admin_user)
+    users_sorted_desc = resp_desc.context["users"]
+    
+    active_sorted_desc = [u.user_id for u in users_sorted_desc if u.is_active and u.user_id in temp_uids]
+    expected_active_desc = ["t_staff2", "t_staff1", "t_lead", "t_pm", "t_admin"]
+    assert active_sorted_desc == expected_active_desc, f"역순 정렬 활성 사용자 순서 오류: {active_sorted_desc} != {expected_active_desc}"
+    
+    # 역순일 때도 비활성 사원은 여전히 맨 뒤에 있어야 함
+    last_uids_desc = [u.user_id for u in users_sorted_desc[-2:]]
+    assert "t_inactive1" in last_uids_desc and "t_inactive2" in last_uids_desc, f"역순 정렬 시 비활성 사용자가 맨 아래에 오지 않음: {last_uids_desc}"
+    
+    # 4. 다른 정렬 키 검증 시 비활성 최하단 고정 검증 (예: sort_key="user_name", sort_dir="asc")
+    resp_name = admin_users(request=req_admin, filter="all", sort_key="user_name", sort_dir="asc", db=db, admin=admin_user)
+    users_sorted_name = resp_name.context["users"]
+    
+    active_sorted_name = [u.user_id for u in users_sorted_name if u.is_active and u.user_id in temp_uids]
+    expected_active_name = ["t_admin", "t_pm", "t_lead", "t_staff1", "t_staff2"]
+    assert active_sorted_name == expected_active_name, f"이름 정렬 활성 사용자 순서 오류: {active_sorted_name} != {expected_active_name}"
+    
+    last_uids_name = [u.user_id for u in users_sorted_name[-2:]]
+    assert "t_inactive1" in last_uids_name and "t_inactive2" in last_uids_name, f"이름 정렬 시 비활성 사용자가 맨 아래에 오지 않음: {last_uids_name}"
+    
+    # 5. 테스트 유저 정리
+    db.query(models.Users).filter(models.Users.user_id.in_(temp_uids)).delete(synchronize_session=False)
+    db.commit()
+    db.close()
+    print("  -> PASS: User sorting & inactive isolation logic verified successfully.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()

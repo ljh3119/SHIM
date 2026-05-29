@@ -54,7 +54,9 @@
                         <th scope="col" class="w-[16%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.leave_days }}" class="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1 text-dense-nav-text hover:text-dense-blue">연차일수({{ selected_year }}년){% if sort_key == 'leave_days' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="w-[9%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">권한</th>
+                        <th scope="col" class="w-[9%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.role }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">권한{% if sort_key == 'role' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
                         <th scope="col" class="w-[9%] px-2 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
                         <th scope="col" class="w-[14%] min-w-0 px-2 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
                     </tr>
