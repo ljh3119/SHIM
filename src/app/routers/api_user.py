@@ -487,9 +487,9 @@ def team_approve_leave(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": "승인되었습니다."})
 
 
@@ -532,9 +532,9 @@ def team_reject_leave(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
 
 
@@ -564,9 +564,9 @@ def user_change_password(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
 
@@ -609,8 +609,8 @@ def user_cancel_leave(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": "연차 신청이 취소되었습니다."})
 

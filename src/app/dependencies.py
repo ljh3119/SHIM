@@ -18,6 +18,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.
     
     user_id = payload.get("sub")
     token_version = payload.get("token_version")
+    is_default_pwd = payload.get("is_default_password", False)
+    
     if not user_id:
         raise NotAuthenticatedException()
         
@@ -30,6 +32,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.
     if user.token_version != effective_token_version:
         raise NotAuthenticatedException()
         
+    request.state.is_default_password = is_default_pwd
     return user
 
 def get_current_admin(current_user: models.Users = Depends(get_current_user)) -> models.Users:
