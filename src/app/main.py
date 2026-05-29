@@ -20,7 +20,16 @@ async def lifespan(app: FastAPI):
     startup_event()
     yield
     
-    # Shutdown
+    # Shutdown: 임시 바구니 비우기(체크포인트) 수행 후 커넥션 풀 해제
+    db = database.SessionLocal()
+    try:
+        db.execute(text("PRAGMA wal_checkpoint(TRUNCATE);"))
+        print("[SHIM] Database wal_checkpoint(TRUNCATE) completed successfully on shutdown.")
+    except Exception as e:
+        print(f"[SHIM ERROR] Database wal_checkpoint failed on shutdown: {e}")
+    finally:
+        db.close()
+        
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
@@ -280,6 +289,11 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
 def startup_event():
     db = database.SessionLocal()
     try:
+        try:
+            db.execute(text("PRAGMA wal_checkpoint(TRUNCATE);"))
+        except Exception as e:
+            print(f"[SHIM WARNING] Database wal_checkpoint failed on startup: {e}")
+            
         admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
         if not admin:
             hashed_pw = auth.get_password_hash("0000")
