@@ -319,7 +319,7 @@ def admin_leaves_timeline(
     )
 
 
-@api_router.get("/leave/timeline/export")
+@page_router.get("/leave/timeline/export")
 def export_admin_leaves_timeline(
     request: Request,
     year: int = None,
@@ -1941,7 +1941,7 @@ def admin_audit_logs(
     )
 
 
-@api_router.get("/audit/export")
+@page_router.get("/audit/export")
 def admin_audit_export(
     actor_id: str = "",
     action: str = "",
