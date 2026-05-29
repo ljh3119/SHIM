@@ -18,6 +18,7 @@ from ..services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
     LeaveStatusTransitionError,
     apply_leave_status_transition,
+    get_system_settings,
 )
 from ..services.ops import create_sqlite_backup
 from ..services import admin_service
@@ -1379,7 +1380,11 @@ def hard_delete_user(
         new_data="DELETED"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
     
     return JSONResponse(status_code=200, content={"message": "사원 계정이 완전히 삭제되었습니다."})
 
@@ -1542,7 +1547,12 @@ def set_branding_setting(
             new_data=new_data,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+    get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
 
 
@@ -1587,7 +1597,12 @@ def set_calendar_scope_setting(
             new_data=scope,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+    get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "캘린더 공유 범위 설정이 변경되었습니다."})
 
 
@@ -1611,7 +1626,12 @@ def set_approval_setting(
             new_data=str(is_approval_required),
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+    get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "승인 설정이 변경되었습니다."})
 
 
@@ -1672,7 +1692,12 @@ def set_time_policy(
             new_data=new_data,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+    get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "시간 단위/점심시간 정책이 저장되었습니다."})
 
 
