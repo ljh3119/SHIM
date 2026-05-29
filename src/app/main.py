@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.5.14", lifespan=lifespan)
+app = FastAPI(title="SHIM", version="1.5.15", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -196,7 +196,7 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
         
     return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
 
-templates.env.globals["app_version"] = "1.5.14"
+templates.env.globals["app_version"] = "1.5.15"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 templates.env.globals["string_to_hsl_style"] = string_to_hsl_style
@@ -293,6 +293,15 @@ def startup_event():
             db.execute(text("PRAGMA wal_checkpoint(TRUNCATE);"))
         except Exception as e:
             print(f"[SHIM WARNING] Database wal_checkpoint failed on startup: {e}")
+            
+        try:
+            check_res = db.execute(text("PRAGMA quick_check;")).fetchall()
+            if not check_res or check_res[0][0] != "ok":
+                print(f"[SHIM DATABASE CORRUPT WARNING] 물리적 데이터 정합성 검사 실패: {check_res}")
+                print("[SHIM DATABASE CORRUPT WARNING] 데이터베이스 파일이 비정상 종료 등으로 손상되었을 수 있습니다.")
+                print("[SHIM DATABASE CORRUPT WARNING] 데이터 복구가 필요한 경우, 최근 핫 백업 파일(.bak)로 복구를 시도하십시오.")
+        except Exception as check_err:
+            print(f"[SHIM DATABASE CORRUPT WARNING] 자가 무결성 검사 중 에러 발생: {check_err}")
             
         admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
         if not admin:

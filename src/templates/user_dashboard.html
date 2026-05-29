@@ -168,7 +168,7 @@
                 <div id="direct_time_input_container" class="grid grid-cols-2 gap-2">
                     <div>
                         <label for="direct_start_time" class="block text-sm font-bold text-dense-nav-text">시작 시간</label>
-                        <select id="direct_start_time" name="start_time" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        <select id="direct_start_time" name="start_time" onchange="onTimeSelectionChange()" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                             <option value="">선택</option>
                             {% for t in time_options %}
                             <option value="{{ t }}">{{ t }}</option>
@@ -177,13 +177,18 @@
                     </div>
                     <div>
                         <label for="direct_end_time" class="block text-sm font-bold text-dense-nav-text">종료 시간</label>
-                        <select id="direct_end_time" name="end_time" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        <select id="direct_end_time" name="end_time" onchange="onTimeSelectionChange()" required class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                             <option value="">선택</option>
                             {% for t in time_options %}
                             <option value="{{ t }}">{{ t }}</option>
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+
+                <!-- 실시간 경고 알림 영역 -->
+                <div id="direct_time_error_container" class="hidden text-xs font-bold text-dense-danger mt-1.5 bg-dense-danger-soft border border-dense-danger/20 rounded-xl px-3 py-2">
+                    <span id="direct_time_error_msg"></span>
                 </div>
 
                 <!-- 하루종일 신청 시 노출할 힌트 레이어 -->
@@ -195,7 +200,7 @@
                 </div>
 
                 <div class="flex h-full items-end justify-end md:justify-start">
-                    <button type="button" onclick="submitDirectApply()" class="inline-flex w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95 focus:outline-none md:w-auto md:min-w-[120px]">
+                    <button type="button" id="direct_submit_btn" onclick="submitDirectApply()" class="inline-flex w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95 focus:outline-none md:w-auto md:min-w-[120px]">
                         직접 등록하기
                     </button>
                 </div>
@@ -425,13 +430,18 @@ function toggleReason(prefix) {
     const reasonContainer = document.getElementById(`${prefix}_reason_container`);
     const reasonInput = document.getElementById(`${prefix}_reason`);
     
-    isDeductiveHidden.value = isDeductiveDisplay.checked;
-    if (isDeductiveDisplay.checked) {
+    const isChecked = isDeductiveDisplay.checked;
+    isDeductiveHidden.value = isChecked ? "true" : "false";
+    if (isChecked) {
         reasonContainer.classList.add('hidden');
         reasonInput.required = false;
     } else {
         reasonContainer.classList.remove('hidden');
         reasonInput.required = true;
+    }
+    
+    if (prefix === 'direct') {
+        onTimeSelectionChange();
     }
 }
 
@@ -450,11 +460,28 @@ function evaluateLeaveDraft(startTime, endTime, isDeductive) {
     const lunchStartRaw = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
     const lunchEndRaw = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
     let excludedLunch = 0;
+    let isFullyInLunch = false;
     if (lunchStartRaw >= 0 && lunchEndRaw > lunchStartRaw) {
         excludedLunch = overlapMinutes(startMin, endMin, lunchStartRaw, lunchEndRaw);
+        if (startMin >= lunchStartRaw && endMin <= lunchEndRaw) {
+            isFullyInLunch = true;
+        }
     }
     const effectiveMinutes = totalMinutes - excludedLunch;
-    if (effectiveMinutes <= 0) return { ok: false, message: '점심시간 제외 후 차감 시간이 0 이하입니다. 시간을 다시 확인해 주세요.' };
+    if (effectiveMinutes <= 0) {
+        if (isFullyInLunch) {
+            const formatMin = (m) => {
+                const hh = Math.floor(m / 60).toString().padStart(2, '0');
+                const mm = (m % 60).toString().padStart(2, '0');
+                return `${hh}:${mm}`;
+            };
+            return {
+                ok: false,
+                message: `선택하신 시간대(${startTime}~${endTime})는 점심시간(${formatMin(lunchStartRaw)}~${formatMin(lunchEndRaw)})에 완전히 포함되어 실제 차감 시간이 발생하지 않습니다.`
+            };
+        }
+        return { ok: false, message: '점심시간 제외 후 차감 시간이 0 이하입니다. 시간을 다시 확인해 주세요.' };
+    }
     
     const deductionHours = effectiveMinutes / 60;
     const typeStr = isDeductive ? '연차' : '공가/출장';
@@ -464,6 +491,53 @@ function evaluateLeaveDraft(startTime, endTime, isDeductive) {
         ok: true,
         confirmMessage: `[${typeStr}] 신청하시겠습니까?${hoursMsg}`,
     };
+}
+
+function onTimeSelectionChange() {
+    const isAllDay = document.getElementById('direct_all_day').checked;
+    if (isAllDay) {
+        clearTimeSelectionError();
+        return;
+    }
+    
+    const startTime = document.getElementById('direct_start_time').value;
+    const endTime = document.getElementById('direct_end_time').value;
+    const isDeductive = document.getElementById('direct_is_deductive').value === 'true';
+    const submitBtn = document.getElementById('direct_submit_btn');
+    
+    if (!startTime || !endTime) {
+        clearTimeSelectionError();
+        return;
+    }
+    
+    const draft = evaluateLeaveDraft(startTime, endTime, isDeductive);
+    if (!draft.ok) {
+        showTimeSelectionError(draft.message);
+        if (submitBtn) submitBtn.disabled = true;
+    } else {
+        clearTimeSelectionError();
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+
+function showTimeSelectionError(msg) {
+    const errContainer = document.getElementById('direct_time_error_container');
+    const errMsgSpan = document.getElementById('direct_time_error_msg');
+    if (errContainer && errMsgSpan) {
+        errMsgSpan.textContent = msg;
+        errContainer.classList.remove('hidden');
+    }
+}
+
+function clearTimeSelectionError() {
+    const errContainer = document.getElementById('direct_time_error_container');
+    const errMsgSpan = document.getElementById('direct_time_error_msg');
+    if (errContainer && errMsgSpan) {
+        errMsgSpan.textContent = '';
+        errContainer.classList.add('hidden');
+    }
+    const submitBtn = document.getElementById('direct_submit_btn');
+    if (submitBtn) submitBtn.disabled = false;
 }
 
 function toggleDirectAllDay() {
@@ -479,12 +553,14 @@ function toggleDirectAllDay() {
         timeHint.classList.add('block');
         startSelect.required = false;
         endSelect.required = false;
+        clearTimeSelectionError();
     } else {
         timeContainer.classList.remove('hidden');
         timeHint.classList.add('hidden');
         timeHint.classList.remove('block');
         startSelect.required = true;
         endSelect.required = true;
+        onTimeSelectionChange();
     }
 }
 
