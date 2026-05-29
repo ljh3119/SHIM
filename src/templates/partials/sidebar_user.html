@@ -25,7 +25,7 @@
     {% if team_calendar_visible or company_calendar_visible %}
     <a href="/user/team-calendar" class="shim-side-link {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
       <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
-      <span class="shim-nav-label min-w-0 truncate font-semibold">팀 캘린더</span>
+      <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}프로젝트 캘린더{% else %}팀 캘린더{% endif %}</span>
     </a>
     {% endif %}
     {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}

@@ -110,10 +110,10 @@
         background: linear-gradient(180deg, #9333ea 0%, #7e22ce 100%);
         border-color: rgba(147,51,234,0.45);
     }
-    .cal-table.cal-year-view.cal-one-line .sticky-col.col-info { width: 8rem; min-width: 8rem; max-width: 8rem; }
-    .cal-table.cal-month-view.cal-one-line .sticky-col.col-info { width: 11%; min-width: 6.75rem; max-width: 11%; }
+    .cal-table.cal-year-view.cal-one-line .sticky-col.col-info { width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem; }
+    .cal-table.cal-month-view.cal-one-line .sticky-col.col-info { width: 7%; min-width: 4rem; max-width: 4.25rem; }
     .cal-table.cal-month-view.cal-one-line thead th.col-meta,
-    .cal-table.cal-month-view.cal-one-line tbody td.col-meta { width: 5%; min-width: 0; max-width: 5%; }
+    .cal-table.cal-month-view.cal-one-line tbody td.col-meta { width: 7.5%; min-width: 5.5rem; max-width: 6.5rem; }
     /* 잔여·월사용: 14일6h 수준만 필요 → 열 축소 후 일자 칸 확대 */
     .cal-table.cal-month-view.cal-one-line thead th.col-stat,
     .cal-table.cal-month-view.cal-one-line tbody td.col-stat {
@@ -126,7 +126,7 @@
     .cal-table.cal-month-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
     .cal-table thead th.col-meta { text-align: center !important; vertical-align: middle; }
     .cal-table tbody td.col-meta { text-align: center !important; }
-    .cal-table .col-meta { max-width: 5rem; min-width: 2.75rem; font-size: 9px; padding: 2px 2px; }
+    .cal-table .col-meta { max-width: 7rem; min-width: 5.5rem; font-size: 9px; padding: 2px 1px; }
     .cal-table .col-meta .meta-txt { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 auto; max-width: 100%; }
     .cal-table thead th.col-meta a.cal-sort-head { justify-content: center; width: 100%; }
     .cal-table thead th { background: #f9fafb; font-size: 10px; font-weight: 600; color: #475467; padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
@@ -312,11 +312,23 @@
                         <!-- 사원 정보 (고정 컬럼, 한 줄) -->
                         <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
                             <div class="info-one-line text-dense-text">
-                                {{ stat.user_name }}<span class="font-normal text-dense-muted">({{ stat.user_id }})</span>{% if not stat.is_active %}<span class="ml-0.5 text-[9px] font-bold text-dense-danger">비활성</span>{% endif %}
+                                {{ stat.user_name }}
                             </div>
                         </td>
-                        <td class="col-meta text-dense-nav-text" title="{{ stat.company or '' }}"><span class="meta-txt">{{ stat.company or '—' }}</span></td>
-                        <td class="col-meta text-dense-nav-text" title="{{ stat.team or '' }}"><span class="meta-txt">{{ stat.team or '—' }}</span></td>
+                        <td class="col-meta text-center" title="{{ stat.company or '' }}">
+                            {% if stat.company %}
+                            <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_hsl_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-meta text-center" title="{{ stat.team or '' }}">
+                            {% if stat.team %}
+                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_hsl_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
                         <!-- 잔여 -->
                         <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
                             <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>

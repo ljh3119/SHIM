@@ -61,6 +61,7 @@
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
                         <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">등록시각</th>
+                        <th class="px-4 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
@@ -102,10 +103,19 @@
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ leave.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-center text-sm">
+                            {% if leave.status == "PENDING" %}
+                            <button type="button" onclick="cancelLeave({{ leave.id }})" class="inline-flex rounded-lg border border-dense-danger bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-danger hover:bg-dense-danger-soft transition-colors shadow-sm focus:outline-none">
+                                취소
+                            </button>
+                            {% else %}
+                            <span class="text-dense-line-strong">—</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">해당 연도 신청 내역이 없습니다.</td>
+                        <td colspan="6" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">해당 연도 신청 내역이 없습니다.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -113,4 +123,22 @@
         </div>
     </div>
 </div>
+
+<script>
+async function cancelLeave(leaveId) {
+    if (!confirm('이 연차 신청을 취소하시겠습니까?')) return;
+    try {
+        const res = await fetch(`/api/user/leave/cancel/${leaveId}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || '연차 신청이 취소되었습니다.');
+            window.location.reload();
+        } else {
+            alert(data.message || data.detail || '오류가 발생했습니다.');
+        }
+    } catch (e) {
+        alert('네트워크 오류가 발생했습니다.');
+    }
+}
+</script>
 {% endblock %}

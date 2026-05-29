@@ -44,7 +44,13 @@
                     {% for pl in pending_leaves %}
                     <tr id="pending-row-{{ pl.id }}" class="transition-colors hover:bg-dense-surface-soft">
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ pl.user.user_name if pl.user else pl.user_id }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.user.team if pl.user else '미지정' }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-xs font-semibold">
+                            {% if pl.user and pl.user.team %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="{{ string_to_hsl_style(pl.user.team, is_team=True) }}">{{ pl.user.team }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">미지정</span>
+                            {% endif %}
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
                             {{ pl.date.strftime('%Y-%m-%d') }} ({{ ['월','화','수','목','금','토','일'][pl.date.weekday()] }})
                             {% if not pl.is_deductive %}
