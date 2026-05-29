@@ -561,7 +561,11 @@ def user_change_password(
         new_data="*****"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
 
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
 

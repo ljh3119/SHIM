@@ -20,11 +20,17 @@ ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
 REJECTION_REASON_MAX_LENGTH = 500
 ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120})
 
+_SYSTEM_SETTINGS_CACHE = None
+
 def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamespace | None:
+    global _SYSTEM_SETTINGS_CACHE
+    if _SYSTEM_SETTINGS_CACHE is not None and not force_reload:
+        return _SYSTEM_SETTINGS_CACHE
+
     setting = db.query(models.SystemSettings).first()
     if not setting:
         return None
-    return SimpleNamespace(
+    _SYSTEM_SETTINGS_CACHE = SimpleNamespace(
         id=setting.id,
         is_approval_required=setting.is_approval_required,
         time_granularity_minutes=setting.time_granularity_minutes,
@@ -38,6 +44,7 @@ def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamesp
         team_calendar_visible=setting.team_calendar_visible,
         company_calendar_visible=setting.company_calendar_visible,
     )
+    return _SYSTEM_SETTINGS_CACHE
 
 
 
