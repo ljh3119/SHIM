@@ -15,9 +15,10 @@ def reset_admin_password():
             print("[오류] 'admin' 계정이 존재하지 않습니다.")
             return
 
-        # 비밀번호를 '0000'으로 초기화
+        # 비밀번호를 '0000'으로 초기화 및 세션 즉시 만료 처리
         new_hash = auth.get_password_hash("0000")
         admin.password = new_hash
+        admin.token_version = (admin.token_version or 0) + 1
         
         # 감사 로그 기록 (누가 했는지 알 수 없으므로 시스템 초기화 목적을 밝혀 'admin' 계정 ID로 기록)
         db.add(models.AuditLogs(

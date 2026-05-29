@@ -157,6 +157,15 @@
             {% include "partials/sidebar_user.html" %}
         {% endif %}
         <main class="relative min-w-0 flex-1 {% if not admin and not request.cookies.get('access_token') %}max-w-none{% endif %}">
+            {% if is_default_password %}
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">⚠️</span>
+                    <span><strong>보안 권고:</strong> 현재 기본 비밀번호(0000)를 사용 중입니다. 안전한 사용을 위해 비밀번호를 변경해 주세요.</span>
+                </div>
+                <button type="button" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}window.shimModal.open('pwdModal', 'current_password', this){% endif %}" class="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-amber-700 transition-colors shadow-sm whitespace-nowrap ml-2">비밀번호 변경</button>
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>
