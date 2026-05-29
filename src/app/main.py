@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.5.15", lifespan=lifespan)
+app = FastAPI(title="SHIM", version="1.5.16", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -196,7 +196,7 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
         
     return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
 
-templates.env.globals["app_version"] = "1.5.15"
+templates.env.globals["app_version"] = "1.5.16"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 templates.env.globals["string_to_hsl_style"] = string_to_hsl_style
@@ -387,7 +387,7 @@ def login(
     
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
-        data={"sub": user.user_id}, expires_delta=access_token_expires
+        data={"sub": user.user_id, "token_version": user.token_version}, expires_delta=access_token_expires
     )
     
     cookie_settings = auth.get_cookie_settings(request)
