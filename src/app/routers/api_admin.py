@@ -960,7 +960,7 @@ def admin_users(
     request: Request,
     filter: str = "all",
     year: int = None,
-    sort_key: str = "user_name",
+    sort_key: str = "role",
     sort_dir: str = "asc",
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
@@ -973,7 +973,7 @@ def admin_users(
         query = query.filter(models.Users.is_active == False)
         
     users = query.all()
-    sort_key_effective = sort_key if sort_key in {"user_name", "user_id", "company", "team", "leave_days"} else "user_name"
+    sort_key_effective = sort_key if sort_key in {"user_name", "user_id", "company", "team", "leave_days", "role"} else "role"
     sort_dir_effective = "desc" if sort_dir == "desc" else "asc"
     now_year = datetime.now().year
     selected_year = year if year else now_year
@@ -991,20 +991,27 @@ def admin_users(
         company_text = (u.company or "").lower()
         team_text = (u.team or "").lower()
         leave_days = user_leave_days_map.get(u.user_id, 0)
+        role_priority = {"ADMIN": 0, "PM": 1, "TEAM_LEAD": 2, "STAFF": 3}
         key_map = {
             "user_name": ((u.user_name or "").lower(), (u.user_id or "").lower()),
             "user_id": ((u.user_id or "").lower(), (u.user_name or "").lower()),
             "company": (company_text, (u.user_name or "").lower(), (u.user_id or "").lower()),
             "team": (team_text, (u.user_name or "").lower(), (u.user_id or "").lower()),
             "leave_days": (leave_days, (u.user_name or "").lower(), (u.user_id or "").lower()),
+            "role": (role_priority.get(u.role, 9), (u.user_name or "").lower(), (u.user_id or "").lower()),
         }
         return key_map[sort_key_effective]
 
-    users_sorted = sorted(users, key=_user_sort_tuple, reverse=(sort_dir_effective == "desc"))
+    active_users = [u for u in users if u.is_active]
+    inactive_users = [u for u in users if not u.is_active]
+
+    active_sorted = sorted(active_users, key=_user_sort_tuple, reverse=(sort_dir_effective == "desc"))
+    inactive_sorted = sorted(inactive_users, key=_user_sort_tuple, reverse=(sort_dir_effective == "desc"))
+    users_sorted = active_sorted + inactive_sorted
 
     base_q = {"filter": filter, "year": str(selected_year)}
     sort_urls = {}
-    for col in ("user_name", "user_id", "company", "team", "leave_days"):
+    for col in ("user_name", "user_id", "company", "team", "leave_days", "role"):
         next_dir = "desc" if (sort_key_effective == col and sort_dir_effective == "asc") else "asc"
         q = {**base_q, "sort_key": col, "sort_dir": next_dir}
         sort_urls[col] = f"/admin/users?{urlencode(q)}"
