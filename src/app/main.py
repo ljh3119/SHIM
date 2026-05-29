@@ -110,6 +110,7 @@ def branding_template_context(request: Request) -> dict:
         "brand_nav_show_subtitle": getattr(request.state, "brand_nav_show_subtitle", False),
         "brand_initial": getattr(request.state, "brand_initial", DEFAULT_BRAND_INITIAL),
         "brand_badge_display": getattr(request.state, "brand_badge_display", DEFAULT_BRAND_INITIAL),
+        "is_default_password": getattr(request.state, "is_default_password", False),
     }
 
 def _resolve_runtime_base() -> Path:
@@ -387,7 +388,12 @@ def login(
     
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
-        data={"sub": user.user_id, "token_version": user.token_version}, expires_delta=access_token_expires
+        data={
+            "sub": user.user_id,
+            "token_version": user.token_version,
+            "is_default_password": password == "0000"
+        },
+        expires_delta=access_token_expires
     )
     
     cookie_settings = auth.get_cookie_settings(request)

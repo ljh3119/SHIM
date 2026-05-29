@@ -848,7 +848,11 @@ def create_holiday(
         new_data=holiday_name
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 등록되었습니다."})
 
@@ -894,7 +898,11 @@ def update_holiday(
         new_data=f"{parsed_date}:{holiday_name}"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 수정되었습니다."})
 
@@ -921,7 +929,11 @@ def delete_holiday(
         new_data="DELETED"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "공휴일이 삭제되었습니다."})
 
@@ -950,7 +962,11 @@ def admin_change_password(
         new_data="*****"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
 
@@ -1061,9 +1077,9 @@ def toggle_user_active(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     
     return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
 
@@ -1092,9 +1108,9 @@ def reset_password(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     
     return JSONResponse(status_code=200, content={"message": "비밀번호가 '0000'으로 초기화되었습니다."})
 
@@ -1125,7 +1141,11 @@ def delete_leave(
     )
     db.add(audit)
     db.delete(leave)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     
     return JSONResponse(status_code=200, content={"message": "연차가 성공적으로 삭제되었습니다."})
 
@@ -1194,9 +1214,9 @@ def update_user(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
 
@@ -1266,9 +1286,9 @@ def create_user(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     
     return JSONResponse(status_code=200, content={"message": f"{user_name} 등록 완료! 초기 비번: 0000"})
 
@@ -1316,7 +1336,11 @@ def update_user_leave_days(
         new_data=f"{target_year}:{new_hours}h({total_leave_days}d)"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(status_code=200, content={"message": "연차일수가 변경되었습니다."})
 
@@ -1373,7 +1397,11 @@ def bulk_update_user_leave_days(
         new_data=f"{new_hours}h({total_leave_days}d)"
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
 
     return JSONResponse(
         status_code=200,
@@ -1421,9 +1449,9 @@ def hard_delete_user(
     db.add(audit)
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     
     return JSONResponse(status_code=200, content={"message": "사원 계정이 완전히 삭제되었습니다."})
 
@@ -1463,9 +1491,9 @@ def update_leave_status(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": "상태가 변경되었습니다."})
 
 
@@ -1513,7 +1541,11 @@ def update_leave_type(
             new_data=f"is_deductive={is_deductive} ({new_type})",
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": f"유형이 {new_type}로 변경되었습니다."})
 
 
@@ -1588,9 +1620,9 @@ def set_branding_setting(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "브랜딩 설정이 저장되었습니다."})
 
@@ -1638,9 +1670,9 @@ def set_calendar_scope_setting(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "캘린더 공유 범위 설정이 변경되었습니다."})
 
@@ -1667,9 +1699,9 @@ def set_approval_setting(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "승인 설정이 변경되었습니다."})
 
@@ -1733,9 +1765,9 @@ def set_time_policy(
     )
     try:
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+        return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     get_system_settings(db, force_reload=True)
     return JSONResponse(status_code=200, content={"message": "시간 단위/점심시간 정책이 저장되었습니다."})
 

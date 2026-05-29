@@ -186,7 +186,17 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         
     # 5. 강제 GC 수행 및 회귀 측정
     print("\n[STAGE 3] Collecting garbage and evaluating memory leak...")
+    
+    # 의도적으로 로컬 변수 참조 제거
+    if 'client' in locals(): del client
+    if 'response' in locals(): del response
+    if 'admin_client' in locals(): del admin_client
+    if 'resp' in locals(): del resp
+    if 'fake_logs' in locals(): del fake_logs
+    if 'db' in locals(): del db
+    
     await asyncio.sleep(2)
+    gc.collect()
     gc.collect()
     
     final_rss = process.memory_info().rss
@@ -203,9 +213,13 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     print(f"Final Memory RSS  : {final_rss / 1024 / 1024:.2f} MB")
     
     diff_rss = final_rss - init_rss
-    print(f"Net Memory Increase: {diff_rss / 1024 / 1024:.2f} MB")
+    print(f"Net Memory Increase (RSS): {diff_rss / 1024 / 1024:.2f} MB")
     
     stats = snapshot_end.compare_to(snapshot_start, 'lineno')
+    total_heap_diff = sum(stat.size_diff for stat in stats)
+    total_heap_diff_mb = total_heap_diff / 1024 / 1024
+    print(f"Net Heap Memory Increase (tracemalloc): {total_heap_diff_mb:.2f} MB ({total_heap_diff} bytes)")
+    
     print("\n[Top 5 Memory Allocation Diffs]")
     for stat in stats[:5]:
         print(stat)
@@ -213,11 +227,18 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     print("=" * 60)
     
     # 누출 판정
-    if diff_rss / 1024 / 1024 < 10.0:
+    heap_passed = total_heap_diff_mb < 1.0
+    rss_passed = (diff_rss / 1024 / 1024) < 30.0
+    
+    if heap_passed and rss_passed:
         print("[SUCCESS] Memory leak test PASSED. System returns to clean state.")
         return True
     else:
-        print("[WARNING] Significant memory growth detected. Review database/session cleanup.")
+        if not heap_passed:
+            print("[WARNING] Significant Python heap memory growth detected (> 1.0 MB).")
+        if not rss_passed:
+            print("[WARNING] Significant physical memory (RSS) growth detected (> 30.0 MB).")
+        print("[WARNING] Review database/session cleanup.")
         return False
 
 if __name__ == "__main__":

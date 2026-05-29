@@ -1,3 +1,15 @@
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+
+def format_db_error_message(exc: Exception) -> str:
+    if isinstance(exc, IntegrityError):
+        return "데이터베이스 정합성 제약 조건 위반이 발생했습니다. (중복 등록 또는 연관 데이터 오류)"
+    elif isinstance(exc, OperationalError):
+        err_msg = str(exc).lower()
+        if "locked" in err_msg or "timeout" in err_msg:
+            return "데이터베이스가 다른 작업으로 인해 일시적으로 잠겨 있습니다. 잠시 후 다시 시도해 주세요."
+        return "데이터베이스 입출력 또는 시스템 설정상의 오류가 발생했습니다."
+    return f"데이터베이스 처리 중 오류가 발생했습니다. (상세: {type(exc).__name__})"
+
 def build_year_options(now_year: int, data_years=None, past_span: int = 5, future_span: int = 10):
     years = [y for y in (data_years or []) if y is not None]
     min_data_year = min(years) if years else now_year
