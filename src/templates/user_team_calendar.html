@@ -146,10 +146,10 @@
     <!-- Header Section -->
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{% if user_role == 'PM' %}프로젝트 캘린더{% else %}{{ team_name or '소속 미지정' }} 캘린더{% endif %}</h2>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{% if user_role == 'PM' or company_calendar_visible %}프로젝트 캘린더{% else %}{{ team_name or '소속 미지정' }} 캘린더{% endif %}</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
-                {% if user_role == 'PM' %}
-                {{ team_cal_year }}년 {{ team_cal_month }}월 프로젝트 연차 현황입니다.
+                {% if user_role == 'PM' or company_calendar_visible %}
+                {{ team_cal_year }}년 {{ team_cal_month }}월 프로젝트의 연차 현황입니다.
                 {% else %}
                 {{ team_cal_year }}년 {{ team_cal_month }}월 {{ team_name or '팀원' }}팀의 연차 현황입니다.
                 {% endif %}
@@ -218,14 +218,14 @@
             <table class="cal-table" style="min-width: 1000px;">
                 <thead>
                     <tr>
-                        <th class="sticky-col text-left !px-3 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
-                            style="width: 7rem; min-width: 7rem;">
+                        <th class="sticky-col text-left !px-2 !py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
+                            style="width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem;">
                             <a href="{{ sort_urls.name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">이름{% if sort_key == 'name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        {% if user_role == 'PM' %}
-                        <th style="width: 5rem; min-width: 5rem;" class="text-center px-1">
+                        <th style="width: 7rem; min-width: 7rem; max-width: 7.5rem;" class="text-center px-1">
                             <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
+                        {% if user_role == 'PM' %}
                         <th style="width: 4.5rem; min-width: 4.5rem;" class="text-center px-1" title="해당 연도 잔여 연차 (8시간=1일)">
                             <a href="{{ sort_urls.remaining }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">잔여{% if sort_key == 'remaining' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
@@ -251,12 +251,19 @@
                     {% for m in team_members %}
                     <tr class="transition-colors hover:bg-dense-surface-soft group">
                         <td
-                            class="sticky-col whitespace-nowrap !px-3 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft">
+                            class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft"
+                            style="width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem;">
                             {{ m.user_name }}
+                        </td>
+                        <td class="text-center px-1" style="width: 7rem; min-width: 7rem; max-width: 7.5rem;">
+                            {% if m.team %}
+                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_hsl_style(m.team, is_team=True) }}">{{ m.team }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
                         </td>
                         {% if user_role == 'PM' %}
                         {% set stats = member_stats.get(m.user_id, {}) %}
-                        <td class="text-[10px] font-bold text-dense-muted truncate px-1">{{ m.team or '-' }}</td>
                         <td class="text-[10px] font-extrabold px-1 {% if stats.get('remaining', 0) <= 0 %}text-dense-danger{% else %}text-dense-blue{% endif %}">
                             {{ stats.get('remaining_label', '-') }}
                         </td>
@@ -314,7 +321,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ team_cal_num_days + (4 if user_role == 'PM' else 1) }}"
+                        <td colspan="{{ team_cal_num_days + (4 if user_role == 'PM' else 2) }}"
                             class="py-16 text-center text-sm font-semibold text-dense-muted bg-dense-surface-soft">
                             표시할 데이터가 없거나 조회 권한이 제한되었습니다.
                         </td>

@@ -564,3 +564,48 @@ def user_change_password(
     db.commit()
 
     return JSONResponse(status_code=200, content={"message": "비밀번호가 성공적으로 변경되었습니다."})
+
+
+@api_router.post("/leave/cancel/{leave_id}")
+def user_cancel_leave(
+    request: Request,
+    leave_id: int,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
+    leave = db.query(models.Leaves).filter(models.Leaves.id == leave_id).first()
+    if not leave:
+        return JSONResponse(status_code=404, content={"message": "신청 건을 찾을 수 없습니다."})
+
+    # 본인 신청 여부 확인
+    if leave.user_id != user.user_id:
+        return JSONResponse(status_code=403, content={"message": "본인의 연차 신청 건만 취소할 수 있습니다."})
+
+    # 결재 대기(PENDING) 상태인지 확인
+    if leave.status != "PENDING":
+        return JSONResponse(status_code=400, content={"message": f"결재 대기 상태인 신청 건만 취소할 수 있습니다. (현재 상태: {leave.status})"})
+
+    try:
+        transition = apply_leave_status_transition(
+            leave=leave,
+            status_value="CANCELED",
+        )
+    except LeaveStatusTransitionError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+
+    db.add(
+        models.AuditLogs(
+            actor_id=user.user_id,
+            action="CANCEL_LEAVE",
+            target_info=f"Leave:{leave_id} ({user.user_name}, {leave.date})",
+            old_data=transition.audit_old_data,
+            new_data=transition.audit_new_data,
+        )
+    )
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "데이터베이스 오류가 발생했습니다."})
+    return JSONResponse(status_code=200, content={"message": "연차 신청이 취소되었습니다."})
+
