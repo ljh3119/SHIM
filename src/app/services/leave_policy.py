@@ -155,11 +155,20 @@ def build_snapshot_from_timerange(
     if total_minutes < granularity_minutes:
         raise LeaveInputValidationError("선택 구간이 설정된 최소 시간 단위보다 짧습니다.")
     excluded_lunch_minutes = 0
+    is_fully_in_lunch = False
     if lunch_start_minute is not None and lunch_end_minute is not None and lunch_end_minute > lunch_start_minute:
         excluded_lunch_minutes = _overlap_minutes(start_min, end_min, lunch_start_minute, lunch_end_minute)
+        if start_min >= lunch_start_minute and end_min <= lunch_end_minute:
+            is_fully_in_lunch = True
 
     effective_minutes = total_minutes - excluded_lunch_minutes
     if effective_minutes <= 0:
+        if is_fully_in_lunch:
+            lunch_start_str = _format_minutes_to_hhmm(lunch_start_minute)
+            lunch_end_str = _format_minutes_to_hhmm(lunch_end_minute)
+            raise LeaveInputValidationError(
+                f"선택하신 시간대({start_time}~{end_time})는 점심시간({lunch_start_str}~{lunch_end_str})에 완전히 포함됩니다. 실제 연차 차감 시간이 발생하지 않으므로 신청할 수 없습니다."
+            )
         raise LeaveInputValidationError("점심시간 제외 후 차감 시간이 0 이하입니다. 시간을 다시 선택해 주세요.")
     deduction_hours = effective_minutes / 60.0
     label = f"{_format_minutes_to_hhmm(start_min)}~{_format_minutes_to_hhmm(end_min)}"

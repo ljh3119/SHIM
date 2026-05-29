@@ -326,6 +326,9 @@
   .mt-1 {
     margin-top: calc(var(--spacing) * 1);
   }
+  .mt-1\.5 {
+    margin-top: calc(var(--spacing) * 1.5);
+  }
   .mt-2 {
     margin-top: calc(var(--spacing) * 2);
   }
@@ -963,6 +966,12 @@
   }
   .border-dense-danger-soft {
     border-color: var(--color-dense-danger-soft);
+  }
+  .border-dense-danger\/20 {
+    border-color: color-mix(in srgb, #d92d20 20%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-dense-danger) 20%, transparent);
+    }
   }
   .border-dense-line {
     border-color: var(--color-dense-line);

@@ -636,6 +636,15 @@ def main():
     assert lunch_leave is not None
     assert lunch_leave.snapshot_deduction_hours == 2.0
     db.close()
+
+    # 3) 점심시간과 완전히 겹치는 신청(예: 12:00~13:00) 시 상세한 에러 안내 및 400 검증
+    r_fully_lunch = staff_client.post("/api/user/leave", data={
+        "date_str": d1.strftime("%Y-%m-%d"), "start_time": "12:00", "end_time": "13:00"
+    })
+    assert r_fully_lunch.status_code == 400
+    assert "점심시간" in r_fully_lunch.json()["message"]
+    assert "완전히 포함" in r_fully_lunch.json()["message"]
+
     print("  -> PASS: Granularity boundaries and lunch exclusion verified.")
 
     # --- 시나리오 15: 퇴사자(비활성 사원) 로그인 원천 차단 검증 ---
