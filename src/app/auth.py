@@ -91,3 +91,14 @@ def get_current_user_from_token(request: Request):
         return user_id
     except JWTError:
         return None
+
+def get_payload_from_token(request: Request) -> Optional[dict]:
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        token = token.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None

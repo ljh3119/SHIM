@@ -16,6 +16,7 @@ class Users(Base):
     is_admin = Column(Boolean, default=False)  # 레거시 호환 — 새 코드는 role 기반
     role = Column(String, default="STAFF", nullable=False)  # STAFF | TEAM_LEAD | PM | ADMIN
     position = Column(String(60), nullable=True)  # 표시용 직급명 (자유 입력)
+    token_version = Column(Integer, default=0, nullable=False)
 
     leaves = relationship("Leaves", back_populates="user")
     audits = relationship("AuditLogs", back_populates="actor")
