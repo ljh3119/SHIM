@@ -49,6 +49,11 @@ class Leaves(Base):
 
 class AuditLogs(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_logs_actor_id", "actor_id"),
+        Index("ix_audit_logs_timestamp", "timestamp"),
+        Index("ix_audit_logs_action", "action"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     actor_id = Column(String, ForeignKey("users.user_id"))
