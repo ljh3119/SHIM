@@ -11,6 +11,7 @@ from sqlalchemy import extract, func
 from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 
 from .. import models, database, auth, utils
 from ..database import get_db, DB_PATH
@@ -441,10 +442,10 @@ def export_admin_leaves_timeline(
             u.position or "",
             u.role or "",
             "활성" if u.is_active else "비활성",
-            allocated,
-            approved,
-            pending,
-            remaining
+            float(allocated),
+            float(approved),
+            float(pending),
+            float(remaining)
         ])
 
     # Sheet 2: 상세 신청 내역
@@ -455,20 +456,47 @@ def export_admin_leaves_timeline(
     ])
 
     for leave in leaves:
-        ws_timeline.append([
-            leave.created_at.strftime("%Y-%m-%d %H:%M:%S") if leave.created_at else "",
-            leave.user.user_name if leave.user else "",
-            leave.user.user_id if leave.user else "",
-            (leave.user.company or "") if leave.user else "",
-            leave.user.team if leave.user else "",
-            leave.date.strftime("%Y-%m-%d") if leave.date else "",
-            leave.snapshot_slot_label or "",
-            "차감" if leave.is_deductive else "비차감",
-            leave.snapshot_deduction_hours or 0.0,
-            leave.status or "",
-            leave.reason or "",
-            leave.rejection_reason or "",
-        ])
+        row = []
+        
+        # 1. 신청 시각 (datetime)
+        if leave.created_at:
+            cell_created = WriteOnlyCell(ws_timeline, value=leave.created_at)
+            cell_created.number_format = 'yyyy-mm-dd hh:mm:ss'
+            row.append(cell_created)
+        else:
+            row.append("")
+            
+        # 2. 사용자명
+        row.append(leave.user.user_name if leave.user else "")
+        # 3. 사용자 ID
+        row.append(leave.user.user_id if leave.user else "")
+        # 4. 회사
+        row.append((leave.user.company or "") if leave.user else "")
+        # 5. 팀
+        row.append((leave.user.team or "") if leave.user else "")
+        
+        # 6. 연차일 (date)
+        if leave.date:
+            cell_date = WriteOnlyCell(ws_timeline, value=leave.date)
+            cell_date.number_format = 'yyyy-mm-dd'
+            row.append(cell_date)
+        else:
+            row.append("")
+            
+        # 7. 사용 시간대
+        row.append(leave.snapshot_slot_label or "")
+        # 8. 차감 여부
+        row.append("차감" if leave.is_deductive else "비차감")
+        # 9. 차감시간 (h) (float)
+        row.append(float(leave.snapshot_deduction_hours or 0.0))
+        # 10. 상태
+        row.append(leave.status or "")
+        # 11. 신청 사유
+        row.append(leave.reason or "")
+        # 12. 반려 사유
+        row.append(leave.rejection_reason or "")
+        
+        ws_timeline.append(row)
 
     output = io.BytesIO()
     wb.save(output)
@@ -913,6 +941,7 @@ def admin_change_password(
         return JSONResponse(status_code=400, content={"message": "새 비밀번호는 최소 4자 이상이어야 합니다."})
 
     admin.password = auth.get_password_hash(new_password)
+    admin.token_version += 1
     audit = models.AuditLogs(
         actor_id=admin.user_id,
         action="CHANGE_ADMIN_PASSWORD",
@@ -1012,6 +1041,7 @@ def toggle_user_active(
         
     old_status = user.is_active
     user.is_active = not user.is_active
+    user.token_version += 1
     
     # Audit log
     audit = models.AuditLogs(
@@ -1043,6 +1073,7 @@ def reset_password(
         return JSONResponse(status_code=404, content={"message": "User not found"})
         
     user.password = auth.get_password_hash("0000")
+    user.token_version += 1
     
     audit = models.AuditLogs(
         actor_id=admin.user_id,
@@ -1139,6 +1170,7 @@ def update_user(
     user.role = role_value
     user.position = position.strip() if position else None
     user.is_active = is_active
+    user.token_version += 1
 
     new_data = (
         f"name={user.user_name};company={user.company};team={user.team};"

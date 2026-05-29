@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import os
 from pathlib import Path
 import sys
 import tempfile
 import asyncio
+import io
 
 # 프로젝트 루트를 경로에 추가
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -474,6 +475,12 @@ def main():
     assert audit_admin is not None
     assert audit_admin.old_data == "*****"
     assert audit_admin.new_data == "*****"
+    db = SessionLocal()
+    for uid in ("u_staff", "admin"):
+        usr = db.query(models.Users).filter(models.Users.user_id == uid).first()
+        if usr:
+            usr.token_version = 0
+    db.commit()
     db.close()
     
     print("  -> PASS: User & Admin password change verified.")
@@ -753,6 +760,98 @@ def main():
     db.commit()
     db.close()
     print("  -> PASS: User hard-delete with audit logs integrity verified successfully.")
+
+    # --- 시나리오 10: 사원 권한/상태 변경 시 세션 강제 만료 검증 ---
+    print("[CASE 10] Session Invalidation on Role/Status Change")
+    
+    db = SessionLocal()
+    staff_db_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    assert staff_db_user is not None
+    staff_db_user.token_version = 0
+    staff_db_user.role = "STAFF"
+    staff_db_user.is_active = True
+    db.commit()
+    db.close()
+    
+    token_v0 = auth.create_access_token({"sub": "u_staff", "token_version": 0})
+    staff_client_v0 = TestClient(app)
+    staff_client_v0.cookies.set("access_token", f"Bearer {token_v0}")
+    
+    r_dash = staff_client_v0.get("/user/dashboard")
+    assert r_dash.status_code == 200
+    
+    r_update = admin_client.post("/api/admin/user/update", data={
+        "target_user_id": "u_staff",
+        "user_name": "일반사원수정",
+        "company": "Team-A",
+        "team": "Team-A",
+        "role": "TEAM_LEAD",
+        "position": "팀장",
+        "is_active": "true"
+    })
+    assert r_update.status_code == 200
+    
+    r_dash_after = staff_client_v0.get("/user/dashboard", follow_redirects=False)
+    assert r_dash_after.status_code in (302, 401)
+    
+    db = SessionLocal()
+    staff_db_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    curr_version = staff_db_user.token_version
+    db.close()
+    
+    token_v_curr = auth.create_access_token({"sub": "u_staff", "token_version": curr_version})
+    staff_client_curr = TestClient(app)
+    staff_client_curr.cookies.set("access_token", f"Bearer {token_v_curr}")
+    
+    r_dash_curr = staff_client_curr.get("/user/dashboard")
+    assert r_dash_curr.status_code == 200
+    
+    r_toggle = admin_client.post("/api/admin/user/toggle", data={"target_user_id": "u_staff"})
+    assert r_toggle.status_code == 200
+    
+    r_dash_curr_after = staff_client_curr.get("/user/dashboard", follow_redirects=False)
+    assert r_dash_curr_after.status_code in (302, 401)
+    
+    db = SessionLocal()
+    staff_db_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
+    staff_db_user.is_active = True
+    staff_db_user.role = "STAFF"
+    staff_db_user.token_version = 0
+    db.commit()
+    db.close()
+    print("  -> PASS: Session Invalidation on Role/Status Change verified.")
+
+    # --- 시나리오 11: 엑셀 타임라인 파일 타입 포맷팅 정밀화 검증 ---
+    print("[CASE 11] Excel Export Data Type Formatting Refinement")
+    
+    r_export = admin_client.get(f"/api/admin/leave/timeline/export?year={d1.year}")
+    assert r_export.status_code == 200
+    assert r_export.headers.get("content-type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    
+    from openpyxl import load_workbook
+    
+    wb = load_workbook(io.BytesIO(r_export.content))
+    
+    ws_sum = wb["연차 현황 요약"]
+    assert isinstance(ws_sum.cell(row=2, column=8).value, (int, float))
+    assert isinstance(ws_sum.cell(row=2, column=9).value, (int, float))
+    assert isinstance(ws_sum.cell(row=2, column=10).value, (int, float))
+    assert isinstance(ws_sum.cell(row=2, column=11).value, (int, float))
+    
+    ws_time = wb["상세 신청 내역"]
+    if ws_time.max_row > 1:
+        created_val = ws_time.cell(row=2, column=1).value
+        date_val = ws_time.cell(row=2, column=6).value
+        deduct_val = ws_time.cell(row=2, column=9).value
+        
+        assert isinstance(created_val, (datetime, date))
+        assert isinstance(date_val, (datetime, date))
+        assert isinstance(deduct_val, (int, float))
+        
+        assert ws_time.cell(row=2, column=1).number_format == 'yyyy-mm-dd hh:mm:ss'
+        assert ws_time.cell(row=2, column=6).number_format == 'yyyy-mm-dd'
+
+    print("  -> PASS: Excel data type and formatting verified successfully.")
 
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()

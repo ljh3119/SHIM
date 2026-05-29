@@ -553,6 +553,7 @@ def user_change_password(
         return JSONResponse(status_code=400, content={"message": "새 비밀번호는 최소 4자 이상이어야 합니다."})
 
     user.password = auth.get_password_hash(new_password)
+    user.token_version += 1
     audit = models.AuditLogs(
         actor_id=user.user_id,
         action="CHANGE_PASSWORD",

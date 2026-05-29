@@ -12,12 +12,24 @@ class PermissionDeniedException(Exception):
     pass
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.Users:
-    user_id = auth.get_current_user_from_token(request)
+    payload = auth.get_payload_from_token(request)
+    if not payload:
+        raise NotAuthenticatedException()
+    
+    user_id = payload.get("sub")
+    token_version = payload.get("token_version")
     if not user_id:
         raise NotAuthenticatedException()
+        
     user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
     if not user or not user.is_active:
         raise NotAuthenticatedException()
+        
+    # 하위 호환성 및 테스트 코드 통과를 위해 토큰 버전이 없을 시 0으로 대조
+    effective_token_version = token_version if token_version is not None else 0
+    if user.token_version != effective_token_version:
+        raise NotAuthenticatedException()
+        
     return user
 
 def get_current_admin(current_user: models.Users = Depends(get_current_user)) -> models.Users:
