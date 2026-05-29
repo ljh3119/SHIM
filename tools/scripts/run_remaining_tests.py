@@ -824,7 +824,7 @@ def main():
     # --- 시나리오 11: 엑셀 타임라인 파일 타입 포맷팅 정밀화 검증 ---
     print("[CASE 11] Excel Export Data Type Formatting Refinement")
     
-    r_export = admin_client.get(f"/api/admin/leave/timeline/export?year={d1.year}")
+    r_export = admin_client.get(f"/admin/leave/timeline/export?year={d1.year}")
     assert r_export.status_code == 200
     assert r_export.headers.get("content-type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     
