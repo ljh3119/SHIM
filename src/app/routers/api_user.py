@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date as date_cls
@@ -123,6 +123,7 @@ def user_dashboard(
         pending_team_leaves = (
             db.query(models.Leaves)
             .join(models.Users, models.Leaves.user_id == models.Users.user_id)
+            .options(contains_eager(models.Leaves.user))
             .filter(
                 models.Users.team == user.team,
                 models.Users.company == user.company,
