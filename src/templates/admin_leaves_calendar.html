@@ -174,8 +174,11 @@
                 {% else %}
                 {{ selected_year }}년 {{ selected_month }}월 사원별 일자별 연차 현황
                 {% endif %}
-                <span class="mt-1 block text-xs font-semibold text-dense-muted">위에서 사용자·회사·팀으로 좁힌 뒤, 표 머리글(사원·회사·팀·잔여·{% if is_year_view %}연사용{% else %}월사용{% endif %})을 눌러 오름·내림차순을 바꿀 수 있습니다.</span>
             </p>
+            <div class="mt-2.5 text-xs font-semibold text-dense-muted leading-relaxed space-y-0.5">
+                <p>• 사용자·회사·팀·상태 필터로 조회 범위를 조정할 수 있습니다.</p>
+                <p>• 표 머리글(<span class="text-dense-text font-bold">사원, 회사, 팀, 잔여, {% if is_year_view %}연사용{% else %}월사용{% endif %}</span>)을 클릭하면 해당 열 기준으로 오름차순/내림차순 정렬됩니다.</p>
+            </div>
         </div>
         <div class="mt-4 shrink-0 md:mt-0">
             <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view={% if is_year_view %}year{% else %}month{% endif %}" class="inline-flex items-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터·정렬 초기화</a>
@@ -259,15 +262,23 @@
     <!-- Calendar Grid -->
     <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-4">
         {% if not is_year_view %}
-        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-dense-muted">
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-blue"></span>반일 이하</span>
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-[#f79009]"></span>반일(4h)</span>
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-dense-danger"></span>전일(8h)</span>
-            <span><span class="mr-1 inline-block h-3 w-3 rounded align-middle bg-purple-600"></span>공가/출장 (연차 미소모)</span>
-            <span class="w-full font-semibold text-dense-muted sm:w-auto">해당 셀에 마우스를 올리면 상세내역이 표시됩니다.</span>
+        <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-dense-muted">
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-blue/20 bg-dense-blue shadow-sm"></span>반일 이하</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-amber/35 bg-gradient-to-b from-[#fde68a] to-[#f79009] shadow-sm"></span>반일(4h)</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-danger/45 bg-gradient-to-b from-[#f97066] to-[#d92d20] shadow-sm"></span>전일(8h)</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-purple-600/45 bg-gradient-to-b from-[#9333ea] to-[#7e22ce] shadow-sm"></span>공가/출장 (미차감)</span>
+            <span class="flex items-center gap-1.5 border-l border-dense-line pl-4"><span class="inline-block h-3.5 w-3.5 rounded bg-dense-blue/55 filter grayscale-[35%] shadow-none border-0"></span>대기 중인 연차 (반투명)</span>
+            <span class="w-full font-semibold text-dense-muted/80 sm:w-auto sm:ml-auto">* 각 셀에 마우스를 올리면 상세 정보가 표시되며, 클릭 시 팝업 안내창이 열립니다.</span>
         </div>
         {% else %}
-        <p class="mb-3 text-xs font-semibold text-dense-muted">잔여·연사용·월별 칸은 모두 <strong class="text-dense-text">8시간 = 1일</strong> 기준입니다. 사용이 없는 달·0인 값은 <strong class="text-dense-text">-</strong> 입니다. 표기는 <code class="rounded bg-dense-gray-soft px-1 text-[11px]">9일2h</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">8일</code>·<code class="rounded bg-dense-gray-soft px-1 text-[11px]">4h</code>처럼 생략하며, 마우스를 올리면 읽기 쉬운 전체 문구를 볼 수 있습니다.</p>
+        <div class="mb-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-[11px] font-semibold text-dense-muted leading-relaxed">
+            <strong class="text-dense-text">💡 연간 종합 캘린더 안내</strong>
+            <ul class="mt-1 list-inside list-disc space-y-0.5 text-dense-muted/90">
+                <li>잔여 연차, 연간 누적 사용(연사용), 월별 사용 칸의 수치 기준은 모두 <strong class="text-dense-text">8시간 = 1일</strong>입니다.</li>
+                <li>연차 사용 이력이 없는 월이나 값이 0인 항목은 <strong class="text-dense-text">-</strong>로 표기됩니다.</li>
+                <li>공간 최적화를 위해 표기는 <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">9일2h</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">8일</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">4h</code> 등으로 줄여 표시하며, 마우스 오버 시 전체 상세 문구가 툴팁으로 제공됩니다.</li>
+            </ul>
+        </div>
         {% endif %}
         <div class="overflow-x-auto">
             <table class="cal-table cal-one-line {% if is_year_view %}cal-year-view{% else %}cal-month-view{% endif %}">
