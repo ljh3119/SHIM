@@ -27,6 +27,8 @@ kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
 # Mutex & Window Lookup APIs
 kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
 kernel32.CreateMutexW.restype = wintypes.HANDLE
+kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+kernel32.CloseHandle.restype = wintypes.BOOL
 kernel32.GetLastError.argtypes = []
 kernel32.GetLastError.restype = wintypes.DWORD
 user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
@@ -148,6 +150,17 @@ _current_port = 8000
 _nid = NOTIFYICONDATAW()
 _hwnd = None
 _uvicorn_proc = None
+_shim_mutex = None
+
+
+def release_mutex():
+    global _shim_mutex
+    if _shim_mutex:
+        try:
+            kernel32.CloseHandle(_shim_mutex)
+        except Exception:
+            pass
+        _shim_mutex = None
 
 def open_browser_url():
     global _current_port
@@ -184,7 +197,12 @@ def graceful_exit(hwnd):
         try:
             import signal
             _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
-            _uvicorn_proc.wait(timeout=2.0)
+            try:
+                _uvicorn_proc.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                print("[알림] 자식 프로세스가 응답하지 않아 강제 종료합니다...")
+                _uvicorn_proc.kill()
+                _uvicorn_proc.wait(timeout=1.0)
         except Exception as e:
             print(f"[오류] 자식 프로세스 종료 시그널 전송 실패: {e}")
     
@@ -413,7 +431,7 @@ def main():
             # 현재 실행 중인 파일 경로의 디렉토리 절대경로 해시를 획득해 로컬 Mutex 생성
             target_path = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve().parent
             h = hashlib.md5(str(target_path).encode("utf-8")).hexdigest()[:12]
-            mutex_name = f"Global\\SHIM_Portable_Mutex_{h}"
+            mutex_name = f"Local\\SHIM_Portable_Mutex_{h}"
             
             _shim_mutex = kernel32.CreateMutexW(None, True, mutex_name)
             if kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
@@ -476,7 +494,11 @@ def main():
                 try:
                     import signal
                     _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
-                    _uvicorn_proc.wait(timeout=2.0)
+                    try:
+                        _uvicorn_proc.wait(timeout=3.0)
+                    except subprocess.TimeoutExpired:
+                        _uvicorn_proc.kill()
+                        _uvicorn_proc.wait(timeout=1.0)
                 except Exception:
                     pass
         finally:
@@ -537,6 +559,7 @@ def main():
     # Windows specific flag to start a detached background process with no window
     CREATE_NO_WINDOW = 0x08000000
     try:
+        release_mutex()
         subprocess.Popen(cmd, creationflags=CREATE_NO_WINDOW)
     except Exception as e:
         print(f"[오류] 백그라운드 서버 실행 실패: {e}")

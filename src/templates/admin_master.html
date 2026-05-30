@@ -24,8 +24,12 @@
             </p>
             <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
                 <strong class="text-dense-text">꺼짐</strong>: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br>
-                <strong class="text-dense-text">켜짐</strong>: 신규 신청은 «결재 대기»로 들어가며, 관리자 또는 팀장이 타임라인에서 승인·반려·취소 처리합니다.
+                <strong class="text-dense-text">켜짐</strong>: 신규 신청은 «결재 대기»로 들어갑니다. 관리자나 팀장이 대시보드 또는 타임라인에서 결재 처리합니다.
             </p>
+            <div class="mt-1.5 text-[11px] font-semibold text-dense-amber/90 leading-normal border-l-2 border-[#fedf89] pl-2">
+                * PM(프로젝트 매니저) 본인의 연차 신청은 설정과 관계없이 항상 자동 승인됩니다.<br>
+                * 팀장은 소속 팀원만 결재 가능하며, 본인 신청 건에 대한 자가 승인은 불가능합니다.
+            </div>
             <div class="mt-3 flex flex-wrap gap-2">
                 <button type="button" onclick="toggleApprovalWorkflow()" class="inline-flex items-center justify-center rounded-xl border border-[#fedf89] bg-dense-surface px-3 py-2 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">승인 워크플로우 변경</button>
             </div>
@@ -131,7 +135,10 @@
             <div class="mt-3 flex flex-wrap gap-2">
                 <button type="button" onclick="saveTimePolicy()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">시간 정책 저장</button>
             </div>
-            <p class="mt-2 text-xs font-semibold text-dense-muted">입력 시각은 선택된 단위 경계값만 허용되며, 사용자 신청 화면은 업무시간 범위만 표시됩니다. 단위는 입력 제어용이고 실제 차감시간은 선택 구간에서 점심 제외 후 계산됩니다.</p>
+            <div class="mt-2.5 text-xs font-semibold text-dense-muted leading-relaxed space-y-1">
+                <p>• 입력 시각은 단위 경계만 가능하나, 하루 전체 신청을 위해 <strong>업무 종료 시각은 예외로 허용</strong>됩니다.</p>
+                <p>• 설정 단위보다 짧은 신청이나, 점심시간에 완전히 포함되어 <strong>실제 차감 시간이 0시간</strong>인 신청은 제한됩니다.</p>
+            </div>
         </div>
     </div>
     <!-- 시스템 운영 작업 -->
@@ -167,7 +174,7 @@
                 데이터 보호를 위해 현재 DB를 수동 백업합니다.
             </p>
             <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
-                백업 파일은 <code class="rounded bg-dense-surface px-1 font-mono text-dense-nav-text">data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
+                백업 파일은 <code class="rounded bg-dense-surface px-1 font-mono text-dense-nav-text">var/data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
             </p>
             <div class="mt-3">
                 <button type="button" onclick="runDbBackup()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">DB 백업 생성</button>
@@ -186,27 +193,39 @@
 
     <!-- 운영/상태 통합 안내 -->
     <div class="glass-panel rounded-[18px] border border-dense-line bg-dense-surface-soft p-5">
-        <h4 class="mb-2 text-sm font-extrabold text-dense-text">운영/상태 안내</h4>
-        <div class="space-y-3 text-xs font-semibold leading-relaxed text-dense-nav-text">
-            <p class="text-dense-muted">
-                마스터 관리 화면은 <strong class="text-dense-text">시간 정책 원칙</strong>과 <strong class="text-dense-text">연차 신청 상태 의미</strong>를 함께 안내합니다.
-            </p>
-            <ul class="list-inside list-disc space-y-1.5 text-dense-muted">
-                <li>연차 신청은 시작/종료 시각 기반으로 1건 스냅샷으로 저장됩니다.</li>
-                <li>입력 시각은 정책 단위 경계(30/60/120분)만 허용됩니다.</li>
-                <li>단위는 입력 제어 기준이며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</li>
-                <li>하루 총 사용시간은 대시보드/캘린더에서 자동 합산해 표시합니다.</li>
-            </ul>
-            <div class="pt-1">
-                <p class="font-extrabold text-dense-text">상태값 설명</p>
-                <p class="mt-1 text-dense-muted">
-                    아래 상태값은 각 연차 신청 건의 처리 상태를 뜻합니다. 타임라인에서 상태를 바꾸면 집계(사용시간/잔여시간)에도 반영됩니다.
+        <h4 class="mb-3 text-sm font-extrabold text-dense-text flex items-center gap-1.5">
+            <span>ℹ️ 운영/상태 통합 안내</span>
+        </h4>
+        <div class="space-y-4 text-xs font-semibold leading-relaxed">
+            <!-- 1. 시간 정책 원칙 -->
+            <div>
+                <p class="text-[13px] font-extrabold text-dense-text">⏱️ 시간 정책 원칙</p>
+                <p class="mt-1 text-[11px] font-medium text-dense-muted">
+                    마스터 설정에 따른 연차 신청의 시간 계산 및 제약 조건입니다.
                 </p>
-                <ul class="mt-1 ml-4 list-inside list-disc space-y-1.5 text-dense-nav-text">
-                    <li><strong>결재 대기</strong>: 결재 전 상태입니다. 아직 확정되지 않은 신청입니다.</li>
-                    <li><strong>승인됨</strong>: 결재가 완료되어 연차 사용으로 확정된 상태입니다.</li>
-                    <li><strong>반려</strong>: 승인되지 않은 상태입니다. 사용 시간/잔여 연차 계산에서 제외됩니다.</li>
-                    <li><strong>신청 취소</strong>: 기존 신청을 철회·무효 처리한 상태입니다. 사용 시간/잔여 연차 계산에서 제외됩니다.</li>
+                <ul class="mt-2 pl-4 list-disc space-y-1.5 text-dense-nav-text">
+                    <li>연차 신청은 시작/종료 시각 기반으로 1건의 스냅샷으로 저장됩니다.</li>
+                    <li>입력 시각은 정책 단위 경계(30/60/120분)만 허용됩니다. <span class="text-dense-muted/80">(단, 하루 전체 신청 시 업무 종료 시각은 예외 허용)</span></li>
+                    <li>신청 구간이 정책 단위보다 짧거나 점심시간에 완전히 포함되어 실제 차감 시간이 0시간이면 신청이 제한됩니다.</li>
+                    <li>설정 단위는 입력 제어 기준이며, 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</li>
+                    <li>하루 총 사용시간은 대시보드 및 캘린더에서 자동으로 합산하여 표시합니다.</li>
+                </ul>
+            </div>
+
+            <!-- 구분선 -->
+            <div class="border-t border-dense-line/50 my-3"></div>
+
+            <!-- 2. 상태값 설명 -->
+            <div>
+                <p class="text-[13px] font-extrabold text-dense-text">📋 연차 신청 상태 설명</p>
+                <p class="mt-1 text-[11px] font-medium text-dense-muted">
+                    각 신청 건의 처리 상태를 뜻하며, 상태에 따라 집계(사용/잔여시간) 반영 여부가 결정됩니다.
+                </p>
+                <ul class="mt-2 pl-4 list-disc space-y-1.5 text-dense-nav-text">
+                    <li><strong class="text-dense-amber font-extrabold">결재 대기</strong>: 결재 전 상태입니다. 아직 최종 확정되지 않은 대기 신청입니다.</li>
+                    <li><strong class="text-dense-green font-extrabold">승인됨</strong>: 결재가 완료되어 연차 사용으로 최종 확정되었으며, 사용량에 반영됩니다.</li>
+                    <li><strong class="text-dense-danger font-extrabold">반려</strong>: 승인 거절된 상태입니다. 사용 시간 및 잔여 연차 계산에서 제외됩니다.</li>
+                    <li><strong class="text-dense-muted font-extrabold">신청 취소</strong>: 기존 신청을 철회·무효 처리한 상태입니다. 사용 시간 및 잔여 연차 계산에서 제외됩니다.</li>
                 </ul>
             </div>
         </div>

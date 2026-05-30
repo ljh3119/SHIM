@@ -156,7 +156,7 @@
         <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
             <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 일괄 설정</h3>
-                <form id="bulkLeaveForm" class="space-y-4">
+                <form id="bulkLeaveForm" class="space-y-4" onsubmit="submitBulkLeaveDays(); return false;">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label for="bulk_year" class="block text-sm font-bold text-dense-nav-text">적용 연도</label>
@@ -178,7 +178,7 @@
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                <button type="button" onclick="submitBulkLeaveDays()" class="inline-flex w-full justify-center rounded-xl border border-[#fedf89] bg-dense-amber-soft px-4 py-2 text-base font-bold text-dense-amber hover:bg-[#fffdf6] sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="submit" form="bulkLeaveForm" class="inline-flex w-full justify-center rounded-xl border border-[#fedf89] bg-dense-amber-soft px-4 py-2 text-base font-bold text-dense-amber hover:bg-[#fffdf6] sm:ml-3 sm:w-auto sm:text-sm">
                     일괄 반영
                 </button>
                 <button type="button" onclick="window.shimModal.close('bulkLeaveModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
@@ -197,7 +197,7 @@
         <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:align-middle">
             <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="modal-title">신규 사원 등록</h3>
-                <form id="addUserForm" class="space-y-4">
+                <form id="addUserForm" class="space-y-4" onsubmit="submitAddUser(); return false;">
                     <input type="hidden" name="year" value="{{ selected_year }}">
                     <div>
                         <label for="new_user_id" class="block text-sm font-bold text-dense-nav-text">사용자 ID (필수)</label>
@@ -239,7 +239,7 @@
                 </div>
             </div>
             <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                <button type="button" onclick="submitAddUser()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="submit" form="addUserForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
                     등록하기
                 </button>
                 <button type="button" onclick="window.shimModal.close('addUserModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
@@ -258,7 +258,7 @@
         <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:align-middle">
             <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="modal-title">사원 정보 수정</h3>
-                <form id="editUserForm" class="space-y-4">
+                <form id="editUserForm" class="space-y-4" onsubmit="submitEditUser(); return false;">
                     <input type="hidden" name="target_user_id" id="edit_user_id">
                     <div>
                         <label class="block text-sm font-bold text-dense-muted">사용자 ID</label>
@@ -311,7 +311,7 @@
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                <button type="button" onclick="submitEditUser()" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="submit" form="editUserForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
                     저장하기
                 </button>
                 <button type="button" onclick="window.shimModal.close('editUserModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
