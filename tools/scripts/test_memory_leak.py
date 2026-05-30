@@ -104,7 +104,6 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     
     init_rss = process.memory_info().rss
     print(f"[STAGE 0] Initial Memory RSS: {init_rss / 1024 / 1024:.2f} MB")
-    snapshot_start = tracemalloc.take_snapshot()
     
     start_time = time.time()
     
@@ -116,13 +115,29 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
             print(f"[ERROR] Login failed! Status: {response.status_code}")
             return False
             
+        # [WARM-UP] 워밍업 요청을 수행하여 Jinja2 템플릿 컴파일 및 SQLAlchemy 쿼리 캐시를 미리 생성합니다.
+        print("[STAGE 0] Warming up application caches...")
+        await client.get("/user/dashboard")
+        await client.get("/user/team-calendar")
+        await client.post("/api/user/leave", data={
+            "date_str": "2026-06-01",
+            "start_time": "",
+            "end_time": "",
+            "is_deductive": "true",
+            "reason": "워밍업"
+        })
+        # 워밍업 후 가비지 컬렉션 수행 및 스냅샷 확보
+        gc.collect()
+        snapshot_start = tracemalloc.take_snapshot()
+        print(f"[STAGE 0] Warm-up complete. Baseline heap snapshotted.")
+        
         print(f"\n[STAGE 1] Running {iterations} API request cycles...")
         for i in range(1, iterations + 1):
             # 1) 개인 대시보드 조회
-            await client.get("/")
+            await client.get("/user/dashboard")
             
             # 2) 팀원 캘린더 조회
-            await client.get("/user/team/calendar")
+            await client.get("/user/team-calendar")
             
             # 3) 연차 신청
             day_offset = (i % 20) + 1
@@ -130,8 +145,8 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
             if day_offset in [6, 7, 13, 14, 20, 21]:
                 date_str = "2026-06-01"
                 
-            await client.post("/user/leave", data={
-                "leave_date": date_str,
+            await client.post("/api/user/leave", data={
+                "date_str": date_str,
                 "start_time": "",
                 "end_time": "",
                 "is_deductive": "true",

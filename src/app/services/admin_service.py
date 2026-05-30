@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, date, timedelta
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import Session, contains_eager, joinedload
 from sqlalchemy import extract
 from .. import models
 
@@ -29,9 +29,9 @@ def get_admin_dashboard_stats(db: Session):
     leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date(), models.Leaves.is_deductive == True).all()
     today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
     
-    # Last 7 days timeline
+    # Last 7 days timeline (N+1 최적화를 위해 joinedload(models.Leaves.user) 추가)
     seven_days_ago = today - timedelta(days=7)
-    recent_leaves = db.query(models.Leaves).filter(
+    recent_leaves = db.query(models.Leaves).options(joinedload(models.Leaves.user)).filter(
         models.Leaves.created_at >= seven_days_ago
     ).order_by(models.Leaves.created_at.desc()).all()
     
@@ -91,7 +91,9 @@ def get_audit_logs_query(
     start_date: date | None = None,
     end_date: date | None = None,
 ):
-    query = db.query(models.AuditLogs)
+    # N+1 최적화를 위해 joinedload(models.AuditLogs.actor) 추가
+    # actor_id가 NULL인 감사 로그(하드 삭제된 사원)도 조회할 수 있도록 outerjoin 형태로 동작하는 joinedload가 적합합니다.
+    query = db.query(models.AuditLogs).options(joinedload(models.AuditLogs.actor))
     if actor_id:
         query = query.filter(models.AuditLogs.actor_id == actor_id)
     if action:
