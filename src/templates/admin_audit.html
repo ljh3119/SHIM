@@ -64,7 +64,19 @@
                         <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td class="whitespace-nowrap px-3 py-3">
                             <span class="inline-flex items-center text-xs font-bold text-dense-text">
-                                {{ log.actor.user_name if log.actor else '시스템' }}<span class="font-semibold text-dense-muted">({{ log.actor_id }})</span>
+                                {{ log.actor.user_name if log.actor else (log.actor_name if log.actor_name else '시스템') }}
+                                <span class="font-semibold text-dense-muted">
+                                    {% if log.actor_id %}
+                                        ({{ log.actor_id }})
+                                    {% elif log.actor_name %}
+                                        (삭제됨)
+                                    {% endif %}
+                                </span>
+                                {% if log.actor_department or (log.actor and (log.actor.company or log.actor.team)) %}
+                                <span class="ml-1.5 rounded bg-dense-surface-soft px-1 py-0.5 text-[10px] font-semibold text-dense-muted">
+                                    {{ log.actor_department if log.actor_department else ((log.actor.company or "") + " " + (log.actor.team or "")).strip() }}
+                                </span>
+                                {% endif %}
                             </span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-3">

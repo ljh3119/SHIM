@@ -3,6 +3,8 @@ from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
 import os
+import hashlib
+import base64
 from fastapi import Request, HTTPException, status
 from .database import _resolve_data_dir
 import secrets
@@ -20,16 +22,43 @@ def _resolve_secret_key() -> str:
         secret_file = data_dir / "secret.key"
 
         if secret_file.exists():
-            return secret_file.read_text(encoding="utf-8").strip()
+            content = secret_file.read_text(encoding="utf-8")
+            actual_keys = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
+            if actual_keys:
+                return actual_keys[0]
 
         # Generate a new random secret key (64 characters)
         new_key = secrets.token_urlsafe(48)
-        secret_file.write_text(new_key, encoding="utf-8")
+        secret_file.write_text(f"# AUTO-GENERATED JWT KEY - DO NOT USE FOR DB COLUMN ENCRYPTION\n{new_key}", encoding="utf-8")
         print(f"[AUTH] Generated and saved a new random secret key to {secret_file}")
         return new_key
     except Exception as e:
         print(f"[AUTH] Error resolving or writing secret.key: {e}")
         return "shim_change_this_secret_key_before_operation"
+
+def get_encryption_key() -> bytes | None:
+    env_key = os.getenv("SHIM_SECRET_KEY", "").strip()
+    key_source = None
+    if env_key and env_key != "shim_change_this_secret_key_before_operation":
+        key_source = env_key
+    else:
+        try:
+            data_dir = _resolve_data_dir()
+            secret_file = data_dir / "secret.key"
+            if secret_file.exists():
+                content = secret_file.read_text(encoding="utf-8")
+                if not content.startswith("# AUTO-GENERATED"):
+                    actual_keys = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
+                    if actual_keys:
+                        key_source = actual_keys[0]
+        except Exception as e:
+            print(f"[AUTH] Error reading secret.key for encryption: {e}")
+
+    if not key_source:
+        return None
+
+    hashed = hashlib.sha256(key_source.encode('utf-8')).digest()
+    return base64.urlsafe_b64encode(hashed)
 
 SECRET_KEY = _resolve_secret_key()
 
