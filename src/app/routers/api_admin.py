@@ -5,7 +5,7 @@ import io
 from datetime import datetime, date as date_cls, timedelta
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
+from fastapi import APIRouter, Depends, Request, Form, status, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session, contains_eager
@@ -21,7 +21,7 @@ from ..services.leave_policy import (
     apply_leave_status_transition,
     get_system_settings,
 )
-from ..services.ops import create_sqlite_backup
+from ..services.ops import create_sqlite_backup, run_backup_and_rotate
 from ..services import admin_service
 from .api_user import resolve_user_yearly_allocated_hours
 
@@ -1047,6 +1047,7 @@ def admin_users(
 @api_router.post("/user/toggle")
 def toggle_user_active(
     request: Request,
+    background_tasks: BackgroundTasks,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
@@ -1080,12 +1081,13 @@ def toggle_user_active(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
 
 @api_router.post("/user/reset-password")
 def reset_password(
     request: Request,
+    background_tasks: BackgroundTasks,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
@@ -1111,13 +1113,14 @@ def reset_password(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "비밀번호가 '0000'으로 초기화되었습니다."})
 
 @api_router.post("/leave/delete")
 def delete_leave(
     request: Request,
     leave_id: int = Form(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1146,7 +1149,7 @@ def delete_leave(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "연차가 성공적으로 삭제되었습니다."})
 
 
@@ -1160,6 +1163,7 @@ def update_user(
     role: str = Form("STAFF"),
     position: str = Form(""),
     is_active: bool = Form(True),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1217,7 +1221,7 @@ def update_user(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
 
 
@@ -1232,6 +1236,7 @@ def create_user(
     position: str = Form(""),
     total_leave_days: int = Form(15),
     year: int = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1289,7 +1294,7 @@ def create_user(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": f"{user_name} 등록 완료! 초기 비번: 0000"})
 
 @api_router.post("/user/update-leave-days")
@@ -1298,6 +1303,7 @@ def update_user_leave_days(
     target_user_id: str = Form(...),
     total_leave_days: int = Form(...),
     year: int = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1341,7 +1347,7 @@ def update_user_leave_days(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "연차일수가 변경되었습니다."})
 
 
@@ -1351,6 +1357,7 @@ def bulk_update_user_leave_days(
     total_leave_days: int = Form(...),
     year: int = Form(None),
     filter_scope: str = Form("all"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1402,7 +1409,7 @@ def bulk_update_user_leave_days(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(
         status_code=200,
         content={"message": f"{target_year}년 연차일수를 {updated_count}명에게 일괄 {total_leave_days}일로 반영했습니다."}
@@ -1412,6 +1419,7 @@ def bulk_update_user_leave_days(
 def hard_delete_user(
     request: Request,
     target_user_id: str = Form(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1452,7 +1460,7 @@ def hard_delete_user(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "사원 계정이 완전히 삭제되었습니다."})
 
 
@@ -1462,6 +1470,7 @@ def update_leave_status(
     leave_id: int = Form(...),
     status_value: str = Form(...),
     rejection_reason: str = Form(""),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1494,6 +1503,7 @@ def update_leave_status(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "상태가 변경되었습니다."})
 
 
@@ -1502,6 +1512,7 @@ def update_leave_type(
     request: Request,
     leave_id: int = Form(...),
     is_deductive: bool = Form(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -1546,6 +1557,7 @@ def update_leave_type(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
+    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": f"유형이 {new_type}로 변경되었습니다."})
 
 
@@ -2014,19 +2026,26 @@ def admin_audit_export(
     wb = Workbook()
     ws = wb.active
     ws.title = "Audit Logs"
-    headers = ["시각", "수행자(ID)", "수행자(이름)", "액션(코드)", "액션(내용)", "대상 정보", "이전 데이터", "이후 데이터"]
+    headers = ["시각", "수행자(ID)", "수행자(이름)", "수행자 소속", "액션(코드)", "액션(내용)", "대상 정보", "이전 데이터", "이후 데이터"]
     ws.append(headers)
 
     for log in logs:
-        actor_name = log.actor.user_name if log.actor else "System"
+        actor_name = log.actor.user_name if log.actor else (log.actor_name if log.actor_name else "System")
+        if log.actor_department:
+            actor_dept = log.actor_department
+        elif log.actor:
+            actor_dept = f"{log.actor.company or ''} {log.actor.team or ''}".strip()
+        else:
+            actor_dept = ""
         action_label = get_audit_action_label(log.action)
         target = get_audit_target_label(log.target_info) or (log.target_info or "")
 
         ws.append(
             [
                 log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                log.actor_id,
+                log.actor_id or "",
                 actor_name,
+                actor_dept,
                 log.action,
                 action_label,
                 target,

@@ -1,13 +1,44 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Float, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Float, Index, event, TypeDecorator
+from sqlalchemy.orm import relationship, object_session
 import datetime
 from .database import Base
+from cryptography.fernet import Fernet
+
+class EncryptedString(TypeDecorator):
+    impl = String
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        from .auth import get_encryption_key
+        key = get_encryption_key()
+        if key:
+            try:
+                f = Fernet(key)
+                return f.encrypt(value.encode('utf-8')).decode('utf-8')
+            except Exception:
+                return value
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        from .auth import get_encryption_key
+        key = get_encryption_key()
+        if key:
+            try:
+                f = Fernet(key)
+                return f.decrypt(value.encode('utf-8')).decode('utf-8')
+            except Exception:
+                return value
+        return value
 
 class Users(Base):
     __tablename__ = "users"
 
     user_id = Column(String, primary_key=True, index=True) # Redmine ID
-    user_name = Column(String, nullable=False)
+    user_name = Column(EncryptedString, nullable=False)
     company = Column(String)
     team = Column(String)
     password = Column(String, nullable=False)
@@ -40,9 +71,9 @@ class Leaves(Base):
     snapshot_end_min = Column(Integer, nullable=False)
     snapshot_deduction_hours = Column(Float, nullable=False)
     status = Column(String, default="APPROVED", nullable=False, index=True)
-    rejection_reason = Column(String(500))
+    rejection_reason = Column(EncryptedString(500))
     is_deductive = Column(Boolean, default=True, nullable=False) # 연차 차감 여부 (True: 연차, False: 공가/출장 등)
-    reason = Column(String(500)) # 신청 사유 (특히 비차감 건의 경우 필수 입력 권장)
+    reason = Column(EncryptedString(500)) # 신청 사유 (특히 비차감 건의 경우 필수 입력 권장)
     created_at = Column(DateTime, default=datetime.datetime.now)
     year = Column(Integer, nullable=False)
 
@@ -62,6 +93,8 @@ class AuditLogs(Base):
     target_info = Column(String, nullable=False)
     old_data = Column(String)
     new_data = Column(String)
+    actor_name = Column(String, nullable=True)
+    actor_department = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.now)
 
     actor = relationship("Users", back_populates="audits")
@@ -112,4 +145,23 @@ class SystemSettings(Base):
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
+@event.listens_for(AuditLogs, 'before_insert')
+def receive_before_insert(mapper, connection, target):
+    user = None
+    if hasattr(target, 'actor') and target.actor:
+        user = target.actor
+    elif target.actor_id:
+        session = object_session(target)
+        if session:
+            user = session.query(Users).filter(Users.user_id == target.actor_id).first()
 
+    if user:
+        if not target.actor_name:
+            target.actor_name = user.user_name
+        if not target.actor_department:
+            dept_parts = []
+            if user.company:
+                dept_parts.append(user.company)
+            if user.team:
+                dept_parts.append(user.team)
+            target.actor_department = " ".join(dept_parts) if dept_parts else None
