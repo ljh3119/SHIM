@@ -12,13 +12,22 @@ from pathlib import Path
 import holidays
 from contextlib import asynccontextmanager
 
+import asyncio
 from . import models, database, auth
-from .database import engine, get_db
+from .database import engine, get_db, DB_PATH
+from .services.ops import verify_and_recover_db, daily_backup_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     startup_event()
+    backup_task = asyncio.create_task(daily_backup_scheduler(DB_PATH))
     yield
+    
+    backup_task.cancel()
+    try:
+        await backup_task
+    except asyncio.CancelledError:
+        pass
     
     # Shutdown: 임시 바구니 비우기(체크포인트) 수행 후 커넥션 풀 해제
     db = database.SessionLocal()
@@ -33,7 +42,7 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.5.19", lifespan=lifespan)
+app = FastAPI(title="SHIM", version="1.6.0", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -46,6 +55,7 @@ VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
 
 
 
+verify_and_recover_db(DB_PATH)
 models.Base.metadata.create_all(bind=engine)
 
 # 자동 스키마 마이그레이션
@@ -197,7 +207,7 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
         
     return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
 
-templates.env.globals["app_version"] = "1.5.19"
+templates.env.globals["app_version"] = "1.6.0"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 templates.env.globals["string_to_hsl_style"] = string_to_hsl_style

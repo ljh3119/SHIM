@@ -526,6 +526,44 @@ def main():
         sys.exit(0)
 
     # Launcher Instance (Double-clicked or run without arguments)
+    try:
+        from src.app.database import _resolve_data_dir
+        data_dir = _resolve_data_dir()
+        data_dir.mkdir(parents=True, exist_ok=True)
+        secret_file = data_dir / "secret.key"
+        if not secret_file.exists():
+            print("=" * 70)
+            print("  [초기 설정] SHIM 시스템 보안 비밀키 (secret.key) 설정")
+            print("=" * 70)
+            print("  이 설정은 사용자 로그인 세션(JWT) 서명 및 DB 내 개인정보 암호화에 사용됩니다.")
+            print("  (다른 기기/소켓 연결 연동 시에도 동일한 키값으로 일치시켜 사용이 가능합니다.)")
+            print("")
+            print("  [선택 안내]")
+            print("  1. 직접 키 입력 (보안 강화 모드):")
+            print("     - 입력한 문자열을 바탕으로 개인정보(이름, 연차사유)가 암호화되어 저장됩니다.")
+            print("     - ⚠️ 중요: 추후 백업/이전 시 DB 파일과 함께 이 'secret.key' 파일도 반드시")
+            print("               새로운 서버의 동일한 위치로 복사해 주어야 정상 구동됩니다.")
+            print("  2. 미입력 후 엔터 (간편 포터블 모드):")
+            print("     - 보안 키가 임의로 자동 생성되며, 데이터베이스는 암호화 없이 저장됩니다.")
+            print("     - 이 경우 'secret.key' 복사 없이 DB 파일 단독 이동만으로도 이관이 가능합니다.")
+            print("-" * 70)
+            user_key = input("  사용할 비밀키 입력 (생략 시 엔터): ").strip()
+            if user_key:
+                secret_file.write_text(user_key, encoding="utf-8")
+                print("")
+                print(f"  [완료] 입력하신 비밀키가 '{secret_file.name}'에 안전하게 저장되었습니다.")
+                print("  ※ 추후 이관/복구 시 DB 파일과 이 secret.key 파일을 세트로 복사해 주세요.")
+            else:
+                import secrets
+                new_key = secrets.token_urlsafe(48)
+                secret_file.write_text(f"# AUTO-GENERATED JWT KEY - DO NOT USE FOR DB COLUMN ENCRYPTION\n{new_key}", encoding="utf-8")
+                print("")
+                print("  [완료] 무작위 비밀키가 자동으로 생성되었습니다. (개인정보 암호화 미적용)")
+            print("=" * 70)
+            print()
+    except Exception as e:
+        print(f"[경고] 초기 비밀키 설정 중 오류 발생: {e}")
+
     print()
     port_input = input("사용할 포트 번호를 입력하세요 [기본값: 8000]: ")
     try:
