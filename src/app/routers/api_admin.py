@@ -200,37 +200,14 @@ def admin_leaves_timeline(
 
     leaves = query.offset((page - 1) * per_page).limit(per_page).all()
 
-    users = (
+    all_users = (
         db.query(models.Users)
         .filter(models.Users.role != "ADMIN")
-        .order_by(models.Users.user_name.asc())
         .all()
     )
-
-    company_rows = (
-        db.query(models.Users.company)
-        .filter(
-            models.Users.role != "ADMIN",
-            models.Users.company != None,
-            models.Users.company != "",
-        )
-        .distinct()
-        .order_by(models.Users.company.asc())
-        .all()
-    )
-    company_options = [r[0] for r in company_rows]
-    team_rows = (
-        db.query(models.Users.team)
-        .filter(
-            models.Users.role != "ADMIN",
-            models.Users.team != None,
-            models.Users.team != "",
-        )
-        .distinct()
-        .order_by(models.Users.team.asc())
-        .all()
-    )
-    team_options = [r[0] for r in team_rows]
+    users = sorted(all_users, key=lambda u: u.user_name.lower())
+    company_options = sorted(list({u.company for u in all_users if u.company}))
+    team_options = sorted(list({u.team for u in all_users if u.team}))
 
     path = request.url.path
     base_q = {"year": str(current_year), "month": str(current_month)}
@@ -349,7 +326,12 @@ def export_admin_leaves_timeline(
         .filter(models.Leaves.year == current_year)
     )
     if month > 0:
-        query = query.filter(extract("month", models.Leaves.date) == month)
+        import calendar as cal_module
+        num_days = cal_module.monthrange(current_year, month)[1]
+        query = query.filter(
+            models.Leaves.date >= date_cls(current_year, month, 1),
+            models.Leaves.date <= date_cls(current_year, month, num_days)
+        )
     if selected_user_id:
         query = query.filter(models.Leaves.user_id == selected_user_id)
     if selected_company:
@@ -528,6 +510,8 @@ def admin_leaves_calendar(
 
     current_year = year if year else datetime.now().year
     current_month = month if month else datetime.now().month
+    if view not in ("month", "month_grid", "year"):
+        view = "month"
     is_year_view = view == "year"
     selected_user_id = user_id.strip()
     selected_company = company.strip()
@@ -541,49 +525,26 @@ def admin_leaves_calendar(
     leave_years = [row[0] for row in leave_year_rows]
     year_options = utils.build_year_options(datetime.now().year, leave_years)
 
-    users_all_q = db.query(models.Users).filter(models.Users.role != "ADMIN")
-    if selected_active_state == "active":
-        users_all_q = users_all_q.filter(models.Users.is_active == True)
-    elif selected_active_state == "inactive":
-        users_all_q = users_all_q.filter(models.Users.is_active == False)
-    users_all = users_all_q.order_by(models.Users.user_name.asc()).all()
-    company_rows = (
-        db.query(models.Users.company)
-        .filter(
-            models.Users.role != "ADMIN",
-            models.Users.company != None,
-            models.Users.company != "",
-        )
-        .distinct()
-        .order_by(models.Users.company.asc())
-        .all()
-    )
-    company_options = [r[0] for r in company_rows]
-    team_rows = (
-        db.query(models.Users.team)
-        .filter(
-            models.Users.role != "ADMIN",
-            models.Users.team != None,
-            models.Users.team != "",
-        )
-        .distinct()
-        .order_by(models.Users.team.asc())
-        .all()
-    )
-    team_options = [r[0] for r in team_rows]
-
-    uq = db.query(models.Users).filter(models.Users.role != "ADMIN")
-    if selected_active_state == "active":
-        uq = uq.filter(models.Users.is_active == True)
-    elif selected_active_state == "inactive":
-        uq = uq.filter(models.Users.is_active == False)
-    if selected_company:
-        uq = uq.filter(models.Users.company == selected_company)
-    if selected_team:
-        uq = uq.filter(models.Users.team == selected_team)
-    if selected_user_id:
-        uq = uq.filter(models.Users.user_id == selected_user_id)
-    users = uq.all()
+    all_users = db.query(models.Users).filter(models.Users.role != "ADMIN").all()
+    
+    company_options = sorted(list({u.company for u in all_users if u.company}))
+    team_options = sorted(list({u.team for u in all_users if u.team}))
+    
+    users_all = [
+        u for u in all_users
+        if selected_active_state == "all"
+        or (selected_active_state == "active" and u.is_active)
+        or (selected_active_state == "inactive" and not u.is_active)
+    ]
+    users_all.sort(key=lambda u: u.user_name.lower())
+    
+    users = [
+        u for u in all_users
+        if (selected_active_state == "all" or (selected_active_state == "active" and u.is_active) or (selected_active_state == "inactive" and not u.is_active))
+        and (not selected_company or u.company == selected_company)
+        and (not selected_team or u.team == selected_team)
+        and (not selected_user_id or u.user_id == selected_user_id)
+    ]
 
     weekday_labels = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -611,12 +572,15 @@ def admin_leaves_calendar(
         for l in year_leaves:
             user_yearly_leaves_map[l.user_id].append(l)
 
+    offset = 0
     if is_year_view:
         for uid, leaves in user_yearly_leaves_map.items():
             for l in leaves:
                 user_month_hours[uid][l.date.month] += float(l.snapshot_deduction_hours or 0)
     else:
         num_days = calendar.monthrange(current_year, current_month)[1]
+        first_weekday_monday0 = calendar.weekday(current_year, current_month, 1)
+        offset = (first_weekday_monday0 + 1) % 7
         days = list(range(1, num_days + 1))
         day_weekday_map = {
             d: weekday_labels[calendar.weekday(current_year, current_month, d)] for d in days
@@ -639,8 +603,8 @@ def admin_leaves_calendar(
                 db.query(models.Leaves)
                 .filter(
                     models.Leaves.user_id.in_(user_ids),
-                    extract("year", models.Leaves.date) == current_year,
-                    extract("month", models.Leaves.date) == current_month,
+                    models.Leaves.date >= month_start,
+                    models.Leaves.date <= month_end,
                 )
                 .all()
             )
@@ -741,7 +705,7 @@ def admin_leaves_calendar(
             )
 
     path = request.url.path
-    view_q = "year" if is_year_view else "month"
+    view_q = view
     base_q = {
         "year": str(current_year),
         "month": str(current_month),
@@ -775,6 +739,8 @@ def admin_leaves_calendar(
             "weekend_days": weekend_days,
             "holiday_day_map": holiday_day_map,
             "is_year_view": is_year_view,
+            "view": view,
+            "offset": offset,
             "selected_year": current_year,
             "selected_month": current_month,
             "selected_user_id": selected_user_id,

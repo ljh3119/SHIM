@@ -117,6 +117,35 @@ def seed_data():
         statuses = ["APPROVED", "PENDING", "REJECTED", "CANCELED"]
         today = date.today()
         
+        # 다양한 연차 종류 정의: (label, start_min, end_min, deduction_hours, default_reason)
+        leave_options = [
+            ("09:00~18:00", 540, 1080, 8.0, "개인 사유 연차"), # 전일
+            ("09:00~13:00", 540, 780, 4.0, "오전 개인 반차"), # 오전 반차
+            ("14:00~18:00", 840, 1080, 4.0, "오후 개인 반차"), # 오후 반차
+            ("09:00~11:00", 540, 660, 2.0, "오전 병원 내원(반반차)"), # 오전 반반차
+            ("16:00~18:00", 960, 1080, 2.0, "조기 퇴근(반반차)"), # 오후 반반차
+            ("14:00~15:00", 840, 900, 1.0, "개인 용무 외출(시간차)"), # 1시간
+        ]
+
+        def get_random_leave_data():
+            opt = random.choice(leave_options)
+            is_deduct = random.random() > 0.20  # 20% 확률로 공가/출장(비차감)
+            if not is_deduct:
+                reason = random.choice(["예비군 훈련 참석", "직무 교육 외부 세미나", "고객사 파견 미팅", "정기 건강 검진"])
+                label = f"[공가] {opt[0]}" if "연차" in opt[4] or "반차" in opt[4] else f"[출장] {opt[0]}"
+            else:
+                reason = opt[4]
+                label = opt[0]
+            
+            return {
+                "label": label,
+                "start": opt[1],
+                "end": opt[2],
+                "hours": opt[3],
+                "is_deductive": is_deduct,
+                "reason": reason
+            }
+
         # Generate some past leaves (mostly approved)
         for u in all_users:
             if u.role == "ADMIN": continue
@@ -127,17 +156,20 @@ def seed_data():
                     if leave_date.weekday() >= 5: continue # Skip weekends
                     
                     status = random.choices(statuses, weights=[70, 0, 20, 10])[0]
-                    reason = "개인 사유" if status == "REJECTED" else ""
+                    rejection_reason = "업무 과다로 인한 반려" if status == "REJECTED" else ""
                     
+                    ldata = get_random_leave_data()
                     db.add(models.Leaves(
                         user_id=u.user_id,
                         date=leave_date,
-                        snapshot_slot_label="09:00~18:00",
-                        snapshot_start_min=540,
-                        snapshot_end_min=1080,
-                        snapshot_deduction_hours=8.0,
+                        snapshot_slot_label=ldata["label"],
+                        snapshot_start_min=ldata["start"],
+                        snapshot_end_min=ldata["end"],
+                        snapshot_deduction_hours=ldata["hours"],
                         status=status,
-                        rejection_reason=reason,
+                        rejection_reason=rejection_reason,
+                        is_deductive=ldata["is_deductive"],
+                        reason=ldata["reason"],
                         year=leave_date.year
                     ))
 
@@ -154,14 +186,17 @@ def seed_data():
                     # PM leaves are auto-approved
                     if u.role == "PM": status = "APPROVED"
                     
+                    ldata = get_random_leave_data()
                     db.add(models.Leaves(
                         user_id=u.user_id,
                         date=leave_date,
-                        snapshot_slot_label="09:00~18:00",
-                        snapshot_start_min=540,
-                        snapshot_end_min=1080,
-                        snapshot_deduction_hours=8.0,
+                        snapshot_slot_label=ldata["label"],
+                        snapshot_start_min=ldata["start"],
+                        snapshot_end_min=ldata["end"],
+                        snapshot_deduction_hours=ldata["hours"],
                         status=status,
+                        is_deductive=ldata["is_deductive"],
+                        reason=ldata["reason"],
                         year=leave_date.year
                     ))
         
