@@ -224,7 +224,16 @@ async def not_authenticated_exception_handler(request: Request, exc: NotAuthenti
         return Response(status_code=404)
     if path.startswith("/api/"):
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    
+    cookie_settings = auth.get_cookie_settings(request)
+    response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    response.delete_cookie(
+        key="access_token",
+        httponly=cookie_settings.get("httponly", True),
+        samesite=cookie_settings.get("samesite", "lax"),
+        secure=cookie_settings.get("secure", False)
+    )
+    return response
 
 @app.exception_handler(PermissionDeniedException)
 async def permission_denied_exception_handler(request: Request, exc: PermissionDeniedException):
@@ -422,16 +431,30 @@ def startup_event():
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
-    user_id = auth.get_current_user_from_token(request)
-    if user_id:
-        user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
-        if user:
-            user_role = getattr(user, "role", "STAFF")
-            if user_role == "ADMIN":
-                return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
-            return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+    payload = auth.get_payload_from_token(request)
+    if payload:
+        user_id = payload.get("sub")
+        token_version = payload.get("token_version")
+        if user_id:
+            user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
+            if user and user.is_active:
+                effective_token_version = token_version if token_version is not None else 0
+                if user.token_version == effective_token_version:
+                    user_role = getattr(user, "role", "STAFF")
+                    if user_role == "ADMIN":
+                        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
+                    return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
     
-    return templates.TemplateResponse(request=request, name="login.html")
+    cookie_settings = auth.get_cookie_settings(request)
+    response = templates.TemplateResponse(request=request, name="login.html")
+    if request.cookies.get("access_token"):
+        response.delete_cookie(
+            key="access_token",
+            httponly=cookie_settings.get("httponly", True),
+            samesite=cookie_settings.get("samesite", "lax"),
+            secure=cookie_settings.get("secure", False)
+        )
+    return response
 
 
 @app.get("/favicon.ico", include_in_schema=False)
