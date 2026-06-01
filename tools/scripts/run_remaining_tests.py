@@ -932,6 +932,79 @@ def main():
     db.close()
     print("  -> PASS: User sorting & inactive isolation logic verified successfully.")
 
+    # --- 시나리오 13: 비밀키 일관성 검증 및 Fail-Fast 구동 차단 검증 (v1.6.1) ---
+    print("[CASE 13] Secret Key Consistency & Fail-Fast Verification")
+    import hashlib
+    from sqlalchemy import text
+    
+    db = SessionLocal()
+    settings = db.query(models.SystemSettings).first()
+    assert settings is not None
+    # 0. 원래의 스냅샷 값을 백업해둠
+    original_snapshot = settings.key_hash_snapshot
+    db.close()
+    
+    try:
+        # A. 평문 모드로 DB가 이미 기동되어 설정된 상황을 모사
+        # 1. 스냅샷 값을 'PLAINTEXT_MODE'로 업데이트
+        db = SessionLocal()
+        db.execute(text("UPDATE system_settings SET key_hash_snapshot = 'PLAINTEXT_MODE'"))
+        db.commit()
+        db.close()
+        
+        # 환경변수 클리어 (평문 모드로 대조 실행 준비)
+        os.environ.pop("SHIM_SECRET_KEY", None)
+        
+        # 평문 기동 시도 -> 성공해야 함
+        startup_event()
+        
+        # 2. 평문인 상태의 DB에 임의의 암호키 주입 후 기동 시도 -> Fail-Fast 차단 검증
+        os.environ["SHIM_SECRET_KEY"] = "test_temp_secure_key_12345"
+        try:
+            startup_event()
+            assert False, "평문 DB에 키를 주입했는데 기동 차단이 되지 않았습니다."
+        except SystemExit as se:
+            assert se.code == 1, "정상적으로 sys.exit(1)로 차단됨"
+            
+        # B. 암호화 모드로 DB가 이미 기동되어 설정된 상황을 모사
+        # 1. 스냅샷 값을 'key_aaa'의 해시값으로 업데이트
+        os.environ["SHIM_SECRET_KEY"] = "key_aaa"
+        key_hash_aaa = hashlib.sha256(auth.get_encryption_key()).hexdigest()
+        
+        db = SessionLocal()
+        db.execute(text("UPDATE system_settings SET key_hash_snapshot = :khash"), {"khash": key_hash_aaa})
+        db.commit()
+        db.close()
+        
+        # 암호화 기동 시도 -> 성공해야 함
+        startup_event()
+        
+        # 2. 암호화된 DB에 키 주입 누락 후 기동 시도 -> 차단 검증
+        os.environ.pop("SHIM_SECRET_KEY", None)
+        try:
+            startup_event()
+            assert False, "암호화 DB에 키가 누락되었는데 기동 차단이 되지 않았습니다."
+        except SystemExit as se:
+            assert se.code == 1, "정상적으로 sys.exit(1)로 차단됨"
+            
+        # 3. 암호화된 DB에 다른 키 주입 후 기동 시도 -> 차단 검증
+        os.environ["SHIM_SECRET_KEY"] = "key_bbb"
+        try:
+            startup_event()
+            assert False, "암호화 DB에 다른 키가 주입되었는데 기동 차단이 되지 않았습니다."
+        except SystemExit as se:
+            assert se.code == 1, "정상적으로 sys.exit(1)로 차단됨"
+            
+    finally:
+        # 원래 상태로 데이터베이스 복구
+        db = SessionLocal()
+        db.execute(text("UPDATE system_settings SET key_hash_snapshot = :orig"), {"orig": original_snapshot})
+        db.commit()
+        db.close()
+        os.environ.pop("SHIM_SECRET_KEY", None)
+        
+    print("  -> PASS: Key consistency and fail-fast blocking verified.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()
