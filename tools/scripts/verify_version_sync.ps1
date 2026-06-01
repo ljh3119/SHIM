@@ -3,13 +3,12 @@
 # Exit 0 = OK, exit 1 = mismatch.
 
 $ErrorActionPreference = "Stop"
-$utf8 = [System.Text.Encoding]::UTF8
 
 $ProjectRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
 Set-Location $ProjectRoot
 
 $packageJsonPath = Join-Path $ProjectRoot "package.json"
-$package = ([System.IO.File]::ReadAllText($packageJsonPath, $utf8)) | ConvertFrom-Json
+$package = (Get-Content -Raw -Encoding utf8 $packageJsonPath) | ConvertFrom-Json
 $ver = [string]$package.version
 
 $errs = [System.Collections.Generic.List[string]]::new()
@@ -20,7 +19,7 @@ function Add-Err([string]$Message) {
 
 # Code / config (must match release.ps1 targets)
 $mainPath = Join-Path $ProjectRoot "src\app\main.py"
-$main = [System.IO.File]::ReadAllText($mainPath, $utf8)
+$main = Get-Content -Raw -Encoding utf8 $mainPath
 $fastapiNeedle = 'FastAPI(title="SHIM", version="' + $ver + '"'
 if ($main.IndexOf($fastapiNeedle, [StringComparison]::Ordinal) -lt 0) {
     Add-Err "src/app/main.py: FastAPI version must equal package.json ($ver)."
@@ -31,7 +30,7 @@ if ($main.IndexOf($appVerNeedle, [StringComparison]::Ordinal) -lt 0) {
 }
 
 $basePath = Join-Path $ProjectRoot "src\templates\base.html"
-$base = [System.IO.File]::ReadAllText($basePath, $utf8)
+$base = Get-Content -Raw -Encoding utf8 $basePath
 $defaultVer = "default('$ver')"
 $matches = [regex]::Matches($base, [regex]::Escape($defaultVer))
 if ($matches.Count -lt 2) {
@@ -40,7 +39,7 @@ if ($matches.Count -lt 2) {
 
 foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compose.dev.yml")) {
     $p = Join-Path $ProjectRoot $rel
-    $t = [System.IO.File]::ReadAllText($p, $utf8)
+    $t = Get-Content -Raw -Encoding utf8 $p
     if ($t -notmatch [regex]::Escape("shim:$ver")) {
         Add-Err "$rel : default image must include shim:$ver"
     }
@@ -48,7 +47,7 @@ foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compo
 
 # Docs: README is the public/version summary; docs/0_* index has no required version string.
 $readmePath = Join-Path $ProjectRoot "README.md"
-$readme = [System.IO.File]::ReadAllText($readmePath, $utf8)
+$readme = Get-Content -Raw -Encoding utf8 $readmePath
 # README line like "**릴리스 버전:** X.Y.Z" (colon inside bold); ASCII-safe tail match
 if ($readme -notmatch ('\*\*[^*]+\*\*\s+' + [regex]::Escape($ver) + '(?:\s|$)')) {
     Add-Err "README.md: bold line then spaces then package.json version ($ver)"
@@ -56,7 +55,7 @@ if ($readme -notmatch ('\*\*[^*]+\*\*\s+' + [regex]::Escape($ver) + '(?:\s|$)'))
 
 $portableReadme = Join-Path $ProjectRoot "portable\README_PORTABLE.md"
 if (Test-Path $portableReadme) {
-    $pr = [System.IO.File]::ReadAllText($portableReadme, $utf8)
+    $pr = Get-Content -Raw -Encoding utf8 $portableReadme
     if ($pr.IndexOf("v$ver", [StringComparison]::Ordinal) -lt 0) {
         Add-Err "portable/README_PORTABLE.md: must mention v$ver (e.g. next to date)"
     }

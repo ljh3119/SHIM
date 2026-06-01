@@ -142,6 +142,7 @@ class SystemSettings(Base):
     team_calendar_visible = Column(Boolean, default=True, nullable=False)
     # 전사 캘린더 공유 활성화 (일반 사용자도 전사 인원 휴가 조회 가능)
     company_calendar_visible = Column(Boolean, default=False, nullable=False)
+    key_hash_snapshot = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
