@@ -359,6 +359,62 @@ def startup_event():
             )
 
         seed_korean_holidays(db=db, actor_id=admin.user_id, start_year=2020, end_year=2050)
+
+        # 4. 비밀키 일관성(Fail-Fast) 검증 추가
+        import hashlib
+        from .auth import get_encryption_key
+        
+        current_key = get_encryption_key()
+        current_key_hash = hashlib.sha256(current_key).hexdigest() if current_key else "PLAINTEXT_MODE"
+        
+        settings = db.query(models.SystemSettings).first()
+        if settings:
+            if settings.key_hash_snapshot is None:
+                # 최초 컬럼 생성에 따른 초기 값 세팅
+                users_with_data = db.query(models.Users).all()
+                has_encrypted_data = False
+                
+                for u in users_with_data:
+                    raw_val = db.execute(
+                        text("SELECT user_name FROM users WHERE user_id = :uid"),
+                        {"uid": u.user_id}
+                    ).scalar()
+                    if raw_val and raw_val.startswith("gAAAAAB"):
+                        has_encrypted_data = True
+                        break
+                
+                if has_encrypted_data:
+                    if current_key_hash == "PLAINTEXT_MODE":
+                        print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
+                        print("기존 데이터베이스는 PII 암호화가 적용되어 있으나, 현재 비밀키 설정이 제공되지 않았습니다.")
+                        print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 비밀키 설정을 복구해 주십시오.")
+                        import sys
+                        sys.exit(1)
+                    else:
+                        settings.key_hash_snapshot = current_key_hash
+                else:
+                    has_plain_data = len(users_with_data) > 0
+                    if has_plain_data and current_key_hash != "PLAINTEXT_MODE":
+                        print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
+                        print("기존 데이터베이스는 평문 모드로 운영 중이었으나, 현재 비밀키(암호화)가 지정되었습니다.")
+                        print("평문 DB에 임의로 암호키를 지정하면 검색 기능이 오작동합니다. 키 설정을 비워주십시오.")
+                        import sys
+                        sys.exit(1)
+                    else:
+                        settings.key_hash_snapshot = current_key_hash
+            else:
+                if settings.key_hash_snapshot != current_key_hash:
+                    print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
+                    if settings.key_hash_snapshot == "PLAINTEXT_MODE":
+                        print("기존 데이터베이스는 평문 모드(PLAINTEXT_MODE)로 기동된 상태이나, 현재 암호키가 주입되었습니다.")
+                    elif current_key_hash == "PLAINTEXT_MODE":
+                        print("기존 데이터베이스는 암호화 모드로 구축되었으나, 현재 비밀키 설정이 누락되었습니다.")
+                    else:
+                        print("현재 설정된 암호키가 기존 데이터베이스의 암호키와 일치하지 않습니다.")
+                    print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 설정을 확인해 주십시오.")
+                    import sys
+                    sys.exit(1)
+
         db.commit()
     finally:
         db.close()

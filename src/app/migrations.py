@@ -44,3 +44,4 @@ def run_all_migrations(engine):
                     conn.rollback()
                     print(f"[MIGRATION ERROR] Failed to apply {version}: {e}")
                     raise e
+
