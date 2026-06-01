@@ -60,7 +60,12 @@ def get_leaves_timeline_query(
         .filter(models.Leaves.year == year)
     )
     if month > 0:
-        query = query.filter(extract("month", models.Leaves.date) == month)
+        import calendar as cal_module
+        num_days = cal_module.monthrange(year, month)[1]
+        query = query.filter(
+            models.Leaves.date >= date(year, month, 1),
+            models.Leaves.date <= date(year, month, num_days)
+        )
     if user_id:
         query = query.filter(models.Leaves.user_id == user_id)
     if company:

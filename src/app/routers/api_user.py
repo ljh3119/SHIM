@@ -145,6 +145,7 @@ def user_team_calendar(
     month: int = None, 
     sort: str = "name",
     sort_dir: str = "asc",
+    layout: str = "timeline",
     db: Session = Depends(get_db),
     user: models.Users = Depends(get_current_user)
 ):
@@ -162,6 +163,8 @@ def user_team_calendar(
     sort_dir_eff = sort_dir if sort_dir in ["asc", "desc"] else "asc"
 
     num_days = cal_module.monthrange(display_year, display_month)[1]
+    first_weekday_monday0 = cal_module.weekday(display_year, display_month, 1)
+    team_cal_offset = (first_weekday_monday0 + 1) % 7
     month_start = date_cls(display_year, display_month, 1)
     month_end = date_cls(display_year, display_month, num_days)
 
@@ -257,7 +260,7 @@ def user_team_calendar(
     # 쿼리 스트링 빌더 (정렬 헤더용)
     def build_sort_url(key):
         new_dir = "desc" if sort_key == key and sort_dir_eff == "asc" else "asc"
-        return f"/user/team-calendar?year={display_year}&month={display_month}&sort={key}&sort_dir={new_dir}"
+        return f"/user/team-calendar?year={display_year}&month={display_month}&sort={key}&sort_dir={new_dir}&layout={layout}"
 
     sort_urls = {k: build_sort_url(k) for k in ["name", "team", "remaining", "monthly_used"]}
 
@@ -297,6 +300,8 @@ def user_team_calendar(
         "team_cal_day_weekday": team_cal_day_weekday,
         "team_cal_weekend_days": team_cal_weekend_days,
         "team_cal_holiday_map": team_cal_holiday_map,
+        "team_cal_offset": team_cal_offset,
+        "layout": layout,
         "current_year": now.year,
         "current_month": now.month,
         "year_options": year_options,
