@@ -38,7 +38,7 @@ def user_dashboard(
     user: models.Users = Depends(get_current_user),
 ):
     
-    if (getattr(user, "role", "") == "ADMIN" or getattr(user, "is_admin", False)):
+    if getattr(user, "role", "") == "ADMIN":
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
     
     now = datetime.now()

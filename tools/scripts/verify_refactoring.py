@@ -29,18 +29,16 @@ def verify_all():
     print(f" -4.5h compact: {compact}")
     assert "-4.5h" in compact
     
-    print("\n--- 2. RBAC / is_admin Legacy Verification ---")
+    print("\n--- 2. RBAC Verification ---")
     admin = db.query(models.Users).filter(models.Users.role == "ADMIN").first()
     if admin:
         print(f"Admin User: {admin.user_id}, role={admin.role}")
-        is_admin_check = (admin.role == "ADMIN" or getattr(admin, "is_admin", False))
-        assert is_admin_check is True
+        assert admin.role == "ADMIN"
 
     test_user = db.query(models.Users).filter(models.Users.role != "ADMIN").first()
     if test_user:
         print(f"Staff User: {test_user.user_id}, role={test_user.role}")
-        is_admin_check = (test_user.role == "ADMIN" or getattr(test_user, "is_admin", False))
-        assert is_admin_check is False
+        assert test_user.role != "ADMIN"
 
     print("\n--- 3. Admin Service Verification ---")
     stats = admin_service.get_admin_dashboard_stats(db)

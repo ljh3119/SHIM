@@ -330,7 +330,6 @@ def startup_event():
                 user_id="admin",
                 user_name="시스템관리자",
                 password=hashed_pw,
-                is_admin=True,
                 role="ADMIN",
             )
             db.add(new_admin)
