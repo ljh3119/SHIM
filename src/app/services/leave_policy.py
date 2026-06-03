@@ -20,9 +20,24 @@ ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
 REJECTION_REASON_MAX_LENGTH = 500
 ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120})
 
+@dataclass(frozen=True)
+class SystemSettingsSnapshot:
+    id: int
+    is_approval_required: bool
+    time_granularity_minutes: int
+    work_start_minute: int
+    work_end_minute: int
+    lunch_start_minute: int | None
+    lunch_end_minute: int | None
+    product_display_name: str
+    product_nav_short: str
+    brand_initial: str
+    team_calendar_visible: bool
+    company_calendar_visible: bool
+
 _SYSTEM_SETTINGS_CACHE = None
 
-def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamespace | None:
+def get_system_settings(db: Session, force_reload: bool = False) -> SystemSettingsSnapshot | None:
     global _SYSTEM_SETTINGS_CACHE
     if _SYSTEM_SETTINGS_CACHE is not None and not force_reload:
         return _SYSTEM_SETTINGS_CACHE
@@ -30,7 +45,7 @@ def get_system_settings(db: Session, force_reload: bool = False) -> SimpleNamesp
     setting = db.query(models.SystemSettings).first()
     if not setting:
         return None
-    _SYSTEM_SETTINGS_CACHE = SimpleNamespace(
+    _SYSTEM_SETTINGS_CACHE = SystemSettingsSnapshot(
         id=setting.id,
         is_approval_required=setting.is_approval_required,
         time_granularity_minutes=setting.time_granularity_minutes,

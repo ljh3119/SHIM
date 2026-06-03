@@ -8,6 +8,7 @@ import base64
 from fastapi import Request, HTTPException, status
 from .database import _resolve_data_dir
 import secrets
+from functools import lru_cache
 
 def _resolve_secret_key() -> str:
     # 1) OS environment variable has top priority
@@ -36,6 +37,7 @@ def _resolve_secret_key() -> str:
         print(f"[AUTH] Error resolving or writing secret.key: {e}")
         return "shim_change_this_secret_key_before_operation"
 
+@lru_cache(maxsize=1)
 def get_encryption_key() -> bytes | None:
     env_key = os.getenv("SHIM_SECRET_KEY", "").strip()
     key_source = None

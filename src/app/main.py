@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Request, Form, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -16,6 +17,7 @@ import asyncio
 from . import models, database, auth, utils
 from .database import engine, get_db, DB_PATH
 from .services.ops import verify_and_recover_db, daily_backup_scheduler
+from .constants import APP_VERSION, VALID_ROLES
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,28 +44,20 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.6.3", lifespan=lifespan)
+app = FastAPI(title="SHIM", version=APP_VERSION, lifespan=lifespan)
+
+from .middlewares.cors import ClosedNetworkCORSMiddleware
+
+cors_origins_raw = os.getenv("SHIM_CORS_ORIGINS")
+if cors_origins_raw:
+    app.add_middleware(
+        ClosedNetworkCORSMiddleware,
+        origins_raw=cors_origins_raw
+    )
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
 BRANDING_BADGE_MAX_LEN = 24
-
-
-VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
-
-
-
-
-
-verify_and_recover_db(DB_PATH)
-models.Base.metadata.create_all(bind=engine)
-
-# 자동 스키마 마이그레이션
-from .migrations import run_all_migrations
-try:
-    run_all_migrations(engine)
-except Exception as e:
-    print(f"[MIGRATION ERROR] Schema migration failed: {e}")
 
 
 
@@ -95,12 +89,24 @@ def _normalize_branding_from_row(row: models.SystemSettings | None) -> dict[str,
     }
 
 
-from .services.leave_policy import get_system_settings
+from .services import leave_policy
 
 def _load_branding_into_request(request: Request) -> None:
+    # 1차로 인메모리 캐시 확인 (DB 세션 생성 및 쿼리 생략)
+    cache = leave_policy._SYSTEM_SETTINGS_CACHE
+    if cache is not None:
+        b = _normalize_branding_from_row(cache)
+        request.state.product_display_name = b["product_display_name"]
+        request.state.product_nav_short = b["product_nav_short"]
+        request.state.product_nav_short_raw = b["product_nav_short_raw"]
+        request.state.brand_nav_show_subtitle = b["brand_nav_show_subtitle"]
+        request.state.brand_initial = b["brand_initial"]
+        request.state.brand_badge_display = b["brand_badge_display"]
+        return
+
     db = database.SessionLocal()
     try:
-        row = get_system_settings(db)
+        row = leave_policy.get_system_settings(db)
         b = _normalize_branding_from_row(row)
         request.state.product_display_name = b["product_display_name"]
         request.state.product_nav_short = b["product_nav_short"]
@@ -110,6 +116,7 @@ def _load_branding_into_request(request: Request) -> None:
         request.state.brand_badge_display = b["brand_badge_display"]
     finally:
         db.close()
+
 
 
 def branding_template_context(request: Request) -> dict:
@@ -171,50 +178,15 @@ templates = Jinja2Templates(
     directory=str(templates_dir),
     context_processors=[branding_template_context],
 )
-def string_to_hsl_style(text: str, is_team: bool = False) -> str:
-    if not text or text == "—" or not text.strip():
-        return "background-color: var(--dense-surface-soft); color: var(--dense-muted); border: 1px solid var(--dense-line);"
-    
-    # 해싱 전 고유 접두사를 결합하여 회사와 팀의 해시 씨앗 분리
-    prefix = "team:" if is_team else "company:"
-    salted_text = prefix + text
-    
-    h = 0
-    for char in salted_text:
-        h = ord(char) + ((h << 5) - h)
-    
-    if is_team:
-        # 팀: 더 확실히 봐야 하므로 생동감 있고 강렬한 대역 (파랑, 보라, 마젠타, 핑크: 180 ~ 340도)
-        hue = 180 + (abs(h) % 160)
-        s = 75
-        bg_l = 91
-        text_l = 15
-    else:
-        # 회사: 보조적인 정보이므로 은은하고 차분한 대역 (주황, 노랑, 초록, 청록: 20 ~ 180도)
-        hue = 20 + (abs(h) % 160)
-        s = 52
-        bg_l = 95
-        text_l = 32
-
-    # 노란색, 라임색 등 가시성이 취약한 45~95도 구간 보정
-    if 45 <= hue <= 95:
-        if is_team:
-            bg_l = 88
-            text_l = 10
-        else:
-            bg_l = 93
-            text_l = 22
-        
-    return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
-
-templates.env.globals["app_version"] = "1.6.3"
+templates.env.globals["app_version"] = APP_VERSION
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
-templates.env.globals["string_to_hsl_style"] = string_to_hsl_style
+templates.env.globals["string_to_hsl_style"] = utils.string_to_hsl_style
 templates.env.filters["format_datetime_kst"] = utils.format_datetime_kst
 app.state.templates = templates
 
-from .routers import api_user, api_admin
+from .routers import api_user
+from .routers.admin import page_router as admin_page_router, api_router as admin_api_router
 from .dependencies import NotAuthenticatedException, PermissionDeniedException
 from fastapi.responses import JSONResponse
 
@@ -242,13 +214,13 @@ async def permission_denied_exception_handler(request: Request, exc: PermissionD
     if path.startswith("/static/") or path.startswith("/docs") or path == "/openapi.json" or path == "/favicon.ico":
         return Response(status_code=404)
     if path.startswith("/api/"):
-        return JSONResponse(status_code=401, content={"detail": "Permission denied"})
+        return JSONResponse(status_code=403, content={"detail": "Permission denied"})
     return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
 app.include_router(api_user.page_router)
 app.include_router(api_user.api_router)
-app.include_router(api_admin.page_router)
-app.include_router(api_admin.api_router)
+app.include_router(admin_page_router)
+app.include_router(admin_api_router)
 
 
 @app.middleware("http")
@@ -397,7 +369,6 @@ def startup_event():
                         print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
                         print("기존 데이터베이스는 PII 암호화가 적용되어 있으나, 현재 비밀키 설정이 제공되지 않았습니다.")
                         print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 비밀키 설정을 복구해 주십시오.")
-                        import sys
                         sys.exit(1)
                     else:
                         settings.key_hash_snapshot = current_key_hash
@@ -407,7 +378,6 @@ def startup_event():
                         print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
                         print("기존 데이터베이스는 평문 모드로 운영 중이었으나, 현재 비밀키(암호화)가 지정되었습니다.")
                         print("평문 DB에 임의로 암호키를 지정하면 검색 기능이 오작동합니다. 키 설정을 비워주십시오.")
-                        import sys
                         sys.exit(1)
                     else:
                         settings.key_hash_snapshot = current_key_hash
@@ -421,7 +391,6 @@ def startup_event():
                     else:
                         print("현재 설정된 암호키가 기존 데이터베이스의 암호키와 일치하지 않습니다.")
                     print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 설정을 확인해 주십시오.")
-                    import sys
                     sys.exit(1)
 
         db.commit()

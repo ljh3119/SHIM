@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 import shutil
 import sqlite3
 import asyncio
@@ -10,6 +11,42 @@ from pathlib import Path
 
 # 전역 백업 스레드 락 도입 (동시 백업 쓰기 방지 및 SQLite 락 충돌 우회)
 _backup_lock = threading.Lock()
+
+class ProcessFileLock:
+    def __init__(self, lock_dir: Path, timeout: float = 30.0, expire_seconds: float = 600.0):
+        self.lock_dir = lock_dir
+        self.timeout = timeout
+        self.expire_seconds = expire_seconds
+        self.acquired = False
+
+    def __enter__(self):
+        start_time = time.time()
+        while True:
+            # 락 파일(디렉토리)이 존재하면 만료 검사 후 강제 삭제
+            if self.lock_dir.exists():
+                try:
+                    mtime = self.lock_dir.stat().st_mtime
+                    if time.time() - mtime > self.expire_seconds:
+                        print(f"[SHIM PROCESS LOCK] Expired lock detected (age: {time.time() - mtime:.1f}s). Force cleaning.")
+                        os.rmdir(self.lock_dir)
+                except Exception as e:
+                    print(f"[SHIM PROCESS LOCK ERROR] Failed to clean expired lock: {e}")
+
+            try:
+                os.mkdir(self.lock_dir)
+                self.acquired = True
+                return self
+            except FileExistsError:
+                if time.time() - start_time > self.timeout:
+                    raise TimeoutError("백업 프로세스 락 획득 실패 (타임아웃)")
+                time.sleep(0.1)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.acquired:
+            try:
+                os.rmdir(self.lock_dir)
+            except Exception:
+                pass
 
 def create_sqlite_backup(db_path: Path, backup_dir: Path) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
@@ -33,32 +70,39 @@ def create_sqlite_backup(db_path: Path, backup_dir: Path) -> Path:
     return backup_path
 
 def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
-    # 스레드 락을 사용해 백업 작업이 병렬로 실행되어 파일 쓰기 충돌이 일어나는 것을 방지합니다.
-    with _backup_lock:
-        backup_dir = db_path.parent / "backup"
-        try:
-            backup_path = create_sqlite_backup(db_path, backup_dir)
-            print(f"[SHIM BACKUP] Successfully created backup: {backup_path}")
-        except Exception as e:
-            print(f"[SHIM BACKUP ERROR] Failed to create backup: {e}")
-            return None
-            
-        try:
-            backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
-            # Sort by modification time (oldest first)
-            backup_files.sort(key=lambda p: p.stat().st_mtime)
-            
-            while len(backup_files) > max_backups:
-                oldest = backup_files.pop(0)
+    lock_dir = db_path.parent / "backup.lock"
+    # 프로세스 간 백업 충돌 방지용 파일시스템 기반 프로세스 락
+    try:
+        with ProcessFileLock(lock_dir):
+            # 스레드 락을 사용해 백업 작업이 병렬로 실행되어 파일 쓰기 충돌이 일어나는 것을 방지합니다.
+            with _backup_lock:
+                backup_dir = db_path.parent / "backup"
                 try:
-                    os.remove(oldest)
-                    print(f"[SHIM BACKUP ROTATION] Deleted oldest backup file: {oldest}")
-                except Exception as rm_err:
-                    print(f"[SHIM BACKUP ROTATION ERROR] Failed to delete {oldest}: {rm_err}")
-        except Exception as rot_err:
-            print(f"[SHIM BACKUP ROTATION ERROR] Error during rotation: {rot_err}")
-            
-        return backup_path
+                    backup_path = create_sqlite_backup(db_path, backup_dir)
+                    print(f"[SHIM BACKUP] Successfully created backup: {backup_path}")
+                except Exception as e:
+                    print(f"[SHIM BACKUP ERROR] Failed to create backup: {e}")
+                    return None
+                    
+                try:
+                    backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
+                    # Sort by modification time (oldest first)
+                    backup_files.sort(key=lambda p: p.stat().st_mtime)
+                    
+                    while len(backup_files) > max_backups:
+                        oldest = backup_files.pop(0)
+                        try:
+                            os.remove(oldest)
+                            print(f"[SHIM BACKUP ROTATION] Deleted oldest backup file: {oldest}")
+                        except Exception as rm_err:
+                            print(f"[SHIM BACKUP ROTATION ERROR] Failed to delete {oldest}: {rm_err}")
+                except Exception as rot_err:
+                    print(f"[SHIM BACKUP ROTATION ERROR] Error during rotation: {rot_err}")
+                    
+                return backup_path
+    except Exception as lock_err:
+        print(f"[SHIM BACKUP LOCK ERROR] Failed to acquire process lock: {lock_err}")
+        return None
 
 async def daily_backup_scheduler(db_path: Path):
     print("[SHIM BACKUP] Daily backup scheduler started.")

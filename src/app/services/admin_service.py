@@ -85,8 +85,12 @@ def get_yearly_allocation_map(db: Session, user_ids: list[str], year: int) -> di
             models.UserYearlyLeaveAllocations.year == year
         ).all()
         return {row.user_id: int(row.allocated_hours) for row in rows}
-    except Exception:
+    except Exception as e:
         db.rollback()
+        import logging
+        logging.getLogger("shim.admin").warning(
+            f"Failed to get yearly allocation map: {e}", exc_info=True
+        )
         return {}
 
 def get_audit_logs_query(

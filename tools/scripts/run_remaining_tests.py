@@ -42,6 +42,8 @@ def main():
     print(f"[TEST] Database: {TEST_DATA_DIR}")
     
     # 1. 환경 초기화
+    from tools.scripts.db_init import init_db
+    init_db()
     startup_event()
     client = TestClient(app)
     
@@ -715,6 +717,7 @@ def main():
     # 2. 신규 사용자 및 연관 데이터 생성
     db.add(models.Users(
         user_id=test_uid, user_name="임시사원", role="STAFF",
+        company="본사", team="개발팀",
         password=auth.get_password_hash("0000"), is_active=True
     ))
     db.commit()
@@ -754,6 +757,8 @@ def main():
     audit_after = db.query(models.AuditLogs).filter(models.AuditLogs.id == audit_id).first()
     assert audit_after is not None
     assert audit_after.actor_id is None
+    assert audit_after.actor_name == "임시사원", f"수행자 이름 스냅샷 유실: {audit_after.actor_name}"
+    assert audit_after.actor_department == "본사 개발팀", f"수행자 부서 스냅샷 유실: {audit_after.actor_department}"
     
     # 청소
     db.query(models.AuditLogs).filter(models.AuditLogs.id == audit_id).delete()
@@ -761,8 +766,8 @@ def main():
     db.close()
     print("  -> PASS: User hard-delete with audit logs integrity verified successfully.")
 
-    # --- 시나리오 10: 사원 권한/상태 변경 시 세션 강제 만료 검증 ---
-    print("[CASE 10] Session Invalidation on Role/Status Change")
+    # --- 시나리오 18: 사원 권한/상태 변경 시 세션 강제 만료 검증 ---
+    print("[CASE 18] Session Invalidation on Role/Status Change")
     
     db = SessionLocal()
     staff_db_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
@@ -821,8 +826,8 @@ def main():
     db.close()
     print("  -> PASS: Session Invalidation on Role/Status Change verified.")
 
-    # --- 시나리오 11: 엑셀 타임라인 파일 타입 포맷팅 정밀화 검증 ---
-    print("[CASE 11] Excel Export Data Type Formatting Refinement")
+    # --- 시나리오 19: 엑셀 타임라인 파일 타입 포맷팅 정밀화 검증 ---
+    print("[CASE 19] Excel Export Data Type Formatting Refinement")
     
     r_export = admin_client.get(f"/admin/leave/timeline/export?year={d1.year}")
     assert r_export.status_code == 200
@@ -853,8 +858,8 @@ def main():
 
     print("  -> PASS: Excel data type and formatting verified successfully.")
 
-    # --- 시나리오 12: 사원 관리 목록 권한별 정렬 및 비활성 사원 최하단 고정 검증 (v1.5.17) ---
-    print("[CASE 12] Admin Users Sorting & Inactive Exclusion (v1.5.17)")
+    # --- 시나리오 20: 사원 관리 목록 권한별 정렬 및 비활성 사원 최하단 고정 검증 (v1.5.17) ---
+    print("[CASE 20] Admin Users Sorting & Inactive Exclusion (v1.5.17)")
     
     # 1. 테스트 유저 생성
     db = SessionLocal()
@@ -882,7 +887,7 @@ def main():
     admin_user = db.query(models.Users).filter(models.Users.role == "ADMIN", models.Users.is_active == True).first()
     db.close()
     
-    from src.app.routers.api_admin import admin_users
+    from src.app.routers.admin.users import admin_users
     from unittest.mock import MagicMock
     
     req_admin = MagicMock()
@@ -932,8 +937,8 @@ def main():
     db.close()
     print("  -> PASS: User sorting & inactive isolation logic verified successfully.")
 
-    # --- 시나리오 13: 비밀키 일관성 검증 및 Fail-Fast 구동 차단 검증 (v1.6.1) ---
-    print("[CASE 13] Secret Key Consistency & Fail-Fast Verification")
+    # --- 시나리오 21: 비밀키 일관성 검증 및 Fail-Fast 구동 차단 검증 (v1.6.1) ---
+    print("[CASE 21] Secret Key Consistency & Fail-Fast Verification")
     import hashlib
     from sqlalchemy import text
     
@@ -954,12 +959,14 @@ def main():
         
         # 환경변수 클리어 (평문 모드로 대조 실행 준비)
         os.environ.pop("SHIM_SECRET_KEY", None)
+        auth.get_encryption_key.cache_clear()
         
         # 평문 기동 시도 -> 성공해야 함
         startup_event()
         
         # 2. 평문인 상태의 DB에 임의의 암호키 주입 후 기동 시도 -> Fail-Fast 차단 검증
         os.environ["SHIM_SECRET_KEY"] = "test_temp_secure_key_12345"
+        auth.get_encryption_key.cache_clear()
         try:
             startup_event()
             assert False, "평문 DB에 키를 주입했는데 기동 차단이 되지 않았습니다."
@@ -969,6 +976,7 @@ def main():
         # B. 암호화 모드로 DB가 이미 기동되어 설정된 상황을 모사
         # 1. 스냅샷 값을 'key_aaa'의 해시값으로 업데이트
         os.environ["SHIM_SECRET_KEY"] = "key_aaa"
+        auth.get_encryption_key.cache_clear()
         key_hash_aaa = hashlib.sha256(auth.get_encryption_key()).hexdigest()
         
         db = SessionLocal()
@@ -981,6 +989,7 @@ def main():
         
         # 2. 암호화된 DB에 키 주입 누락 후 기동 시도 -> 차단 검증
         os.environ.pop("SHIM_SECRET_KEY", None)
+        auth.get_encryption_key.cache_clear()
         try:
             startup_event()
             assert False, "암호화 DB에 키가 누락되었는데 기동 차단이 되지 않았습니다."
@@ -989,6 +998,7 @@ def main():
             
         # 3. 암호화된 DB에 다른 키 주입 후 기동 시도 -> 차단 검증
         os.environ["SHIM_SECRET_KEY"] = "key_bbb"
+        auth.get_encryption_key.cache_clear()
         try:
             startup_event()
             assert False, "암호화 DB에 다른 키가 주입되었는데 기동 차단이 되지 않았습니다."
@@ -1002,8 +1012,207 @@ def main():
         db.commit()
         db.close()
         os.environ.pop("SHIM_SECRET_KEY", None)
+        auth.get_encryption_key.cache_clear()
         
     print("  -> PASS: Key consistency and fail-fast blocking verified.")
+
+    # --- 시나리오 22: PII 투명 개인정보 컬럼 암복호화 검증 ---
+    print("[CASE 22] PII Column Transparent Encryption & Decryption")
+    # 임시 키 설정 (암호화 모드)
+    os.environ["SHIM_SECRET_KEY"] = "test_crypt_secret_key_for_pii_check_5678"
+    auth.get_encryption_key.cache_clear()
+    
+    # DB 스냅샷 강제 세팅 (기동 차단 우회)
+    db = SessionLocal()
+    import hashlib
+    key_hash = hashlib.sha256(auth.get_encryption_key()).hexdigest()
+    
+    settings = db.query(models.SystemSettings).first()
+    original_snapshot = settings.key_hash_snapshot if settings else None
+    
+    db.execute(text("UPDATE system_settings SET key_hash_snapshot = :khash"), {"khash": key_hash})
+    db.commit()
+    db.close()
+    
+    # u_crypt 일반 사원 생성 및 연차 신청
+    # (user_name, Leaves.reason, Leaves.rejection_reason은 EncryptedString 타입임)
+    db = SessionLocal()
+    # 청소
+    db.query(models.Leaves).filter(models.Leaves.user_id == "u_crypt").delete()
+    db.query(models.Users).filter(models.Users.user_id == "u_crypt").delete()
+    db.commit()
+    
+    db.add(models.Users(
+        user_id="u_crypt", user_name="홍길동", role="STAFF",
+        password=auth.get_password_hash("0000"), is_active=True
+    ))
+    db.commit()
+    
+    # 연차 신청 추가
+    db.add(models.Leaves(
+        user_id="u_crypt", date=date(2026, 12, 25), snapshot_slot_label="09:00 - 18:00",
+        snapshot_start_min=540, snapshot_end_min=1080, snapshot_deduction_hours=8.0,
+        status="REJECTED", year=2026, reason="크리스마스 휴무", rejection_reason="업무 지원 필요"
+    ))
+    db.commit()
+    db.close()
+    
+    # 검증 1) ORM 객체를 통해 읽었을 때 평문 복호화 확인
+    db = SessionLocal()
+    u_obj = db.query(models.Users).filter(models.Users.user_id == "u_crypt").first()
+    assert u_obj.user_name == "홍길동", f"ORM 복호화 실패: {u_obj.user_name}"
+    
+    l_obj = db.query(models.Leaves).filter(models.Leaves.user_id == "u_crypt").first()
+    assert l_obj.reason == "크리스마스 휴무", f"ORM 복호화 실패: {l_obj.reason}"
+    assert l_obj.rejection_reason == "업무 지원 필요", f"ORM 복호화 실패: {l_obj.rejection_reason}"
+    
+    # 검증 2) RAW SQL 실행하여 DB 파일상 실제로 암호화된 토큰 형태(gAAAAAB로 시작)로 들어갔는지 검사
+    raw_user_name = db.execute(text("SELECT user_name FROM users WHERE user_id = 'u_crypt'")).scalar()
+    assert raw_user_name.startswith("gAAAAAB"), f"DB 내부 암호화 확인 실패: {raw_user_name}"
+    
+    raw_leave_reason = db.execute(text("SELECT reason FROM leaves WHERE user_id = 'u_crypt'")).scalar()
+    assert raw_leave_reason.startswith("gAAAAAB"), f"DB 내부 암호화 확인 실패: {raw_leave_reason}"
+    
+    raw_reject_reason = db.execute(text("SELECT rejection_reason FROM leaves WHERE user_id = 'u_crypt'")).scalar()
+    assert raw_reject_reason.startswith("gAAAAAB"), f"DB 내부 암호화 확인 실패: {raw_reject_reason}"
+    
+    # 청소
+    db.query(models.Leaves).filter(models.Leaves.user_id == "u_crypt").delete()
+    db.query(models.Users).filter(models.Users.user_id == "u_crypt").delete()
+    # 스냅샷 복구
+    db.execute(text("UPDATE system_settings SET key_hash_snapshot = :orig"), {"orig": original_snapshot})
+    db.commit()
+    db.close()
+    os.environ.pop("SHIM_SECRET_KEY", None)
+    auth.get_encryption_key.cache_clear()
+    
+    print("  -> PASS: PII Column Transparent Encryption & Decryption verified.")
+
+    # --- 시나리오 23: 라우터 권한 검사 (Depends 재귀 검사) ---
+    print("[CASE 23] Router Permission Gate Leak Audit")
+    from fastapi.routing import APIRoute
+    from fastapi.dependencies.utils import get_dependant
+    from src.app.dependencies import get_current_admin
+    
+    def collect_all_dependencies(route: APIRoute) -> set:
+        dependencies = set()
+        if hasattr(route, "dependencies") and route.dependencies:
+            for dep in route.dependencies:
+                if hasattr(dep, "dependency") and dep.dependency:
+                    dependencies.add(dep.dependency)
+                elif hasattr(dep, "call") and dep.call:
+                    dependencies.add(dep.call)
+        if hasattr(route, "dependant") and route.dependant:
+            def recurse_deps(dep_obj):
+                if hasattr(dep_obj, "call") and dep_obj.call:
+                    dependencies.add(dep_obj.call)
+                if hasattr(dep_obj, "dependency") and dep_obj.dependency:
+                    dependencies.add(dep_obj.dependency)
+                if hasattr(dep_obj, "dependencies") and dep_obj.dependencies:
+                    for child in dep_obj.dependencies:
+                        recurse_deps(child)
+            recurse_deps(route.dependant)
+        return dependencies
+
+    exempt_paths = {
+        "/admin/login",
+    }
+    leaked_routes = []
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        path = route.path
+        if path.startswith(("/admin", "/api/admin")) and path not in exempt_paths:
+            all_deps = collect_all_dependencies(route)
+            if get_current_admin not in all_deps:
+                leaked_routes.append(f"[{route.methods}] {path} -> {route.endpoint.__name__}")
+                
+    assert not leaked_routes, f"관리자 권한 가드 누락 엔드포인트 발견: {leaked_routes}"
+    print("  -> PASS: Router permission leak audit completed successfully.")
+
+    # --- 시나리오 24: CORS Preflight 테스트 ---
+    print("[CASE 24] Closed Network CORS Subnet & Wildcard Matcher")
+    from src.app.middlewares.cors import ClosedNetworkCORSMiddleware
+    from fastapi import FastAPI
+    
+    test_cors_app = FastAPI()
+    test_cors_app.add_middleware(
+        ClosedNetworkCORSMiddleware,
+        origins_raw="http://*.local,http://192.168.10.0/24"
+    )
+    @test_cors_app.get("/api/ping")
+    def ping():
+        return {"ping": "pong"}
+        
+    cors_client = TestClient(test_cors_app)
+    
+    # 1. 와일드카드 도메인 통과
+    r1 = cors_client.options("/api/ping", headers={
+        "Origin": "http://shim-service.local",
+        "Access-Control-Request-Method": "GET"
+    })
+    assert r1.status_code == 204
+    assert r1.headers.get("access-control-allow-origin") == "http://shim-service.local"
+    assert r1.headers.get("access-control-allow-credentials") == "true"
+    
+    # 2. CIDR 서브넷 대역 통과
+    r2 = cors_client.options("/api/ping", headers={
+        "Origin": "http://192.168.10.15",
+        "Access-Control-Request-Method": "GET"
+    })
+    assert r2.status_code == 204
+    assert r2.headers.get("access-control-allow-origin") == "http://192.168.10.15"
+
+    # 3. 비허용 대역 차단
+    r3 = cors_client.options("/api/ping", headers={
+        "Origin": "http://192.168.99.15",
+        "Access-Control-Request-Method": "GET"
+    })
+    assert "access-control-allow-origin" not in r3.headers
+    print("  -> PASS: Subnet & wildcard CORS preflight verified.")
+
+    # --- 시나리오 25: Pydantic KST 직렬화 ---
+    print("[CASE 25] Pydantic KST ISO 8601 Serialization")
+    from src.app.schemas.base import BaseKSTResponse
+    
+    class TestResponseSchema(BaseKSTResponse):
+        id: int
+        created_at: datetime
+        
+    naive_db_time = datetime(2026, 6, 3, 15, 30, 0)  # UTC 15:30
+    schema = TestResponseSchema(id=99, created_at=naive_db_time)
+    dumped = schema.model_dump()
+    expected_iso_str = "2026-06-04T00:30:00+09:00"  # UTC 15:30 -> KST 2026-06-04 00:30
+    
+    assert dumped["created_at"] == expected_iso_str, f"타임존 하루 밀림/시차 변환 불일치: {dumped['created_at']}"
+    print("  -> PASS: Pydantic KST datetime serialization verified.")
+
+    # --- 시나리오 26: DBInitLock 동시성 락 ---
+    print("[CASE 26] DBInitLock Atomic Directory Concurrency Guard")
+    from tools.scripts.db_init import DBInitLock
+    
+    lock_dir = TEST_DATA_DIR / "test_migration.lock"
+    # 깨끗하게 초기화
+    if lock_dir.exists():
+        if (lock_dir / "lock.time").exists():
+            (lock_dir / "lock.time").unlink()
+        lock_dir.rmdir()
+        
+    # 1. 락 획득 성공 검증
+    with DBInitLock(lock_dir) as lock1:
+        assert lock_dir.exists()
+        assert (lock_dir / "lock.time").exists()
+        
+        # 2. 획득 중인 상태에서 중복 획득 시도 시 타임아웃 예외
+        try:
+            with DBInitLock(lock_dir, timeout=1):
+                assert False, "이미 락을 쥔 상태이므로 예외가 발생해야 합니다."
+        except TimeoutError:
+            pass  # 정상 작동
+            
+    # 3. 락 해제 후 정상 삭제되었는지 검증
+    assert not lock_dir.exists()
+    print("  -> PASS: DBInitLock atomic directory locking verified.")
 
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()

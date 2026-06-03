@@ -53,28 +53,33 @@ def validate_and_apply_leave(
             work_end,
         ) = resolve_time_policy_setting(db)
 
-        # 2. 날짜 필터링 (주말 및 공휴일 체크)
-        valid_dates = []
+        # 날짜들을 미리 datetime.date 객체로 파싱
+        parsed_dates = []
         for d_str in raw_dates:
             try:
-                req_date = datetime.strptime(d_str, "%Y-%m-%d").date()
+                parsed_dates.append(datetime.strptime(d_str, "%Y-%m-%d").date())
             except ValueError:
                 raise LeaveInputValidationError(f"날짜 형식이 올바르지 않습니다: {d_str}")
 
+        # 공휴일 일괄 조회 (N+1 최적화)
+        holidays = db.query(models.Holidays).filter(models.Holidays.date.in_(parsed_dates)).all()
+        holiday_map = {h.date: h.name for h in holidays}
+
+        # 2. 날짜 필터링 (주말 및 공휴일 체크)
+        valid_dates = []
+        for req_date in parsed_dates:
             # 단일 신청 시에는 주말/공휴일 즉시 에러
             if not is_multiple:
                 if req_date.weekday() >= 5:
                     raise LeaveInputValidationError("주말에는 신청할 수 없습니다.")
-                is_holiday = db.query(models.Holidays).filter(models.Holidays.date == req_date).first()
-                if is_holiday:
-                    raise LeaveInputValidationError(f"공휴일({is_holiday.name})에는 신청할 수 없습니다.")
+                if req_date in holiday_map:
+                    raise LeaveInputValidationError(f"공휴일({holiday_map[req_date]})에는 신청할 수 없습니다.")
                 valid_dates.append(req_date)
             else:
                 # 다중 신청 시에는 주말/공휴일 자동 건너뛰기
                 if req_date.weekday() >= 5:
                     continue
-                is_holiday = db.query(models.Holidays).filter(models.Holidays.date == req_date).first()
-                if is_holiday:
+                if req_date in holiday_map:
                     continue
                 valid_dates.append(req_date)
 
@@ -110,6 +115,12 @@ def validate_and_apply_leave(
             yr = req_date.year
             yearly_new_deductions[yr] = yearly_new_deductions.get(yr, 0.0) + snapshot.deduction_hours
 
+        # 점심시간 공제 후 일일 최대 순수 근무 시간 계산
+        lunch_minutes = 0
+        if lunch_start is not None and lunch_end is not None and lunch_end > lunch_start:
+            lunch_minutes = lunch_end - lunch_start
+        max_daily_hours = (work_end - work_start - lunch_minutes) / 60.0
+
         # 개별 날짜별 중복 및 일일 한도 체크
         for req_date in valid_dates:
             existing_leaves = db.query(models.Leaves).filter(
@@ -125,8 +136,8 @@ def validate_and_apply_leave(
                     raise LeaveInputValidationError(f"{req_date} 날짜에 이미 신청된 시간대와 중복됩니다.")
                 daily_total += el.snapshot_deduction_hours
 
-            if daily_total > 8.01:
-                raise LeaveInputValidationError(f"{req_date} 날짜의 총 신청 시간이 8시간을 초과합니다.")
+            if daily_total > max_daily_hours + 0.01:
+                raise LeaveInputValidationError(f"{req_date} 날짜의 총 신청 시간이 {max_daily_hours}시간을 초과합니다.")
 
         # 5. 잔여 연차 체크 (is_deductive=True 인 경우만, 연도별 검증)
         if is_deductive:

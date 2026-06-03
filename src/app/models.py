@@ -17,8 +17,13 @@ class EncryptedString(TypeDecorator):
             try:
                 f = Fernet(key)
                 return f.encrypt(value.encode('utf-8')).decode('utf-8')
-            except Exception:
-                return value
+            except Exception as e:
+                import logging
+                logging.getLogger("shim.crypto").error(
+                    f"Fernet encryption failed for column. Refusing to store plaintext. Error: {e}",
+                    exc_info=True
+                )
+                raise
         return value
 
     def process_result_value(self, value, dialect):
