@@ -90,3 +90,85 @@ def hours_to_days_hours_compact(total_hours: float, day_hours: int = 8) -> str:
     d = int(th // day_hours)
     rem = round(th - d * day_hours, 1)
     return _fmt(d, rem, False)
+
+
+# 쌍자음(ㄲ, ㄷ, ㅃ, ㅆ, ㅉ)을 포함한 표준 초성 목록
+CHOSUNG_LIST = [
+    'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+]
+
+def get_chosung(text: str) -> str:
+    chosung = []
+    for char in text:
+        code = ord(char)
+        if 0xAC00 <= code <= 0xD7A3:
+            idx = ((code - 0xAC00) // 28) // 21
+            chosung.append(CHOSUNG_LIST[idx])
+        else:
+            chosung.append(char)
+    return "".join(chosung)
+
+def search_users_stateless(users_list: list, query_str: str) -> list:
+    """
+    제공된 사용자 목록에 대해 초성/부분 일치 인메모리 검색을 수행합니다.
+    """
+    if not query_str or not query_str.strip():
+        return users_list
+
+    query_clean = query_str.strip().lower()
+    
+    # 쌍자음을 포함한 정밀 초성 판별식
+    is_pure_chosung = all(char in CHOSUNG_LIST for char in query_clean)
+
+    results = []
+    for u in users_list:
+        name = getattr(u, "user_name", "") if hasattr(u, "user_name") else u.get("user_name", "")
+        name_lower = name.lower()
+        chosung_name = get_chosung(name)
+        
+        if is_pure_chosung and query_clean in chosung_name:
+            results.append(u)
+        elif not is_pure_chosung and query_clean in name_lower:
+            results.append(u)
+    return results
+
+
+def get_timezone_offset_hours() -> float:
+    import os
+    env_val = os.getenv("SHIM_TIMEZONE_OFFSET_HOURS")
+    if env_val is not None:
+        try:
+            return float(env_val)
+        except ValueError:
+            pass
+    # Dynamic fallback: calculate offset from system local time and UTC
+    import datetime
+    try:
+        local_now = datetime.datetime.now()
+        utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        return round((local_now - utc_now).total_seconds() / 3600.0, 2)
+    except Exception:
+        return 9.0
+
+def to_kst(dt):
+    if dt is None:
+        return None
+    import datetime
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    offset = get_timezone_offset_hours()
+    local_tz = datetime.timezone(datetime.timedelta(hours=offset))
+    return dt.astimezone(local_tz)
+
+def to_kst_naive(dt):
+    kst_dt = to_kst(dt)
+    if kst_dt is None:
+        return None
+    return kst_dt.replace(tzinfo=None)
+
+def format_datetime_kst(dt, fmt='%Y-%m-%d %H:%M'):
+    kst_dt = to_kst(dt)
+    if kst_dt is None:
+        return ""
+    return kst_dt.strftime(fmt)
+
