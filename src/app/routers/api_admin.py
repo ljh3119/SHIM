@@ -442,7 +442,7 @@ def export_admin_leaves_timeline(
         
         # 1. 신청 시각 (datetime)
         if leave.created_at:
-            cell_created = WriteOnlyCell(ws_timeline, value=leave.created_at)
+            cell_created = WriteOnlyCell(ws_timeline, value=utils.to_kst_naive(leave.created_at))
             cell_created.number_format = 'yyyy-mm-dd hh:mm:ss'
             row.append(cell_created)
         else:
@@ -944,6 +944,7 @@ def admin_users(
     year: int = None,
     sort_key: str = "role",
     sort_dir: str = "asc",
+    q: str = "",
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -955,6 +956,11 @@ def admin_users(
         query = query.filter(models.Users.is_active == False)
         
     users = query.all()
+
+    # 인메모리 검색 적용 (Fernet 복호화 및 한글 초성 매칭)
+    if q and q.strip():
+        users = utils.search_users_stateless(users, q)
+
     sort_key_effective = sort_key if sort_key in {"user_name", "user_id", "company", "team", "leave_days", "role"} else "role"
     sort_dir_effective = "desc" if sort_dir == "desc" else "asc"
     now_year = datetime.now().year
@@ -992,11 +998,13 @@ def admin_users(
     users_sorted = active_sorted + inactive_sorted
 
     base_q = {"filter": filter, "year": str(selected_year)}
+    if q:
+        base_q["q"] = q
     sort_urls = {}
     for col in ("user_name", "user_id", "company", "team", "leave_days", "role"):
         next_dir = "desc" if (sort_key_effective == col and sort_dir_effective == "asc") else "asc"
-        q = {**base_q, "sort_key": col, "sort_dir": next_dir}
-        sort_urls[col] = f"/admin/users?{urlencode(q)}"
+        sort_params = {**base_q, "sort_key": col, "sort_dir": next_dir}
+        sort_urls[col] = f"/admin/users?{urlencode(sort_params)}"
     
     return _templates(request).TemplateResponse(request=request, name="admin_users.html", context={
         "admin": admin,
@@ -1007,7 +1015,8 @@ def admin_users(
         "sort_urls": sort_urls,
         "selected_year": selected_year,
         "year_options": year_options,
-        "user_leave_days_map": user_leave_days_map
+        "user_leave_days_map": user_leave_days_map,
+        "q": q
     })
 
 @api_router.post("/user/toggle")
@@ -1033,6 +1042,16 @@ def toggle_user_active(
     user.is_active = not user.is_active
     user.token_version += 1
     
+    if not user.is_active:
+        today = date_cls.today()
+        future_leaves = db.query(models.Leaves).filter(
+            models.Leaves.user_id == target_user_id,
+            models.Leaves.date >= today,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).all()
+        for leave in future_leaves:
+            leave.status = "CANCELED"
+            
     # Audit log
     audit = models.AuditLogs(
         actor_id=admin.user_id,
@@ -1166,8 +1185,21 @@ def update_user(
     user.team = team.strip() if team else None
     user.role = role_value
     user.position = position.strip() if position else None
+    
+    # 활성 상태 변경 감지 및 비활성화 시 미래 연차 일괄 취소
+    was_active = user.is_active
     user.is_active = is_active
     user.token_version += 1
+
+    if was_active and not user.is_active:
+        today = date_cls.today()
+        future_leaves = db.query(models.Leaves).filter(
+            models.Leaves.user_id == target_user_id,
+            models.Leaves.date >= today,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).all()
+        for leave in future_leaves:
+            leave.status = "CANCELED"
 
     new_data = (
         f"name={user.user_name};company={user.company};team={user.team};"
@@ -2008,7 +2040,7 @@ def admin_audit_export(
 
         ws.append(
             [
-                log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                utils.format_datetime_kst(log.timestamp, "%Y-%m-%d %H:%M:%S"),
                 log.actor_id or "",
                 actor_name,
                 actor_dept,

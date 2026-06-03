@@ -13,7 +13,7 @@ import holidays
 from contextlib import asynccontextmanager
 
 import asyncio
-from . import models, database, auth
+from . import models, database, auth, utils
 from .database import engine, get_db, DB_PATH
 from .services.ops import verify_and_recover_db, daily_backup_scheduler
 
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version="1.6.1", lifespan=lifespan)
+app = FastAPI(title="SHIM", version="1.6.3", lifespan=lifespan)
 
 DEFAULT_PRODUCT_DISPLAY_NAME = "쉼(SHIM) 프로젝트 개발 운영"
 DEFAULT_BRAND_INITIAL = "S"
@@ -207,10 +207,11 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
         
     return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
 
-templates.env.globals["app_version"] = "1.6.1"
+templates.env.globals["app_version"] = "1.6.3"
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 templates.env.globals["string_to_hsl_style"] = string_to_hsl_style
+templates.env.filters["format_datetime_kst"] = utils.format_datetime_kst
 app.state.templates = templates
 
 from .routers import api_user, api_admin
