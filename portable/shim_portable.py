@@ -458,6 +458,12 @@ def main():
         port = args.port if args.port else 8000
         os.environ["SHIM_PORT"] = str(port)
         try:
+            from tools.scripts.db_init import init_db
+            init_db()
+        except Exception as e:
+            print(f"[DB INIT ERROR] Failed to initialize database: {e}")
+            sys.exit(1)
+        try:
             from src.app.main import app as fastapi_app
             uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
         except KeyboardInterrupt:
@@ -510,6 +516,12 @@ def main():
         # Foreground Interactive Instance
         port = args.port if args.port else resolve_port(8000)
         os.environ["SHIM_PORT"] = str(port)
+        try:
+            from tools.scripts.db_init import init_db
+            init_db()
+        except Exception as e:
+            print(f"[DB INIT ERROR] Failed to initialize database: {e}")
+            sys.exit(1)
         print("=" * 60)
         print("  쉼(SHIM) 연차 관리 시스템이 포그라운드에서 기동되었습니다.")
         print("=" * 60)

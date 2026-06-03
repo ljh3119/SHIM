@@ -44,9 +44,8 @@ if ($currentVersion -eq $Version) {
 # 1) package.json version
 Replace-OrFail $packageJsonPath '"version"\s*:\s*"[0-9]+\.[0-9]+\.[0-9]+"' "`"version`": `"$Version`""
 
-# 2) src/app/main.py application version
-Replace-OrFail (Join-Path $ProjectRoot "src\app\main.py") 'FastAPI\(title="SHIM", version="[0-9]+\.[0-9]+\.[0-9]+"' "FastAPI(title=`"SHIM`", version=`"$Version`""
-Replace-OrFail (Join-Path $ProjectRoot "src\app\main.py") 'templates\.env\.globals\["app_version"\] = "[0-9]+\.[0-9]+\.[0-9]+"' "templates.env.globals[`"app_version`"] = `"$Version`""
+# 2) src/app/constants.py application version
+Replace-OrFail (Join-Path $ProjectRoot "src\app\constants.py") 'APP_VERSION\s*=\s*"[0-9]+\.[0-9]+\.[0-9]+"' "APP_VERSION = `"$Version`""
 
 # 3) src/templates/base.html default version fallback
 Replace-OrFail (Join-Path $ProjectRoot "src\templates\base.html") "default\('[0-9]+\.[0-9]+\.[0-9]+'\)" "default('$Version')"

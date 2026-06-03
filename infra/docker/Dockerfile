@@ -1,7 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-# 타임존 설정 (기본값: Asia/Seoul)
-ENV TZ=Asia/Seoul
+# 타임존 설정 (기본값: UTC)
+ENV TZ=UTC
 
 WORKDIR /app
 
@@ -15,4 +15,4 @@ COPY . .
 # Tailwind CSS 로컬 빌드 결과물이나 SQLite는 빌드나 런타임에 맞춰 자동 동기화
 EXPOSE 8000
 
-CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD python tools/scripts/db_init.py && uvicorn src.app.main:app --host 0.0.0.0 --port 8000
