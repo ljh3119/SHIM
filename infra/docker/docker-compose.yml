@@ -1,13 +1,13 @@
 services:
   shim:
-    image: ${SHIM_IMAGE:-shim:1.6.3}
+    image: ${SHIM_IMAGE:-shim:1.7.0}
     container_name: shim
     ports:
       - "8000:8000"
     environment:
       # Copy `.env.example` to `.env` and set SHIM_SECRET_KEY for production.
       SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
-      TZ: ${TZ:-Asia/Seoul} # 타임존 설정 (기본값: Asia/Seoul, .env 파일에서 변경 가능)
+      TZ: ${TZ:-UTC} # 타임존 설정 (기본값: UTC, .env 파일에서 변경 가능)
     volumes:
       - ${SHIM_DATA_DIR:-../../var/data}:/app/var/data
     restart: unless-stopped

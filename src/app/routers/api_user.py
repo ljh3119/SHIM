@@ -8,7 +8,6 @@ import calendar as cal_module
 
 from .. import models, database, auth, utils
 from ..database import get_db, DB_PATH
-from ..services.ops import run_backup_and_rotate
 from ..services.leave_policy import (
     LeaveInputValidationError,
     LeaveStatusTransitionError,
@@ -380,7 +379,6 @@ def apply_leave(
             is_deductive=is_deductive,
             reason=reason,
         )
-        background_tasks.add_task(run_backup_and_rotate, DB_PATH)
         return JSONResponse(status_code=200, content={"message": msg})
     except LeaveInputValidationError as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
@@ -500,7 +498,6 @@ def team_approve_leave(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "승인되었습니다."})
 
 
@@ -547,7 +544,6 @@ def team_reject_leave(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "반려되었습니다."})
 
 
@@ -626,6 +622,5 @@ def user_cancel_leave(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    background_tasks.add_task(run_backup_and_rotate, DB_PATH)
     return JSONResponse(status_code=200, content={"message": "연차 신청이 취소되었습니다."})
 

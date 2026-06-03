@@ -158,12 +158,11 @@ def seed_data(reset: bool = False):
         def get_random_leave_data():
             opt = random.choice(leave_options)
             is_deduct = random.random() > 0.20  # 20% 확률로 공가/출장(비차감)
+            label = opt[0]
             if not is_deduct:
                 reason = random.choice(["예비군 훈련 참석", "직무 교육 외부 세미나", "고객사 파견 미팅", "정기 건강 검진"])
-                label = f"[공가] {opt[0]}" if "연차" in opt[4] or "반차" in opt[4] else f"[출장] {opt[0]}"
             else:
-                reason = opt[4]
-                label = opt[0]
+                reason = None
             
             return {
                 "label": label,

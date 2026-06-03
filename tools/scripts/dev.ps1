@@ -8,16 +8,17 @@ Write-Host "[SHIM] project_root=$ProjectRoot"
 
 $tailwind = Start-Process -FilePath "npx.cmd" `
     -ArgumentList @(
-        "tailwindcss",
-        "-i", "./src/static/css/app.css",
-        "-o", "./src/static/css/tailwind.css",
-        "--watch"
-    ) `
+    "tailwindcss",
+    "-i", "./src/static/css/app.css",
+    "-o", "./src/static/css/tailwind.css",
+    "--watch"
+) `
     -PassThru `
     -NoNewWindow
 
 try {
-    python -m uvicorn src.app.main:app --host 0.0.0.0 --port 8080 --reload --reload-dir src
+    python tools/scripts/db_init.py
+    python -m uvicorn src.app.main:app --host 0.0.0.0 --port 9090 --reload --reload-dir src
 }
 finally {
     if ($tailwind -and -not $tailwind.HasExited) {
