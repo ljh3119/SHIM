@@ -1,6 +1,8 @@
 import os
 import sys
 import random
+import argparse
+import hashlib
 from datetime import date, timedelta, datetime
 from pathlib import Path
 
@@ -10,9 +12,31 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.app import models, auth, database
-from src.app.database import SessionLocal
+from src.app.database import SessionLocal, engine
 
-def seed_data():
+def seed_data(reset: bool = False):
+    if reset:
+        print("[SEED] Resetting database...")
+        # Close all existing connections in connection pool
+        engine.dispose()
+        
+        from src.app.database import DB_PATH
+        db_path = DB_PATH
+        wal_path = db_path.parent / (db_path.name + "-wal")
+        shm_path = db_path.parent / (db_path.name + "-shm")
+        
+        for path in [db_path, wal_path, shm_path]:
+            if path.exists():
+                try:
+                    os.remove(path)
+                    print(f"[SEED] Removed database file: {path}")
+                except Exception as e:
+                    print(f"[SEED WARNING] Failed to remove {path}: {e}")
+                    
+        # Re-create all tables based on current models.py
+        models.Base.metadata.create_all(bind=engine)
+        print("[SEED] Re-created all database tables from metadata")
+
     db = SessionLocal()
     try:
         print("[SEED] Starting test data seeding...")
@@ -24,7 +48,6 @@ def seed_data():
                 user_id="admin",
                 user_name="시스템관리자",
                 password=auth.get_password_hash("0000"),
-                is_admin=True,
                 role="ADMIN",
                 company="SHIM",
                 team="HQ"
@@ -32,6 +55,8 @@ def seed_data():
             db.add(admin)
             db.commit()
             print("[SEED] Created admin user")
+        # Ensure we load admin model from DB
+        admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
 
         # 2. Define Companies and Teams
         companies = ["A-건설", "B-시스템", "C-테크"]
@@ -97,25 +122,28 @@ def seed_data():
         print("[SEED] Created staff users")
 
         # 6. Create Yearly Allocations
-        current_year = date.today().year
+        # Gather all possible years for generated leaves (past 15 days to future 15 days)
+        today = date.today()
+        target_years = {(today - timedelta(days=15)).year, today.year, (today + timedelta(days=15)).year}
+        
         all_users = db.query(models.Users).all()
         for u in all_users:
-            exists = db.query(models.UserYearlyLeaveAllocations).filter(
-                models.UserYearlyLeaveAllocations.user_id == u.user_id,
-                models.UserYearlyLeaveAllocations.year == current_year
-            ).first()
-            if not exists:
-                db.add(models.UserYearlyLeaveAllocations(
-                    user_id=u.user_id,
-                    year=current_year,
-                    allocated_hours=120
-                ))
+            for yr in target_years:
+                exists = db.query(models.UserYearlyLeaveAllocations).filter(
+                    models.UserYearlyLeaveAllocations.user_id == u.user_id,
+                    models.UserYearlyLeaveAllocations.year == yr
+                ).first()
+                if not exists:
+                    db.add(models.UserYearlyLeaveAllocations(
+                        user_id=u.user_id,
+                        year=yr,
+                        allocated_hours=120
+                    ))
         db.commit()
-        print("[SEED] Created yearly allocations")
+        print(f"[SEED] Created yearly allocations for years: {list(target_years)}")
 
         # 7. Create Leave Requests
         statuses = ["APPROVED", "PENDING", "REJECTED", "CANCELED"]
-        today = date.today()
         
         # 다양한 연차 종류 정의: (label, start_min, end_min, deduction_hours, default_reason)
         leave_options = [
@@ -146,10 +174,15 @@ def seed_data():
                 "reason": reason
             }
 
+        # Track remaining leave hours per user and year to avoid exceeding 120 hours limit
+        user_remaining_hours = {}
+        for u in all_users:
+            user_remaining_hours[u.user_id] = {yr: 120.0 for yr in target_years}
+
         # Generate some past leaves (mostly approved)
         for u in all_users:
             if u.role == "ADMIN": continue
-            # Past 30 days
+            # Past 14 days
             for d in range(1, 15):
                 if random.random() > 0.7:
                     leave_date = today - timedelta(days=d)
@@ -159,6 +192,15 @@ def seed_data():
                     rejection_reason = "업무 과다로 인한 반려" if status == "REJECTED" else ""
                     
                     ldata = get_random_leave_data()
+                    req_year = leave_date.year
+                    
+                    # If deductive leave, check limit
+                    if ldata["is_deductive"] and status not in ["CANCELED", "REJECTED"]:
+                        rem = user_remaining_hours[u.user_id].get(req_year, 120.0)
+                        if rem < ldata["hours"]:
+                            continue  # Skip to avoid negative leave balance
+                        user_remaining_hours[u.user_id][req_year] -= ldata["hours"]
+
                     db.add(models.Leaves(
                         user_id=u.user_id,
                         date=leave_date,
@@ -170,13 +212,13 @@ def seed_data():
                         rejection_reason=rejection_reason,
                         is_deductive=ldata["is_deductive"],
                         reason=ldata["reason"],
-                        year=leave_date.year
+                        year=req_year
                     ))
 
         # Generate some future leaves (mostly pending)
         for u in all_users:
             if u.role == "ADMIN": continue
-            # Future 30 days
+            # Future 14 days
             for d in range(1, 15):
                 if random.random() > 0.8:
                     leave_date = today + timedelta(days=d)
@@ -187,6 +229,15 @@ def seed_data():
                     if u.role == "PM": status = "APPROVED"
                     
                     ldata = get_random_leave_data()
+                    req_year = leave_date.year
+                    
+                    # If deductive leave, check limit
+                    if ldata["is_deductive"] and status not in ["CANCELED", "REJECTED"]:
+                        rem = user_remaining_hours[u.user_id].get(req_year, 120.0)
+                        if rem < ldata["hours"]:
+                            continue  # Skip to avoid negative leave balance
+                        user_remaining_hours[u.user_id][req_year] -= ldata["hours"]
+
                     db.add(models.Leaves(
                         user_id=u.user_id,
                         date=leave_date,
@@ -197,7 +248,7 @@ def seed_data():
                         status=status,
                         is_deductive=ldata["is_deductive"],
                         reason=ldata["reason"],
-                        year=leave_date.year
+                        year=req_year
                     ))
         
         db.commit()
@@ -214,17 +265,44 @@ def seed_data():
         
         for _ in range(20):
             action_code, action_kr = random.choice(actions)
+            target_user = random.choice(all_users)
             db.add(models.AuditLogs(
                 actor_id="admin",
+                actor=admin,  # Pass the admin object explicitly to ensure actor_name/actor_department are snapshotted by listener
                 action=action_code,
-                target_info=f"Target: {random.choice(all_users).user_id}",
+                target_info=f"Target: {target_user.user_id}",
                 old_data="{}",
                 new_data="{\"note\": \"Seed data\"}",
                 timestamp=datetime.now() - timedelta(days=random.randint(0, 10))
             ))
         db.commit()
-        print("[SEED] Created audit logs")
+        print("[SEED] Created audit logs with actor snapshots")
 
+        # 9. Ensure System Settings exists and sync key_hash_snapshot
+        current_key = auth.get_encryption_key()
+        current_key_hash = hashlib.sha256(current_key).hexdigest() if current_key else "PLAINTEXT_MODE"
+        
+        settings = db.query(models.SystemSettings).first()
+        if not settings:
+            settings = models.SystemSettings(
+                is_approval_required=False,
+                time_granularity_minutes=60,
+                work_start_minute=9 * 60,
+                work_end_minute=18 * 60,
+                product_display_name="쉼(SHIM) 프로젝트 개발 운영",
+                product_nav_short="",
+                brand_initial="S",
+                team_calendar_visible=True,
+                company_calendar_visible=False,
+                key_hash_snapshot=current_key_hash
+            )
+            db.add(settings)
+            print("[SEED] Created default system settings with key_hash_snapshot")
+        else:
+            settings.key_hash_snapshot = current_key_hash
+            print("[SEED] Synchronized key_hash_snapshot in system settings")
+        
+        db.commit()
         print("[SEED] Test data seeding completed successfully!")
 
     except Exception as e:
@@ -234,4 +312,8 @@ def seed_data():
         db.close()
 
 if __name__ == "__main__":
-    seed_data()
+    parser = argparse.ArgumentParser(description="SHIM test data seeding script")
+    parser.add_argument("--reset", "-r", action="store_true", help="Reset database before seeding")
+    args = parser.parse_args()
+    
+    seed_data(reset=args.reset)

@@ -37,7 +37,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.
 
 def get_current_admin(current_user: models.Users = Depends(get_current_user)) -> models.Users:
     user_role = getattr(current_user, "role", "")
-    is_admin = getattr(current_user, "is_admin", False)
-    if user_role != "ADMIN" and not is_admin:
+    if user_role != "ADMIN":
         raise PermissionDeniedException()
     return current_user
