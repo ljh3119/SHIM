@@ -12,5 +12,5 @@ services:
       SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
       TZ: ${TZ:-Asia/Seoul} # 타임존 설정 (기본값: Asia/Seoul, .env 파일에서 변경 가능)
     volumes:
-      - ../../var/data:/app/var/data
+      - ${SHIM_DATA_DIR:-../../var/data}:/app/var/data
     restart: unless-stopped
