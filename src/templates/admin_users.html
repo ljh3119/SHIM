@@ -132,7 +132,7 @@
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                 </button>
                                 {% if u.role != 'ADMIN' %}
-                                <button type="button" title="상태(활성) 전환" onclick="toggleUser('{{ u.user_id }}')" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft transition-colors">
+                                <button type="button" title="상태(활성) 전환" onclick="toggleUser('{{ u.user_id }}', {{ 'true' if u.is_active else 'false' }})" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft transition-colors">
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
                                 </button>
                                 <button type="button" title="계정 삭제" onclick="hardDeleteUser('{{ u.user_id }}')" class="flex h-7 w-7 items-center justify-center rounded-lg border border-dense-danger-soft bg-dense-danger-soft text-[#b42318] hover:brightness-95 transition-colors">
@@ -349,8 +349,11 @@ async function apiCall(url, data, confirmMsg) {
     }
 }
 
-function toggleUser(id) {
-    apiCall('/api/admin/user/toggle', { target_user_id: id }, '사원의 활성/비활성 상태를 전환하시겠습니까?');
+function toggleUser(id, isActive) {
+    const confirmMsg = isActive
+        ? '사원을 비활성화하시겠습니까?\n비활성화 시 해당 사원의 오늘 포함 미래 연차 신청 건은 자동으로 취소(CANCELED) 처리됩니다.'
+        : '사원을 활성화하시겠습니까?';
+    apiCall('/api/admin/user/toggle', { target_user_id: id }, confirmMsg);
 }
 
 function hardDeleteUser(id) {
@@ -380,6 +383,7 @@ function openEditUserModal(id, name, company, team, role, position, isActive) {
     document.getElementById('edit_team').value = team;
     document.getElementById('edit_position').value = position;
     document.getElementById('edit_is_active').value = isActive ? 'true' : 'false';
+    document.getElementById('editUserForm').dataset.initialActive = isActive ? 'true' : 'false';
 
     const roleSelectContainer = document.getElementById('edit_role_selector_container');
     const roleAdminDisplay = document.getElementById('edit_role_admin_display');
@@ -432,6 +436,14 @@ function submitEditUser() {
             data[key] = value;
         }
     });
+
+    const initialActive = form.dataset.initialActive;
+    if (initialActive === 'true' && data['is_active'] === false) {
+        if (!confirm('사원을 비활성화하시겠습니까?\n비활성화 시 이 사원의 오늘 포함 미래 연차 신청 건은 자동으로 취소(CANCELED) 처리됩니다.')) {
+            return;
+        }
+    }
+
     apiCall('/api/admin/user/update', data);
 }
 
