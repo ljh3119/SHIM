@@ -4,11 +4,17 @@
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$ProjectRoot = (Get-Item "$PSScriptRoot\..\..").FullName
 Set-Location $ProjectRoot
 
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false, $true)
+function Read-Text([string]$Path) {
+    $ResolvedPath = (Get-Item $Path).FullName
+    return [System.IO.File]::ReadAllText($ResolvedPath, $Utf8NoBom)
+}
+
 $packageJsonPath = Join-Path $ProjectRoot "package.json"
-$package = (Get-Content -Raw -Encoding utf8 $packageJsonPath) | ConvertFrom-Json
+$package = (Read-Text $packageJsonPath) | ConvertFrom-Json
 $ver = [string]$package.version
 
 $errs = [System.Collections.Generic.List[string]]::new()
@@ -18,19 +24,15 @@ function Add-Err([string]$Message) {
 }
 
 # Code / config (must match release.ps1 targets)
-$mainPath = Join-Path $ProjectRoot "src\app\main.py"
-$main = Get-Content -Raw -Encoding utf8 $mainPath
-$fastapiNeedle = 'FastAPI(title="SHIM", version="' + $ver + '"'
-if ($main.IndexOf($fastapiNeedle, [StringComparison]::Ordinal) -lt 0) {
-    Add-Err "src/app/main.py: FastAPI version must equal package.json ($ver)."
-}
-$appVerNeedle = 'templates.env.globals["app_version"] = "' + $ver + '"'
-if ($main.IndexOf($appVerNeedle, [StringComparison]::Ordinal) -lt 0) {
-    Add-Err "src/app/main.py: templates.env.globals app_version must equal package.json ($ver)."
+$constantsPath = Join-Path $ProjectRoot "src\app\constants.py"
+$constants = Read-Text $constantsPath
+$appVerNeedle = 'APP_VERSION = "' + $ver + '"'
+if ($constants.IndexOf($appVerNeedle, [StringComparison]::Ordinal) -lt 0) {
+    Add-Err "src/app/constants.py: APP_VERSION must equal package.json ($ver)."
 }
 
 $basePath = Join-Path $ProjectRoot "src\templates\base.html"
-$base = Get-Content -Raw -Encoding utf8 $basePath
+$base = Read-Text $basePath
 $defaultVer = "default('$ver')"
 $matches = [regex]::Matches($base, [regex]::Escape($defaultVer))
 if ($matches.Count -lt 2) {
@@ -39,7 +41,7 @@ if ($matches.Count -lt 2) {
 
 foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compose.dev.yml")) {
     $p = Join-Path $ProjectRoot $rel
-    $t = Get-Content -Raw -Encoding utf8 $p
+    $t = Read-Text $p
     if ($t -notmatch [regex]::Escape("shim:$ver")) {
         Add-Err "$rel : default image must include shim:$ver"
     }
@@ -47,7 +49,7 @@ foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compo
 
 # Docs: README is the public/version summary; docs/0_* index has no required version string.
 $readmePath = Join-Path $ProjectRoot "README.md"
-$readme = Get-Content -Raw -Encoding utf8 $readmePath
+$readme = Read-Text $readmePath
 # README line like "**릴리스 버전:** X.Y.Z" (colon inside bold); ASCII-safe tail match
 if ($readme -notmatch ('\*\*[^*]+\*\*\s+' + [regex]::Escape($ver) + '(?:\s|$)')) {
     Add-Err "README.md: bold line then spaces then package.json version ($ver)"
@@ -55,7 +57,7 @@ if ($readme -notmatch ('\*\*[^*]+\*\*\s+' + [regex]::Escape($ver) + '(?:\s|$)'))
 
 $portableReadme = Join-Path $ProjectRoot "portable\README_PORTABLE.md"
 if (Test-Path $portableReadme) {
-    $pr = Get-Content -Raw -Encoding utf8 $portableReadme
+    $pr = Read-Text $portableReadme
     if ($pr.IndexOf("v$ver", [StringComparison]::Ordinal) -lt 0) {
         Add-Err "portable/README_PORTABLE.md: must mention v$ver (e.g. next to date)"
     }

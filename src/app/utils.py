@@ -172,3 +172,59 @@ def format_datetime_kst(dt, fmt='%Y-%m-%d %H:%M'):
         return ""
     return kst_dt.strftime(fmt)
 
+
+# 회사 색상: 보조적이지만 서로 확실히 구분될 수 있도록 엄선된 8가지 웜톤/녹색계열 색상 목록 (0~140도 범위)
+# (hue, saturation, bg_lightness, text_lightness)
+COMPANY_COLORS = [
+    (12, 70, 91, 24),   # Coral / Red-Orange
+    (24, 65, 90, 22),   # Terracotta / Warm Orange
+    (38, 75, 90, 20),   # Bronze / Amber
+    (52, 75, 89, 18),   # Yellow-Gold
+    (72, 55, 90, 20),   # Chartreuse / Lime
+    (95, 45, 90, 20),   # Sage Green
+    (120, 48, 90, 18),  # Forest Green
+    (138, 45, 90, 18),  # Mint Green
+]
+
+def string_to_hsl_style(text: str, is_team: bool = False) -> str:
+    if not text or text == "—" or not text.strip():
+        return "background-color: var(--dense-surface-soft); color: var(--dense-muted); border: 1px solid var(--dense-line);"
+    
+    # 해싱 전 고유 접두사를 결합하여 회사와 팀의 해시 씨앗 분리
+    prefix = "team:" if is_team else "company:"
+    salted_text = prefix + text
+    
+    h = 0
+    for char in salted_text:
+        h = ord(char) + ((h << 5) - h)
+    
+    if is_team:
+        # 팀: 더 확실히 봐야 하므로 생동감 있고 강렬한 대역 (파랑, 보라, 마젠타, 핑크: 180 ~ 340도)
+        hue = 180 + (abs(h) % 160)
+        s = 75
+        bg_l = 91
+        text_l = 15
+        
+        # 노란색, 라임색 등 가시성이 취약한 45~95도 구간 보정
+        if 45 <= hue <= 95:
+            bg_l = 88
+            text_l = 10
+            
+        return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
+    else:
+        # 회사: 팀 색상(180~340도)과 겹치지 않는 0~140도 범위 내에서 엄선된 색상 매핑
+        color_idx = abs(h) % len(COMPANY_COLORS)
+        hue, s, bg_l, text_l = COMPANY_COLORS[color_idx]
+        
+        return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
+
+
+def get_local_today() -> str:
+    import datetime
+    offset = get_timezone_offset_hours()
+    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    local_now = utc_now + datetime.timedelta(hours=offset)
+    return local_now.strftime("%Y-%m-%d")
+
+
+
