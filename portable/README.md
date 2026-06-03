@@ -46,6 +46,12 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 ---
 
+### 5. 무설치 배포용 UI 색상 및 스타일 관리 정책
+- **폐쇄망 제로 컨디션 최적화**: 포터블 실행 환경은 외부 인터넷망이 완전히 차단되어 있으므로 어떠한 외부 CDN이나 웹 API로부터 색상 및 스타일 리소스를 가져오지 않습니다.
+- **회사/팀 배지 색상 격리**: 회사명과 팀명을 고대비 HSL 색상으로 표현하는 로직(`string_to_hsl_style`)이 내장되어 있습니다. 회사는 0~140도(웜톤/녹색계열), 팀은 180~340도(쿨톤 계열)로 고정 분리하여, 포터블 구동 중 여러 회사가 참여한 캘린더나 타임라인 뷰를 조회할 때 색상만으로도 완벽한 구분이 가능합니다.
+
+---
+
 ## 🔗 관련 문서
 - **최종 사용자 가이드**: [README_PORTABLE.md](README_PORTABLE.md)
 - **메인 README**: [저장소 루트 README.md](../README.md)
