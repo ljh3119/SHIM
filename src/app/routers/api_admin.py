@@ -1067,7 +1067,8 @@ def toggle_user_active(
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     background_tasks.add_task(run_backup_and_rotate, DB_PATH)
-    return JSONResponse(status_code=200, content={"message": "성공적으로 변경되었습니다."})
+    msg = "사원이 비활성화되었으며, 오늘 포함 미래 연차 신청 건이 일괄 취소되었습니다." if not user.is_active else "사원이 활성화되었습니다."
+    return JSONResponse(status_code=200, content={"message": msg})
 
 @api_router.post("/user/reset-password")
 def reset_password(
@@ -1220,7 +1221,8 @@ def update_user(
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     background_tasks.add_task(run_backup_and_rotate, DB_PATH)
-    return JSONResponse(status_code=200, content={"message": "사원 정보가 성공적으로 수정되었습니다."})
+    msg = "사원 정보가 수정되었으며, 비활성화 처리로 인해 오늘 포함 미래 연차 신청 건이 일괄 취소되었습니다." if (was_active and not user.is_active) else "사원 정보가 성공적으로 수정되었습니다."
+    return JSONResponse(status_code=200, content={"message": msg})
 
 
 @api_router.post("/user/create")
