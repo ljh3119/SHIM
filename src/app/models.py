@@ -44,7 +44,6 @@ class Users(Base):
     password = Column(String, nullable=False)
     total_leave_hours = Column(Integer, default=120) # 15일 * 8시간 = 120시간
     is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)  # 레거시 호환 — 새 코드는 role 기반
     role = Column(String, default="STAFF", nullable=False)  # STAFF | TEAM_LEAD | PM | ADMIN
     position = Column(String(60), nullable=True)  # 표시용 직급명 (자유 입력)
     token_version = Column(Integer, default=0, nullable=False)
