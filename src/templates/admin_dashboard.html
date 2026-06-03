@@ -79,7 +79,7 @@
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
                     {% for leave in recent_leaves %}
                     <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">{{ leave.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text" data-utc="{{ leave.created_at.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm:ss">{{ leave.created_at | format_datetime_kst('%Y-%m-%d %H:%M:%S') }}</td>
                         <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm text-dense-text">
                             <span class="font-bold">{{ leave.user.user_name }}</span><span class="text-dense-muted">({{ leave.user.user_id }})</span>
                         </td>

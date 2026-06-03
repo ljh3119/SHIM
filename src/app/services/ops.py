@@ -17,10 +17,15 @@ def create_sqlite_backup(db_path: Path, backup_dir: Path) -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     backup_path = backup_dir / f"{db_path.stem}_{stamp}.bak"
     
-    src_conn = sqlite3.connect(db_path)
-    dest_conn = sqlite3.connect(backup_path)
+    # timeout 지정을 통해 database is locked 회귀 예방
+    src_conn = sqlite3.connect(db_path, timeout=30.0)
+    dest_conn = sqlite3.connect(backup_path, timeout=30.0)
     try:
-        src_conn.backup(dest_conn)
+        # 1. 백업 복제 개시 전, 원본 DB의 WAL 변경 정보 본체 파일에 병합
+        src_conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+        
+        # 2. 안전한 점진적 증분 백업 실행 (pages=50 단위로 백업하며 매 스텝 0.02초씩 sleep을 취해 타 쓰기 작업에 락 양보)
+        src_conn.backup(dest_conn, pages=50, sleep=0.02)
     finally:
         dest_conn.close()
         src_conn.close()

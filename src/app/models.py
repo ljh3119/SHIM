@@ -73,7 +73,7 @@ class Leaves(Base):
     rejection_reason = Column(EncryptedString(500))
     is_deductive = Column(Boolean, default=True, nullable=False) # 연차 차감 여부 (True: 연차, False: 공가/출장 등)
     reason = Column(EncryptedString(500)) # 신청 사유 (특히 비차감 건의 경우 필수 입력 권장)
-    created_at = Column(DateTime, default=datetime.datetime.now)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
     year = Column(Integer, nullable=False)
 
     user = relationship("Users", back_populates="leaves")
@@ -94,7 +94,7 @@ class AuditLogs(Base):
     new_data = Column(String)
     actor_name = Column(String, nullable=True)
     actor_department = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.datetime.now)
+    timestamp = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
 
     actor = relationship("Users", back_populates="audits")
 
@@ -104,7 +104,7 @@ class Holidays(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     date = Column(Date, nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, default=datetime.datetime.now)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
 
 
 class UserYearlyLeaveAllocations(Base):
@@ -115,8 +115,8 @@ class UserYearlyLeaveAllocations(Base):
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
     year = Column(Integer, nullable=False, index=True)
     allocated_hours = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.now)
-    updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
 
     user = relationship("Users", back_populates="yearly_allocations")
 
@@ -142,8 +142,8 @@ class SystemSettings(Base):
     # 전사 캘린더 공유 활성화 (일반 사용자도 전사 인원 휴가 조회 가능)
     company_calendar_visible = Column(Boolean, default=False, nullable=False)
     key_hash_snapshot = Column(String(64), nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.now)
-    updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
 
 @event.listens_for(AuditLogs, 'before_insert')
 def receive_before_insert(mapper, connection, target):

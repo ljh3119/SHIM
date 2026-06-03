@@ -68,7 +68,7 @@
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-bold {% if pl.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">
                             {% if pl.is_deductive %}-{{ fmt_hours(pl.snapshot_deduction_hours) }}h{% else %}0h{% endif %}
                         </td>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted" data-utc="{{ pl.created_at.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm">{{ pl.created_at | format_datetime_kst }}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <button type="button" onclick="teamApprove({{ pl.id }})" class="inline-flex rounded-lg bg-dense-green px-3 py-1.5 text-xs font-bold text-white hover:brightness-95 transition-colors">승인</button>
