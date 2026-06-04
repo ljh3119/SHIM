@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Float, Index, event, TypeDecorator
-from sqlalchemy.orm import relationship, object_session, validates
+from sqlalchemy.orm import relationship, object_session
 import datetime
 from .database import Base
 from cryptography.fernet import Fernet
@@ -82,18 +82,6 @@ class Leaves(Base):
     year = Column(Integer, nullable=False)
 
     user = relationship("Users", back_populates="leaves")
-
-    @validates("snapshot_slot_label")
-    def validate_slot_label(self, key, value):
-        import re
-        if value is not None:
-            # 순수 시간 범위 포맷 (HH:MM~HH:MM) 검증
-            pattern = r"^\d{2}:\d{2}~\d{2}:\d{2}$"
-            if not re.match(pattern, value):
-                raise ValueError(
-                    f"Leaves.snapshot_slot_label must be in 'HH:MM~HH:MM' format. Got: {value}"
-                )
-        return value
 
 class AuditLogs(Base):
     __tablename__ = "audit_logs"
