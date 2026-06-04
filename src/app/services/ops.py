@@ -6,8 +6,9 @@ import shutil
 import sqlite3
 import asyncio
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from src.app.utils import get_local_now
 
 # 전역 백업 스레드 락 도입 (동시 백업 쓰기 방지 및 SQLite 락 충돌 우회)
 _backup_lock = threading.Lock()
@@ -51,7 +52,7 @@ class ProcessFileLock:
 def create_sqlite_backup(db_path: Path, backup_dir: Path) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
     # 동시성 백업 시 파일명 충돌을 원천 차단하기 위해 마이크로초(%f) 포맷을 추가합니다.
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    stamp = get_local_now().strftime("%Y%m%d_%H%M%S_%f")
     backup_path = backup_dir / f"{db_path.stem}_{stamp}.bak"
     
     # timeout 지정을 통해 database is locked 회귀 예방
@@ -112,7 +113,7 @@ async def daily_backup_scheduler(db_path: Path):
             has_recent_backup = False
             if backup_dir.exists():
                 backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
-                now_ts = datetime.now().timestamp()
+                now_ts = datetime.now(timezone.utc).timestamp()
                 for bf in backup_files:
                     if now_ts - bf.stat().st_mtime < 24 * 3600:
                         has_recent_backup = True
@@ -156,7 +157,7 @@ def verify_and_recover_db(db_path: Path):
     if is_corrupt:
         print("[SHIM DATABASE CORRUPT] Database corruption detected!")
         # 1. Isolate corrupted DB file
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        stamp = get_local_now().strftime("%Y%m%d_%H%M%S")
         corrupted_path = db_path.parent / f"{db_path.name}_corrupted_{stamp}"
         try:
             shutil.move(str(db_path), str(corrupted_path))
