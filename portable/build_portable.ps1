@@ -46,5 +46,24 @@ if (Test-Path var\data) {
     Copy-Item var\data dist\SHIM_Portable\data -Recurse -Force
 }
 
+# Post-Build Hook: Clean up unnecessary development artifacts in the final package
+Write-Host "Running Post-Build Hook: Cleaning up unnecessary development artifacts in 'dist\SHIM_Portable\data'..."
+$targetDataDir = "dist\SHIM_Portable\data"
+if (Test-Path $targetDataDir) {
+    # Remove SQLite temporary WAL/SHM locks
+    Get-ChildItem -Path $targetDataDir -Filter "*.db-wal" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    Get-ChildItem -Path $targetDataDir -Filter "*.db-shm" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    
+    # Remove development secret keys to ensure zero-config random key generation on production site
+    if (Test-Path "$targetDataDir\secret.key") {
+        Remove-Item "$targetDataDir\secret.key" -Force
+        Write-Host "Removed development secret.key for security and zero-config dynamic generation."
+    }
+    
+    # Remove backup databases and test databases
+    Get-ChildItem -Path $targetDataDir -Filter "*.bak" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    Get-ChildItem -Path $targetDataDir -Filter "*_test.db" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+}
+
 Write-Host "Done: The final package is ready in 'dist\SHIM_Portable'."
 Write-Host "Copy 'dist\SHIM_Portable' to the target offline PC."
