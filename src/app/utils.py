@@ -1,3 +1,4 @@
+from functools import lru_cache
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
 def format_db_error_message(exc: Exception) -> str:
@@ -133,6 +134,7 @@ def search_users_stateless(users_list: list, query_str: str) -> list:
     return results
 
 
+@lru_cache(maxsize=1)
 def get_timezone_offset_hours() -> float:
     import os
     env_val = os.getenv("SHIM_TIMEZONE_OFFSET_HOURS")
@@ -149,6 +151,29 @@ def get_timezone_offset_hours() -> float:
         return round((local_now - utc_now).total_seconds() / 3600.0, 2)
     except Exception:
         return 9.0
+
+
+def clear_timezone_cache():
+    """테스트 등 환경 변수 변경 시 타임존 오프셋 캐시를 무효화합니다."""
+    get_timezone_offset_hours.cache_clear()
+
+
+def local_to_utc_naive(dt):
+    """
+    Timezone-aware datetime 객체를 Naive UTC datetime 객체로 변환하여 반환합니다.
+    입력이 Naive인 경우, get_timezone_offset_hours()를 기준으로 로컬 타임존을 임베딩하여 UTC로 변환합니다.
+    None인 경우 None을 반환합니다.
+    """
+    if dt is None:
+        return None
+    import datetime
+    
+    if dt.tzinfo is None:
+        offset = get_timezone_offset_hours()
+        local_tz = datetime.timezone(datetime.timedelta(hours=offset))
+        dt = dt.replace(tzinfo=local_tz)
+        
+    return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
 def to_kst(dt):
     if dt is None:
@@ -219,12 +244,16 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
         return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
 
 
-def get_local_today() -> str:
+def get_local_now():
     import datetime
     offset = get_timezone_offset_hours()
-    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    local_now = utc_now + datetime.timedelta(hours=offset)
-    return local_now.strftime("%Y-%m-%d")
+    local_tz = datetime.timezone(datetime.timedelta(hours=offset))
+    return datetime.datetime.now(datetime.timezone.utc).astimezone(local_tz)
+
+
+def get_local_today() -> str:
+    return get_local_now().strftime("%Y-%m-%d")
+
 
 
 

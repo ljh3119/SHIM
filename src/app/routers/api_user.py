@@ -40,7 +40,7 @@ def user_dashboard(
     if getattr(user, "role", "") == "ADMIN":
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
     
-    now = datetime.now()
+    now = utils.get_local_now()
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
@@ -155,7 +155,7 @@ def user_team_calendar(
     if not team_calendar_visible and not company_calendar_visible:
         return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
 
-    now = datetime.now()
+    now = utils.get_local_now()
     display_year = year if year else now.year
     display_month = month if month else now.month
     sort_key = sort if sort in ["name", "team", "remaining", "monthly_used"] else "name"
@@ -320,7 +320,7 @@ def user_history(
     user: models.Users = Depends(get_current_user),
 ):
 
-    now = datetime.now()
+    now = utils.get_local_now()
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]

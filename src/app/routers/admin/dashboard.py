@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
-from src.app import models
+from src.app import models, utils
 from src.app.database import get_db
 from src.app.services import admin_service
 from src.app.dependencies import get_current_admin
@@ -22,7 +22,7 @@ def admin_dashboard(
 ):
     stats = admin_service.get_admin_dashboard_stats(db)
     
-    now = datetime.now()
+    now = utils.get_local_now()
     show_year_end_notice = now.month in (12, 1)
     next_year = now.year + 1 if now.month == 12 else now.year
     

@@ -76,7 +76,7 @@ def admin_users(
 
     sort_key_effective = sort_key if sort_key in {"user_name", "user_id", "company", "team", "leave_days", "role"} else "role"
     sort_dir_effective = "desc" if sort_dir == "desc" else "asc"
-    now_year = datetime.now().year
+    now_year = utils.get_local_now().year
     selected_year = year if year else now_year
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
@@ -155,6 +155,7 @@ def toggle_user_active(
     user.is_active = not user.is_active
     user.token_version += 1
     
+    canceled_count = 0
     if not user.is_active:
         today_str = utils.get_local_today()
         today = datetime.strptime(today_str, "%Y-%m-%d").date()
@@ -163,6 +164,7 @@ def toggle_user_active(
             models.Leaves.date >= today,
             models.Leaves.status.notin_(["CANCELED", "REJECTED"])
         ).all()
+        canceled_count = len(future_leaves)
         for leave in future_leaves:
             leave.status = "CANCELED"
             
@@ -179,7 +181,7 @@ def toggle_user_active(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    msg = "사원이 비활성화되었으며, 오늘 포함 미래 연차 신청 건이 일괄 취소되었습니다." if not user.is_active else "사원이 활성화되었습니다."
+    msg = f"사원 비활성화 완료 (미래 연차 {canceled_count}건 취소됨)" if not user.is_active else "사원이 활성화되었습니다."
     return JSONResponse(status_code=200, content={"message": msg})
 
 
@@ -261,6 +263,7 @@ def update_user(
     user.is_active = is_active
     user.token_version += 1
 
+    canceled_count = 0
     if was_active and not user.is_active:
         today_str = utils.get_local_today()
         today = datetime.strptime(today_str, "%Y-%m-%d").date()
@@ -269,6 +272,7 @@ def update_user(
             models.Leaves.date >= today,
             models.Leaves.status.notin_(["CANCELED", "REJECTED"])
         ).all()
+        canceled_count = len(future_leaves)
         for leave in future_leaves:
             leave.status = "CANCELED"
 
@@ -290,7 +294,7 @@ def update_user(
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
-    msg = "사원 정보가 수정되었으며, 비활성화 처리로 인해 오늘 포함 미래 연차 신청 건이 일괄 취소되었습니다." if (was_active and not user.is_active) else "사원 정보가 성공적으로 수정되었습니다."
+    msg = f"사원 정보가 수정되었으며, 사원이 비활성화되었습니다. (미래 연차 {canceled_count}건 취소됨)" if (was_active and not user.is_active) else "사원 정보가 성공적으로 수정되었습니다."
     return JSONResponse(status_code=200, content={"message": msg})
 
 
@@ -324,7 +328,7 @@ def create_user(
     if exist:
         return JSONResponse(status_code=400, content={"message": "이미 존재하는 ID입니다."})
         
-    target_year = year if year else datetime.now().year
+    target_year = year if year else utils.get_local_now().year
     new_user = models.Users(
         user_id=user_id,
         user_name=user_name,
@@ -379,7 +383,7 @@ def update_user_leave_days(
     if not user:
         return JSONResponse(status_code=404, content={"message": "User not found"})
 
-    target_year = year if year else datetime.now().year
+    target_year = year if year else utils.get_local_now().year
     old_hours = user.total_leave_hours
     new_hours = total_leave_days * 8
     allocation = db.query(models.UserYearlyLeaveAllocations).filter(
@@ -427,7 +431,7 @@ def bulk_update_user_leave_days(
     if total_leave_days < 0:
         return JSONResponse(status_code=400, content={"message": "연차일수는 0 이상이어야 합니다."})
 
-    target_year = year if year else datetime.now().year
+    target_year = year if year else utils.get_local_now().year
     new_hours = total_leave_days * 8
 
     q = db.query(models.Users).filter(models.Users.role != "ADMIN")

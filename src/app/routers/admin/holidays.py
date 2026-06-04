@@ -17,7 +17,7 @@ def _templates(request: Request):
 
 @page_router.get("/holidays", response_class=HTMLResponse)
 def admin_holidays(request: Request, year: int = None, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
-    now = datetime.now()
+    now = utils.get_local_now()
     current_year = year if year else now.year
 
     month_start = date_cls(current_year, 1, 1)
