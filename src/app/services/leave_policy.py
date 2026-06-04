@@ -6,8 +6,6 @@ from sqlalchemy.orm import Session
 
 from .. import models
 
-from types import SimpleNamespace
-
 LEAVE_STATUSES = frozenset({"PENDING", "APPROVED", "REJECTED", "CANCELED"})
 ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
     {

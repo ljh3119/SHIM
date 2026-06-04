@@ -174,7 +174,7 @@ def admin_audit_logs(
             "page": page,
             "total_pages": total_pages,
             "total_count": total_count,
-            "current_year": datetime.now().year,
+            "current_year": utils.get_local_now().year,
             "export_query": urlencode({k: v for k, v in export_q.items() if v}),
         },
     )
@@ -247,7 +247,7 @@ def admin_audit_export(
     wb.close()
     out.seek(0)
 
-    filename = f"audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"audit_logs_{utils.get_local_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -1,13 +1,14 @@
-from __future__ import annotations
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from sqlalchemy.orm import Session, contains_eager, joinedload
 from sqlalchemy import extract
-from .. import models
+from .. import models, utils
 
 def get_admin_dashboard_stats(db: Session):
-    today = datetime.now()
-    day_start = datetime.combine(today.date(), datetime.min.time())
+    today = utils.get_local_now()
+    day_start_local = datetime.combine(today.date(), datetime.min.time()).replace(tzinfo=today.tzinfo)
+    day_start = day_start_local.astimezone(timezone.utc).replace(tzinfo=None)
     next_day_start = day_start + timedelta(days=1)
+
     
     # KPIs
     users = db.query(models.Users).filter(models.Users.role != "ADMIN").all()

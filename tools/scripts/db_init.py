@@ -79,6 +79,30 @@ def init_db():
         print("[DB_INIT] Running schema migrations...")
         try:
             run_all_migrations(engine)
+            
+            # 레거시 is_admin 컬럼 안전 제거 마이그레이션
+            try:
+                import sqlite3
+                import logging
+                from sqlalchemy import text
+                logger = logging.getLogger("shim.db_init")
+                
+                with engine.begin() as conn:
+                    # PRAGMA table_info로 컬럼 조회
+                    result = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+                    columns = [row[1] for row in result]
+                    
+                    if "is_admin" in columns:
+                        if sqlite3.sqlite_version_info >= (3, 35, 0):
+                            print("[DB_INIT] 'is_admin' 레거시 컬럼이 감지되어 물리적 삭제를 진행합니다.")
+                            conn.execute(text("ALTER TABLE users DROP COLUMN is_admin"))
+                            print("[DB_INIT] 'is_admin' 컬럼 삭제 완료.")
+                        else:
+                            logger.info("SQLite 구버전 감지: 컬럼 삭제 스킵")
+                            print("[DB_INIT] SQLite 구버전 감지: 'is_admin' 컬럼 삭제를 스킵합니다.")
+            except Exception as migration_err:
+                print(f"[DB_INIT WARNING] 레거시 컬럼 정리 중 오류 발생 (진행에 영향 없음): {migration_err}")
+                
             print("[DB_INIT] Database initialization successfully completed.")
         except Exception as e:
             print(f"[DB_INIT ERROR] Schema migration failed: {e}")
