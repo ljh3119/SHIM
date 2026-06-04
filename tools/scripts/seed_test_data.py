@@ -159,9 +159,10 @@ def seed_data(reset: bool = False):
             opt = random.choice(leave_options)
             is_deduct = random.random() > 0.20  # 20% 확률로 공가/출장(비차감)
             if not is_deduct:
+                # 사용시간대(label)에는 순수 시간 범위만 들어가도록 수정하고, [공가]/[출장] 접두사는 사유(reason)의 앞단에 주입합니다.
                 prefix = random.choice(["[공가] ", "[출장] "])
-                label = prefix + opt[0]
-                reason = random.choice(["예비군 훈련 참석", "직무 교육 외부 세미나", "고객사 파견 미팅", "정기 건강 검진"])
+                label = opt[0]
+                reason = prefix + random.choice(["예비군 훈련 참석", "직무 교육 외부 세미나", "고객사 파견 미팅", "정기 건강 검진"])
             else:
                 label = opt[0]
                 reason = opt[4]
