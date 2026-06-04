@@ -86,3 +86,26 @@ class TestTimezoneUtils(unittest.TestCase):
     def test_local_to_utc_naive_none_input(self):
         """None을 입력했을 때 에러를 유발하지 않고 안전하게 None을 리턴하는지 검증"""
         self.assertIsNone(local_to_utc_naive(None))
+
+    def test_kst_response_iso_serialization(self):
+        """BaseKSTResponse 직렬화 시 ISO 8601 표준 포맷 및 시간대 오프셋(+09:00) 매칭 검증"""
+        from src.app.schemas.base import BaseKSTResponse
+        import re
+
+        class DummyResponse(BaseKSTResponse):
+            created_at: datetime
+
+        # KST 9.0 오프셋 설정 및 캐시 비우기
+        os.environ["SHIM_TIMEZONE_OFFSET_HOURS"] = "9.0"
+        clear_timezone_cache()
+
+        naive_db_time = datetime(2026, 6, 3, 15, 30, 0) # UTC 15:30
+        schema = DummyResponse(created_at=naive_db_time)
+        dumped = schema.model_dump()
+
+        # 출력물은 KST 변환된 ISO 8601 형식 문자열("2026-06-04T00:30:00+09:00")이어야 함
+        self.assertEqual(dumped["created_at"], "2026-06-04T00:30:00+09:00")
+        
+        # 정규식을 이용해 외부 연동 표준 포맷(시간대 오프셋 포함) 규격을 따르는지 정밀 검증
+        pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+09:00$"
+        self.assertTrue(re.match(pattern, dumped["created_at"]), f"ISO 8601 포맷 불일치: {dumped['created_at']}")

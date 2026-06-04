@@ -134,6 +134,20 @@ def search_users_stateless(users_list: list, query_str: str) -> list:
     return results
 
 
+# ==============================================================================
+# [이중 폴백(Double Fallback) 설계 포인트]
+# 본 애플리케이션은 환경변수 누락 시에도 한국 표준시(KST) 기준 동작을 보장하기 위해
+# 1) Python 코드 레벨(아래 헬퍼 함수 기본값)과
+# 2) 인프라 설정 레벨(docker-compose.yml의 ${VAR:-default} 문법)
+# 양쪽에 모두 기본값(Asia/Seoul 및 9.0)을 이중 폴백으로 하드코딩하여 심층 방어하고 있습니다.
+# 향후 타 국가로 기본 시간대를 영구 이전하고자 할 때는 이 두 영역의 기본값을 모두 갱신해야 합니다.
+# ==============================================================================
+
+def get_app_timezone() -> str:
+    import os
+    return os.getenv("APP_TIMEZONE") or "Asia/Seoul"
+
+
 @lru_cache(maxsize=1)
 def get_timezone_offset_hours() -> float:
     import os
@@ -143,14 +157,8 @@ def get_timezone_offset_hours() -> float:
             return float(env_val)
         except ValueError:
             pass
-    # Dynamic fallback: calculate offset from system local time and UTC
-    import datetime
-    try:
-        local_now = datetime.datetime.now()
-        utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-        return round((local_now - utc_now).total_seconds() / 3600.0, 2)
-    except Exception:
-        return 9.0
+    # 환경변수 누락 시 기본값으로 9.0 (KST) 고정 반환하여 시스템 안정성 보장
+    return 9.0
 
 
 def clear_timezone_cache():

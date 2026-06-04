@@ -12,7 +12,9 @@ var/
 
 # Local environments and caches
 .venv/
+.venv_*/
 venv/
+venv_*/
 __pycache__/
 *.py[cod]
 .pytest_cache/
