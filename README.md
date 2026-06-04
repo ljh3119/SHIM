@@ -125,7 +125,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.6.3` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.7.1` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
