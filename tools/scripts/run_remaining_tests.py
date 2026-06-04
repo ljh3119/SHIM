@@ -730,7 +730,7 @@ def main():
     # 4. 연차 할당 및 신청 데이터 생성
     db.add(models.UserYearlyLeaveAllocations(user_id=test_uid, year=2026, allocated_hours=120))
     db.add(models.Leaves(
-        user_id=test_uid, date=date(2026, 11, 20), snapshot_slot_label="09:00 - 18:00",
+        user_id=test_uid, date=date(2026, 11, 20), snapshot_slot_label="09:00~18:00",
         snapshot_start_min=540, snapshot_end_min=1080, snapshot_deduction_hours=8.0,
         status="APPROVED", year=2026
     ))
@@ -1050,7 +1050,7 @@ def main():
     
     # 연차 신청 추가
     db.add(models.Leaves(
-        user_id="u_crypt", date=date(2026, 12, 25), snapshot_slot_label="09:00 - 18:00",
+        user_id="u_crypt", date=date(2026, 12, 25), snapshot_slot_label="09:00~18:00",
         snapshot_start_min=540, snapshot_end_min=1080, snapshot_deduction_hours=8.0,
         status="REJECTED", year=2026, reason="크리스마스 휴무", rejection_reason="업무 지원 필요"
     ))
