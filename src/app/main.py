@@ -181,7 +181,7 @@ templates = Jinja2Templates(
 templates.env.globals["app_version"] = APP_VERSION
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
-templates.env.globals["string_to_hsl_style"] = utils.string_to_hsl_style
+templates.env.globals["string_to_badge_style"] = utils.string_to_badge_style
 templates.env.filters["format_datetime_kst"] = utils.format_datetime_kst
 app.state.templates = templates
 
