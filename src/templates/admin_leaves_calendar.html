@@ -353,14 +353,14 @@
                             </td>
                             <td class="col-meta text-center" title="{{ stat.company or '' }}">
                                 {% if stat.company %}
-                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_hsl_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
                                 {% else %}
                                 <span class="text-dense-muted">—</span>
                                 {% endif %}
                             </td>
                             <td class="col-meta text-center" title="{{ stat.team or '' }}">
                                 {% if stat.team %}
-                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_hsl_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
                                 {% else %}
                                 <span class="text-dense-muted">—</span>
                                 {% endif %}
@@ -428,14 +428,14 @@
                             </td>
                             <td class="col-meta text-center" title="{{ stat.company or '' }}">
                                 {% if stat.company %}
-                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_hsl_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
                                 {% else %}
                                 <span class="text-dense-muted">—</span>
                                 {% endif %}
                             </td>
                             <td class="col-meta text-center" title="{{ stat.team or '' }}">
                                 {% if stat.team %}
-                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_hsl_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
                                 {% else %}
                                 <span class="text-dense-muted">—</span>
                                 {% endif %}

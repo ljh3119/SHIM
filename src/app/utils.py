@@ -219,7 +219,7 @@ COMPANY_COLORS = [
     (138, 45, 90, 18),  # Mint Green
 ]
 
-def string_to_hsl_style(text: str, is_team: bool = False) -> str:
+def string_to_badge_style(text: str, is_team: bool = False) -> str:
     if not text or text == "—" or not text.strip():
         return "background-color: var(--dense-surface-soft); color: var(--dense-muted); border: 1px solid var(--dense-line);"
     
@@ -233,23 +233,38 @@ def string_to_hsl_style(text: str, is_team: bool = False) -> str:
     
     if is_team:
         # 팀: 더 확실히 봐야 하므로 생동감 있고 강렬한 대역 (파랑, 보라, 마젠타, 핑크: 180 ~ 340도)
-        hue = 180 + (abs(h) % 160)
-        s = 75
-        bg_l = 91
-        text_l = 15
+        hsl_hue = 180 + (abs(h) % 160)
+        hsl_s = 75
+        hsl_bg_l = 91
+        hsl_text_l = 15
         
-        # 노란색, 라임색 등 가시성이 취약한 45~95도 구간 보정
-        if 45 <= hue <= 95:
-            bg_l = 88
-            text_l = 10
-            
-        return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
+        fallback_bg = f"background-color: hsl({hsl_hue}, {hsl_s}%, {hsl_bg_l}%);"
+        fallback_color = f"color: hsl({hsl_hue}, {hsl_s + 5}%, {hsl_text_l}%);"
+        fallback_border = f"border: 1px solid hsl({hsl_hue}, {hsl_s - 10}%, {hsl_bg_l - 4}%);"
+        
+        # OKLCH 적용 (지각 균일 명도 보장)
+        oklch_hue = hsl_hue
+        oklch_bg = f"background-color: oklch(0.92 0.09 {oklch_hue});"
+        oklch_color = f"color: oklch(0.25 0.09 {oklch_hue});"
+        oklch_border = f"border: 1px solid oklch(0.87 0.08 {oklch_hue});"
+        
+        return f"{fallback_bg} {fallback_color} {fallback_border} {oklch_bg} {oklch_color} {oklch_border}"
     else:
         # 회사: 팀 색상(180~340도)과 겹치지 않는 0~140도 범위 내에서 엄선된 색상 매핑
         color_idx = abs(h) % len(COMPANY_COLORS)
-        hue, s, bg_l, text_l = COMPANY_COLORS[color_idx]
+        hsl_hue, hsl_s, hsl_bg_l, hsl_text_l = COMPANY_COLORS[color_idx]
         
-        return f"background-color: hsl({hue}, {s}%, {bg_l}%); color: hsl({hue}, {s + 5}%, {text_l}%); border: 1px solid hsl({hue}, {s - 10}%, {bg_l - 4}%);"
+        fallback_bg = f"background-color: hsl({hsl_hue}, {hsl_s}%, {hsl_bg_l}%);"
+        fallback_color = f"color: hsl({hsl_hue}, {hsl_s + 5}%, {hsl_text_l}%);"
+        fallback_border = f"border: 1px solid hsl({hsl_hue}, {hsl_s - 10}%, {hsl_bg_l - 4}%);"
+        
+        # OKLCH 적용
+        oklch_hue = hsl_hue
+        oklch_bg = f"background-color: oklch(0.91 0.07 {oklch_hue});"
+        oklch_color = f"color: oklch(0.22 0.07 {oklch_hue});"
+        oklch_border = f"border: 1px solid oklch(0.86 0.06 {oklch_hue});"
+        
+        return f"{fallback_bg} {fallback_color} {fallback_border} {oklch_bg} {oklch_color} {oklch_border}"
 
 
 def get_local_now():

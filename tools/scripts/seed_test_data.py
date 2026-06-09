@@ -3,6 +3,7 @@ import sys
 import random
 import argparse
 import hashlib
+import holidays
 from datetime import date, timedelta, datetime
 from pathlib import Path
 
@@ -142,6 +143,52 @@ def seed_data(reset: bool = False):
         db.commit()
         print(f"[SEED] Created yearly allocations for years: {list(target_years)}")
 
+        # 6-2. Seed Korean Holidays for target years (Aligned with src/app/main.py seed_korean_holidays)
+        def compact_kr_holiday_name(name: str) -> str:
+            compact_map = {
+                "설날 연휴": "설 연휴",
+                "추석 연휴": "추석 연휴",
+            }
+            normalized = str(name).strip()
+            return compact_map.get(normalized, normalized)
+
+        for year in target_years:
+            action_name = f"SEED_KR_HOLIDAYS_{year}"
+            exists_audit = db.query(models.AuditLogs).filter(models.AuditLogs.action == action_name).first()
+            if not exists_audit:
+                kr_holidays = holidays.country_holidays("KR", years=[year], language="ko")
+                for holiday_date, holiday_name in kr_holidays.items():
+                    normalized_name = compact_kr_holiday_name(holiday_name)
+                    exists_holiday = db.query(models.Holidays).filter(models.Holidays.date == holiday_date).first()
+                    if not exists_holiday:
+                        db.add(models.Holidays(name=normalized_name, date=holiday_date))
+                
+                labor_day = date(year, 5, 1)
+                if not db.query(models.Holidays).filter(models.Holidays.date == labor_day).first():
+                    db.add(models.Holidays(name="노동절", date=labor_day))
+
+                db.add(
+                    models.AuditLogs(
+                        actor_id="admin",
+                        actor=admin,
+                        action=action_name,
+                        target_info=f"HolidaySeed:{year}",
+                        old_data="None",
+                        new_data="KR holiday seed incl. May 1 Labor Day",
+                        timestamp=datetime.now()
+                    )
+                )
+        db.commit()
+        print(f"[SEED] Created holidays for years: {list(target_years)}")
+
+        # Fetch all holidays in range to avoid N+1 queries during leave generation
+        holiday_dates = {
+            h.date for h in db.query(models.Holidays).filter(
+                models.Holidays.date >= today - timedelta(days=16),
+                models.Holidays.date <= today + timedelta(days=16)
+            ).all()
+        }
+
         # 7. Create Leave Requests
         statuses = ["APPROVED", "PENDING", "REJECTED", "CANCELED"]
         
@@ -189,6 +236,7 @@ def seed_data(reset: bool = False):
                 if random.random() > 0.7:
                     leave_date = today - timedelta(days=d)
                     if leave_date.weekday() >= 5: continue # Skip weekends
+                    if leave_date in holiday_dates: continue # Skip holidays
                     
                     status = random.choices(statuses, weights=[70, 0, 20, 10])[0]
                     rejection_reason = "업무 과다로 인한 반려" if status == "REJECTED" else ""
@@ -225,6 +273,7 @@ def seed_data(reset: bool = False):
                 if random.random() > 0.8:
                     leave_date = today + timedelta(days=d)
                     if leave_date.weekday() >= 5: continue
+                    if leave_date in holiday_dates: continue # Skip holidays
                     
                     status = random.choices(["PENDING", "APPROVED"], weights=[80, 20])[0]
                     # PM leaves are auto-approved

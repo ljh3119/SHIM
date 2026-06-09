@@ -282,7 +282,7 @@
                         </td>
                         <td class="text-center px-1" style="width: 7rem; min-width: 7rem; max-width: 7.5rem;">
                             {% if m.team %}
-                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_hsl_style(m.team, is_team=True) }}">{{ m.team }}</span>
+                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(m.team, is_team=True) }}">{{ m.team }}</span>
                             {% else %}
                             <span class="text-dense-muted">—</span>
                             {% endif %}

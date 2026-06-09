@@ -128,14 +128,14 @@
                         </td>
                         <td class="max-w-[7rem] truncate px-2 py-2 text-xs font-semibold" title="{{ leave.user.company or '' }}">
                             {% if leave.user.company %}
-                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold" style="{{ string_to_hsl_style(leave.user.company, is_team=False) }}">{{ leave.user.company }}</span>
+                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold" style="{{ string_to_badge_style(leave.user.company, is_team=False) }}">{{ leave.user.company }}</span>
                             {% else %}
                             <span class="text-dense-muted">—</span>
                             {% endif %}
                         </td>
                         <td class="max-w-[7rem] truncate px-2 py-2 text-xs font-semibold" title="{{ leave.user.team or '' }}">
                             {% if leave.user.team %}
-                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="{{ string_to_hsl_style(leave.user.team, is_team=True) }}">{{ leave.user.team }}</span>
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="{{ string_to_badge_style(leave.user.team, is_team=True) }}">{{ leave.user.team }}</span>
                             {% else %}
                             <span class="text-dense-muted">—</span>
                             {% endif %}
