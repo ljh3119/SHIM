@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIM 연차 관리 시스템 UI 개선 시안 쇼케이스</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: { extend: { colors: {
+            'dense-bg':'#f7f8fb','dense-surface':'#ffffff','dense-surface-soft':'#f9fafb',
+            'dense-line':'#d0d5dd','dense-line-strong':'#98a2b3','dense-text':'#101828',
+            'dense-muted':'#475467','dense-nav-text':'#1d2939','dense-blue':'#175cd3',
+            'dense-blue-soft':'#eff8ff','dense-amber':'#b54708','dense-amber-soft':'#fffaeb',
+            'dense-green':'#067647','dense-green-soft':'#ecfdf3','dense-gray-soft':'#f2f4f7',
+            'dense-danger':'#d92d20','dense-danger-soft':'#fef3f2',
+            'brand-dark': '#0f172a', 'brand-accent': '#3b82f6'
+        }}}
+    }
+    </script>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .glass-panel { background:#fff; border:1px solid #d0d5dd; border-radius:1rem; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+        .fade-in { animation: fadeIn .3s ease-out; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        
+        /* 공통 캘린더 스타일 */
+        .shim-side-link { display:flex; align-items:center; gap:.65rem; box-sizing:border-box; min-height:2.625rem; padding:.5rem .65rem; border-radius:.7rem; text-decoration:none; font-size:.8125rem; line-height:1.25; }
+        .shim-side-svg { width:1.25rem; height:1.25rem; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+        .cal-table { border-collapse:collapse; width:100%; table-layout:fixed; }
+        .cal-table th,.cal-table td { border:1px solid #d0d5dd; text-align:center; vertical-align:middle; }
+        .cal-table thead th { background:#f9fafb; font-size:10px; font-weight:600; color:#475467; padding:4px 2px; position:sticky; top:0; z-index:5; }
+        .cal-table tbody td { padding:3px 1px; font-size:10px; }
+        .cal-table .sticky-col { position:sticky; left:0; z-index:10; background:#fff; }
+        .cal-table thead .sticky-col { z-index:15; background:#f9fafb; }
+        .cal-table th.col-day { white-space:normal; padding:3px 1px; font-size:7px; line-height:1.15; vertical-align:middle; }
+        .cal-table th.col-day .day-num { display:block; font-weight:700; font-size:9px; line-height:1.1; }
+        .cal-table th.col-day .weekday-label { display:block; font-size:7px; line-height:1.1; margin-top:1px; }
+        .cal-table th.col-day .holiday-chip { display:block; margin:2px auto 0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:6px; line-height:1.15; padding:0 1px; background:#d92d20; color:#fff; border-radius:2px; }
+        .cal-table .day-block { width:100%; min-height:1.45rem; height:1.45rem; margin:0; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border-radius:4px; font-size:9px; font-weight:700; line-height:1; letter-spacing:-.04em; border:1px solid rgba(255,255,255,.25); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2); cursor:default; background:#175cd3; box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
+        .day-block.half { background:linear-gradient(180deg,#fde68a 0%,#f79009 100%); border-color:rgba(181,71,8,.35); color:#1c1917; text-shadow:0 1px 0 rgba(255,255,255,.35); }
+        .day-block.full { background:linear-gradient(180deg,#f97066 0%,#d92d20 100%); border-color:rgba(217,45,32,.45); }
+        .day-block.public { background:linear-gradient(180deg,#9333ea 0%,#7e22ce 100%); border-color:rgba(147,51,234,.45); }
+        .day-block.pending { opacity:.55; border:none!important; box-shadow:none; filter:grayscale(.35); }
+        .weekend-head { color:#d92d20!important; background:#fef3f2!important; }
+        .holiday-head { color:#d92d20!important; background:#fef3f2!important; }
+        
+        .my-row td.clickable-cell { cursor:pointer; position:relative; }
+        .my-row td.clickable-cell:hover { background:#eff8ff; }
+        .my-row td.clickable-cell:hover::after { content:'+'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#175cd3; opacity:.6; }
+        
+        /* C안 탭 스타일 */
+        .tab-btn{padding:.5rem 1.25rem;font-size:.8125rem;font-weight:700;border-radius:.75rem;transition:all .2s;cursor:pointer;border:none;background:transparent;color:#475467}
+        .tab-btn.active{background:#175cd3;color:#fff;box-shadow:0 1px 3px rgba(23,92,211,.25)}
+        .tab-btn:not(.active):hover{background:#f9fafb;color:#1d2939}
+        .tab-panel{display:none}.tab-panel.active{display:block;animation:fadeIn .25s ease-out}
+        
+        /* E안 퀵액션 */
+        .quick-card{transition:all .2s;cursor:pointer}
+        .quick-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(16,24,40,.08)}
+        
+        /* F안 아코디언 */
+        .accordion-header{cursor:pointer;user-select:none;transition:background .2s}
+        .accordion-header:hover{background:#f9fafb}
+        .accordion-body{overflow:hidden;max-height:0;transition:max-height .3s ease-out}
+        .accordion-body.open{max-height:500px}
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 antialiased flex flex-col">
+
+    <!-- SHOWCASE MAIN DASHBOARD -->
+    <div id="showcase-main" class="flex-1 py-12 px-4 sm:px-6 lg:px-8 max-w-[85rem] mx-auto w-full fade-in">
+        
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <div class="inline-flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/30 px-3.5 py-1.5 rounded-full text-blue-400 text-xs font-bold mb-4">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                SHIM (쉼) UI/UX R&D Prototype
+            </div>
+            <h1 class="text-4xl font-extrabold tracking-tight text-white mb-3">개인 대시보드 및 팀 캘린더 UI 개선안 쇼케이스</h1>
+            <p class="text-slate-400 text-base max-w-3xl mx-auto leading-relaxed">
+                기존의 복잡한 12달 연간 달력과 번거로운 연차 신청 동선을 개선하기 위한 6가지 대안 모델입니다.<br>
+                아래 시안별 비교 설명을 확인하시고 <strong>[시안 직접 보기]</strong>를 클릭해 실제 구동 환경을 체험해 보세요.
+            </p>
+        </header>
+
+        <!-- Option Grid Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            
+            <!-- Card AS-IS -->
+            <div class="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">현행 프로젝트 (AS-IS)</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-slate-500">—</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">현행 프로젝트 대시보드</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">월별 캘린더와 12달 전체 연간 캘린더를 탭으로 전환하는 구조. 복잡하고 무거운 페이지(1138줄)와 낮은 정보 밀도가 특징인 기존 레이아웃.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">개인의 1년 일정을 통째로 스크롤하여 조회 가능</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-rose-400">연간 뷰 진입 시 스크롤 폭발, 팀 일정을 보려면 페이지 이동 필수</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('asis')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-slate-600 transition-colors">기존 화면 보기</button>
+            </div>
+            
+            <!-- Card A -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">A안: 월별 단일화</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★☆</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">대시보드 월별 캘린더 단일화</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">기존 대시보드 내의 정보 밀도가 낮고 활용성이 떨어지는 '연간 뷰' 탭을 제거하고, '월별 뷰' 캘린더만 깔끔하게 남기는 최단기 안정성 확보안.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">최소한의 변경으로 즉각적인 버그/화면 복잡도 해소</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">여전히 "오늘 누가 쉬는가"를 확인하기 위해 메뉴 이동 필요</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('a')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
+            </div>
+
+            <!-- Card B -->
+            <div class="bg-slate-800/80 border border-emerald-500/40 rounded-2xl p-6 flex flex-col justify-between hover:border-emerald-400 transition-all relative overflow-hidden group shadow-lg shadow-emerald-950/20">
+                <div class="absolute top-0 right-0 bg-emerald-500 text-slate-900 font-extrabold text-[9px] px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase">★ 추천 시안</div>
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">B안: 팀 통합 신청</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">팀 캘린더 통합 연차 신청</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">프로젝트 캘린더(타임라인/캘린더 뷰) 상에서 나(★)의 행 빈 날짜 셀을 직접 클릭하여 연차를 즉시 신청하는 동선 일체화 모델.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">팀원의 이탈/중첩 여부를 보면서 즉각 신청 가능 (동선 최소화)</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">프로젝트 캘린더 기능이 비활성화된 소규모 팀에서는 대시보드 폼 필요</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('b')" class="w-full mt-2 py-2 px-4 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-500 transition-colors">시안 직접 보기</button>
+            </div>
+
+            <!-- Card C -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">C안: 하이브리드 3단 탭</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★★★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">대시보드 하이브리드 3단 탭 통합</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">대시보드 내부를 '나의 현황', '팀 일정', '연차 신청' 탭으로 완전히 쪼개어, 페이지 이동 없이 하나의 홈에서 모든 정보가 전환되는 올인원 형태.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">사이드바 3개 메뉴의 역할을 단 하나의 페이지에서 유기적으로 조작</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">초기 페이지 로딩 데이터 증가 및 프론트/백엔드 로직 통합 복잡성</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('c')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
+            </div>
+
+            <!-- Card D -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">D안: 사이드 패널 분할</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">좌측 신청 + 우측 캘린더 분할 뷰</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">팀/프로젝트 캘린더를 메인에 배치하고, 좌측에 "나의 연차 현황 + 간편 신청 폼 + 최근 신청" 패널을 고정하여 정보를 완전하게 대칭시키는 구조.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">팀 캘린더에서 날짜 확인 후 좌측 패널에서 즉시 신청 입력 가능</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">PC 전용 Dense UI 에서는 정교한 그리드 가로폭 설계 요구됨</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('d')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
+            </div>
+
+            <!-- Card E -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">E안: 대시보드 허브화</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★☆</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">대시보드 허브화 (캘린더 제거)</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">대시보드에서 캘린더를 아예 들어내고, 통계 + 퀵액션 링크 카드 + 최근 5건 신청 목록 위주의 콤팩트 허브(Hub)로 개편하는 형태.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">대시보드 성능 향상, 코드 용량이 대폭 축소되어 유지보수성 최우수</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">달력 모양이 없으므로 일정 예약형 UI를 좋아하는 사용자의 불만 유발 가능</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('e')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
+            </div>
+
+            <!-- Card F -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition-all group hover:bg-slate-800">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">F안: 팀 캘린더 기본 홈</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">팀 캘린더를 메인 기본 홈으로</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">로그인 후 첫 랜딩 페이지 자체를 팀 캘린더로 변경하고, 상단에 미니 연차 카드 요약과 하단에 신청 내역 아코디언을 배치하여 캘린더 중심 시스템으로 개편.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">시스템 철학인 "현장 연차 가시화 도구"에 완벽히 정렬됨</span></div>
+                        <div class="flex gap-2"><span class="text-rose-400 font-bold">✗</span> <span class="text-slate-400">대시보드와 팀 캘린더 화면의 구분이 다소 모호해짐</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('f')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
+            </div>
+
+        </div>
+
+        <!-- System Architecture Spec Info -->
+        <footer class="border-t border-slate-800 pt-8 text-center text-xs text-slate-500">
+            <p class="mb-2">SHIM UI R&D Project • Tailwind CSS v4 & Dense UI Design Tokens</p>
+            <p>&copy; 2026 SHIM. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+    <!-- SHOWCASE VIEW CONTAINER -->
+    <div id="showcase-view-container" class="hidden flex-1 flex flex-col bg-dense-bg text-dense-text">
+        <!-- Floating Navigation Header -->
+        <div class="fixed top-0 left-0 right-0 h-11 bg-slate-900 text-white flex justify-between items-center px-4 z-[9999] shadow-md border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <button onclick="backToMain()" class="flex items-center gap-1.5 px-3 py-1 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 text-white transition-colors">
+                    <span>←</span> 쇼케이스 홈
+                </button>
+                <span class="text-slate-500">|</span>
+                <span id="current-view-title" class="text-xs font-extrabold text-blue-400"></span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] text-slate-400 font-bold mr-1">시안 바로 전환:</span>
+                <div class="flex rounded bg-slate-800 p-0.5 border border-slate-700">
+                    <button onclick="switchViewDirect('asis')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-asis">기존안(AS-IS)</button>
+                    <button onclick="switchViewDirect('a')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-a">A안</button>
+                    <button onclick="switchViewDirect('b')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-b">B안</button>
+                    <button onclick="switchViewDirect('c')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-c">C안</button>
+                    <button onclick="switchViewDirect('d')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-d">D안</button>
+                    <button onclick="switchViewDirect('e')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-e">E안</button>
+                    <button onclick="switchViewDirect('f')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-f">F안</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Render Demo Area -->
+        <div id="demo-area" class="pt-11 flex-1 flex flex-col min-h-screen"></div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- TEMPLATES FOR MOCKUP OPTIONS -->
+    <!-- ========================================== -->
+
+    <!-- TEMPLATE AS-IS -->
+    <template id="template-option-asis">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex min-w-0 shrink-0 items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
+                            <span class="truncate text-center text-xs font-bold leading-tight text-white">SHIM</span>
+                        </div>
+                        <span class="truncate text-lg font-bold tracking-tight text-dense-text sm:text-xl">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex flex-shrink-0 items-center gap-3">
+                    <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border">현행 대시보드 (AS-IS)</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border border-dense-line-strong bg-dense-surface p-4 pr-5 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text"><span class="pl-1">SHIM</span></h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg><span class="font-semibold">대시보드</span>
+                    </a>
+                    <a href="#" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg><span class="font-semibold">신청 내역</span>
+                    </a>
+                    <a href="#" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg><span class="font-semibold">프로젝트 캘린더</span>
+                    </a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-[26px] font-extrabold text-dense-text">안녕하세요, 홍길동 대리님</h2>
+                            <p class="mt-1 text-sm font-semibold text-dense-muted">XX건설 / 설계팀</p>
+                        </div>
+                    </div>
+                    <!-- Stats -->
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">총 연차</span><span class="text-2xl font-extrabold">120h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">사용</span><span class="text-2xl font-extrabold text-dense-blue">40h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">잔여</span><span class="text-2xl font-extrabold text-dense-green">80h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">신청 건수</span><span class="text-2xl font-extrabold text-dense-nav-text">5건</span></div>
+                    </div>
+                    <!-- Form -->
+                    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5">
+                        <h3 class="text-base font-extrabold mb-4">연차 신청</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_auto] gap-4">
+                            <div class="space-y-3">
+                                <div><label class="text-xs font-bold">날짜</label><input type="date" value="2026-06-15" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm ring-1 ring-inset ring-dense-line-strong"></div>
+                                <div class="flex items-center gap-2"><input type="checkbox" checked class="h-4 w-4 text-dense-blue"><label class="text-xs font-bold">연차 차감</label></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작 시간</label><select class="mt-1 block w-full rounded-xl border bg-dense-surface py-2 px-3 text-sm"><option>선택</option><option>09:00</option><option>13:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료 시간</label><select class="mt-1 block w-full rounded-xl border bg-dense-surface py-2 px-3 text-sm"><option>선택</option><option>13:00</option><option>18:00</option></select></div>
+                            </div>
+                            <div class="flex items-end"><button class="w-full bg-dense-blue py-2 px-4 rounded-xl text-white font-bold text-xs">등록하기</button></div>
+                        </div>
+                    </div>
+                    <!-- 캘린더 영역 -->
+                    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5">
+                        <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-3">
+                            <div class="flex items-center gap-3">
+                                <div id="monthNavWrapperAsIs" class="flex items-center gap-2">
+                                    <button onclick="prevMonthAsIs()" class="rounded-lg border bg-dense-surface p-1.5 hover:bg-dense-surface-soft">&lt;</button>
+                                    <h3 id="currentMonthLabelAsIs" class="text-base font-extrabold w-28 text-center">2026년 6월</h3>
+                                    <button onclick="nextMonthAsIs()" class="rounded-lg border bg-dense-surface p-1.5 hover:bg-dense-surface-soft">&gt;</button>
+                                </div>
+                                <h3 id="yearlyViewLabelAsIs" class="text-base font-extrabold hidden">2026년 연차 캘린더</h3>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                                    <button id="layout_yearly_btn_asis" onclick="switchDashboardLayoutAsIs('yearly')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">연간 뷰</button>
+                                    <button id="layout_monthly_btn_asis" onclick="switchDashboardLayoutAsIs('monthly')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">월별 뷰</button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-dense-muted">다중 선택 모드</span>
+                                    <button class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent bg-dense-line-strong transition-colors">
+                                        <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition translate-x-0"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4 text-xs font-semibold text-dense-muted">날짜를 클릭하면 해당 날짜로 연차를 바로 신청할 수 있습니다.</div>
+
+                        <!-- 월별 뷰 컨테이너 -->
+                        <div id="dashboard-monthly-view-container-asis" class="relative w-full">
+                            <div class="mb-2 grid grid-cols-7 gap-1.5 text-center text-xs font-bold">
+                                <div class="text-dense-danger">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-dense-blue">토</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1.5" id="calendarDaysAsIs"></div>
+                        </div>
+
+                        <!-- 연간 뷰 컨테이너 -->
+                        <div id="dashboard-yearly-view-container-asis" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 hidden">
+                            <!-- 12개 달이 들어갈 곳 -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Modal -->
+        <div id="modalAsIs" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeModalAsIs()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 신청</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold">날짜</label><input type="date" id="modalDateAsIs" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작</label><select class="w-full border rounded-xl p-2 bg-dense-surface"><option>09:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료</label><select class="w-full border rounded-xl p-2 bg-dense-surface"><option>18:00</option></select></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button onclick="closeModalAsIs()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white">신청하기</button>
+                        <button onclick="closeModalAsIs()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- TEMPLATE A -->
+    <template id="template-option-a">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex min-w-0 shrink-0 items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
+                            <span class="truncate text-center text-xs font-bold leading-tight text-white">SHIM</span>
+                        </div>
+                        <span class="truncate text-lg font-bold tracking-tight text-dense-text sm:text-xl">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex flex-shrink-0 items-center gap-3">
+                    <span class="text-xs font-bold text-dense-blue bg-dense-blue-soft px-2.5 py-1 rounded-full border border-dense-blue/20">A안: 월별 캘린더 단일화</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃(이탈)</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border border-dense-line-strong bg-dense-surface p-4 pr-5 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text"><span class="pl-1">SHIM</span></h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg><span class="font-semibold">대시보드</span>
+                    </a>
+                    <a href="#" onclick="alert('신청 내역 화면으로 이동합니다.')" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg><span class="font-semibold">신청 내역</span>
+                    </a>
+                    <a href="#" onclick="switchViewDirect('b')" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg><span class="font-semibold">프로젝트 캘린더</span>
+                    </a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-[26px] font-extrabold text-dense-text">안녕하세요, 홍길동 대리님</h2>
+                            <p class="mt-1 text-sm font-semibold text-dense-muted">XX건설 / 설계팀</p>
+                        </div>
+                    </div>
+                    <!-- Stats -->
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">총 연차</span><span class="text-2xl font-extrabold">120h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">사용</span><span class="text-2xl font-extrabold text-dense-blue">40h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">잔여</span><span class="text-2xl font-extrabold text-dense-green">80h</span></div>
+                        <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4"><span class="mb-2 text-xs font-bold text-dense-muted">신청 건수</span><span class="text-2xl font-extrabold text-dense-nav-text">5건</span></div>
+                    </div>
+                    <!-- Form -->
+                    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5">
+                        <h3 class="text-base font-extrabold mb-4">연차 신청</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_auto] gap-4">
+                            <div class="space-y-3">
+                                <div><label class="text-xs font-bold">날짜</label><input type="date" value="2026-06-15" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm ring-1 ring-dense-line-strong"></div>
+                                <div class="flex items-center gap-2"><input type="checkbox" checked class="h-4 w-4 text-dense-blue"><label class="text-xs font-bold">연차 차감</label></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작 시간</label><select class="mt-1 block w-full rounded-xl border bg-dense-surface py-2 px-3 text-sm"><option>선택</option><option>09:00</option><option>13:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료 시간</label><select class="mt-1 block w-full rounded-xl border bg-dense-surface py-2 px-3 text-sm"><option>선택</option><option>13:00</option><option>18:00</option></select></div>
+                            </div>
+                            <div class="flex items-end"><button class="w-full bg-dense-blue py-2 px-4 rounded-xl text-white font-bold text-xs">등록하기</button></div>
+                        </div>
+                    </div>
+                    <!-- Calendar -->
+                    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5">
+                        <div class="mb-4 flex items-center justify-between border-b border-dense-line pb-3">
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevMonthOptionA()" class="rounded-lg border bg-dense-surface p-1.5 hover:bg-dense-surface-soft">&lt;</button>
+                                <h3 id="monthLabelOptionA" class="text-base font-extrabold w-28 text-center">2026년 6월</h3>
+                                <button onclick="nextMonthOptionA()" class="rounded-lg border bg-dense-surface p-1.5 hover:bg-dense-surface-soft">&gt;</button>
+                            </div>
+                            <span class="text-xs font-bold text-dense-blue bg-dense-blue-soft px-2 py-0.5 rounded-full border border-dense-blue/20">개인 캘린더</span>
+                        </div>
+                        <div id="calendarGridOptionA">
+                            <div class="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-bold">
+                                <div class="text-dense-danger">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-dense-blue">토</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1" id="calendarDaysOptionA"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Modal -->
+        <div id="modalOptionA" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeModalOptionA()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                    <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 신청</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold">날짜</label><input type="date" id="modalDateOptionA" class="mt-1 block w-full rounded-xl border bg-dense-surface py-2 px-3 text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작</label><select class="w-full border rounded-xl p-2"><option>09:00</option><option>13:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료</label><select class="w-full border rounded-xl p-2"><option>13:00</option><option>18:00</option></select></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3 sm:px-6">
+                        <button onclick="closeModalOptionA()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white">신청하기</button>
+                        <button onclick="closeModalOptionA()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- TEMPLATE B -->
+    <template id="template-option-b">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex min-w-0 shrink-0 items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
+                            <span class="truncate text-center text-xs font-bold leading-tight text-white">SHIM</span>
+                        </div>
+                        <span class="truncate text-lg font-bold tracking-tight text-dense-text sm:text-xl">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex flex-shrink-0 items-center gap-3">
+                    <span class="text-xs font-bold text-dense-green bg-dense-green-soft px-2.5 py-1 rounded-full border border-dense-green/20">B안: 팀 캘린더 통합 신청 ★ 추천</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃(이탈)</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border border-dense-line-strong bg-dense-surface p-4 pr-5 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text"><span class="pl-1">SHIM</span></h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" onclick="switchViewDirect('a')" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg><span class="font-semibold">대시보드</span>
+                    </a>
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg><span class="font-semibold">프로젝트 캘린더</span>
+                    </a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-[26px] font-extrabold text-dense-text">프로젝트 캘린더</h2>
+                            <p class="mt-1 text-sm font-semibold text-dense-muted">2026년 6월 프로젝트 연차 현황입니다. <span class="text-dense-blue font-bold">빈 날짜를 클릭하여 연차를 신청하세요.</span></p>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5">
+                        <div class="mb-4 flex items-center justify-between border-b border-dense-line pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <button class="rounded-lg border p-1.5 hover:bg-dense-surface-soft">&lt;</button>
+                                    <h3 class="text-lg font-extrabold w-24 text-center">2026년 6월</h3>
+                                    <button class="rounded-lg border p-1.5 hover:bg-dense-surface-soft">&gt;</button>
+                                </div>
+                                <span class="text-xs font-bold text-dense-blue bg-dense-blue-soft px-2.5 py-0.5 rounded-full">8명 참여 중</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                                    <button id="btn-timeline-b" onclick="switchViewB('timeline')" class="rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인 뷰</button>
+                                    <button id="btn-calendar-b" onclick="switchViewB('calendar')" class="rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더 뷰</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="mb-4 flex flex-wrap gap-4 text-[10px] font-bold text-dense-muted bg-dense-surface-soft p-2.5 rounded-xl border border-dense-line">
+                            <div class="flex items-center"><span class="mr-1.5 h-3.5 w-3.5 rounded bg-dense-blue"></span>반일 미만</div>
+                            <div class="flex items-center"><span class="mr-1.5 h-3.5 w-3.5 rounded bg-gradient-to-b from-[#fde68a] to-[#f79009]"></span>반일(4h)</div>
+                            <div class="flex items-center"><span class="mr-1.5 h-3.5 w-3.5 rounded bg-gradient-to-b from-[#f97066] to-[#d92d20]"></span>전일(8h)</div>
+                            <div class="flex items-center border-l pl-4"><span class="mr-1.5 h-3.5 w-3.5 rounded bg-dense-blue/50 filter grayscale-[35%]"></span>대기 중</div>
+                            <div class="ml-auto text-dense-blue text-[9px] font-extrabold">★ 나의 행 빈 셀 클릭 시 연차 신청</div>
+                        </div>
+
+                        <!-- Timeline Table -->
+                        <div id="timeline-view-container-b" class="hidden overflow-x-auto rounded-xl border border-dense-line">
+                            <table class="cal-table" style="min-width:1000px;">
+                                <thead>
+                                    <tr>
+                                        <th class="sticky-col text-left !px-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style="width:4.25rem">이름</th>
+                                        <th style="width:7rem" class="text-center px-1">팀</th>
+                                        <th style="width:4.5rem" class="text-center px-1">잔여</th>
+                                        <th id="th-days-b"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-dense-line" id="timelineBodyB"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Calendar Grid View -->
+                        <div id="calendar-view-container-b" class="rounded-xl border border-dense-line bg-dense-surface p-4 hidden">
+                            <div class="mb-2 grid grid-cols-7 gap-2">
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-2" id="calendar-grid-body-b"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Modal -->
+        <div id="applyModalB" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeModalB()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:max-w-md sm:align-middle">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold">연차 신청 (B안 통합)</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold">날짜</label><input type="date" id="modalDateB" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작</label><select class="w-full border rounded-xl p-2"><option>09:00</option><option>13:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료</label><select class="w-full border rounded-xl p-2"><option>13:00</option><option>18:00</option></select></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button onclick="closeModalB()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white">신청하기</button>
+                        <button onclick="closeModalB()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- TEMPLATE C -->
+    <template id="template-option-c">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-dense-blue px-1"><span class="text-xs font-bold text-white">SHIM</span></div>
+                        <span class="text-lg font-bold text-dense-text">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-dense-amber bg-dense-amber-soft px-2.5 py-1 rounded-full border border-dense-amber/20">C안: 하이브리드 탭 통합</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border bg-dense-surface p-4 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 mt-0 text-lg font-extrabold text-dense-text"><span class="pl-1">SHIM</span></h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue"><svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg><span class="font-semibold">통합 대시보드</span></a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                    <div>
+                        <h2 class="text-2xl font-extrabold">안녕하세요, 홍길동 대리님</h2>
+                        <p class="text-sm text-dense-muted">XX건설 / 설계팀</p>
+                    </div>
+
+                    <!-- 3단 탭 -->
+                    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+                        <div class="flex items-center gap-1 border-b pb-4 mb-5">
+                            <button id="btn-tab0" class="tab-btn active" onclick="switchTabC(0)">📊 나의 현황</button>
+                            <button id="btn-tab1" class="tab-btn" onclick="switchTabC(1)">👥 팀 일정</button>
+                            <button id="btn-tab2" class="tab-btn" onclick="switchTabC(2)">📅 연차 신청</button>
+                        </div>
+
+                        <!-- TAB 0 -->
+                        <div class="tab-panel active" id="tab0C">
+                            <div class="grid grid-cols-4 gap-3 mb-6">
+                                <div class="flex flex-col rounded-2xl border p-4 bg-dense-surface hover:bg-dense-surface-soft"><span class="text-xs text-dense-muted font-bold">총 연차</span><span class="text-xl font-extrabold">120h</span></div>
+                                <div class="flex flex-col rounded-2xl border p-4 bg-dense-surface hover:bg-dense-surface-soft"><span class="text-xs text-dense-muted font-bold">사용</span><span class="text-xl font-extrabold text-dense-blue">40h</span></div>
+                                <div class="flex flex-col rounded-2xl border p-4 bg-dense-surface hover:bg-dense-surface-soft"><span class="text-xs text-dense-muted font-bold">잔여</span><span class="text-xl font-extrabold text-dense-green">80h</span></div>
+                                <div class="flex flex-col rounded-2xl border p-4 bg-dense-surface hover:bg-dense-surface-soft"><span class="text-xs text-dense-muted font-bold">신청건</span><span class="text-xl font-extrabold text-dense-nav-text">5건</span></div>
+                            </div>
+                            <h4 class="text-xs font-bold text-dense-muted mb-2">최근 신청 내역</h4>
+                            <div class="overflow-x-auto rounded-lg border">
+                                <table class="min-w-full divide-y text-xs">
+                                    <thead class="bg-dense-surface-soft"><tr><th class="px-3 py-2 text-left">신청일</th><th class="px-3 py-2 text-left">시간대</th><th class="px-3 py-2 text-left">차감</th><th class="px-3 py-2 text-left">상태</th></tr></thead>
+                                    <tbody>
+                                        <tr><td class="px-3 py-2">2026-06-25</td><td class="px-3 py-2">09:00~11:00 (2h)</td><td class="px-3 py-2 font-bold text-dense-blue">-2h</td><td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded bg-dense-amber-soft text-dense-amber text-[10px] font-bold">대기</span></td></tr>
+                                        <tr><td class="px-3 py-2">2026-06-18</td><td class="px-3 py-2">전일(8h)</td><td class="px-3 py-2 font-bold text-dense-blue">-8h</td><td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded bg-dense-green-soft text-dense-green text-[10px] font-bold">승인</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 1 -->
+                        <div class="tab-panel" id="tab1C">
+                            <div class="rounded-xl border bg-dense-surface p-4">
+                                <div class="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-bold">
+                                    <div class="text-dense-danger">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-dense-blue">토</div>
+                                </div>
+                                <div class="grid grid-cols-7 gap-1" id="teamCalGridC"></div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2 -->
+                        <div class="tab-panel" id="tab2C">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div><label class="block text-xs font-bold">날짜</label><input type="date" value="2026-06-15" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label class="text-xs font-bold">시작</label><select class="w-full border rounded-xl p-2 bg-dense-surface"><option>09:00</option></select></div>
+                                        <div><label class="text-xs font-bold">종료</label><select class="w-full border rounded-xl p-2 bg-dense-surface"><option>18:00</option></select></div>
+                                    </div>
+                                    <button class="w-full rounded-xl bg-dense-blue py-2.5 text-xs text-white font-bold">등록하기</button>
+                                </div>
+                                <div>
+                                    <div class="rounded-xl border bg-dense-surface-soft p-4">
+                                        <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1">
+                                            <span class="text-dense-danger">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="text-dense-blue">토</span>
+                                        </div>
+                                        <div class="grid grid-cols-7 gap-1" id="miniCalDaysC"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </template>
+
+    <!-- TEMPLATE D -->
+    <template id="template-option-d">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-dense-blue px-1"><span class="text-xs font-bold text-white">SHIM</span></div>
+                        <span class="text-lg font-bold">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">D안: 사이드 패널 분할</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border bg-dense-surface p-4 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 text-lg font-extrabold pl-1">SHIM</h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue"><svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg><span class="font-semibold">프로젝트 캘린더</span></a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in bg-dense-bg pb-2">
+                    <div class="flex gap-5">
+                        <!-- 좌측 패널 -->
+                        <div class="w-[280px] shrink-0 space-y-4">
+                            <!-- 요약 -->
+                            <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                                <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
+                                <div class="space-y-1.5 text-xs font-bold">
+                                    <div class="flex justify-between"><span>총 연차</span><span>120h</span></div>
+                                    <div class="flex justify-between text-dense-blue"><span>사용</span><span>40h</span></div>
+<div class="flex justify-between text-dense-green"><span>잔여</span><span>80h</span></div>
+                                    <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1">
+                                        <div class="bg-dense-blue h-1.5 rounded-full" style="width:33%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 간편 신청 -->
+                            <div class="rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/20 p-4 shadow-sm">
+                                <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
+                                <div class="space-y-3">
+                                    <div><label class="text-[10px] font-bold">날짜</label><input type="date" id="easy-date-d" value="2026-06-15" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold"></div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label class="text-[9px] font-bold">시작</label><select class="w-full border rounded p-1 bg-dense-surface text-xs"><option>09:00</option></select></div>
+                                        <div><label class="text-[9px] font-bold">종료</label><select class="w-full border rounded p-1 bg-dense-surface text-xs"><option>18:00</option></select></div>
+                                    </div>
+                                    <button class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs">신청하기</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 우측 캘린더 -->
+                        <div class="min-w-0 flex-1">
+                            <div class="rounded-[18px] border bg-dense-surface p-5 shadow-sm">
+                                <div class="mb-4 flex items-center justify-between border-b pb-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&lt;</button>
+                                            <h3 class="text-base font-extrabold w-24 text-center">2026년 6월</h3>
+                                            <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&gt;</button>
+                                        </div>
+                                    </div>
+                                    <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                                        <button id="btn-timeline-d" onclick="switchViewD('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
+                                        <button id="btn-calendar-d" onclick="switchViewD('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더</button>
+                                    </div>
+                                </div>
+
+                                <div id="timeline-view-container-d" class="hidden overflow-x-auto rounded-xl border border-dense-line">
+                                    <table class="cal-table" style="min-width:800px;">
+                                        <thead><tr><th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th id="th-days-d"></th></tr></thead>
+                                        <tbody class="divide-y divide-dense-line" id="tlBodyD"></tbody>
+                                    </table>
+                                </div>
+
+                                <div id="calendar-view-container-d" class="rounded-xl border border-dense-line bg-dense-surface p-4 hidden">
+                                    <div class="mb-2 grid grid-cols-7 gap-2">
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
+                                    </div>
+                                    <div class="grid grid-cols-7 gap-2" id="calendar-grid-body-d"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </template>
+
+    <!-- TEMPLATE E -->
+    <template id="template-option-e">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-dense-blue px-1"><span class="text-xs font-bold text-white">SHIM</span></div>
+                        <span class="text-lg font-bold">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-dense-nav-text bg-dense-gray-soft px-2.5 py-1 rounded-full border border-dense-line">E안: 대시보드 허브화</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border bg-dense-surface p-4 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 text-lg font-extrabold pl-1">SHIM</h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue"><svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg><span class="font-semibold">대시보드</span></a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                    <div>
+                        <h2 class="text-2xl font-extrabold">안녕하세요, 홍길동 대리님</h2>
+                        <p class="text-sm text-dense-muted">XX건설 / 설계팀</p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="flex flex-col rounded-2xl border bg-dense-surface p-4"><span class="text-xs text-dense-muted mb-1 font-bold">총 연차</span><span class="text-xl font-extrabold">120h</span></div>
+                        <div class="flex flex-col rounded-2xl border bg-dense-surface p-4"><span class="text-xs text-dense-muted mb-1 font-bold">사용</span><span class="text-xl font-extrabold text-dense-blue">40h</span></div>
+                        <div class="flex flex-col rounded-2xl border bg-dense-surface p-4"><span class="text-xs text-dense-muted mb-1 font-bold">잔여</span><span class="text-xl font-extrabold text-dense-green">80h</span></div>
+                        <div class="flex flex-col rounded-2xl border bg-dense-surface p-4"><span class="text-xs text-dense-muted mb-1 font-bold">신청건</span><span class="text-xl font-extrabold text-dense-nav-text">5건</span></div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="rounded-[18px] border bg-dense-surface p-5">
+                        <h3 class="text-base font-extrabold mb-4">퀵 액션</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="quick-card rounded-2xl border border-dense-blue/20 bg-gradient-to-br from-dense-blue-soft to-white p-4" onclick="toggleQuickApplyPanelE()">
+                                <h4 class="text-xs font-bold text-dense-blue mb-1">📅 연차 신청</h4>
+                                <p class="text-[10px] text-dense-muted">날짜 선택 후 간편 신청</p>
+                            </div>
+                            <div class="quick-card rounded-2xl border border-dense-green/20 bg-gradient-to-br from-dense-green-soft to-white p-4" onclick="switchViewDirect('b')">
+                                <h4 class="text-xs font-bold text-dense-green mb-1">👥 팀 일정 보기</h4>
+                                <p class="text-[10px] text-dense-muted">캘린더 연계 확인</p>
+                            </div>
+                            <div class="quick-card rounded-2xl border bg-gradient-to-br from-dense-surface-soft to-white p-4" onclick="alert('전체 신청내역으로 이동합니다.')">
+                                <h4 class="text-xs font-bold text-dense-muted mb-1">📋 전체 내역</h4>
+                                <p class="text-[10px] text-dense-muted">연차 신청 이력 상세</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inline form (hidden) -->
+                    <div id="quickApplyPanelE" class="hidden rounded-[18px] border border-dense-blue/30 bg-dense-blue-soft/10 p-5">
+                        <h4 class="text-sm font-bold mb-3">연차 간편 신청</h4>
+                        <div class="grid grid-cols-3 gap-4 text-xs font-bold">
+                            <div><label>날짜</label><input type="date" value="2026-06-15" class="w-full border p-1 bg-dense-surface mt-1 rounded"></div>
+                            <div><label>시작</label><select class="w-full border p-1 bg-dense-surface mt-1 rounded"><option>09:00</option></select></div>
+                            <div class="flex items-end"><button class="w-full bg-dense-blue py-1.5 rounded text-white text-[11px]">신청</button></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </template>
+
+    <!-- TEMPLATE F -->
+    <template id="template-option-f">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-dense-blue px-1"><span class="text-xs font-bold text-white">SHIM</span></div>
+                        <span class="text-lg font-bold">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-dense-danger bg-dense-danger-soft px-2.5 py-1 rounded-full border border-dense-danger/20">F안: 팀 캘린더를 기본 홈으로</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start rounded-xl border bg-dense-surface p-4 shadow-sm min-h-[calc(100vh-6rem)]">
+                <h2 class="mb-2 text-lg font-extrabold pl-1">SHIM</h2>
+                <nav class="flex flex-col gap-1">
+                    <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue">
+                        <svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg><span class="font-semibold">프로젝트 캘린더 (홈)</span>
+                    </a>
+                </nav>
+            </aside>
+            <main class="relative min-w-0 flex-1">
+                <div class="fade-in space-y-5 bg-dense-bg pb-2">
+                    <!-- 미니 카드 요약 -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="flex items-center gap-3 rounded-2xl border border-dense-green/30 bg-dense-green-soft/30 px-4 py-3">
+                            <span class="text-xs font-bold">잔여: <span class="text-dense-green">80h</span></span>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-2xl border border-dense-blue/30 bg-dense-blue-soft/30 px-4 py-3">
+                            <span class="text-xs font-bold">이번달 사용: <span class="text-dense-blue">22h</span></span>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-2xl border border-dense-amber/30 bg-dense-amber-soft/30 px-4 py-3">
+                            <span class="text-xs font-bold">대기: <span class="text-dense-amber">2건</span></span>
+                        </div>
+                    </div>
+
+                    <!-- 팀 캘린더 메인 -->
+                    <div class="rounded-[18px] border bg-dense-surface p-5 shadow-sm">
+                        <div class="mb-4 flex items-center justify-between border-b pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&lt;</button>
+                                    <h3 class="text-base font-extrabold w-24 text-center">2026년 6월</h3>
+                                    <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&gt;</button>
+                                </div>
+                            </div>
+                            <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                                <button id="btn-timeline-f" onclick="switchViewF('timeline')" class="rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
+                                <button id="btn-calendar-f" onclick="switchViewF('calendar')" class="rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더</button>
+                            </div>
+                        </div>
+
+                        <div id="timeline-view-container-f" class="hidden overflow-x-auto rounded-xl border border-dense-line">
+                            <table class="cal-table" style="min-width:900px;">
+                                <thead><tr><th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5.5rem">팀</th><th style="width:3.5rem">잔여</th><th id="th-days-f"></th></tr></thead>
+                                <tbody class="divide-y divide-dense-line" id="tlBodyF"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="calendar-view-container-f" class="rounded-xl border border-dense-line bg-dense-surface p-4 hidden">
+                            <div class="mb-2 grid grid-cols-7 gap-2">
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                                <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-2" id="calendar-grid-body-f"></div>
+                        </div>
+
+                    </div>
+
+                    <!-- 아코디언 -->
+                    <div class="rounded-[18px] border bg-dense-surface shadow-sm overflow-hidden">
+                        <div class="accordion-header flex items-center justify-between px-5 py-3 border-b" onclick="toggleAccordionF()">
+                            <span class="text-xs font-bold text-dense-text">📋 나의 최근 신청 (5건)</span>
+                            <span id="accordionArrowF">▼</span>
+                        </div>
+                        <div id="accordionBodyF" class="accordion-body">
+                            <div class="p-3 text-xs space-y-2 bg-dense-surface-soft">
+                                <div class="flex justify-between border-b pb-1"><span>06/25 (수) 2h</span><span class="text-dense-amber">대기 중</span></div>
+                                <div class="flex justify-between border-b pb-1"><span>06/18 (목) 8h</span><span class="text-dense-green">승인됨</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Modal -->
+        <div id="applyModalF" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeModalF()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:max-w-md sm:align-middle">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold">연차 신청 (F안)</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold">날짜</label><input type="date" id="modalDateF" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작</label><select class="w-full border rounded-xl p-2"><option>09:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료</label><select class="w-full border rounded-xl p-2"><option>18:00</option></select></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button onclick="closeModalF()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white">신청하기</button>
+                        <button onclick="closeModalF()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT FOR SHOWCASE SYSTEM -->
+    <!-- ========================================== -->
+    <script>
+    const mockMembers = [
+        { name:'★ 홍길동 (나)', team:'설계팀', remaining:'10일', isMe:true },
+        { name:'김영희', team:'개발팀', remaining:'5일2h' },
+        { name:'이철수', team:'설계팀', remaining:'8일' },
+        { name:'박민수', team:'PM', remaining:'12일' },
+        { name:'정소연', team:'개발팀', remaining:'3일4h' },
+        { name:'최지훈', team:'QA팀', remaining:'7일' },
+        { name:'한수진', team:'설계팀', remaining:'9일' },
+        { name:'오영호', team:'개발팀', remaining:'6일' },
+    ];
+    const mockLeavesData = {
+        '김영희': {3:8,10:8,11:8},
+        '이철수': {6:4,18:8},
+        '박민수': {15:8},
+        '정소연': {5:2,20:8,21:8},
+        '★ 홍길동 (나)': {10:4,25:8},
+        '★ 홍길동': {10:4,25:8},
+        '최지훈': {12:8,13:8},
+        '한수진': {9:4},
+        '오영호': {22:8},
+    };
+    const optionHolidays = {6:'현충일'};
+    const teamColors = {'설계팀':'hsl(210,60%,92%)','개발팀':'hsl(150,50%,90%)','PM':'hsl(280,50%,92%)','QA팀':'hsl(30,60%,90%)'};
+    const teamTextColors = {'설계팀':'hsl(210,60%,35%)','개발팀':'hsl(150,50%,30%)','PM':'hsl(280,50%,35%)','QA팀':'hsl(30,60%,35%)'};
+    const weekdays = ['월','화','수','목','금','토','일'];
+
+    function viewOption(optionKey) {
+        document.getElementById('showcase-main').classList.add('hidden');
+        document.getElementById('showcase-view-container').classList.remove('hidden');
+        
+        // Active Navigation Button Styles
+        ['asis','a','b','c','d','e','f'].forEach(k => {
+            const btn = document.getElementById('nav-opt-' + k);
+            if (!btn) return;
+            if (k === optionKey) {
+                btn.className = "px-2 py-0.5 text-[10px] font-extrabold rounded bg-blue-600 text-white";
+            } else {
+                btn.className = "px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-400 hover:text-white";
+            }
+        });
+
+        // Set Title
+        const titles = {
+            'asis': '기존안 (AS-IS): 12달/월별 캘린더 대시보드 화면',
+            'a': 'A안: 대시보드 월별 캘린더 단일화 (연간 뷰 제거)',
+            'b': 'B안: 팀 캘린더 통합 신청 (빈 셀 클릭 신청)',
+            'c': 'C안: 하이브리드 3단 탭 통합 대시보드',
+            'd': 'D안: 좌측 정보 패널 + 우측 팀 캘린더 분할 뷰',
+            'e': 'E안: 대시보드 허브화 (달력 제거, 퀵액션 배치)',
+            'f': 'F안: 팀 캘린더 메인 기본 홈 전환 모델'
+        };
+        document.getElementById('current-view-title').textContent = titles[optionKey];
+
+        // Insert Content
+        const demoArea = document.getElementById('demo-area');
+        const tmpl = document.getElementById('template-option-' + optionKey);
+        demoArea.innerHTML = tmpl.innerHTML;
+
+        // Initialize JavaScript for specific option
+        if (optionKey === 'asis') initOptionAsIs();
+        else if (optionKey === 'a') initOptionA();
+        else if (optionKey === 'b') initOptionB();
+        else if (optionKey === 'c') initOptionC();
+        else if (optionKey === 'd') initOptionD();
+        else if (optionKey === 'e') initOptionE();
+        else if (optionKey === 'f') initOptionF();
+        
+        // Scroll to top of preview area
+        window.scrollTo(0, 0);
+    }
+
+    function switchViewDirect(optionKey) {
+        viewOption(optionKey);
+    }
+
+    function backToMain() {
+        document.getElementById('showcase-view-container').classList.add('hidden');
+        document.getElementById('showcase-main').classList.remove('hidden');
+        document.getElementById('demo-area').innerHTML = '';
+        window.scrollTo(0, 0);
+    }
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION AS-IS (현행 안)
+    // ==========================================
+    let currentYearAsIs = 2026, currentMonthAsIs = 6;
+    window.prevMonthAsIs = function() {
+        currentMonthAsIs--; if (currentMonthAsIs < 1) { currentMonthAsIs = 12; currentYearAsIs--; }
+        renderCalendarOptionAsIs();
+    };
+    window.nextMonthAsIs = function() {
+        currentMonthAsIs++; if (currentMonthAsIs > 12) { currentMonthAsIs = 1; currentYearAsIs++; }
+        renderCalendarOptionAsIs();
+    };
+    window.openApplyAsIs = function(dateStr) {
+        document.getElementById('modalDateAsIs').value = dateStr;
+        document.getElementById('modalAsIs').classList.remove('hidden');
+    };
+    window.closeModalAsIs = function() {
+        document.getElementById('modalAsIs').classList.add('hidden');
+    };
+    window.switchDashboardLayoutAsIs = function(layout) {
+        const btnYearly = document.getElementById('layout_yearly_btn_asis');
+        const btnMonthly = document.getElementById('layout_monthly_btn_asis');
+        const monthlyContainer = document.getElementById('dashboard-monthly-view-container-asis');
+        const yearlyContainer = document.getElementById('dashboard-yearly-view-container-asis');
+        const monthNav = document.getElementById('monthNavWrapperAsIs');
+        const yearlyLabel = document.getElementById('yearlyViewLabelAsIs');
+        if (!btnYearly) return;
+
+        if (layout === 'yearly') {
+            btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold bg-dense-blue text-white shadow-sm";
+            btnMonthly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            monthlyContainer.classList.add('hidden');
+            yearlyContainer.classList.remove('hidden');
+            monthNav.classList.add('hidden');
+            yearlyLabel.classList.remove('hidden');
+            renderYearlyCalendarAsIs();
+        } else {
+            btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            btnMonthly.className = "rounded-lg px-3 py-1 text-xs font-bold bg-dense-blue text-white shadow-sm";
+            monthlyContainer.classList.remove('hidden');
+            yearlyContainer.classList.add('hidden');
+            monthNav.classList.remove('hidden');
+            yearlyLabel.classList.add('hidden');
+            renderCalendarOptionAsIs();
+        }
+    };
+
+    function initOptionAsIs() {
+        currentYearAsIs = 2026; currentMonthAsIs = 6;
+        switchDashboardLayoutAsIs('monthly');
+    }
+
+    function renderCalendarOptionAsIs() {
+        const firstDay = new Date(currentYearAsIs, currentMonthAsIs - 1, 1).getDay();
+        const daysInMonth = new Date(currentYearAsIs, currentMonthAsIs, 0).getDate();
+        const lbl = document.getElementById('currentMonthLabelAsIs');
+        if (lbl) lbl.textContent = `${currentYearAsIs}년 ${currentMonthAsIs}월`;
+
+        let html = '';
+        for (let i = 0; i < firstDay; i++) {
+            html += '<div class="h-24 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const wd = (firstDay + d - 1) % 7;
+            const dateStr = `${currentYearAsIs}-${String(currentMonthAsIs).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isWeekend = wd === 0 || wd === 6;
+            const holiday = optionHolidays[d] && currentMonthAsIs === 6 ? '현충일' : null;
+            const isBlocked = isWeekend || holiday;
+            const leave = currentMonthAsIs === 6 && mockLeavesData['★ 홍길동 (나)'][d];
+
+            let cls = 'h-24 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all ';
+            if (leave) cls += 'border-dense-blue/30 bg-dense-blue-soft/30 hover:bg-dense-blue-soft/60 ';
+            else cls += 'border-dense-line bg-dense-surface hover:bg-dense-surface-soft ';
+            if (isBlocked) cls += 'cursor-not-allowed bg-dense-gray-soft/60 opacity-60 ';
+            else cls += 'hover:border-dense-blue hover:shadow-sm cursor-pointer ';
+
+            html += `<button class="${cls}" ${isBlocked ? 'disabled' : `onclick="openApplyAsIs('${dateStr}')"`}>`;
+            html += `<div class="flex items-center justify-between w-full leading-none">`;
+            html += `<span class="text-xs ${isWeekend || holiday ? 'font-extrabold text-dense-danger' : 'font-bold text-dense-text'}">${d}</span>`;
+            if (holiday) html += `<span class="truncate text-[9px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded">${holiday}</span>`;
+            html += `</div>`;
+            if (leave) {
+                const bgCls = leave >= 8 ? 'bg-dense-danger' : leave >= 4 ? 'bg-[#f79009]' : 'bg-dense-blue';
+                html += `<div class="flex flex-wrap mt-1"><div class="inline-flex rounded-lg px-1.5 py-0.5 text-[9px] font-extrabold text-white ${bgCls}">${leave}h</div></div>`;
+            } else {
+                html += '<div class="h-4"></div>';
+            }
+            html += `</button>`;
+        }
+        const container = document.getElementById('calendarDaysAsIs');
+        if (container) container.innerHTML = html;
+    }
+
+    function renderYearlyCalendarAsIs() {
+        const container = document.getElementById('dashboard-yearly-view-container-asis');
+        if (!container) return;
+
+        const months2026 = {
+            1: { name: '1월', offset: 4, days: 31 },
+            2: { name: '2월', offset: 0, days: 28 },
+            3: { name: '3월', offset: 0, days: 31 },
+            4: { name: '4월', offset: 3, days: 30 },
+            5: { name: '5월', offset: 5, days: 31 },
+            6: { name: '6월', offset: 1, days: 30 },
+            7: { name: '7월', offset: 3, days: 31 },
+            8: { name: '8월', offset: 6, days: 31 },
+            9: { name: '9월', offset: 2, days: 30 },
+            10: { name: '10월', offset: 4, days: 31 },
+            11: { name: '11월', offset: 0, days: 30 },
+            12: { name: '12월', offset: 2, days: 31 }
+        };
+
+        let html = '';
+        for (let m = 1; m <= 12; m++) {
+            const meta = months2026[m];
+            html += `<div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 bg-white">`;
+            html += `<div class="mb-2 text-sm font-extrabold text-dense-text">${m}월</div>`;
+            html += `<div class="mb-1 grid grid-cols-7 gap-1">`;
+            ['일', '월', '화', '수', '목', '금', '토'].forEach(wd => {
+                const colorCls = (wd === '일' || wd === '토') ? 'text-dense-danger' : 'text-dense-muted';
+                html += `<div class="text-center text-[10px] font-extrabold ${colorCls}">${wd}</div>`;
+            });
+            html += `</div>`;
+            html += `<div class="grid grid-cols-7 gap-1">`;
+
+            // Offset
+            for (let i = 0; i < meta.offset; i++) {
+                html += `<div class="h-8 rounded bg-dense-gray-soft/40 opacity-40"></div>`;
+            }
+
+            // Days
+            for (let d = 1; d <= meta.days; d++) {
+                const wd = (meta.offset + d - 1) % 7;
+                const dateStr = `2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const isWeekend = wd === 0 || wd === 6;
+                const holiday = m === 6 && d === 6 ? '현충일' : null;
+                const isBlocked = isWeekend || holiday;
+                const leave = m === 6 && mockLeavesData['★ 홍길동 (나)'][d];
+
+                let cls = 'h-8 w-full rounded border p-1 text-left text-[9px] flex flex-col justify-between transition-colors ';
+                if (leave) cls += 'border-dense-blue/30 bg-dense-blue-soft/30 hover:bg-dense-blue-soft/50 ';
+                else cls += 'border-dense-line bg-dense-surface hover:bg-dense-surface-soft ';
+                if (isBlocked) cls += 'cursor-not-allowed opacity-60 bg-dense-gray-soft/40 ';
+                else cls += 'hover:border-dense-blue cursor-pointer ';
+
+                html += `<button class="${cls}" ${isBlocked ? 'disabled' : `onclick="openApplyAsIs('${dateStr}')"`}>`;
+                html += `<div class="flex items-center justify-between w-full leading-none">`;
+                html += `<span class="${isBlocked ? 'text-dense-danger font-bold' : 'text-dense-text'}">${d}</span>`;
+                html += `</div>`;
+                if (leave) {
+                    const bgCls = leave >= 8 ? 'bg-dense-danger' : leave >= 4 ? 'bg-[#f79009]' : 'bg-dense-blue';
+                    html += `<div class="inline-flex rounded px-0.5 text-[7px] font-extrabold text-white ${bgCls} scale-90 origin-left mt-0.5">${leave}h</div>`;
+                }
+                html += `</button>`;
+            }
+
+            html += `</div></div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION A
+    // ==========================================
+    let currentYearA = 2026, currentMonthA = 6;
+    window.prevMonthOptionA = function() {
+        currentMonthA--; if (currentMonthA < 1) { currentMonthA = 12; currentYearA--; }
+        renderCalendarOptionA();
+    };
+    window.nextMonthOptionA = function() {
+        currentMonthA++; if (currentMonthA > 12) { currentMonthA = 1; currentYearA++; }
+        renderCalendarOptionA();
+    };
+    window.openApplyOptionA = function(dateStr) {
+        document.getElementById('modalDateOptionA').value = dateStr;
+        document.getElementById('modalOptionA').classList.remove('hidden');
+    };
+    window.closeModalOptionA = function() {
+        document.getElementById('modalOptionA').classList.add('hidden');
+    };
+
+    function initOptionA() {
+        currentYearA = 2026; currentMonthA = 6;
+        renderCalendarOptionA();
+    }
+
+    function renderCalendarOptionA() {
+        const firstDay = new Date(currentYearA, currentMonthA - 1, 1).getDay();
+        const daysInMonth = new Date(currentYearA, currentMonthA, 0).getDate();
+        const lbl = document.getElementById('monthLabelOptionA');
+        if (lbl) lbl.textContent = `${currentYearA}년 ${currentMonthA}월`;
+
+        let html = '';
+        for (let i = 0; i < firstDay; i++) {
+            html += '<div class="h-24 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const wd = (firstDay + d - 1) % 7;
+            const dateStr = `${currentYearA}-${String(currentMonthA).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isWeekend = wd === 0 || wd === 6;
+            const holiday = optionHolidays[d] && currentMonthA === 6 ? '현충일' : null;
+            const isBlocked = isWeekend || holiday;
+            const leave = currentMonthA === 6 && mockLeavesData['★ 홍길동 (나)'][d];
+
+            let cls = 'h-24 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all ';
+            if (leave) cls += 'border-dense-blue/30 bg-dense-blue-soft/30 hover:bg-dense-blue-soft/60 ';
+            else cls += 'border-dense-line bg-dense-surface hover:bg-dense-surface-soft ';
+            if (isBlocked) cls += 'cursor-not-allowed bg-dense-gray-soft/60 opacity-60 ';
+            else cls += 'hover:border-dense-blue hover:shadow-sm cursor-pointer ';
+
+            html += `<button class="${cls}" ${isBlocked ? 'disabled' : `onclick="openApplyOptionA('${dateStr}')"`}>`;
+            html += `<div class="flex items-center justify-between w-full leading-none">`;
+            html += `<span class="text-xs ${isWeekend || holiday ? 'font-extrabold text-dense-danger' : 'font-bold text-dense-text'}">${d}</span>`;
+            if (holiday) html += `<span class="truncate text-[9px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded">${holiday}</span>`;
+            html += `</div>`;
+            if (leave) {
+                const bgCls = leave >= 8 ? 'bg-dense-danger' : leave >= 4 ? 'bg-[#f79009]' : 'bg-dense-blue';
+                html += `<div class="flex flex-wrap mt-1"><div class="inline-flex rounded-lg px-1.5 py-0.5 text-[9px] font-extrabold text-white ${bgCls}">${leave}h</div></div>`;
+            } else {
+                html += '<div class="h-4"></div>';
+            }
+            html += `</button>`;
+        }
+        const container = document.getElementById('calendarDaysOptionA');
+        if (container) container.innerHTML = html;
+    }
+
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION B
+    // ==========================================
+    window.switchViewB = function(view) {
+        const btnTimeline = document.getElementById('btn-timeline-b');
+        const btnCalendar = document.getElementById('btn-calendar-b');
+        const timelineContainer = document.getElementById('timeline-view-container-b');
+        const calendarContainer = document.getElementById('calendar-view-container-b');
+        if (!btnTimeline) return;
+
+        if (view === 'timeline') {
+            btnTimeline.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            btnCalendar.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text";
+            timelineContainer.classList.remove('hidden');
+            calendarContainer.classList.add('hidden');
+        } else {
+            btnTimeline.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text";
+            btnCalendar.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            timelineContainer.classList.add('hidden');
+            calendarContainer.classList.remove('hidden');
+            renderCalendarGridB();
+        }
+    };
+    window.openApplyB = function(dateStr) {
+        document.getElementById('modalDateB').value = dateStr;
+        document.getElementById('applyModalB').classList.remove('hidden');
+    };
+    window.closeModalB = function() {
+        document.getElementById('applyModalB').classList.add('hidden');
+    };
+
+    function initOptionB() {
+        // Timeline Header Days
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const hol = optionHolidays[d];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const thDays = document.getElementById('th-days-b');
+        if (thDays) thDays.outerHTML = thHtml;
+
+        // Timeline Body
+        let bodyHtml = '';
+        mockMembers.forEach(m => {
+            const leaves = mockLeavesData[m.name] || {};
+            const rowCls = m.isMe ? 'my-row bg-dense-blue-soft/20 hover:bg-dense-blue-soft/40' : 'hover:bg-dense-surface-soft';
+            bodyHtml += `<tr class="transition-colors ${rowCls} group">`;
+            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold ${m.isMe ? 'text-dense-blue' : 'text-dense-nav-text'} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-inherit" style="width:4.25rem">${m.name}</td>`;
+            const bg = teamColors[m.team] || '#f2f4f7';
+            const tc = teamTextColors[m.team] || '#475467';
+            bodyHtml += `<td class="text-center px-1" style="width:7rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="background:${bg};color:${tc}">${m.team}</span></td>`;
+            bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${m.remaining}</td>`;
+
+            for (let d = 1; d <= 30; d++) {
+                const wd = (firstDayMon + d - 1) % 7;
+                const isWE = wd >= 5;
+                const hol = optionHolidays[d];
+                const isBlocked = isWE || hol;
+                const h = leaves[d];
+
+                if (h) {
+                    const cls = h >= 8 ? 'full' : h >= 4 ? 'half' : '';
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"><div class="day-block ${cls}" title="${m.name}: ${h}h">${h}h</div></td>`;
+                } else if (m.isMe && !isBlocked) {
+                    const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+                    bodyHtml += `<td class="clickable-cell" onclick="openApplyB('${dateStr}')"></td>`;
+                } else {
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+                }
+            }
+            bodyHtml += '</tr>';
+        });
+        const tblBody = document.getElementById('timelineBodyB');
+        if (tblBody) tblBody.innerHTML = bodyHtml;
+        switchViewB('calendar');
+    }
+
+    function renderCalendarGridB() {
+        const gridBody = document.getElementById('calendar-grid-body-b');
+        if (!gridBody) return;
+        const startOffset = 1;
+        let html = '';
+        
+        for (let i = 0; i < startOffset; i++) {
+            html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+        }
+        for (let d = 1; d <= 30; d++) {
+            const dayOfWeek = (startOffset + d - 1) % 7;
+            const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+            const hol = optionHolidays[d];
+            const isBlocked = isWE || hol;
+            
+            let dateCls = "text-xs font-extrabold ";
+            if (hol || dayOfWeek === 0) dateCls += "text-dense-danger";
+            else if (dayOfWeek === 6) dateCls += "text-dense-blue";
+            else dateCls += "text-dense-text";
+            
+            let leaveChipsHtml = '<div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5 mt-1">';
+            let myLeave = null;
+            
+            mockMembers.forEach(m => {
+                const leaves = mockLeavesData[m.name] || {};
+                const h = leaves[d];
+                if (h) {
+                    const isMe = m.name.includes('홍길동');
+                    if (isMe) myLeave = h;
+                    
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-default ';
+                    if (h >= 8) chipCls += 'bg-red-50 text-red-700 border border-red-200';
+                    else if (h >= 4) chipCls += 'bg-amber-50 text-amber-700 border border-amber-200';
+                    else chipCls += 'bg-blue-50 text-blue-700 border border-blue-200';
+                    
+                    const displayName = m.name;
+                    leaveChipsHtml += `<div class="${chipCls}" title="${m.name}: ${h}h">
+                        ${displayName} <span class="opacity-75 font-semibold text-[8px] ml-0.5">${h}h</span>
+                    </div>`;
+                }
+            });
+            leaveChipsHtml += '</div>';
+            
+            const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+            let cellAttr = '';
+            let cellCls = "min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line hover:shadow-sm relative group ";
+            
+            if (!myLeave && !isBlocked) {
+                cellAttr = `onclick="openApplyB('${dateStr}')"`;
+                cellCls += "cursor-pointer hover:bg-dense-blue-soft/30 hover:border-dense-blue";
+            } else if (isBlocked) {
+                cellCls += "bg-dense-gray-soft/20";
+            }
+            
+            const plusIcon = (!myLeave && !isBlocked) ? `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-xl font-bold text-dense-blue/60">+</span></div>` : '';
+            
+            html += `<div class="${cellCls}" ${cellAttr}>
+                <div class="flex items-center justify-between w-full leading-none mb-1">
+                     <span class="${dateCls}">${d}</span>
+                     ${hol ? `<span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10">${hol}</span>` : ''}
+                </div>
+                ${leaveChipsHtml}
+                ${plusIcon}
+            </div>`;
+        }
+        const endOffset = (startOffset + 30) % 7;
+        if (endOffset > 0) {
+            for (let i = 0; i < (7 - endOffset); i++) {
+                html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+            }
+        }
+        gridBody.innerHTML = html;
+    }
+
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION C
+    // ==========================================
+    window.switchTabC = function(idx) {
+        ['0', '1', '2'].forEach((num, i) => {
+            const btn = document.getElementById('btn-tab' + num);
+            const panel = document.getElementById('tab' + num + 'C');
+            if (btn && panel) {
+                btn.className = i === idx ? 'tab-btn active' : 'tab-btn';
+                panel.className = i === idx ? 'tab-panel active' : 'tab-panel';
+            }
+        });
+    };
+
+    function initOptionC() {
+        const teamLeaves = {
+            3:[{name:'김영희',h:8},{name:'홍길동',h:8}],
+            5:[{name:'정소연',h:2}],
+            6:[{name:'이철수',h:4}],
+            10:[{name:'김영희',h:8},{name:'홍길동',h:4}],
+            11:[{name:'김영희',h:8}],
+            12:[{name:'최지훈',h:8}],
+            13:[{name:'최지훈',h:8}],
+            15:[{name:'박민수',h:8}],
+            18:[{name:'이철수',h:8}],
+            20:[{name:'정소연',h:8}],
+            21:[{name:'정소연',h:8}],
+            22:[{name:'오영호',h:8}],
+            25:[{name:'홍길동',h:8}],
+        };
+        const firstDay = new Date(2026, 5, 1).getDay();
+        
+        // Tab 1 Team Calendar Grid
+        let html = '';
+        for (let i = 0; i < firstDay; i++) {
+            html += '<div class="min-h-[7rem] rounded-xl border border-dashed bg-dense-surface-soft/40 opacity-40"></div>';
+        }
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDay + d - 1) % 7;
+            const isWE = wd === 0 || wd === 6;
+            const hol = optionHolidays[d];
+            const leaves = teamLeaves[d] || [];
+            html += `<div class="min-h-[7rem] rounded-xl border p-2 flex flex-col transition-all bg-dense-surface hover:shadow-sm">`;
+            html += `<div class="flex items-center justify-between w-full leading-none mb-1"><span class="text-xs ${isWE || hol ? 'font-extrabold text-dense-danger' : 'font-bold text-dense-text'}">${d}</span>`;
+            if (hol) html += `<span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded">${hol}</span>`;
+            html += `</div><div class="flex-1 overflow-y-auto max-h-[64px] space-y-1">`;
+            leaves.forEach(lv => {
+                const bgCls = lv.h >= 8 ? 'bg-red-50 text-red-700 border-red-200' : lv.h >= 4 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200';
+                html += `<div class="rounded px-1.5 py-0.5 text-[9px] font-bold truncate border ${bgCls}">${lv.name} <span class="opacity-75 text-[8px] ml-0.5">${lv.h}h</span></div>`;
+            });
+            html += `</div></div>`;
+        }
+        const gridC = document.getElementById('teamCalGridC');
+        if (gridC) gridC.innerHTML = html;
+
+        // Mini Calendar
+        let miniHtml = '';
+        for (let i = 0; i < firstDay; i++) miniHtml += '<div class="h-7"></div>';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDay + d - 1) % 7;
+            const isWE = wd === 0 || wd === 6;
+            const hol = optionHolidays[d];
+            const cls = (isWE || hol) ? 'cursor-not-allowed opacity-50 bg-dense-gray-soft' : 'cursor-pointer hover:bg-dense-blue-soft hover:text-dense-blue';
+            miniHtml += `<button class="h-7 w-full rounded text-[11px] font-bold ${isWE || hol ? 'text-dense-danger' : 'text-dense-text'} ${cls}">${d}</button>`;
+        }
+        const miniGrid = document.getElementById('miniCalDaysC');
+        if (miniGrid) miniGrid.innerHTML = miniHtml;
+    }
+
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION D
+    // ==========================================
+    window.switchViewD = function(view) {
+        const btnTimeline = document.getElementById('btn-timeline-d');
+        const btnCalendar = document.getElementById('btn-calendar-d');
+        const timelineContainer = document.getElementById('timeline-view-container-d');
+        const calendarContainer = document.getElementById('calendar-view-container-d');
+        if (!btnTimeline) return;
+
+        if (view === 'timeline') {
+            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            timelineContainer.classList.remove('hidden');
+            calendarContainer.classList.add('hidden');
+        } else {
+            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            timelineContainer.classList.add('hidden');
+            calendarContainer.classList.remove('hidden');
+            renderCalendarGridD();
+        }
+    };
+    window.selectEasyDateD = function(dateStr) {
+        const inp = document.getElementById('easy-date-d');
+        if (inp) inp.value = dateStr;
+    };
+
+    function initOptionD() {
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const hol = optionHolidays[d];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const thD = document.getElementById('th-days-d');
+        if (thD) thD.outerHTML = thHtml;
+
+        let bodyHtml = '';
+        mockMembers.forEach(m => {
+            const leaves = mockLeavesData[m.name] || {};
+            const rowCls = m.isMe ? 'bg-dense-blue-soft/20 hover:bg-dense-blue-soft/40' : 'hover:bg-dense-surface-soft';
+            bodyHtml += `<tr class="transition-colors ${rowCls}">`;
+            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold ${m.isMe ? 'text-dense-blue' : 'text-dense-nav-text'}" style="width:4.25rem">${m.name}</td>`;
+            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-dense-surface-soft border">${m.team}</span></td>`;
+            for (let d = 1; d <= 30; d++) {
+                const wd = (firstDayMon + d - 1) % 7;
+                const isWE = wd >= 5;
+                const hol = optionHolidays[d];
+                const h = leaves[d];
+                if (h) {
+                    const cls = h >= 8 ? 'full' : h >= 4 ? 'half' : '';
+                    bodyHtml += `<td><div class="day-block ${cls}">${h}h</div></td>`;
+                } else bodyHtml += `<td class="${isWE || hol ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+            }
+            bodyHtml += '</tr>';
+        });
+        const tblBodyD = document.getElementById('tlBodyD');
+        if (tblBodyD) tblBodyD.innerHTML = bodyHtml;
+        switchViewD('calendar');
+    }
+
+    function renderCalendarGridD() {
+        const gridBody = document.getElementById('calendar-grid-body-d');
+        if (!gridBody) return;
+        const startOffset = 1;
+        let html = '';
+        for (let i = 0; i < startOffset; i++) {
+            html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+        }
+        for (let d = 1; d <= 30; d++) {
+            const dayOfWeek = (startOffset + d - 1) % 7;
+            const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+            const hol = optionHolidays[d];
+            const isBlocked = isWE || hol;
+            
+            let dateCls = "text-xs font-extrabold ";
+            if (hol || dayOfWeek === 0) dateCls += "text-dense-danger";
+            else if (dayOfWeek === 6) dateCls += "text-dense-blue";
+            else dateCls += "text-dense-text";
+            
+            let leaveChipsHtml = '<div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5 mt-1">';
+            let myLeave = null;
+            
+            mockMembers.forEach(m => {
+                const leaves = mockLeavesData[m.name] || {};
+                const h = leaves[d];
+                if (h) {
+                    const isMe = m.name.includes('홍길동');
+                    if (isMe) myLeave = h;
+                    
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-default ';
+                    if (h >= 8) chipCls += 'bg-red-50 text-red-700 border border-red-200';
+                    else if (h >= 4) chipCls += 'bg-amber-50 text-amber-700 border border-amber-200';
+                    else chipCls += 'bg-blue-50 text-blue-700 border border-blue-200';
+                    
+                    const displayName = m.name;
+                    leaveChipsHtml += `<div class="${chipCls}" title="${m.name}: ${h}h">
+                        ${displayName} <span class="opacity-75 font-semibold text-[8px] ml-0.5">${h}h</span>
+                    </div>`;
+                }
+            });
+            leaveChipsHtml += '</div>';
+            
+            const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+            let cellAttr = '';
+            let cellCls = "min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line hover:shadow-sm relative group ";
+            
+            if (!myLeave && !isBlocked) {
+                cellAttr = `onclick="selectEasyDateD('${dateStr}')"`;
+                cellCls += "cursor-pointer hover:bg-dense-blue-soft/30 hover:border-dense-blue";
+            } else if (isBlocked) {
+                cellCls += "bg-dense-gray-soft/20";
+            }
+            const plusIcon = (!myLeave && !isBlocked) ? `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-xl font-bold text-dense-blue/60">+</span></div>` : '';
+            
+            html += `<div class="${cellCls}" ${cellAttr}>
+                <div class="flex items-center justify-between w-full leading-none mb-1">
+                     <span class="${dateCls}">${d}</span>
+                     ${hol ? `<span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10">${hol}</span>` : ''}
+                </div>
+                ${leaveChipsHtml}
+                ${plusIcon}
+            </div>`;
+        }
+        const endOffset = (startOffset + 30) % 7;
+        if (endOffset > 0) {
+            for (let i = 0; i < (7 - endOffset); i++) {
+                html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+            }
+        }
+        gridBody.innerHTML = html;
+    }
+
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION E
+    // ==========================================
+    window.toggleQuickApplyPanelE = function() {
+        const pnl = document.getElementById('quickApplyPanelE');
+        if (pnl) pnl.classList.toggle('hidden');
+    };
+    function initOptionE() {
+        // Option E has mostly static cards + quick apply trigger.
+    }
+
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION F
+    // ==========================================
+    window.switchViewF = function(view) {
+        const btnTimeline = document.getElementById('btn-timeline-f');
+        const btnCalendar = document.getElementById('btn-calendar-f');
+        const timelineContainer = document.getElementById('timeline-view-container-f');
+        const calendarContainer = document.getElementById('calendar-view-container-f');
+        if (!btnTimeline) return;
+
+        if (view === 'timeline') {
+            btnTimeline.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            btnCalendar.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text";
+            timelineContainer.classList.remove('hidden');
+            calendarContainer.classList.add('hidden');
+        } else {
+            btnTimeline.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text";
+            btnCalendar.className = "rounded-lg px-4 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            timelineContainer.classList.add('hidden');
+            calendarContainer.classList.remove('hidden');
+            renderCalendarGridF();
+        }
+    };
+    window.openApplyF = function(dateStr) {
+        document.getElementById('modalDateF').value = dateStr;
+        document.getElementById('applyModalF').classList.remove('hidden');
+    };
+    window.closeModalF = function() {
+        document.getElementById('applyModalF').classList.add('hidden');
+    };
+    window.toggleAccordionF = function() {
+        const body = document.getElementById('accordionBodyF');
+        const arrow = document.getElementById('accordionArrowF');
+        if (!body) return;
+        body.classList.toggle('open');
+        arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+    };
+
+    function initOptionF() {
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const hol = optionHolidays[d];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const thF = document.getElementById('th-days-f');
+        if (thF) thF.outerHTML = thHtml;
+
+        let bodyHtml = '';
+        mockMembers.forEach(m => {
+            const leaves = mockLeavesData[m.name] || {};
+            const rowCls = m.isMe ? 'my-row bg-dense-blue-soft/20 hover:bg-dense-blue-soft/40' : 'hover:bg-dense-surface-soft';
+            bodyHtml += `<tr class="transition-colors ${rowCls}">`;
+            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold ${m.isMe ? 'text-dense-blue' : 'text-dense-nav-text'}" style="width:4.25rem">${m.name}</td>`;
+            const bg = teamColors[m.team] || '#f2f4f7';
+            const tc = teamTextColors[m.team] || '#475467';
+            bodyHtml += `<td class="text-center px-1" style="width:5.5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="background:${bg};color:${tc}">${m.team}</span></td>`;
+            bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${m.remaining}</td>`;
+            for (let d = 1; d <= 30; d++) {
+                const wd = (firstDayMon + d - 1) % 7;
+                const isWE = wd >= 5;
+                const hol = optionHolidays[d];
+                const isBlocked = isWE || hol;
+                const h = leaves[d];
+                if (h) {
+                    const cls = h >= 8 ? 'full' : h >= 4 ? 'half' : '';
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"><div class="day-block ${cls}">${h}h</div></td>`;
+                } else if (m.isMe && !isBlocked) {
+                    const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+                    bodyHtml += `<td class="clickable-cell" onclick="openApplyF('${dateStr}')"></td>`;
+                } else {
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+                }
+            }
+            bodyHtml += '</tr>';
+        });
+        const tblBodyF = document.getElementById('tlBodyF');
+        if (tblBodyF) tblBodyF.innerHTML = bodyHtml;
+        switchViewF('calendar');
+    }
+
+    function renderCalendarGridF() {
+        const gridBody = document.getElementById('calendar-grid-body-f');
+        if (!gridBody) return;
+        const startOffset = 1;
+        let html = '';
+        for (let i = 0; i < startOffset; i++) {
+            html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+        }
+        for (let d = 1; d <= 30; d++) {
+            const dayOfWeek = (startOffset + d - 1) % 7;
+            const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+            const hol = optionHolidays[d];
+            const isBlocked = isWE || hol;
+            
+            let dateCls = "text-xs font-extrabold ";
+            if (hol || dayOfWeek === 0) dateCls += "text-dense-danger";
+            else if (dayOfWeek === 6) dateCls += "text-dense-blue";
+            else dateCls += "text-dense-text";
+            
+            let leaveChipsHtml = '<div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5 mt-1">';
+            let myLeave = null;
+            
+            mockMembers.forEach(m => {
+                const leaves = mockLeavesData[m.name] || {};
+                const h = leaves[d];
+                if (h) {
+                    const isMe = m.name.includes('홍길동');
+                    if (isMe) myLeave = h;
+                    
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-default ';
+                    if (h >= 8) chipCls += 'bg-red-50 text-red-700 border border-red-200';
+                    else if (h >= 4) chipCls += 'bg-amber-50 text-amber-700 border border-amber-200';
+                    else chipCls += 'bg-blue-50 text-blue-700 border border-blue-200';
+                    
+                    const displayName = m.name;
+                    leaveChipsHtml += `<div class="${chipCls}" title="${m.name}: ${h}h">
+                        ${displayName} <span class="opacity-75 font-semibold text-[8px] ml-0.5">${h}h</span>
+                    </div>`;
+                }
+            });
+            leaveChipsHtml += '</div>';
+            
+            const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+            let cellAttr = '';
+            let cellCls = "min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line hover:shadow-sm relative group ";
+            
+            if (!myLeave && !isBlocked) {
+                cellAttr = `onclick="openApplyF('${dateStr}')"`;
+                cellCls += "cursor-pointer hover:bg-dense-blue-soft/30 hover:border-dense-blue";
+            } else if (isBlocked) {
+                cellCls += "bg-dense-gray-soft/20";
+            }
+            const plusIcon = (!myLeave && !isBlocked) ? `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-xl font-bold text-dense-blue/60">+</span></div>` : '';
+            
+            html += `<div class="${cellCls}" ${cellAttr}>
+                <div class="flex items-center justify-between w-full leading-none mb-1">
+                     <span class="${dateCls}">${d}</span>
+                     ${hol ? `<span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10">${hol}</span>` : ''}
+                </div>
+                ${leaveChipsHtml}
+                ${plusIcon}
+            </div>`;
+        }
+        const endOffset = (startOffset + 30) % 7;
+        if (endOffset > 0) {
+            for (let i = 0; i < (7 - endOffset); i++) {
+                html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+            }
+        }
+        gridBody.innerHTML = html;
+    }
+    </script>
+</body>
+</html>

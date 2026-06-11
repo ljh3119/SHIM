@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[A안] 대시보드 월별 캘린더 단일화 — SHIM UI Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'dense-bg': '#f7f8fb',
+                    'dense-surface': '#ffffff',
+                    'dense-surface-soft': '#f9fafb',
+                    'dense-line': '#d0d5dd',
+                    'dense-line-strong': '#98a2b3',
+                    'dense-text': '#101828',
+                    'dense-muted': '#475467',
+                    'dense-nav-text': '#1d2939',
+                    'dense-blue': '#175cd3',
+                    'dense-blue-soft': '#eff8ff',
+                    'dense-amber': '#b54708',
+                    'dense-amber-soft': '#fffaeb',
+                    'dense-green': '#067647',
+                    'dense-green-soft': '#ecfdf3',
+                    'dense-gray-soft': '#f2f4f7',
+                    'dense-danger': '#d92d20',
+                    'dense-danger-soft': '#fef3f2',
+                }
+            }
+        }
+    }
+    </script>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .glass-panel { background: #ffffff; border: 1px solid #d0d5dd; border-radius: 1rem; box-shadow: 0 1px 2px rgba(16,24,40,0.05); }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shim-side-link { display:flex; align-items:center; gap:0.65rem; box-sizing:border-box; min-height:2.625rem; padding:0.5rem 0.65rem; border-radius:0.7rem; text-decoration:none; font-size:0.8125rem; line-height:1.25; }
+        .shim-side-svg { width:1.25rem; height:1.25rem; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    </style>
+</head>
+<body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
+    <!-- Top Nav -->
+    <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+        <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center min-w-0">
+                <a href="#" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
+                    <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
+                        <span class="truncate text-center text-xs font-bold leading-tight text-white sm:text-sm">SHIM</span>
+                    </div>
+                    <span class="flex min-w-0 flex-col justify-center gap-0.5 leading-tight">
+                        <span class="truncate text-lg font-bold tracking-tight text-dense-text sm:text-xl">SHIM</span>
+                    </span>
+                </a>
+            </div>
+            <div class="flex flex-shrink-0 items-center gap-3 sm:gap-4">
+                <span class="text-xs font-bold text-dense-blue bg-dense-blue-soft px-2.5 py-1 rounded-full border border-dense-blue/20">A안: 월별 캘린더 단일화</span>
+                <span class="text-sm font-semibold text-dense-muted">로그아웃</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 overflow-x-hidden px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+        <!-- Sidebar -->
+        <aside class="relative flex w-[220px] shrink-0 flex-col gap-3 self-start overflow-visible rounded-xl border border-dense-line-strong bg-dense-surface p-4 pr-5 shadow-sm min-h-[calc(100vh-6rem)]">
+            <h2 class="mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text">
+                <span class="min-w-0 truncate pl-1 leading-snug">SHIM</span>
+            </h2>
+            <nav class="flex flex-col gap-1">
+                <a href="#" class="shim-side-link bg-dense-blue-soft text-dense-blue">
+                    <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+                    <span class="min-w-0 truncate font-semibold">대시보드</span>
+                </a>
+                <a href="#" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                    <svg class="shim-side-svg" viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg>
+                    <span class="min-w-0 truncate font-semibold">신청 내역</span>
+                </a>
+                <a href="#" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                    <svg class="shim-side-svg" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+                    <span class="min-w-0 truncate font-semibold">프로젝트 캘린더</span>
+                </a>
+                <a href="#" class="shim-side-link text-dense-nav-text hover:bg-dense-surface-soft">
+                    <svg class="shim-side-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                    <span class="min-w-0 truncate font-semibold">결재 관리</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="relative min-w-0 flex-1">
+            <div class="fade-in space-y-6 bg-dense-bg pb-2">
+                <!-- Header -->
+                <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">안녕하세요, 홍길동 대리님</h2>
+                        <p class="mt-1 text-sm font-semibold text-dense-muted">XX건설 / 설계팀</p>
+                    </div>
+                    <div class="mt-4 flex gap-2 md:mt-0">
+                        <select class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                            <option selected>2026년</option><option>2025년</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+                        <span class="mb-2 text-xs font-extrabold text-dense-muted">2026년 총 연차 시간</span>
+                        <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text">120<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+                    </div>
+                    <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+                        <span class="mb-2 text-xs font-extrabold text-dense-muted">사용 시간</span>
+                        <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue">40<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+                    </div>
+                    <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+                        <span class="mb-2 text-xs font-extrabold text-dense-muted">잔여 시간</span>
+                        <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-green">80<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+                    </div>
+                    <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-5 transition-colors hover:bg-dense-surface-soft">
+                        <span class="mb-2 text-xs font-extrabold text-dense-muted">2026년 신청 건수</span>
+                        <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-nav-text">5<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+                    </div>
+                </div>
+
+                <!-- 연차 신청 폼 -->
+                <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+                    <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <h3 class="text-lg font-extrabold tracking-tight text-dense-text">연차 신청</h3>
+                        <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                            <button class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">단일 날짜</button>
+                            <button class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">기간 선택</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-[1.5fr_2fr_auto]">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-bold text-dense-nav-text">날짜</label>
+                                <input type="date" value="2026-06-15" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue">
+                                <label class="text-sm font-bold text-dense-nav-text">하루 종일(Full-day) 신청</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" checked class="h-4 w-4 rounded border-dense-line-strong text-dense-blue">
+                                <label class="text-sm font-bold text-dense-nav-text">연차 차감</label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-bold text-dense-nav-text">시작 시간</label>
+                                <select class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                                    <option>선택</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>13:00</option><option>13:30</option><option>14:00</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-dense-nav-text">종료 시간</label>
+                                <select class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                                    <option>선택</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex h-full items-end justify-end md:justify-start">
+                            <button class="inline-flex w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95 md:w-auto md:min-w-[120px]">직접 등록하기</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 space-y-0.5 text-xs font-semibold text-dense-muted">
+                        <p>* 주말/공휴일은 신청할 수 없습니다.</p>
+                        <p>* 업무시간: 09:00~18:00 / 단위: 30분 / 점심 제외: 12:00~13:00</p>
+                    </div>
+                </div>
+
+                <!-- ★ A안 핵심: 월별 캘린더 단일 뷰 (연간 뷰 탭 완전 제거) -->
+                <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
+                    <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevMonth()" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <h3 id="monthLabel" class="text-lg font-extrabold tracking-tight text-dense-text w-28 text-center">2026년 6월</h3>
+                                <button onclick="nextMonth()" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                            <!-- ★ 연간 뷰 / 월별 뷰 탭이 없음! 월별만 존재 -->
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-dense-muted">다중 선택 모드</span>
+                            <button class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent bg-dense-line-strong transition-colors">
+                                <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition translate-x-0"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4 text-xs font-semibold text-dense-muted">날짜를 클릭하면 해당 날짜로 연차를 바로 신청할 수 있습니다.</div>
+
+                    <!-- 월별 그리드 캘린더 -->
+                    <div id="calendarGrid">
+                        <div class="mb-2 grid grid-cols-7 gap-1.5">
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 text-dense-danger">토</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1.5" id="calendarDays"></div>
+                    </div>
+
+                    <p class="mt-4 text-right text-xs font-semibold text-dense-muted">* 주말(토/일)과 공휴일은 비활성화 처리됩니다.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-dense-line bg-dense-surface">
+        <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-dense-muted">&copy; 2026 SHIM. Smart Holiday & Integrated Management. v1.7.3</p>
+        </div>
+    </footer>
+
+    <!-- shimModal (정적 재현) -->
+    <div id="calendarApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" onclick="window.shimModal.close('calendarApplyModal')"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 신청</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-dense-nav-text">날짜</label>
+                            <input type="date" id="modalDate" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" checked class="h-4 w-4 rounded border-dense-line-strong text-dense-blue">
+                            <label class="text-sm font-bold text-dense-nav-text text-xs">연차 차감</label>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
+                                    <select class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                                        <option>선택</option><option>09:00</option><option>09:30</option><option>10:00</option><option>13:00</option><option>14:00</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
+                                    <select class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong">
+                                        <option>선택</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>18:00</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 30분 단위만 신청 가능</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                    <button class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">신청하기</button>
+                    <button onclick="window.shimModal.close('calendarApplyModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // shimModal 재현
+    window.shimModal = {
+        open(id) { document.getElementById(id)?.classList.remove('hidden'); document.body.style.overflow='hidden'; },
+        close(id) { document.getElementById(id)?.classList.add('hidden'); document.body.style.overflow=''; }
+    };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('[aria-modal]').forEach(m => m.classList.add('hidden')); document.body.style.overflow=''; });
+
+    // Mock 데이터
+    const mockLeaves = {
+        '2026-06-03': { hours: 8, type: 'full' },
+        '2026-06-10': { hours: 4, type: 'half' },
+        '2026-06-18': { hours: 8, type: 'full' },
+        '2026-06-25': { hours: 2, type: 'partial' },
+    };
+    const mockHolidays = { '2026-06-06': '현충일' };
+
+    let currentYear = 2026, currentMonth = 6;
+
+    function renderCalendar() {
+        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        document.getElementById('monthLabel').textContent = `${currentYear}년 ${currentMonth}월`;
+
+        let html = '';
+        for (let i = 0; i < firstDay; i++) {
+            html += '<div class="h-24 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const wd = (firstDay + d - 1) % 7;
+            const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isWeekend = wd === 0 || wd === 6;
+            const holiday = mockHolidays[dateStr];
+            const isBlocked = isWeekend || holiday;
+            const leave = mockLeaves[dateStr];
+
+            let cls = 'h-24 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all ';
+            if (leave) cls += 'border-dense-blue/30 bg-dense-blue-soft/30 hover:bg-dense-blue-soft/60 ';
+            else cls += 'border-dense-line bg-dense-surface hover:bg-dense-surface-soft ';
+            if (isBlocked) cls += 'cursor-not-allowed bg-dense-gray-soft/60 opacity-60 ';
+            else cls += 'hover:border-dense-blue hover:shadow-sm cursor-pointer ';
+
+            html += `<button class="${cls}" ${isBlocked ? 'disabled' : `onclick="openApply('${dateStr}')"`}>`;
+            html += `<div class="flex items-center justify-between w-full leading-none">`;
+            html += `<span class="text-xs ${isWeekend || holiday ? 'font-extrabold text-dense-danger' : 'font-bold text-dense-text'}">${d}</span>`;
+            if (holiday) html += `<span class="truncate text-[9px] font-bold text-dense-danger bg-dense-danger-soft px-1.5 py-0.5 rounded border border-dense-danger/10">${holiday}</span>`;
+            html += `</div>`;
+            if (leave) {
+                const bgCls = leave.hours >= 8 ? 'bg-dense-danger' : leave.hours >= 4 ? 'bg-[#f79009]' : 'bg-dense-blue';
+                html += `<div class="flex flex-wrap gap-1 mt-1"><div class="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[9px] font-extrabold text-white leading-none ${bgCls} shadow-sm">${leave.hours}h</div></div>`;
+            } else {
+                html += '<div class="h-4"></div>';
+            }
+            html += `</button>`;
+        }
+        document.getElementById('calendarDays').innerHTML = html;
+    }
+
+    function prevMonth() { currentMonth--; if (currentMonth < 1) { currentMonth = 12; currentYear--; } renderCalendar(); }
+    function nextMonth() { currentMonth++; if (currentMonth > 12) { currentMonth = 1; currentYear++; } renderCalendar(); }
+    function openApply(dateStr) { document.getElementById('modalDate').value = dateStr; window.shimModal.open('calendarApplyModal'); }
+
+    renderCalendar();
+    </script>
+</body>
+</html>
