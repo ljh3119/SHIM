@@ -228,6 +228,27 @@
                 <button onclick="viewOption('f')" class="w-full mt-2 py-2 px-4 rounded-xl bg-slate-700 text-xs font-bold text-white hover:bg-blue-600 transition-colors group-hover:bg-slate-600">시안 직접 보기</button>
             </div>
 
+            <!-- Card G -->
+            <div class="bg-slate-800/80 border border-purple-500/40 rounded-2xl p-6 flex flex-col justify-between hover:border-purple-400 transition-all relative overflow-hidden group shadow-lg shadow-purple-950/20">
+                <div class="absolute top-0 right-0 bg-purple-500 text-slate-900 font-extrabold text-[9px] px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase">★ 최종 조합안</div>
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">G안: 최적 조합안</span>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>난이도: <span class="text-amber-400">★★★</span></div>
+                            <div>철학 부합: <span class="text-amber-400">★★★</span></div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg font-bold text-white mb-2">D안(골격) + B안(인터랙션) + E안(모바일)</h2>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">PC/태블릿에서는 2컬럼 레이아웃에 직접 셀 클릭 신청 및 대기 셀 결재/취소를 적용하고, 모바일에서는 달력 대신 통계/퀵액션과 날짜이동형 부재자 리스트를 제공하는 최적 조합안.</p>
+                    <div class="border-t border-slate-700/50 pt-4 mb-4 text-xs space-y-2">
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">PC 대화면 정보 밀도 및 동선 최소화 + 모바일 특화 반응형 UX 극대화</span></div>
+                        <div class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span class="text-slate-300">모바일 날짜 이동(&lt; 오늘 &gt;) 기능 및 철저한 상태 동기화 처리</span></div>
+                    </div>
+                </div>
+                <button onclick="viewOption('g')" class="w-full mt-2 py-2 px-4 rounded-xl bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition-colors">시안 직접 보기</button>
+            </div>
+
         </div>
 
         <!-- System Architecture Spec Info -->
@@ -260,6 +281,7 @@
                     <button onclick="switchViewDirect('d')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-d">D안</button>
                     <button onclick="switchViewDirect('e')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-e">E안</button>
                     <button onclick="switchViewDirect('f')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-f">F안</button>
+                    <button onclick="switchViewDirect('g')" class="px-2 py-0.5 text-[10px] font-extrabold rounded text-slate-300 hover:text-white" id="nav-opt-g">G안</button>
                 </div>
             </div>
         </div>
@@ -1017,6 +1039,276 @@
         </div>
     </template>
 
+    <!-- TEMPLATE G -->
+    <template id="template-option-g">
+        <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+            <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center min-w-0">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-dense-blue px-1"><span class="text-xs font-bold text-white">SHIM</span></div>
+                        <span class="text-lg font-bold">SHIM</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">G안: 최적 조합안 (최종)</span>
+                    <span class="text-sm font-semibold text-dense-muted cursor-pointer" onclick="backToMain()">로그아웃</span>
+                </div>
+            </div>
+        </nav>
+        <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+            <main class="relative min-w-0 flex-1">
+                
+                <!-- 1. PC & Tablet View (Wide Screen) -->
+                <div class="hidden md:flex gap-5 fade-in">
+                    <!-- Left Sidebar Panel -->
+                    <div class="w-[280px] shrink-0 space-y-4">
+                        <!-- Stats Summary Card -->
+                        <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                            <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
+                            <div class="space-y-1.5 text-xs font-bold">
+                                <div class="flex justify-between"><span>총 연차</span><span>120h</span></div>
+                                <div class="flex justify-between text-dense-blue"><span>사용</span><span id="myUsedG_desktop">40h</span></div>
+                                <div class="flex justify-between text-dense-green"><span>잔여</span><span id="myRemainingG_desktop">80h</span></div>
+                                <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1">
+                                    <div id="myProgressG_desktop" class="bg-dense-blue h-1.5 rounded-full" style="width:33.33%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Quick Apply Card -->
+                        <div class="rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/20 p-4 shadow-sm">
+                            <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
+                            <div class="space-y-3">
+                                <div><label class="text-[10px] font-bold">날짜</label><input type="date" id="easy-date-g_desktop" value="2026-06-15" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold"></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-[9px] font-bold">시작</label><select id="easy-start-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>09:00</option><option>13:00</option></select></div>
+                                    <div><label class="text-[9px] font-bold">종료</label><select id="easy-end-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>18:00</option><option>13:00</option></select></div>
+                                </div>
+                                <button onclick="applyLeaveG_Desktop()" class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs hover:bg-dense-blue/90 transition-colors">신청하기</button>
+                            </div>
+                        </div>
+                        <!-- Mini Approvals Card -->
+                        <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-extrabold text-dense-text">👥 결재 대기 목록</h3>
+                                <span id="pending-count-g_desktop" class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">0</span>
+                            </div>
+                            <div id="approvalListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1"></div>
+                        </div>
+                        <!-- My Requests Card -->
+                        <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                            <h3 class="text-xs font-extrabold text-dense-text mb-2">📋 나의 신청 내역</h3>
+                            <div id="myRequestsListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Content Panel -->
+                    <div class="min-w-0 flex-1">
+                        <div class="rounded-[18px] border bg-dense-surface p-5 shadow-sm">
+                            <!-- Switch Bar -->
+                            <div class="mb-4 flex items-center justify-between border-b pb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&lt;</button>
+                                        <h3 class="text-base font-extrabold w-24 text-center">2026년 6월</h3>
+                                        <button class="rounded-lg border p-1 hover:bg-dense-surface-soft">&gt;</button>
+                                    </div>
+                                </div>
+                                <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                                    <button id="btn-timeline-g" onclick="switchViewG('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
+                                    <button id="btn-calendar-g" onclick="switchViewG('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더</button>
+                                    <button id="btn-approvals-g" onclick="switchViewG('approvals')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">결재 관리</button>
+                                </div>
+                            </div>
+
+                            <!-- Timeline Container -->
+                            <div id="timeline-view-container-g" class="hidden overflow-x-auto rounded-xl border border-dense-line">
+                                <table class="cal-table" style="min-width:800px;">
+                                    <thead><tr><th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th style="width:3rem">잔여</th><th id="th-days-g"></th></tr></thead>
+                                    <tbody class="divide-y divide-dense-line" id="tlBodyG"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Calendar Container -->
+                            <div id="calendar-view-container-g" class="rounded-xl border border-dense-line bg-dense-surface p-4">
+                                <div class="mb-2 grid grid-cols-7 gap-2">
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
+                                </div>
+                                <div class="grid grid-cols-7 gap-2" id="calendar-grid-body-g"></div>
+                            </div>
+                            
+                            <!-- Detailed Approvals Table Container -->
+                            <div id="approvals-view-container-g" class="hidden space-y-4">
+                                <div class="flex justify-between items-center bg-dense-surface-soft border p-3 rounded-xl">
+                                    <span class="text-xs font-extrabold text-dense-muted">선택 항목 일괄 결재:</span>
+                                    <div class="flex gap-2">
+                                        <button onclick="bulkApproveG(true)" class="px-3 py-1.5 rounded-lg bg-dense-green text-white text-xs font-bold hover:bg-dense-green/90 transition-colors">선택 승인</button>
+                                        <button onclick="bulkApproveG(false)" class="px-3 py-1.5 rounded-lg bg-dense-danger text-white text-xs font-bold hover:bg-dense-danger/90 transition-colors">선택 반려</button>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto border rounded-xl">
+                                    <table class="min-w-full divide-y text-xs">
+                                        <thead class="bg-dense-surface-soft">
+                                            <tr>
+                                                <th class="px-4 py-2.5 text-left font-bold w-12"><input type="checkbox" id="selectAllG" class="h-4 w-4 rounded text-dense-blue" onclick="toggleSelectAllG(this)"></th>
+                                                <th class="px-4 py-2.5 text-left font-bold">신청인</th>
+                                                <th class="px-4 py-2.5 text-left font-bold">팀</th>
+                                                <th class="px-4 py-2.5 text-left font-bold">일자</th>
+                                                <th class="px-4 py-2.5 text-left font-bold">시간(차감)</th>
+                                                <th class="px-4 py-2.5 text-left font-bold">상태</th>
+                                                <th class="px-4 py-2.5 text-center font-bold">액션</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y" id="approvalsTableBodyG"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Mobile View (Narrow Screen) -->
+                <div class="block md:hidden space-y-4 fade-in">
+                    
+                    <!-- Dashboard Hub Container -->
+                    <div id="mobile-dashboard-hub-g" class="space-y-4">
+                        <div>
+                            <h2 class="text-lg font-extrabold">안녕하세요, 홍길동 대리님</h2>
+                            <p class="text-xs text-dense-muted">XX건설 / 설계팀</p>
+                        </div>
+                        
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-4 gap-2">
+                            <div class="flex flex-col items-center justify-center rounded-xl border bg-dense-surface py-2.5"><span class="text-[9px] text-dense-muted font-bold">총 연차</span><span class="text-xs font-extrabold">120h</span></div>
+                            <div class="flex flex-col items-center justify-center rounded-xl border bg-dense-surface py-2.5"><span class="text-[9px] text-dense-muted font-bold">사용</span><span id="myUsedG_mobile" class="text-xs font-extrabold text-dense-blue">40h</span></div>
+                            <div class="flex flex-col items-center justify-center rounded-xl border bg-dense-surface py-2.5"><span class="text-[9px] text-dense-muted font-bold">잔여</span><span id="myRemainingG_mobile" class="text-xs font-extrabold text-dense-green">80h</span></div>
+                            <div class="flex flex-col items-center justify-center rounded-xl border bg-dense-surface py-2.5"><span class="text-[9px] text-dense-muted font-bold">대기</span><span id="pending-badge-g_mobile" class="text-xs font-extrabold text-dense-amber">0건</span></div>
+                        </div>
+
+                        <!-- Quick Actions Grid -->
+                        <div class="rounded-xl border bg-dense-surface p-3.5 shadow-sm">
+                            <h3 class="text-xs font-extrabold mb-2 text-dense-text">⚡ 퀵 액션</h3>
+                            <div class="grid grid-cols-3 gap-2.5">
+                                <div class="quick-card rounded-xl border border-dense-blue/20 bg-gradient-to-br from-dense-blue-soft to-white p-2.5 text-center" onclick="toggleQuickApplyPanelG()">
+                                    <h4 class="text-[11px] font-bold text-dense-blue">📅 연차 신청</h4>
+                                    <p class="text-[8px] text-dense-muted mt-0.5">간편 연차 신청</p>
+                                </div>
+                                <div class="quick-card rounded-xl border border-dense-green/20 bg-gradient-to-br from-dense-green-soft to-white p-2.5 text-center" onclick="switchMobileTabG('schedule')">
+                                    <h4 class="text-[11px] font-bold text-dense-green">👥 팀 일정 조회</h4>
+                                    <p class="text-[8px] text-dense-muted mt-0.5">일별 부재자 명단</p>
+                                </div>
+                                <div class="quick-card rounded-xl border bg-gradient-to-br from-dense-surface-soft to-white p-2.5 text-center" onclick="alert('전체 신청내역으로 이동합니다.')">
+                                    <h4 class="text-[11px] font-bold text-dense-muted">📋 전체 내역</h4>
+                                    <p class="text-[8px] text-dense-muted mt-0.5">연차 내역 상세</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inline apply form (hidden by default) -->
+                        <div id="quickApplyPanelG" class="hidden rounded-xl border border-dense-blue/30 bg-dense-blue-soft/10 p-4 space-y-3">
+                            <h4 class="text-xs font-bold text-dense-blue">연차 간편 신청</h4>
+                            <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                                <div><label class="text-[10px]">날짜</label><input type="date" id="easy-date-g_mobile" value="2026-06-15" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs"></div>
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div><label class="text-[9px]">시작</label><select id="easy-start-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>09:00</option><option>13:00</option></select></div>
+                                    <div><label class="text-[9px]">종료</label><select id="easy-end-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>18:00</option><option>13:00</option></select></div>
+                                </div>
+                            </div>
+                            <button onclick="applyLeaveG_Mobile()" class="w-full bg-dense-blue py-1.5 rounded-lg text-white font-bold text-[11px] hover:bg-dense-blue/90 transition-colors">신청 완료</button>
+                        </div>
+
+                        <!-- Lists Widget -->
+                        <div class="space-y-3.5">
+                            <!-- Mobile Approvals -->
+                            <div class="rounded-xl border bg-dense-surface p-3.5 shadow-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="text-xs font-extrabold text-dense-text">👥 팀원 결재 대기 목록</h3>
+                                    <span id="pending-count-g_mobile" class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">0</span>
+                                </div>
+                                <div id="approvalListG_mobile" class="space-y-2 text-xs"></div>
+                            </div>
+                            
+                            <!-- Mobile Personal Requests -->
+                            <div class="rounded-xl border bg-dense-surface p-3.5 shadow-sm">
+                                <h3 class="text-xs font-extrabold text-dense-text mb-2">📋 나의 신청 현황</h3>
+                                <div id="myRequestsListG_mobile" class="space-y-2 text-xs"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Team Schedule View (Absentees list with Date Slider) -->
+                    <div id="mobile-schedule-view-g" class="hidden space-y-4">
+                        <button onclick="switchMobileTabG('dashboard')" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
+                            <span>←</span> 대시보드 홈으로
+                        </button>
+                        
+                        <div class="rounded-xl border bg-dense-surface p-4 shadow-sm">
+                            <div class="flex items-center justify-between mb-4 border-b pb-3">
+                                <h3 class="text-sm font-extrabold text-dense-text">👥 팀 일정 조회</h3>
+                                <button onclick="navigateMobileScheduleG(0)" class="text-[9px] px-2 py-0.5 border rounded-lg bg-dense-surface-soft font-bold hover:bg-dense-surface transition-colors">오늘로</button>
+                            </div>
+                            
+                            <!-- Date Slider Bar -->
+                            <div class="flex items-center justify-between bg-dense-surface-soft p-2 rounded-xl border border-dense-line mb-3">
+                                <button onclick="navigateMobileScheduleG(-1)" class="w-8 h-8 rounded-lg border bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&lt;</button>
+                                <span id="mobile-schedule-date-label-g" class="text-xs font-extrabold text-dense-text">2026년 6월 13일 (토)</span>
+                                <button onclick="navigateMobileScheduleG(1)" class="w-8 h-8 rounded-lg border bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&gt;</button>
+                            </div>
+                            
+                            <!-- Absent List -->
+                            <div id="mobile-schedule-list-g" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Apply Modal -->
+        <div id="applyModalG" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeModalG()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 신청 (G안)</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold">날짜</label><input type="date" id="modalDateG" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold">시작 시간</label><select id="modalStartG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>09:00</option><option>13:00</option></select></div>
+                                <div><label class="text-xs font-bold">종료 시간</label><select id="modalEndG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>18:00</option><option>13:00</option></select></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button onclick="applyLeaveG_Modal()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:bg-dense-blue/90">신청하기</button>
+                        <button onclick="closeModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve/Cancel Modal -->
+        <div id="approveModalG" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/40" onclick="closeApproveModalG()"></div>
+                <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+                <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text" id="approveModalTitleG">연차 상세 정보</h3>
+                        <input type="hidden" id="approveReqIdG">
+                        <div class="space-y-3 text-xs" id="approveModalContentG"></div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3" id="approveModalFooterG"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
 
     <!-- ========================================== -->
     <!-- JAVASCRIPT FOR SHOWCASE SYSTEM -->
@@ -1053,7 +1345,7 @@
         document.getElementById('showcase-view-container').classList.remove('hidden');
         
         // Active Navigation Button Styles
-        ['asis','a','b','c','d','e','f'].forEach(k => {
+        ['asis','a','b','c','d','e','f','g'].forEach(k => {
             const btn = document.getElementById('nav-opt-' + k);
             if (!btn) return;
             if (k === optionKey) {
@@ -1071,7 +1363,8 @@
             'c': 'C안: 하이브리드 3단 탭 통합 대시보드',
             'd': 'D안: 좌측 정보 패널 + 우측 팀 캘린더 분할 뷰',
             'e': 'E안: 대시보드 허브화 (달력 제거, 퀵액션 배치)',
-            'f': 'F안: 팀 캘린더 메인 기본 홈 전환 모델'
+            'f': 'F안: 팀 캘린더 메인 기본 홈 전환 모델',
+            'g': 'G안: 최적 조합안 (D안 골격 + B안 인터랙션 + E안 모바일)'
         };
         document.getElementById('current-view-title').textContent = titles[optionKey];
 
@@ -1088,6 +1381,7 @@
         else if (optionKey === 'd') initOptionD();
         else if (optionKey === 'e') initOptionE();
         else if (optionKey === 'f') initOptionF();
+        else if (optionKey === 'g') initOptionG();
         
         // Scroll to top of preview area
         window.scrollTo(0, 0);
@@ -1866,6 +2160,740 @@
         }
         gridBody.innerHTML = html;
     }
+
+    // ==========================================
+    // INITIALIZERS FOR OPTION G (최종 조합안)
+    // ==========================================
+    let pendingLeavesG = [
+        { id: 1, name: '김영희', team: '개발팀', date: '2026-06-20', duration: '8h', status: 'PENDING' },
+        { id: 2, name: '이철수', team: '설계팀', date: '2026-06-18', duration: '4h (오전)', status: 'PENDING' },
+        { id: 3, name: '★ 홍길동 (나)', team: '설계팀', date: '2026-06-25', duration: '8h', status: 'PENDING' },
+        { id: 4, name: '정소연', team: '개발팀', date: '2026-06-15', duration: '8h', status: 'PENDING' }
+    ];
+    let selectedMobileDayG = 13;
+    let selectedViewG = 'calendar';
+    let selectedMobileTabG = 'dashboard';
+
+    window.switchViewG = function(view) {
+        selectedViewG = view;
+        const btnTimeline = document.getElementById('btn-timeline-g');
+        const btnCalendar = document.getElementById('btn-calendar-g');
+        const btnApprovals = document.getElementById('btn-approvals-g');
+        const timelineContainer = document.getElementById('timeline-view-container-g');
+        const calendarContainer = document.getElementById('calendar-view-container-g');
+        const approvalsContainer = document.getElementById('approvals-view-container-g');
+        if (!btnTimeline) return;
+
+        btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        btnApprovals.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        timelineContainer.classList.add('hidden');
+        calendarContainer.classList.add('hidden');
+        approvalsContainer.classList.add('hidden');
+
+        if (view === 'timeline') {
+            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            timelineContainer.classList.remove('hidden');
+            renderTimelineG();
+        } else if (view === 'calendar') {
+            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            calendarContainer.classList.remove('hidden');
+            renderCalendarGridG();
+        } else if (view === 'approvals') {
+            btnApprovals.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            approvalsContainer.classList.remove('hidden');
+            renderDetailedApprovalsTableG();
+        }
+    };
+
+    window.toggleQuickApplyPanelG = function() {
+        const pnl = document.getElementById('quickApplyPanelG');
+        if (pnl) pnl.classList.toggle('hidden');
+    };
+
+    window.switchMobileTabG = function(tab) {
+        selectedMobileTabG = tab;
+        const hub = document.getElementById('mobile-dashboard-hub-g');
+        const schedule = document.getElementById('mobile-schedule-view-g');
+        if (!hub || !schedule) return;
+
+        if (tab === 'dashboard') {
+            hub.classList.remove('hidden');
+            schedule.classList.add('hidden');
+        } else {
+            hub.classList.add('hidden');
+            schedule.classList.remove('hidden');
+            renderMobileScheduleListG();
+        }
+    };
+
+    window.navigateMobileScheduleG = function(offset) {
+        if (offset === 0) {
+            selectedMobileDayG = 13;
+        } else {
+            selectedMobileDayG += offset;
+            if (selectedMobileDayG < 1) selectedMobileDayG = 1;
+            if (selectedMobileDayG > 30) selectedMobileDayG = 30;
+        }
+        renderMobileScheduleListG();
+    };
+
+    window.openApplyG_Cell = function(dateStr) {
+        // block past date check (June 1-12)
+        const d = parseInt(dateStr.split('-')[2]);
+        if (d < 13) {
+            alert('지나간 날짜는 연차를 신청할 수 없습니다.');
+            return;
+        }
+        document.getElementById('modalDateG').value = dateStr;
+        document.getElementById('modalStartG').value = '09:00';
+        document.getElementById('modalEndG').value = '18:00';
+        document.getElementById('applyModalG').classList.remove('hidden');
+    };
+
+    window.closeModalG = function() {
+        document.getElementById('applyModalG').classList.add('hidden');
+    };
+
+    window.openApproveModalG = function(id) {
+        const req = pendingLeavesG.find(r => r.id === id);
+        if (!req) return;
+        document.getElementById('approveReqIdG').value = id;
+        
+        const title = document.getElementById('approveModalTitleG');
+        const content = document.getElementById('approveModalContentG');
+        const footer = document.getElementById('approveModalFooterG');
+        
+        const isMe = req.name.includes('홍길동');
+        title.textContent = isMe ? '나의 연차 신청 정보' : '팀원 연차 결재 승인';
+        
+        content.innerHTML = `
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청인</span>
+                <span class="col-span-2 font-bold">${req.name}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">팀</span>
+                <span>${req.team}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 일자</span>
+                <span class="col-span-2 font-bold">${req.date}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">연차 구분</span>
+                <span class="col-span-2 font-bold">${req.duration}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">결재 상태</span>
+                <span class="col-span-2">
+                    ${req.status === 'PENDING' ? '<span class="text-dense-amber font-extrabold bg-dense-amber-soft px-1.5 py-0.5 rounded">대기 중</span>' : 
+                      req.status === 'APPROVED' ? '<span class="text-dense-green font-extrabold bg-dense-green-soft px-1.5 py-0.5 rounded">승인됨</span>' : 
+                      req.status === 'REJECTED' ? `<span class="text-dense-danger font-extrabold bg-dense-danger-soft px-1.5 py-0.5 rounded">반려됨 (${req.rejectReason || '사유 없음'})</span>` : 
+                      '<span class="text-dense-muted font-extrabold bg-dense-gray-soft px-1.5 py-0.5 rounded">취소됨</span>'}
+                </span>
+            </div>
+        `;
+        
+        if (isMe) {
+            if (req.status === 'PENDING') {
+                footer.innerHTML = `
+                    <button onclick="cancelLeaveG(${req.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:bg-dense-danger/90 transition-colors">신청 취소</button>
+                    <button onclick="closeApproveModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+            } else {
+                footer.innerHTML = `
+                    <button onclick="closeApproveModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+            }
+        } else {
+            if (req.status === 'PENDING') {
+                footer.innerHTML = `
+                    <button onclick="approveSingleG(${req.id})" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:bg-dense-green/90 transition-colors">승인하기</button>
+                    <button onclick="rejectSingleG(${req.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:bg-dense-danger/90 transition-colors">반려하기</button>
+                    <button onclick="closeApproveModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                `;
+            } else {
+                footer.innerHTML = `
+                    <button onclick="closeApproveModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+            }
+        }
+        document.getElementById('approveModalG').classList.remove('hidden');
+    };
+
+    window.closeApproveModalG = function() {
+        document.getElementById('approveModalG').classList.add('hidden');
+    };
+
+    window.applyLeaveG_Desktop = function() {
+        const dateStr = document.getElementById('easy-date-g_desktop').value;
+        const start = document.getElementById('easy-start-g_desktop').value;
+        const end = document.getElementById('easy-end-g_desktop').value;
+        executeApplyG(dateStr, start, end);
+    };
+
+    window.applyLeaveG_Mobile = function() {
+        const dateStr = document.getElementById('easy-date-g_mobile').value;
+        const start = document.getElementById('easy-start-g_mobile').value;
+        const end = document.getElementById('easy-end-g_mobile').value;
+        executeApplyG(dateStr, start, end);
+        document.getElementById('quickApplyPanelG').classList.add('hidden');
+    };
+
+    window.applyLeaveG_Modal = function() {
+        const dateStr = document.getElementById('modalDateG').value;
+        const start = document.getElementById('modalStartG').value;
+        const end = document.getElementById('modalEndG').value;
+        executeApplyG(dateStr, start, end);
+        closeModalG();
+    };
+
+    function executeApplyG(dateStr, start, end) {
+        if (!dateStr || !dateStr.startsWith('2026-06-')) {
+            alert('2026년 6월 날짜만 신청할 수 있습니다.');
+            return;
+        }
+        const day = parseInt(dateStr.split('-')[2]);
+        if (day < 13) {
+            alert('지나간 날짜(6월 12일 이전)는 신청할 수 없습니다.');
+            return;
+        }
+
+        // Check if already has leave
+        const hasApproved = mockLeavesData['★ 홍길동 (나)'][day] || mockLeavesData['★ 홍길동'][day];
+        const hasPending = pendingLeavesG.some(p => p.name.includes('홍길동') && parseInt(p.date.split('-')[2]) === day && (p.status === 'PENDING' || p.status === 'APPROVED'));
+        if (hasApproved || hasPending) {
+            alert('이미 해당 날짜에 연차가 등록되어 있거나 대기 중인 신청이 있습니다.');
+            return;
+        }
+
+        let duration = '8h';
+        if (start === '09:00' && end === '13:00') duration = '4h (오전)';
+        else if (start === '13:00' && end === '18:00') duration = '4h (오후)';
+
+        pendingLeavesG.push({
+            id: Date.now() + Math.random(),
+            name: '★ 홍길동 (나)',
+            team: '설계팀',
+            date: dateStr,
+            duration: duration,
+            status: 'PENDING'
+        });
+
+        syncG();
+        alert('연차가 신청되었습니다. 결재 대기 상태로 등록됩니다.');
+    }
+
+    window.cancelLeaveG = function(id) {
+        const req = pendingLeavesG.find(r => r.id === id);
+        if (req && req.status === 'PENDING') {
+            req.status = 'CANCELED';
+            syncG();
+            closeApproveModalG();
+            alert('연차 신청이 취소되었습니다.');
+        }
+    };
+
+    window.approveSingleG = function(id) {
+        const req = pendingLeavesG.find(r => r.id === id);
+        if (req && req.status === 'PENDING') {
+            req.status = 'APPROVED';
+            const day = parseInt(req.date.split('-')[2]);
+            const hours = req.duration.includes('4h') ? 4 : 8;
+            if (!mockLeavesData[req.name]) mockLeavesData[req.name] = {};
+            mockLeavesData[req.name][day] = hours;
+            
+            syncG();
+            closeApproveModalG();
+            alert('승인되었습니다.');
+        }
+    };
+
+    window.rejectSingleG = function(id) {
+        const req = pendingLeavesG.find(r => r.id === id);
+        if (req && req.status === 'PENDING') {
+            const reason = prompt('반려 사유를 입력해주세요:', '업무 일정 조율 필요');
+            if (reason === null) return;
+            req.status = 'REJECTED';
+            req.rejectReason = reason;
+            
+            syncG();
+            closeApproveModalG();
+            alert('반려되었습니다.');
+        }
+    };
+
+    window.toggleSelectAllG = function(chk) {
+        const chks = document.querySelectorAll('.approval-chk-g');
+        chks.forEach(c => c.checked = chk.checked);
+    };
+
+    window.bulkApproveG = function(isApprove) {
+        const checkedBoxes = document.querySelectorAll('.approval-chk-g:checked');
+        if (checkedBoxes.length === 0) {
+            alert('선택된 항목이 없습니다.');
+            return;
+        }
+
+        let count = 0;
+        let rejectReason = '';
+        if (!isApprove) {
+            rejectReason = prompt('선택 항목들의 반려 사유를 입력하세요:', '업무 일정 조율 필요');
+            if (rejectReason === null) return;
+        }
+
+        checkedBoxes.forEach(chk => {
+            const id = parseFloat(chk.value);
+            const req = pendingLeavesG.find(r => r.id === id);
+            if (req && req.status === 'PENDING') {
+                if (isApprove) {
+                    req.status = 'APPROVED';
+                    const day = parseInt(req.date.split('-')[2]);
+                    const hours = req.duration.includes('4h') ? 4 : 8;
+                    if (!mockLeavesData[req.name]) mockLeavesData[req.name] = {};
+                    mockLeavesData[req.name][day] = hours;
+                } else {
+                    req.status = 'REJECTED';
+                    req.rejectReason = rejectReason;
+                }
+                count++;
+            }
+        });
+
+        syncG();
+        const selectAll = document.getElementById('selectAllG');
+        if (selectAll) selectAll.checked = false;
+
+        alert(`${count}건의 요청이 일괄 ${isApprove ? '승인' : '반려'} 처리되었습니다.`);
+    };
+
+    function syncG() {
+        renderStatsG();
+        renderApprovalListsG();
+        renderMyRequestsListsG();
+        renderTimelineG();
+        renderCalendarGridG();
+        renderDetailedApprovalsTableG();
+        renderMobileScheduleListG();
+    }
+
+    function renderStatsG() {
+        let totalHours = 120;
+        let usedHours = 0;
+        const myLeaves = mockLeavesData['★ 홍길동 (나)'] || mockLeavesData['★ 홍길동'] || {};
+        for (let d in myLeaves) {
+            usedHours += myLeaves[d];
+        }
+        let remainingHours = totalHours - usedHours;
+
+        // update desktop
+        const desktopUsed = document.getElementById('myUsedG_desktop');
+        const desktopRemaining = document.getElementById('myRemainingG_desktop');
+        const desktopProgress = document.getElementById('myProgressG_desktop');
+        if (desktopUsed) desktopUsed.textContent = usedHours + 'h';
+        if (desktopRemaining) desktopRemaining.textContent = remainingHours + 'h';
+        if (desktopProgress) desktopProgress.style.width = (usedHours / totalHours * 100) + '%';
+
+        // update mobile
+        const mobileUsed = document.getElementById('myUsedG_mobile');
+        const mobileRemaining = document.getElementById('myRemainingG_mobile');
+        const mobilePendingBadge = document.getElementById('pending-badge-g_mobile');
+        if (mobileUsed) mobileUsed.textContent = usedHours + 'h';
+        if (mobileRemaining) mobileRemaining.textContent = remainingHours + 'h';
+        
+        const myPendingCount = pendingLeavesG.filter(p => p.name.includes('홍길동') && p.status === 'PENDING').length;
+        if (mobilePendingBadge) mobilePendingBadge.textContent = myPendingCount + '건';
+    }
+
+    function renderApprovalListsG() {
+        const teamPendings = pendingLeavesG.filter(r => r.status === 'PENDING' && !r.name.includes('홍길동'));
+        
+        // Count badges
+        const badgeDesktop = document.getElementById('pending-count-g_desktop');
+        const badgeMobile = document.getElementById('pending-count-g_mobile');
+        if (badgeDesktop) badgeDesktop.textContent = teamPendings.length;
+        if (badgeMobile) badgeMobile.textContent = teamPendings.length;
+
+        // Desktop list
+        const desktopList = document.getElementById('approvalListG_desktop');
+        if (desktopList) {
+            if (teamPendings.length === 0) {
+                desktopList.innerHTML = '<div class="text-[10px] text-dense-muted font-normal text-center py-2 bg-dense-surface-soft border border-dashed rounded-lg">결재 대기 중인 연차가 없습니다.</div>';
+            } else {
+                let html = '';
+                teamPendings.forEach(r => {
+                    html += `
+                        <div class="flex items-center justify-between border-b pb-1">
+                            <div>
+                                <span class="font-bold text-dense-text">${r.name}</span>
+                                <span class="text-dense-muted text-[10px] ml-1">${r.date} (${r.duration})</span>
+                            </div>
+                            <button onclick="openApproveModalG(${r.id})" class="px-2 py-0.5 rounded bg-dense-blue text-white text-[9px] font-bold hover:bg-dense-blue/90 transition-colors">결재</button>
+                        </div>
+                    `;
+                });
+                desktopList.innerHTML = html;
+            }
+        }
+
+        // Mobile list
+        const mobileList = document.getElementById('approvalListG_mobile');
+        if (mobileList) {
+            if (teamPendings.length === 0) {
+                mobileList.innerHTML = '<div class="text-[10px] text-dense-muted text-center py-3 bg-dense-surface-soft border border-dashed rounded-xl">결재 대기 중인 연차가 없습니다.</div>';
+            } else {
+                let html = '';
+                teamPendings.forEach(r => {
+                    html += `
+                        <div class="flex items-center justify-between border-b pb-1.5">
+                            <div>
+                                <span class="font-bold text-dense-text">${r.name} (${r.team})</span>
+                                <div class="text-dense-muted text-[10px] mt-0.5">${r.date} / ${r.duration}</div>
+                            </div>
+                            <button onclick="openApproveModalG(${r.id})" class="px-2.5 py-1 rounded bg-dense-blue text-white text-[10px] font-bold">결재</button>
+                        </div>
+                    `;
+                });
+                mobileList.innerHTML = html;
+            }
+        }
+    }
+
+    function renderMyRequestsListsG() {
+        const myRequests = pendingLeavesG.filter(r => r.name.includes('홍길동'));
+
+        const buildListHTML = (list, isMobile) => {
+            if (list.length === 0) {
+                return '<div class="text-[10px] text-dense-muted text-center py-2 bg-dense-surface-soft border border-dashed rounded-lg">신청한 연차가 없습니다.</div>';
+            }
+            let html = '';
+            list.forEach(r => {
+                let statusBadge = '';
+                let cancelBtn = '';
+                if (r.status === 'PENDING') {
+                    statusBadge = '<span class="text-dense-amber bg-dense-amber-soft px-1.5 py-0.5 rounded-[4px] font-bold">대기 중</span>';
+                    cancelBtn = `<button onclick="openApproveModalG(${r.id})" class="ml-2 px-1.5 py-0.2 rounded bg-dense-gray-soft text-dense-muted text-[8px] font-bold border hover:bg-dense-danger hover:text-white transition-colors">취소</button>`;
+                } else if (r.status === 'APPROVED') {
+                    statusBadge = '<span class="text-dense-green bg-dense-green-soft px-1.5 py-0.5 rounded-[4px] font-bold">승인됨</span>';
+                } else if (r.status === 'REJECTED') {
+                    statusBadge = `<span class="text-dense-danger bg-dense-danger-soft px-1.5 py-0.5 rounded-[4px] font-bold" title="${r.rejectReason || ''}">반려됨</span>`;
+                } else {
+                    statusBadge = '<span class="text-dense-muted bg-dense-gray-soft px-1.5 py-0.5 rounded-[4px] font-bold">취소됨</span>';
+                }
+
+                html += `
+                    <div class="flex justify-between items-center border-b pb-1">
+                        <span>2026-${r.date.split('-')[1]}-${r.date.split('-')[2]} (${r.duration.split(' ')[0]})</span>
+                        <div class="flex items-center text-[10px]">
+                            ${statusBadge}
+                            ${cancelBtn}
+                        </div>
+                    </div>
+                `;
+            });
+            return html;
+        };
+
+        const desktopList = document.getElementById('myRequestsListG_desktop');
+        if (desktopList) desktopList.innerHTML = buildListHTML(myRequests, false);
+
+        const mobileList = document.getElementById('myRequestsListG_mobile');
+        if (mobileList) mobileList.innerHTML = buildListHTML(myRequests, true);
+    }
+
+    function renderTimelineG() {
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const hol = optionHolidays[d];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const thG = document.getElementById('th-days-g');
+        if (thG) thG.outerHTML = thHtml;
+
+        let bodyHtml = '';
+        mockMembers.forEach(m => {
+            const leaves = mockLeavesData[m.name] || {};
+            const rowCls = m.isMe ? 'my-row bg-dense-blue-soft/20 hover:bg-dense-blue-soft/40' : 'hover:bg-dense-surface-soft';
+            bodyHtml += `<tr class="transition-colors ${rowCls}">`;
+            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold ${m.isMe ? 'text-dense-blue' : 'text-dense-nav-text'}" style="width:4.25rem">${m.name}</td>`;
+            const bg = teamColors[m.team] || '#f2f4f7';
+            const tc = teamTextColors[m.team] || '#475467';
+            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="background:${bg};color:${tc}">${m.team}</span></td>`;
+            bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${m.remaining}</td>`;
+            
+            for (let d = 1; d <= 30; d++) {
+                const wd = (firstDayMon + d - 1) % 7;
+                const isWE = wd >= 5;
+                const hol = optionHolidays[d];
+                const isBlocked = isWE || hol;
+                const h = leaves[d];
+                
+                const pLeave = pendingLeavesG.find(p => p.name === m.name && parseInt(p.date.split('-')[2]) === d && p.status === 'PENDING');
+
+                if (pLeave) {
+                    // pending block
+                    bodyHtml += `<td><div class="day-block pending cursor-pointer" onclick="openApproveModalG(${pLeave.id})" title="${m.name}: ${pLeave.duration} (결재 대기 중)">대기</div></td>`;
+                } else if (h) {
+                    const cls = h >= 8 ? 'full' : h >= 4 ? 'half' : '';
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"><div class="day-block ${cls}">${h}h</div></td>`;
+                } else if (m.isMe && !isBlocked) {
+                    const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+                    if (d < 13) {
+                        bodyHtml += `<td class="bg-dense-gray-soft/40 cursor-not-allowed"></td>`;
+                    } else {
+                        bodyHtml += `<td class="clickable-cell" onclick="openApplyG_Cell('${dateStr}')"></td>`;
+                    }
+                } else {
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+                }
+            }
+            bodyHtml += '</tr>';
+        });
+        const tblBodyG = document.getElementById('tlBodyG');
+        if (tblBodyG) tblBodyG.innerHTML = bodyHtml;
+    }
+
+    function renderCalendarGridG() {
+        const gridBody = document.getElementById('calendar-grid-body-g');
+        if (!gridBody) return;
+        const startOffset = 1;
+        let html = '';
+        for (let i = 0; i < startOffset; i++) {
+            html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+        }
+        for (let d = 1; d <= 30; d++) {
+            const dayOfWeek = (startOffset + d - 1) % 7;
+            const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+            const hol = optionHolidays[d];
+            const isBlocked = isWE || hol;
+            
+            let dateCls = "text-xs font-extrabold ";
+            if (hol || dayOfWeek === 0) dateCls += "text-dense-danger";
+            else if (dayOfWeek === 6) dateCls += "text-dense-blue";
+            else dateCls += "text-dense-text";
+            
+            let leaveChipsHtml = '<div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5 mt-1">';
+            let myLeave = null;
+            let myPending = null;
+            
+            mockMembers.forEach(m => {
+                const leaves = mockLeavesData[m.name] || {};
+                const h = leaves[d];
+                if (h) {
+                    const isMe = m.name.includes('홍길동');
+                    if (isMe) myLeave = h;
+                    
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-default ';
+                    if (h >= 8) chipCls += 'bg-red-50 text-red-700 border border-red-200';
+                    else if (h >= 4) chipCls += 'bg-amber-50 text-amber-700 border border-amber-200';
+                    else chipCls += 'bg-blue-50 text-blue-700 border border-blue-200';
+                    
+                    leaveChipsHtml += `<div class="${chipCls}" title="${m.name}: ${h}h">
+                        ${m.name} <span class="opacity-75 font-semibold text-[8px] ml-0.5">${h}h</span>
+                    </div>`;
+                }
+            });
+
+            // Pending leaves for this day in calendar
+            pendingLeavesG.forEach(p => {
+                if (parseInt(p.date.split('-')[2]) === d && p.status === 'PENDING') {
+                    const isMe = p.name.includes('홍길동');
+                    if (isMe) myPending = p;
+                    
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer ';
+                    if (isMe) {
+                        chipCls += 'bg-amber-50/60 text-amber-800 border-amber-300 border-dashed';
+                    } else {
+                        chipCls += 'bg-yellow-50 text-yellow-800 border-yellow-200';
+                    }
+                    
+                    leaveChipsHtml += `
+                        <div class="${chipCls}" onclick="event.stopPropagation(); openApproveModalG(${p.id})" title="${p.name}: ${p.duration} (결재대기)">
+                            ${p.name} <span class="opacity-85 font-semibold text-[8px] ml-0.5">${p.duration.split(' ')[0]}(대기)</span>
+                        </div>
+                    `;
+                }
+            });
+            leaveChipsHtml += '</div>';
+            
+            const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
+            let cellAttr = '';
+            let cellCls = "min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line hover:shadow-sm relative group ";
+            
+            if (d < 13) {
+                // Past days blocked
+                cellCls += "bg-dense-gray-soft/20 cursor-not-allowed opacity-60";
+            } else if (isBlocked) {
+                cellCls += "bg-dense-gray-soft/20";
+            } else if (!myLeave && !myPending) {
+                cellAttr = `onclick="openApplyG_Cell('${dateStr}')"`;
+                cellCls += "cursor-pointer hover:bg-dense-blue-soft/30 hover:border-dense-blue";
+            }
+            
+            const plusIcon = (!myLeave && !myPending && !isBlocked && d >= 13) ? `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-xl font-bold text-dense-blue/60">+</span></div>` : '';
+            
+            html += `<div class="${cellCls}" ${cellAttr}>
+                <div class="flex items-center justify-between w-full leading-none mb-1">
+                     <span class="${dateCls}">${d}</span>
+                     ${hol ? `<span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10">${hol}</span>` : ''}
+                </div>
+                ${leaveChipsHtml}
+                ${plusIcon}
+            </div>`;
+        }
+        const endOffset = (startOffset + 30) % 7;
+        if (endOffset > 0) {
+            for (let i = 0; i < (7 - endOffset); i++) {
+                html += `<div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+            }
+        }
+        gridBody.innerHTML = html;
+    }
+
+    function renderDetailedApprovalsTableG() {
+        const container = document.getElementById('approvalsTableBodyG');
+        if (!container) return;
+        
+        const teamPendings = pendingLeavesG.filter(r => r.status === 'PENDING' && !r.name.includes('홍길동'));
+        if (teamPendings.length === 0) {
+            container.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-dense-muted font-bold">결재 대기 중인 연차가 없습니다.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        teamPendings.forEach(r => {
+            html += `
+                <tr class="hover:bg-dense-surface-soft transition-colors">
+                    <td class="px-4 py-2.5"><input type="checkbox" value="${r.id}" class="approval-chk-g h-4 w-4 rounded text-dense-blue"></td>
+                    <td class="px-4 py-2.5 font-bold text-dense-text">${r.name}</td>
+                    <td class="px-4 py-2.5">${r.team}</td>
+                    <td class="px-4 py-2.5 font-bold">${r.date}</td>
+                    <td class="px-4 py-2.5 text-dense-blue font-semibold">${r.duration}</td>
+                    <td class="px-4 py-2.5"><span class="px-1.5 py-0.5 rounded bg-dense-amber-soft text-dense-amber text-[10px] font-bold">대기 중</span></td>
+                    <td class="px-4 py-2.5 text-center flex justify-center gap-1">
+                        <button onclick="approveSingleG(${r.id})" class="px-2 py-0.5 rounded bg-dense-green text-white text-[10px] font-bold hover:bg-dense-green/90 transition-colors">승인</button>
+                        <button onclick="rejectSingleG(${r.id})" class="px-2 py-0.5 rounded bg-dense-danger text-white text-[10px] font-bold hover:bg-dense-danger/90 transition-colors">반려</button>
+                    </td>
+                </tr>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function renderMobileScheduleListG() {
+        const container = document.getElementById('mobile-schedule-list-g');
+        const label = document.getElementById('mobile-schedule-date-label-g');
+        if (!container || !label) return;
+
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        const wd = (firstDayMon + selectedMobileDayG - 1) % 7;
+        label.textContent = `2026년 6월 ${selectedMobileDayG}일 (${weekdays[wd]})`;
+
+        let absentees = [];
+        
+        // approved leaves
+        mockMembers.forEach(m => {
+            const leaves = mockLeavesData[m.name] || {};
+            const h = leaves[selectedMobileDayG];
+            if (h) {
+                absentees.push({
+                    name: m.name,
+                    team: m.team,
+                    duration: h + 'h',
+                    status: 'APPROVED'
+                });
+            }
+        });
+
+        // pending leaves
+        pendingLeavesG.forEach(p => {
+            const pDay = parseInt(p.date.split('-')[2]);
+            if (pDay === selectedMobileDayG && p.status === 'PENDING') {
+                absentees.push({
+                    name: p.name,
+                    team: p.team,
+                    duration: p.duration,
+                    status: 'PENDING'
+                });
+            }
+        });
+
+        if (absentees.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-6 text-dense-muted font-bold text-xs bg-dense-surface-soft border border-dashed rounded-xl">
+                    해당 날짜에 등록되거나 신청된 연차가 없습니다.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        absentees.forEach(a => {
+            let statusHTML = '';
+            if (a.status === 'APPROVED') {
+                statusHTML = '<span class="text-dense-green bg-dense-green-soft px-2 py-0.5 rounded font-extrabold text-[9px]">승인됨</span>';
+            } else {
+                statusHTML = '<span class="text-dense-amber bg-dense-amber-soft px-2 py-0.5 rounded font-extrabold text-[9px]">대기 중</span>';
+            }
+
+            const isMe = a.name.includes('홍길동');
+            html += `
+                <div class="flex justify-between items-center bg-dense-surface border p-3 rounded-xl hover:shadow-xs transition-shadow">
+                    <div>
+                        <span class="font-extrabold text-dense-text ${isMe ? 'text-dense-blue' : ''}">${a.name}</span>
+                        <span class="text-[10px] text-dense-muted ml-1.5">${a.team}</span>
+                        <div class="text-[10px] text-dense-muted font-bold mt-0.5">연차: ${a.duration}</div>
+                    </div>
+                    <div>
+                        ${statusHTML}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.initOptionG = function() {
+        selectedMobileDayG = 13;
+        selectedViewG = 'calendar';
+        selectedMobileTabG = 'dashboard';
+        
+        // Reset desktop & mobile inputs to default date
+        const desktopDate = document.getElementById('easy-date-g_desktop');
+        if (desktopDate) desktopDate.value = '2026-06-15';
+        const mobileDate = document.getElementById('easy-date-g_mobile');
+        if (mobileDate) mobileDate.value = '2026-06-15';
+
+        // Prepopulate Timeline columns
+        const firstDayMon = (new Date(2026, 5, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const hol = optionHolidays[d];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const thG = document.getElementById('th-days-g');
+        if (thG) thG.outerHTML = thHtml;
+
+        // Perform rendering and setup active views
+        syncG();
+        
+        switchViewG('calendar');
+        switchMobileTabG('dashboard');
+    };
     </script>
 </body>
 </html>
