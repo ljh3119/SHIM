@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 마스터 컨트롤 — SHIM Admin Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config={theme:{extend:{colors:{'dense-bg':'#f7f8fb','dense-surface':'#ffffff','dense-surface-soft':'#f9fafb','dense-line':'#d0d5dd','dense-line-strong':'#98a2b3','dense-text':'#101828','dense-muted':'#475467','dense-nav-text':'#1d2939','dense-blue':'#175cd3','dense-blue-soft':'#eff8ff','dense-amber':'#b54708','dense-amber-soft':'#fffaeb','dense-green':'#067647','dense-green-soft':'#ecfdf3','dense-gray-soft':'#f2f4f7','dense-danger':'#d92d20','dense-danger-soft':'#fef3f2'}}}}
+    </script>
+    <style>
+        body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+        .fade-in{animation:fadeIn .2s ease-out}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .cal-table{border-collapse:collapse;width:100%;table-layout:fixed}
+        .cal-table th,.cal-table td{border:1px solid #d0d5dd;text-align:center;vertical-align:middle}
+        .cal-table thead th{background:#f9fafb;font-size:10px;font-weight:600;color:#475467;padding:4px 2px;position:sticky;top:0;z-index:5}
+        .cal-table tbody td{padding:3px 1px;font-size:10px}
+        .cal-table .sticky-col{position:sticky;left:0;z-index:10;background:#fff}
+        .cal-table thead .sticky-col{z-index:15;background:#f9fafb}
+        .cal-table th.col-day{white-space:normal;padding:3px 1px;font-size:7px;line-height:1.15;vertical-align:middle}
+        .cal-table th.col-day .day-num{display:block;font-weight:700;font-size:9px;line-height:1.1}
+        .cal-table th.col-day .weekday-label{display:block;font-size:7px;line-height:1.1;margin-top:1px}
+        .cal-table th.col-day .holiday-chip{display:block;margin:2px auto 0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:6px;line-height:1.15;padding:0 1px;background:#d92d20;color:#fff;border-radius:2px}
+        .cal-table .day-block{width:100%;min-height:1.45rem;height:1.45rem;margin:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:4px;font-size:9px;font-weight:700;line-height:1;letter-spacing:-.04em;border:1px solid rgba(255,255,255,.25);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.2);cursor:default;background:#175cd3;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+        .day-block.half{background:linear-gradient(180deg,#fde68a 0%,#f79009 100%);border-color:rgba(181,71,8,.35);color:#1c1917;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+        .day-block.full{background:linear-gradient(180deg,#f97066 0%,#d92d20 100%);border-color:rgba(217,45,32,.45)}
+        .day-block.public{background:linear-gradient(180deg,#9333ea 0%,#7e22ce 100%);border-color:rgba(147,51,234,.45)}
+        .day-block.pending{opacity:.55;border:none!important;box-shadow:none;filter:grayscale(.35)}
+        .weekend-head{color:#d92d20!important;background:#fef3f2!important}
+        .holiday-head{color:#d92d20!important;background:#fef3f2!important}
+    </style>
+</head>
+<body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
+        <div class="mx-auto flex h-16 max-w-[92rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3">
+                <a href="admin_mockup.html" class="flex items-center gap-2">
+                    <div class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-red-700 px-1.5"><span class="text-xs font-bold text-white">ADMIN</span></div>
+                    <span class="text-lg font-bold tracking-tight">SHIM System Master</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">관리자 모드</span>
+                <span class="text-sm font-semibold text-dense-muted cursor-pointer hover:text-dense-text" onclick="window.location.href='option_g.html'">사용자 화면 이동</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout Container -->
+    <div class="mx-auto flex w-full max-w-[92rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+        
+        <!-- Sidebar Navigation Menu -->
+        <aside class="w-[240px] shrink-0 space-y-2 hidden md:block">
+            <div class="rounded-2xl border bg-dense-surface p-3 shadow-sm space-y-1">
+                <button id="menu-dashboard" onclick="switchAdminMenu('dashboard')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-dense-blue bg-dense-blue-soft transition-all">
+                    <span>📊 어드민 대시보드</span>
+                </button>
+                <button id="menu-leaves" onclick="switchAdminMenu('leaves')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>📅 연차 캘린더</span>
+                </button>
+                <button id="menu-timeline" onclick="switchAdminMenu('timeline')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>📜 신청 타임라인</span>
+                </button>
+                <button id="menu-users" onclick="switchAdminMenu('users')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>👥 사용자 관리</span>
+                </button>
+                <button id="menu-settings" onclick="switchAdminMenu('settings')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>⚙️ 시스템 마스터 설정</span>
+                </button>
+                <button id="menu-holidays" onclick="switchAdminMenu('holidays')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>🏖️ 공휴일 관리</span>
+                </button>
+                <button id="menu-audit" onclick="switchAdminMenu('audit')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all">
+                    <span>🔍 시스템 감사 로그</span>
+                </button>
+            </div>
+            
+            <!-- System Stats Card -->
+            <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm space-y-2.5">
+                <h4 class="text-[10px] font-bold text-dense-muted uppercase tracking-wider">시스템 현황</h4>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between font-semibold"><span>활성 사용자</span><span id="stat-active-users">8명</span></div>
+                    <div class="flex justify-between font-semibold"><span>대기 결재 건수</span><span id="stat-pending-count" class="text-dense-amber">3건</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="min-w-0 flex-1">
+
+            <!-- TAB 1: Admin Dashboard -->
+            <section id="section-dashboard" class="space-y-6 fade-in">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 배정 시간</h3>
+                        <p class="text-2xl font-extrabold tracking-tight">960<span class="text-xs font-bold text-dense-muted ml-0.5">h</span></p>
+                    </div>
+                    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 사용 시간</h3>
+                        <p class="text-2xl font-extrabold tracking-tight text-dense-blue">148<span class="text-xs font-bold text-dense-muted ml-0.5">h</span></p>
+                    </div>
+                    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 소진율</h3>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span class="text-2xl font-extrabold tracking-tight text-dense-green">15.4%</span>
+                            <div class="flex-1 bg-dense-gray-soft h-2 rounded-full overflow-hidden">
+                                <div class="bg-dense-green h-2 rounded-full" style="width:15.4%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Today Absentees -->
+                    <div class="rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-3">
+                        <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">👥 오늘 부재자 목록 (6월 13일)</h3>
+                        <div id="today-absentees-list" class="space-y-2 text-xs">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                    <!-- Audit Logs Widget -->
+                    <div class="rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-3">
+                        <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">🔍 최근 주요 활동 로그</h3>
+                        <div id="dashboard-audit-list" class="space-y-2 text-xs">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Leaves Management (Calendar & Timeline Integrated) -->
+            <section id="section-leaves" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
+                <div class="flex items-center justify-between border-b pb-4">
+                    <div class="flex items-center gap-2">
+                        <button onclick="navigateAdminMonth(-1)" class="rounded-lg border p-1 hover:bg-dense-surface-soft">&lt;</button>
+                        <h3 id="admin-calendar-month-label" class="text-base font-extrabold w-24 text-center">2026년 6월</h3>
+                        <button onclick="navigateAdminMonth(1)" class="rounded-lg border p-1 hover:bg-dense-surface-soft">&gt;</button>
+                    </div>
+                    <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                        <button id="btn-admin-timeline" onclick="switchAdminLeavesLayout('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
+                        <button id="btn-admin-calendar" onclick="switchAdminLeavesLayout('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더</button>
+                    </div>
+                </div>
+
+                <!-- Admin Timeline View Container -->
+                <div id="admin-timeline-view-container" class="hidden overflow-x-auto rounded-xl border border-dense-line">
+                    <table class="cal-table" style="min-width:800px;">
+                        <thead><tr id="admin-timeline-header-row"><th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th style="width:3rem">잔여</th><th id="admin-th-days"></th></tr></thead>
+                        <tbody class="divide-y divide-dense-line" id="admin-tlBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Admin Calendar View Container -->
+                <div id="admin-calendar-view-container" class="rounded-xl border border-dense-line bg-dense-surface p-4">
+                    <div class="mb-2 grid grid-cols-7 gap-2">
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">화</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">수</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">목</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">금</div>
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-2" id="admin-calendar-grid"></div>
+                </div>
+            </section>
+
+            <!-- TAB 3: Request Timeline (신청 타임라인) -->
+            <section id="section-timeline" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
+                <div class="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-dense-text">📜 연차 신청 타임라인 이력</h3>
+                        <p class="text-[11px] font-semibold text-dense-muted mt-0.5">전체 직원의 연차 신청 이력 조회 및 상태 승인/반려/삭제 관리를 수행합니다.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="exportTimelineExcel()" class="px-3 py-1.5 rounded-xl border border-dense-line bg-dense-surface text-dense-blue text-xs font-bold hover:bg-dense-blue-soft transition-all">엑셀 다운로드</button>
+                        <button onclick="resetTimelineFilters()" class="px-3 py-1.5 rounded-xl border border-dense-line bg-dense-surface text-dense-nav-text text-xs font-bold hover:bg-dense-surface-soft transition-all">필터 초기화</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        <div>
+                            <label class="block mb-1 text-dense-muted">연도</label>
+                            <select id="tl-filter-year" onchange="filterTimelineTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                                <option value="2026">2026년</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-dense-muted">월</label>
+                            <select id="tl-filter-month" onchange="filterTimelineTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                                <option value="0">전체 월</option>
+                                <option value="1">1월</option>
+                                <option value="2">2월</option>
+                                <option value="3">3월</option>
+                                <option value="4">4월</option>
+                                <option value="5">5월</option>
+                                <option value="6" selected>6월</option>
+                                <option value="7">7월</option>
+                                <option value="8">8월</option>
+                                <option value="9">9월</option>
+                                <option value="10">10월</option>
+                                <option value="11">11월</option>
+                                <option value="12">12월</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-dense-muted">상태</label>
+                            <select id="tl-filter-status" onchange="filterTimelineTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                                <option value="">전체 상태</option>
+                                <option value="PENDING">결재 대기</option>
+                                <option value="APPROVED">승인됨</option>
+                                <option value="REJECTED">반려됨</option>
+                                <option value="CANCELED">신청 취소</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-dense-muted">회사</label>
+                            <select id="tl-filter-company" onchange="filterTimelineTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                                <option value="">전체 회사</option>
+                                <option value="XX건설">XX건설</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-dense-muted">팀</label>
+                            <select id="tl-filter-team" onchange="filterTimelineTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                                <option value="">전체 팀</option>
+                                <option value="개발팀">개발팀</option>
+                                <option value="설계팀">설계팀</option>
+                                <option value="QA팀">QA팀</option>
+                                <option value="PM">PM</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-dense-muted">검색어 (이름)</label>
+                            <input type="text" id="tl-filter-search" onkeyup="filterTimelineTable()" placeholder="이름 입력..." class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="min-w-full divide-y text-xs">
+                        <thead class="bg-dense-surface-soft">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-bold w-24">신청 시각</th>
+                                <th class="px-3 py-2 text-left font-bold">사용자</th>
+                                <th class="px-3 py-2 text-left font-bold">회사</th>
+                                <th class="px-3 py-2 text-left font-bold">팀</th>
+                                <th class="px-3 py-2 text-left font-bold">사용일</th>
+                                <th class="px-3 py-2 text-left font-bold">사용 시간대</th>
+                                <th class="px-3 py-2 text-left font-bold">신청 사유</th>
+                                <th class="px-3 py-2 text-left font-bold">상태</th>
+                                <th class="px-3 py-2 text-center font-bold">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y" id="timeline-table-body">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 4: User CRUD Management -->
+            <section id="section-users" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h3 class="text-sm font-extrabold text-dense-text">👥 사용자 계정 및 연차 배정 관리</h3>
+                    <button onclick="openUserModal(false)" class="px-3.5 py-1.5 rounded-xl bg-dense-blue text-white text-xs font-bold hover:bg-dense-blue/90 transition-all">+ 신규 직원 등록</button>
+                </div>
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="min-w-full divide-y text-xs">
+                        <thead class="bg-dense-surface-soft">
+                            <tr>
+                                <th class="px-4 py-2.5 text-left font-bold">이름</th>
+                                <th class="px-4 py-2.5 text-left font-bold">회사</th>
+                                <th class="px-4 py-2.5 text-left font-bold">팀</th>
+                                <th class="px-4 py-2.5 text-left font-bold">역할</th>
+                                <th class="px-4 py-2.5 text-left font-bold">배정 시간</th>
+                                <th class="px-4 py-2.5 text-left font-bold">잔여 시간</th>
+                                <th class="px-4 py-2.5 text-left font-bold">계정 상태</th>
+                                <th class="px-4 py-2.5 text-center font-bold">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y" id="users-table-body">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 4: System Master Settings -->
+            <section id="section-settings" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-5 fade-in">
+                <div class="border-b pb-3"><h3 class="text-sm font-extrabold text-dense-text">⚙️ 근태 정책 및 시스템 마스터 설정</h3></div>
+                
+                <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+                    <!-- 업무 규칙 & 시간 정책 설정 -->
+                    <div class="space-y-4 lg:col-span-3">
+                        <form onsubmit="saveSystemSettings(); return false;" class="space-y-4 text-xs font-semibold">
+                            <!-- 승인 워크플로우 안내 & 토글 -->
+                            <div class="rounded-xl border border-[#fedf89] bg-dense-amber-soft p-3.5 space-y-2">
+                                <p class="text-xs font-extrabold text-dense-text">
+                                    <span>승인 워크플로우</span> — 현재:
+                                    <strong id="approval-current-label" class="text-dense-amber">켜짐 (결재 필요)</strong>
+                                </p>
+                                <p class="text-[11px] leading-relaxed text-dense-muted font-semibold">
+                                    <strong>꺼짐</strong>: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br>
+                                    <strong>켜짐</strong>: 신규 신청은 «결재 대기»로 들어갑니다. 관리자나 팀장이 대시보드 또는 타임라인에서 결재 처리합니다.
+                                </p>
+                                <div class="text-[10px] leading-normal border-l-2 border-[#fedf89] pl-2 text-dense-amber/90 font-bold">
+                                    * PM 본인의 연차 신청은 설정과 관계없이 항상 자동 승인됩니다.<br>
+                                    * 팀장은 소속 팀원만 결재 가능하며, 본인 신청 건에 대한 자가 승인은 불가능합니다.
+                                </div>
+                                <div class="pt-1">
+                                    <button type="button" onclick="toggleApprovalWorkflowMock()" class="inline-flex items-center justify-center rounded-xl border border-[#fedf89] bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-amber hover:bg-[#fffdf6] transition-all">승인 워크플로우 변경</button>
+                                </div>
+                            </div>
+
+                            <!-- 캘린더 공유 범위 설정 -->
+                            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3.5 space-y-2">
+                                <p class="text-xs font-extrabold text-dense-text">
+                                    <span>캘린더 공유 범위 설정</span> — 현재:
+                                    <strong id="calendar-scope-current-label" class="text-dense-blue">전사 공유</strong>
+                                </p>
+                                <p class="text-[11px] leading-relaxed text-dense-muted font-semibold">
+                                    일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
+                                </p>
+                                <div class="space-y-1.5 pt-1 text-[11px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="calendar_scope" value="none" class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                                        <span>공유 안 함 (본인 전용) — 사원은 자신의 휴가 일정만 조회할 수 있습니다.</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="calendar_scope" value="team" class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                                        <span>소속 팀원 공유 — 본인과 동일한 팀 내 사원의 연차를 조회할 수 있습니다.</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="calendar_scope" value="company" checked class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                                        <span>전사 공유 — 일반 사원과 팀장도 전사 모든 사원의 연차를 조회할 수 있습니다.</span>
+                                    </label>
+                                </div>
+                                <div class="pt-1">
+                                    <button type="button" onclick="saveCalendarScopeMock()" class="px-3 py-1.5 rounded-xl border border-dense-line bg-dense-surface font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">공유 범위 저장</button>
+                                </div>
+                            </div>
+
+                            <!-- 시간 단위 & 업무 시간/점심 시간 설정 (3단 분할 및 30분 단위 select box 화) -->
+                            <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 space-y-3">
+                                <p class="text-xs font-extrabold text-dense-text">시간 정책 설정 (30분 단위 선택)</p>
+                                
+                                <div class="space-y-2">
+                                    <label class="block text-dense-text text-[11px]">1) 최소 시간 단위</label>
+                                    <select id="setting-granularity" class="w-full max-w-[14rem] border rounded-xl p-2 bg-dense-surface focus:ring-1 focus:ring-dense-blue font-bold">
+                                        <option value="30" selected>30분 단위 차감 (기본)</option>
+                                        <option value="60">60분 단위 차감</option>
+                                        <option value="120">120분 단위 차감</option>
+                                    </select>
+                                    <p class="text-[10px] text-dense-muted font-medium">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+                                </div>
+
+                                <div class="space-y-3.5 border-t pt-3">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-[11px] text-dense-muted font-bold">2) 정규 업무 시간 범위</label>
+                                        <div class="flex items-center gap-2 max-w-[18rem]">
+                                            <select id="setting-work-start" class="border rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full"></select>
+                                            <span class="text-dense-muted font-bold text-xs shrink-0">~</span>
+                                            <select id="setting-work-end" class="border rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full"></select>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5 border-t pt-3">
+                                        <label class="block text-[11px] text-dense-muted font-bold">3) 점심 시간 범위 (차감 제외)</label>
+                                        <div class="flex items-center gap-2 max-w-[18rem]">
+                                            <select id="setting-lunch-start" class="border rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full"></select>
+                                            <span class="text-dense-muted font-bold text-xs shrink-0">~</span>
+                                            <select id="setting-lunch-end" class="border rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full"></select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-t">
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl border border-dense-line bg-dense-surface font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">시간 정책 저장</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 표시 이름(브랜딩) & 운영 작업 설정 -->
+                    <div class="space-y-4 lg:col-span-2">
+                        <!-- 브랜딩 설정 -->
+                        <div class="rounded-xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold">
+                            <p class="text-xs font-extrabold text-dense-text">표시 이름(브랜딩)</p>
+                            <div class="text-[10px] leading-snug text-dense-muted font-medium">
+                                <p><span class="font-bold text-dense-text">공식 이름</span>: 제목·푸터·상단 부제(긴 풀네임)</p>
+                                <p class="mt-0.5"><span class="font-bold text-dense-text">상단 짧은 이름</span>: 상단 바 굵은 글자 (비우면 공식과 동일)</p>
+                                <p class="mt-0.5"><span class="font-bold text-dense-text">파란 배지</span>: 왼쪽 네모 상자 안 (최대 24자)</p>
+                            </div>
+                            <div class="space-y-2.5 pt-1">
+                                <div>
+                                    <label class="block mb-1 text-dense-muted text-[11px]">공식 이름</label>
+                                    <input type="text" id="brand-official-name" value="SHIM" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="w-full border rounded-xl p-2 bg-dense-surface font-bold">
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-dense-muted text-[11px]">상단 짧은 이름 · 선택</label>
+                                    <input type="text" id="brand-short-name" value="SHIM" placeholder="예: SHIM" class="w-full border rounded-xl p-2 bg-dense-surface font-bold">
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-dense-muted text-[11px]">파란 배지 (상단 마크) · 최대 24자</label>
+                                    <input type="text" id="brand-badge-name" value="ADMIN" placeholder="예: S" class="w-full border rounded-xl p-2 bg-dense-surface font-bold">
+                                </div>
+                            </div>
+                            <div class="pt-1">
+                                <button type="button" onclick="saveBrandingMock()" class="px-3.5 py-2 rounded-xl border border-dense-line-strong bg-dense-surface text-dense-blue font-bold hover:bg-dense-blue-soft transition-all">표시 이름 저장</button>
+                            </div>
+                        </div>
+
+                        <!-- DB 백업 -->
+                        <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-2 text-xs font-semibold">
+                            <p class="text-xs font-extrabold text-dense-text">데이터베이스 수동 백업</p>
+                            <p class="text-[11px] leading-relaxed text-dense-muted">
+                                백업 파일은 <code class="rounded bg-dense-surface px-1 font-mono text-dense-nav-text">var/data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
+                            </p>
+                            <div class="pt-1">
+                                <button type="button" onclick="runDbBackupMock()" class="px-3.5 py-2 rounded-xl border border-dense-line bg-dense-surface text-dense-blue font-bold hover:bg-dense-blue-soft transition-all">DB 백업 생성</button>
+                            </div>
+                        </div>
+
+                        <!-- 운영 메모 -->
+                        <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 text-[11px] font-semibold text-dense-muted space-y-1">
+                            <p class="font-extrabold text-dense-nav-text text-xs mb-1">💡 운영 메모</p>
+                            <ul class="list-inside list-disc space-y-1">
+                                <li>정책 변경 전후로 수동 백업을 권장합니다.</li>
+                                <li>복구 리허설은 운영 복제 DB에서 먼저 확인합니다.</li>
+                                <li>운영 절차 상세는 `docs/1-2_유지보수_가이드`를 참고합니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 운영/상태 통합 안내 패널 -->
+                <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3">
+                    <h4 class="text-xs font-extrabold text-dense-text flex items-center gap-1.5">
+                        <span>ℹ️ 운영/상태 통합 안내</span>
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-semibold leading-relaxed">
+                        <!-- 1. 시간 정책 원칙 -->
+                        <div class="space-y-1">
+                            <p class="font-extrabold text-dense-text">⏱️ 시간 정책 원칙</p>
+                            <p class="text-[10px] text-dense-muted leading-tight">마스터 설정에 따른 연차 신청의 시간 계산 및 제약 조건입니다.</p>
+                            <ul class="pl-4 list-disc space-y-1 text-dense-nav-text mt-1.5">
+                                <li>연차 신청은 시작/종료 시각 기반으로 1건의 스냅샷으로 저장됩니다.</li>
+                                <li>입력 시각은 정책 단위 경계(30/60/120분)만 허용됩니다. <span class="text-dense-muted/80">(단, 하루 전체 신청 시 업무 종료 시각은 예외 허용)</span></li>
+                                <li>신청 구간이 정책 단위보다 짧거나 점심시간에 완전히 포함되어 실제 차감 시간이 0시간이면 신청이 제한됩니다.</li>
+                                <li>설정 단위는 입력 제어 기준이며, 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</li>
+                                <li>하루 총 사용시간은 대시보드 및 캘린더에서 자동으로 합산하여 표시합니다.</li>
+                            </ul>
+                        </div>
+
+                        <!-- 2. 상태값 설명 -->
+                        <div class="space-y-1">
+                            <p class="font-extrabold text-dense-text">📋 연차 신청 상태 설명</p>
+                            <p class="text-[10px] text-dense-muted leading-tight">각 신청 건의 처리 상태를 뜻하며, 상태에 따라 집계(사용/잔여시간) 반영 여부가 결정됩니다.</p>
+                            <ul class="pl-4 list-disc space-y-1 text-dense-nav-text mt-1.5">
+                                <li><strong class="text-dense-amber font-extrabold">결재 대기</strong>: 결재 전 상태입니다. 아직 최종 확정되지 않은 대기 신청입니다.</li>
+                                <li><strong class="text-dense-green font-extrabold">승인됨</strong>: 결재가 완료되어 연차 사용으로 최종 확정되었으며, 사용량에 반영됩니다.</li>
+                                <li><strong class="text-dense-danger font-extrabold">반려</strong>: 승인 거절된 상태입니다. 사용 시간 및 잔여 연차 계산에서 제외됩니다.</li>
+                                <li><strong class="text-dense-muted font-extrabold">신청 취소</strong>: 기존 신청을 철회·무효 처리한 상태입니다. 사용 시간 및 잔여 연차 계산에서 제외됩니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: Holiday Management (공휴일 관리 독자적 탭 신설) -->
+            <section id="section-holidays" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
+                <div class="border-b pb-3 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-dense-text">🏖️ 전사 공휴일 관리 정책</h3>
+                        <p class="text-[11px] font-semibold text-dense-muted mt-0.5">회사 창립기념일, 현치일 등 전사적으로 연차 차감에서 제외할 공휴일을 등록 및 해제합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <!-- 공휴일 추가 폼 -->
+                    <div class="rounded-xl border bg-dense-surface p-4 space-y-3 text-xs font-semibold">
+                        <p class="text-xs font-extrabold text-dense-text">📅 신규 공휴일 등록</p>
+                        <div class="space-y-2.5">
+                            <div>
+                                <label class="block mb-1 text-dense-muted text-[11px]">공휴일 날짜</label>
+                                <input type="date" id="new-holiday-date" class="w-full border rounded-xl p-2 bg-dense-surface font-bold">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-dense-muted text-[11px]">공휴일 이름</label>
+                                <input type="text" id="new-holiday-name" placeholder="예: 창립기념일" class="w-full border rounded-xl p-2 bg-dense-surface font-bold">
+                            </div>
+                        </div>
+                        <div class="pt-1">
+                            <button type="button" onclick="addHolidaySetting()" class="w-full px-3.5 py-2.5 rounded-xl bg-dense-green text-white font-bold hover:brightness-95 transition-all shadow-xs">새 공휴일 추가</button>
+                        </div>
+                    </div>
+
+                    <!-- 공휴일 목록 -->
+                    <div class="lg:col-span-2 rounded-xl border bg-dense-surface-soft p-4 space-y-3 text-xs font-semibold">
+                        <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 (2026년 전체)</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="holiday-list-settings">
+                            <!-- JS Populated -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: System Audit Logs -->
+            <section id="section-audit" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
+                    <h3 class="text-sm font-extrabold text-dense-text">🔍 시스템 보안 및 활동 감사 로그</h3>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <input type="text" id="audit-search-input" onkeyup="filterAuditLogsTable()" placeholder="수행자 또는 작업 검색..." class="w-full sm:w-64 border rounded-xl px-3 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
+                    </div>
+                </div>
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="min-w-full divide-y text-xs">
+                        <thead class="bg-dense-surface-soft">
+                            <tr>
+                                <th class="px-4 py-2.5 text-left font-bold w-44">일시</th>
+                                <th class="px-4 py-2.5 text-left font-bold">수행자</th>
+                                <th class="px-4 py-2.5 text-left font-bold">수행 작업 (Action)</th>
+                                <th class="px-4 py-2.5 text-left font-bold">대상 정보</th>
+                                <th class="px-4 py-2.5 text-left font-bold">이전 상태</th>
+                                <th class="px-4 py-2.5 text-left font-bold">변경 상태</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y" id="audit-table-body">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Admin Manage Leave Request Modal -->
+    <div id="adminLeaveActionModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/40" onclick="closeAdminLeaveActionModal()"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                <div class="p-6">
+                    <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 상세 관리</h3>
+                    <input type="hidden" id="admin-leave-id">
+                    <div class="space-y-3 text-xs" id="admin-leave-modal-content"></div>
+                </div>
+                <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3" id="admin-leave-modal-footer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Add/Edit Modal -->
+    <div id="userModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/40" onclick="closeUserModal()"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                <form onsubmit="submitUserCRUD(); return false;">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text" id="user-modal-title">사용자 추가</h3>
+                        <input type="hidden" id="user-crud-id">
+                        <div class="space-y-3 text-xs font-bold">
+                            <div><label class="block mb-1 text-dense-muted">이름</label><input type="text" id="user-crud-name" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                            <div><label class="block mb-1 text-dense-muted">이메일</label><input type="email" id="user-crud-email" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block mb-1 text-dense-muted">회사</label><input type="text" id="user-crud-company" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                                <div><label class="block mb-1 text-dense-muted">팀</label><input type="text" id="user-crud-team" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block mb-1 text-dense-muted">역할</label><select id="user-crud-role" class="w-full border rounded-xl p-2 bg-dense-surface"><option>STAFF</option><option>TEAM_LEAD</option><option>PM</option></select></div>
+                                <div><label class="block mb-1 text-dense-muted">배정 연차 시간</label><input type="number" id="user-crud-alloc" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button type="submit" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">저장</button>
+                        <button type="button" onclick="closeUserModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript code -->
+    <script>
+    // System Mock Database
+    let mockUsers = [
+        { id: 1, name: '★ 홍길동', email: 'gildong@shim.com', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 40, status: 'ACTIVE' },
+        { id: 2, name: '김영희', email: 'younghee@shim.com', company: 'XX건설', team: '개발팀', role: 'TEAM_LEAD', alloc: 136, used: 24, status: 'ACTIVE' },
+        { id: 3, name: '이철수', email: 'chulsoo@shim.com', company: 'XX건설', team: '설계팀', role: 'TEAM_LEAD', alloc: 120, used: 12, status: 'ACTIVE' },
+        { id: 4, name: '박민수', email: 'minsu@shim.com', company: 'XX건설', team: 'PM', role: 'PM', alloc: 160, used: 8, status: 'ACTIVE' },
+        { id: 5, name: '정소연', email: 'soyeon@shim.com', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 18, status: 'ACTIVE' },
+        { id: 6, name: '최지훈', email: 'jihoon@shim.com', company: 'XX건설', team: 'QA팀', role: 'STAFF', alloc: 120, used: 16, status: 'ACTIVE' },
+        { id: 7, name: '한수진', email: 'sujin@shim.com', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 4, status: 'ACTIVE' },
+        { id: 8, name: '오영호', email: 'youngho@shim.com', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 8, status: 'ACTIVE' }
+    ];
+
+    let mockLeaves = [
+        { id: 1, name: '김영희', company: 'XX건설', team: '개발팀', date: '2026-06-20', duration: '8h', status: 'PENDING', created_at: '2026-06-13 10:11', reason: '개인 사정', is_deductive: true, rejection_reason: '' },
+        { id: 2, name: '이철수', company: 'XX건설', team: '설계팀', date: '2026-06-18', duration: '4h (오전)', status: 'PENDING', created_at: '2026-06-13 09:15', reason: '건강검진', is_deductive: true, rejection_reason: '' },
+        { id: 3, name: '★ 홍길동', company: 'XX건설', team: '설계팀', date: '2026-06-25', duration: '8h', status: 'PENDING', created_at: '2026-06-12 18:15', reason: '여가 휴가', is_deductive: true, rejection_reason: '' },
+        { id: 4, name: '정소연', company: 'XX건설', team: '개발팀', date: '2026-06-15', duration: '8h', status: 'APPROVED', created_at: '2026-06-12 14:10', reason: '개인 휴식', is_deductive: true, rejection_reason: '' },
+        { id: 5, name: '★ 홍길동', company: 'XX건설', team: '설계팀', date: '2026-06-10', duration: '4h (오후)', status: 'APPROVED', created_at: '2026-06-09 11:30', reason: '가족 모임', is_deductive: true, rejection_reason: '' },
+        { id: 6, name: '최지훈', company: 'XX건설', team: 'QA팀', date: '2026-06-12', duration: '8h', status: 'APPROVED', created_at: '2026-06-11 15:45', reason: '병원 진료', is_deductive: true, rejection_reason: '' },
+        { id: 7, name: '최지훈', company: 'XX건설', team: 'QA팀', date: '2026-06-13', duration: '8h', status: 'APPROVED', created_at: '2026-06-11 15:45', reason: '업무 휴식', is_deductive: true, rejection_reason: '' },
+        { id: 8, name: '오영호', company: 'XX건설', team: '개발팀', date: '2026-06-22', duration: '8h', status: 'APPROVED', created_at: '2026-06-12 10:00', reason: '공가 처리 희망', is_deductive: false, rejection_reason: '' }
+    ];
+
+    let mockHolidays = {
+        '2026-01-01': '신정',
+        '2026-03-01': '삼일절',
+        '2026-05-05': '어린이날',
+        '2026-06-06': '현충일',
+        '2026-08-15': '광복절',
+        '2026-10-03': '개천절',
+        '2026-10-09': '한글날',
+        '2026-12-25': '성탄절'
+    };
+    
+    let mockAuditLogs = [
+        { date: '2026-06-13 18:42:01', actor: '박민수 (PM)', action: 'APPROVE_LEAVE', target: '최지훈 (6월 13일)', oldVal: 'PENDING', newVal: 'APPROVED' },
+        { date: '2026-06-13 18:15:23', actor: '★ 홍길동', action: 'APPLY_LEAVE_BULK', target: '★ 홍길동 (6월 25일)', oldVal: 'NONE', newVal: 'PENDING' },
+        { date: '2026-06-13 17:33:40', actor: '김영희 (TEAM_LEAD)', action: 'APPROVE_LEAVE', target: '정소연 (6월 15일)', oldVal: 'PENDING', newVal: 'APPROVED' },
+        { date: '2026-06-12 14:10:12', actor: '박민수 (PM)', action: 'CREATE_USER', target: '오영호 (계정 생성)', oldVal: 'NONE', newVal: 'ACTIVE' },
+        { date: '2026-06-11 09:12:44', actor: '박민수 (PM)', action: 'UPDATE_SETTING', target: '최소 차감 단위 변경', oldVal: '60분', newVal: '30분' }
+    ];
+
+    const teamColors = {'설계팀':'hsl(210,60%,92%)','개발팀':'hsl(150,50%,90%)','PM':'hsl(280,50%,92%)','QA팀':'hsl(30,60%,90%)'};
+    const teamTextColors = {'설계팀':'hsl(210,60%,35%)','개발팀':'hsl(150,50%,30%)','PM':'hsl(280,50%,35%)','QA팀':'hsl(30,60%,35%)'};
+    const weekdays = ['월','화','수','목','금','토','일'];
+
+    let isApprovalRequiredMock = true;
+    let selectedAdminMenu = 'dashboard';
+    let adminLeavesLayout = 'calendar';
+    let adminSelectedMonth = 6; // June 2026
+
+    // Navigation and Menu Routing
+    window.switchAdminMenu = function(menu) {
+        selectedAdminMenu = menu;
+        
+        // Update Sidebar menu buttons active class
+        const menus = ['dashboard', 'leaves', 'timeline', 'users', 'settings', 'holidays', 'audit'];
+        menus.forEach(m => {
+            const btn = document.getElementById(`menu-${m}`);
+            const sec = document.getElementById(`section-${m}`);
+            if (btn) {
+                if (m === menu) {
+                    btn.className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-dense-blue bg-dense-blue-soft transition-all";
+                } else {
+                    btn.className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-all";
+                }
+            }
+            if (sec) {
+                if (m === menu) sec.classList.remove('hidden');
+                else sec.classList.add('hidden');
+            }
+        });
+
+        // Trigger updates if necessary
+        if (menu === 'leaves') {
+            syncAdminLeaves();
+        } else if (menu === 'timeline') {
+            renderTimelineTable();
+        } else if (menu === 'users') {
+            renderUsersCRUDTable();
+        } else if (menu === 'holidays') {
+            renderHolidaySettingsList();
+        } else if (menu === 'audit') {
+            renderAuditLogsTable();
+        } else if (menu === 'dashboard') {
+            renderAdminDashboard();
+        }
+    };
+
+    window.switchAdminLeavesLayout = function(layout) {
+        adminLeavesLayout = layout;
+        const btnCalendar = document.getElementById('btn-admin-calendar');
+        const btnTimeline = document.getElementById('btn-admin-timeline');
+        const calendarContainer = document.getElementById('admin-calendar-view-container');
+        const timelineContainer = document.getElementById('admin-timeline-view-container');
+
+        if (layout === 'calendar') {
+            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            calendarContainer.classList.remove('hidden');
+            timelineContainer.classList.add('hidden');
+        } else {
+            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+            timelineContainer.classList.remove('hidden');
+            calendarContainer.classList.add('hidden');
+        }
+        syncAdminLeaves();
+    };
+
+    window.navigateAdminMonth = function(offset) {
+        adminSelectedMonth += offset;
+        if (adminSelectedMonth < 1) adminSelectedMonth = 12;
+        if (adminSelectedMonth > 12) adminSelectedMonth = 1;
+        document.getElementById('admin-calendar-month-label').textContent = `2026년 ${adminSelectedMonth}월`;
+        syncAdminLeaves();
+    };
+
+    // TAB 1: Dashboard Rendering
+    function renderAdminDashboard() {
+        document.getElementById('stat-active-users').textContent = mockUsers.filter(u => u.status === 'ACTIVE').length + '명';
+        const pendingsCount = mockLeaves.filter(l => l.status === 'PENDING').length;
+        document.getElementById('stat-pending-count').textContent = pendingsCount + '건';
+
+        // 1. Today Absentees (Simulated for June 13th)
+        const absenteesList = document.getElementById('today-absentees-list');
+        const todayAbs = mockLeaves.filter(l => l.date === '2026-06-13' && l.status === 'APPROVED');
+        if (todayAbs.length === 0) {
+            absenteesList.innerHTML = '<div class="py-2 text-center text-dense-muted border border-dashed rounded-xl">오늘 부재중인 팀원이 없습니다.</div>';
+        } else {
+            let html = '';
+            todayAbs.forEach(a => {
+                html += `
+                    <div class="flex justify-between items-center border-b pb-1.5">
+                        <div>
+                            <span class="font-extrabold text-dense-text">${a.name}</span>
+                            <span class="text-[10px] text-dense-muted ml-1.5">${a.team}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-dense-green-soft text-dense-green font-extrabold text-[9px] border">승인됨 (${a.duration})</span>
+                    </div>
+                `;
+            });
+            absenteesList.innerHTML = html;
+        }
+
+        // 2. Audit Summary
+        const auditList = document.getElementById('dashboard-audit-list');
+        let auditHtml = '';
+        mockAuditLogs.slice(0, 3).forEach(log => {
+            auditHtml += `
+                <div class="flex justify-between items-start border-b pb-1.5">
+                    <div>
+                        <span class="font-bold text-dense-text">${log.actor}</span>
+                        <div class="text-[9px] text-dense-muted mt-0.5">${log.action} : ${log.target}</div>
+                    </div>
+                    <span class="text-[9px] text-dense-muted text-right font-semibold whitespace-nowrap">${log.date.split(' ')[1]}</span>
+                </div>
+            `;
+        });
+        auditList.innerHTML = auditHtml;
+    }
+
+    // TAB 2: Leaves (Calendar/Timeline) Synchronized
+    function syncAdminLeaves() {
+        if (adminLeavesLayout === 'calendar') {
+            renderAdminCalendar();
+        } else {
+            renderAdminTimeline();
+        }
+    }
+
+    function renderAdminCalendar() {
+        const grid = document.getElementById('admin-calendar-grid');
+        if (!grid) return;
+
+        const startOffset = 1; // 2026-06-01 Monday (offset = 1 relative to Sunday layout)
+        let html = '';
+        for (let i = 0; i < startOffset; i++) {
+            html += `<div class="min-h-[8rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+        }
+
+        for (let d = 1; d <= 30; d++) {
+            const dayOfWeek = (startOffset + d - 1) % 7;
+            const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+            const dateKey = `2026-${String(adminSelectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const hol = mockHolidays[dateKey];
+            const isBlocked = isWE || hol;
+
+            let dateCls = "text-xs font-extrabold ";
+            if (hol || dayOfWeek === 0) dateCls += "text-dense-danger";
+            else if (dayOfWeek === 6) dateCls += "text-dense-blue";
+            else dateCls += "text-dense-text";
+
+            let leaveChips = '<div class="flex-1 overflow-y-auto max-h-[80px] space-y-1 mt-1 pr-0.5">';
+            mockLeaves.forEach(l => {
+                const lDay = parseInt(l.date.split('-')[2]);
+                const lMonth = parseInt(l.date.split('-')[1]);
+                if (lMonth === adminSelectedMonth && lDay === d) {
+                    let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer ';
+                    if (l.status === 'PENDING') {
+                        chipCls += 'bg-amber-50 text-amber-800 border-amber-300 border-dashed';
+                    } else if (l.status === 'APPROVED') {
+                        chipCls += 'bg-green-50 text-green-700 border border-green-200';
+                    } else {
+                        chipCls += 'bg-gray-50 text-gray-500 border border-gray-200 line-through';
+                    }
+
+                    leaveChips += `
+                        <div class="${chipCls}" onclick="openAdminLeaveActionModal(${l.id})" title="${l.name}: ${l.duration} (${l.status})">
+                            ${l.name} <span class="text-[8px] font-bold">${l.status === 'PENDING' ? '대기' : '승인'}</span>
+                        </div>
+                    `;
+                }
+            });
+            leaveChips += '</div>';
+
+            let cellCls = "min-h-[8rem] rounded-xl border p-2 flex flex-col justify-between bg-dense-surface border-dense-line hover:shadow-sm ";
+            if (isBlocked) cellCls += "bg-dense-gray-soft/20";
+
+            html += `
+                <div class="${cellCls}">
+                    <div class="flex items-center justify-between w-full leading-none">
+                        <span class="${dateCls}">${d}</span>
+                        ${hol ? `<span class="text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border">${hol}</span>` : ''}
+                    </div>
+                    ${leaveChips}
+                </div>
+            `;
+        }
+
+        const endOffset = (startOffset + 30) % 7;
+        if (endOffset > 0) {
+            for (let i = 0; i < (7 - endOffset); i++) {
+                html += `<div class="min-h-[8rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>`;
+            }
+        }
+        grid.innerHTML = html;
+    }
+
+    function renderAdminTimeline() {
+        const firstDayMon = (new Date(2026, adminSelectedMonth - 1, 1).getDay() + 6) % 7;
+        let thHtml = '';
+        for (let d = 1; d <= 30; d++) {
+            const wd = (firstDayMon + d - 1) % 7;
+            const isWE = wd >= 5;
+            const dateKey = `2026-${String(adminSelectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const hol = mockHolidays[dateKey];
+            let cls = 'col-day';
+            if (hol) cls += ' holiday-head'; else if (isWE) cls += ' weekend-head';
+            thHtml += `<th class="${cls}"><span class="day-num">${d}</span><span class="weekday-label">(${weekdays[wd]})</span>${hol ? `<span class="holiday-chip">${hol}</span>` : ''}</th>`;
+        }
+        const headerRow = document.getElementById('admin-timeline-header-row');
+        if (headerRow) {
+            headerRow.innerHTML = `<th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th style="width:3rem">잔여</th>` + thHtml;
+        }
+
+        let bodyHtml = '';
+        mockUsers.forEach(u => {
+            bodyHtml += `<tr class="transition-colors hover:bg-dense-surface-soft">`;
+            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text" style="width:4.25rem">${u.name}</td>`;
+            const bg = teamColors[u.team] || '#f2f4f7';
+            const tc = teamTextColors[u.team] || '#475467';
+            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="background:${bg};color:${tc}">${u.team}</span></td>`;
+            bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${u.alloc - u.used}h</td>`;
+            
+            for (let d = 1; d <= 30; d++) {
+                const wd = (firstDayMon + d - 1) % 7;
+                const isWE = wd >= 5;
+                const dateKey = `2026-${String(adminSelectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const hol = mockHolidays[dateKey];
+                const isBlocked = isWE || hol;
+                
+                const lRequest = mockLeaves.find(l => l.name === u.name && parseInt(l.date.split('-')[2]) === d && l.status !== 'CANCELED');
+                if (lRequest) {
+                    let cls = 'full';
+                    if (lRequest.duration.includes('4h')) cls = 'half';
+                    if (lRequest.status === 'PENDING') cls += ' pending';
+                    
+                    bodyHtml += `<td><div class="day-block ${cls} cursor-pointer" onclick="openAdminLeaveActionModal(${lRequest.id})">${lRequest.status === 'PENDING' ? '대기' : lRequest.duration.split(' ')[0]}</div></td>`;
+                } else {
+                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+                }
+            }
+            bodyHtml += '</tr>';
+        });
+        document.getElementById('admin-tlBody').innerHTML = bodyHtml;
+    }
+
+    // Modal: Admin Leave Decisions
+    window.openAdminLeaveActionModal = function(id) {
+        const leave = mockLeaves.find(l => l.id === id);
+        if (!leave) return;
+
+        document.getElementById('admin-leave-id').value = id;
+        const content = document.getElementById('admin-leave-modal-content');
+        const footer = document.getElementById('admin-leave-modal-footer');
+
+        content.innerHTML = `
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 직원</span>
+                <span class="col-span-2 font-bold text-dense-text">${leave.name} (${leave.team})</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 일자</span>
+                <span class="col-span-2 font-bold">${leave.date}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">사용 구분</span>
+                <span class="col-span-2 font-bold">${leave.duration}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">결재 상태</span>
+                <span class="col-span-2 font-bold ${leave.status === 'PENDING' ? 'text-dense-amber' : 'text-dense-green'}">${leave.status === 'PENDING' ? '결재 대기 중' : '승인 완료'}</span>
+            </div>
+        `;
+
+        if (leave.status === 'PENDING') {
+            footer.innerHTML = `
+                <button onclick="adminApproveG(${leave.id})" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 승인</button>
+                <button onclick="adminRejectG(${leave.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 반려</button>
+                <button onclick="closeAdminLeaveActionModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
+            `;
+        } else {
+            footer.innerHTML = `
+                <button onclick="adminCancelG(${leave.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">연차 강제 취소</button>
+                <button onclick="closeAdminLeaveActionModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">닫기</button>
+            `;
+        }
+
+        document.getElementById('adminLeaveActionModal').classList.remove('hidden');
+    };
+
+    window.closeAdminLeaveActionModal = function() {
+        document.getElementById('adminLeaveActionModal').classList.add('hidden');
+    };
+
+    window.adminApproveG = function(id) {
+        const leave = mockLeaves.find(l => l.id === id);
+        if (leave) {
+            leave.status = 'APPROVED';
+            
+            // Deduct from user
+            const user = mockUsers.find(u => u.name.includes(leave.name));
+            if (user) user.used += leave.duration.includes('4h') ? 4 : 8;
+
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'APPROVE_LEAVE',
+                target: `${leave.name} (${leave.date})`,
+                oldVal: 'PENDING',
+                newVal: 'APPROVED'
+            });
+
+            syncAdminLeaves();
+            closeAdminLeaveActionModal();
+            alert('해당 휴가가 승인 완료 처리되었습니다.');
+        }
+    };
+
+    window.adminRejectG = function(id) {
+        const leave = mockLeaves.find(l => l.id === id);
+        if (leave) {
+            leave.status = 'REJECTED';
+            
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'REJECT_LEAVE',
+                target: `${leave.name} (${leave.date})`,
+                oldVal: 'PENDING',
+                newVal: 'REJECTED'
+            });
+
+            syncAdminLeaves();
+            closeAdminLeaveActionModal();
+            alert('해당 휴가가 반려 처리되었습니다.');
+        }
+    };
+
+    window.adminCancelG = function(id) {
+        const leave = mockLeaves.find(l => l.id === id);
+        if (leave) {
+            leave.status = 'CANCELED';
+            const user = mockUsers.find(u => u.name.includes(leave.name));
+            if (user) user.used -= leave.duration.includes('4h') ? 4 : 8;
+
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'CANCEL_LEAVE_FORCE',
+                target: `${leave.name} (${leave.date})`,
+                oldVal: 'APPROVED',
+                newVal: 'CANCELED'
+            });
+
+            syncAdminLeaves();
+            closeAdminLeaveActionModal();
+            alert('관리자 권한으로 휴가 취소(반환) 처리가 완료되었습니다.');
+        }
+    };
+
+    // TAB 3: Request Timeline Table Rendering & Logic
+    window.renderTimelineTable = function() {
+        const tbody = document.getElementById('timeline-table-body');
+        if (!tbody) return;
+
+        const year = document.getElementById('tl-filter-year').value;
+        const month = parseInt(document.getElementById('tl-filter-month').value);
+        const status = document.getElementById('tl-filter-status').value;
+        const company = document.getElementById('tl-filter-company').value;
+        const team = document.getElementById('tl-filter-team').value;
+        const search = document.getElementById('tl-filter-search').value.toLowerCase().trim();
+
+        let filtered = mockLeaves.filter(l => {
+            const lDate = new Date(l.date);
+            const lYear = lDate.getFullYear().toString();
+            const lMonth = lDate.getMonth() + 1;
+
+            if (year && lYear !== year) return false;
+            if (month !== 0 && lMonth !== month) return false;
+            if (status && l.status !== status) return false;
+            if (company && l.company !== company) return false;
+            if (team && l.team !== team) return false;
+            if (search && !l.name.toLowerCase().includes(search)) return false;
+            return true;
+        });
+
+        let html = '';
+        if (filtered.length === 0) {
+            html = `<tr><td colspan="9" class="px-6 py-10 text-center text-dense-muted font-bold">해당 필터 조건에 부합하는 연차 신청 기록이 없습니다.</td></tr>`;
+        } else {
+            filtered.forEach(l => {
+                const badgeStyle = l.is_deductive 
+                    ? '' 
+                    : 'background: hsl(280, 50%, 92%); color: hsl(280, 50%, 35%);';
+                const statusCls = l.status === 'PENDING' ? 'border-[#fedf89] bg-dense-amber-soft text-dense-amber' :
+                                  l.status === 'APPROVED' ? 'border-[#abefc6] bg-dense-green-soft text-dense-green' :
+                                  l.status === 'REJECTED' ? 'border-dense-line bg-dense-gray-soft text-dense-muted' :
+                                  'border-dense-line bg-dense-gray-soft text-dense-muted';
+                
+                const statusLabel = l.status === 'PENDING' ? '결재 대기' :
+                                    l.status === 'APPROVED' ? '승인됨' :
+                                    l.status === 'REJECTED' ? '반려' : '신청 취소';
+
+                const companyBadge = `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="background: hsl(210,60%,92%); color: hsl(210,60%,35%);">${l.company}</span>`;
+                const teamBg = teamColors[l.team] || '#f2f4f7';
+                const teamTc = teamTextColors[l.team] || '#475467';
+                const teamBadge = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="background:${teamBg};color:${teamTc}">${l.team}</span>`;
+
+                let actionHtml = '';
+                if (l.status === 'PENDING') {
+                    actionHtml = `
+                        <select onchange="changeTimelineStatus(${l.id}, this)" class="rounded-xl border bg-dense-surface py-0.5 px-1 font-bold focus:ring-1 focus:ring-dense-blue">
+                            <option value="PENDING" selected>결재 대기</option>
+                            <option value="APPROVED">승인됨</option>
+                            <option value="REJECTED">반려</option>
+                            <option value="CANCELED">신청 취소</option>
+                        </select>
+                    `;
+                } else {
+                    actionHtml = `<span class="text-[10px] text-dense-muted font-bold">종료됨</span>`;
+                }
+
+                html += `
+                    <tr class="hover:bg-dense-surface-soft transition-colors" id="tl-row-${l.id}">
+                        <td class="px-3 py-2 text-dense-muted font-semibold">${l.created_at || '—'}</td>
+                        <td class="px-3 py-2 font-bold text-dense-text">${l.name}</td>
+                        <td class="px-3 py-2">${companyBadge}</td>
+                        <td class="px-3 py-2">${teamBadge}</td>
+                        <td class="px-3 py-2 font-semibold"><span class="border rounded-full px-2 py-0.5 bg-dense-surface">${l.date}</span></td>
+                        <td class="px-3 py-2 font-bold text-dense-nav-text">
+                            ${l.duration} 
+                            <span class="text-[10px] font-semibold text-dense-muted">(${l.is_deductive ? '차감' : '비차감'})</span>
+                            ${!l.is_deductive ? `<span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>` : ''}
+                        </td>
+                        <td class="px-3 py-2 text-dense-text font-semibold max-w-[120px] truncate" title="${l.reason || ''}">${l.reason || '—'}</td>
+                        <td class="px-3 py-2">
+                            <span class="inline-flex rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${statusCls}">
+                                ${statusLabel}
+                            </span>
+                            ${l.status === 'REJECTED' && l.rejection_reason ? `<div class="text-[9px] text-[#b42318] mt-0.5 font-bold truncate max-w-[100px]" title="${l.rejection_reason}">사유: ${l.rejection_reason}</div>` : ''}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                ${actionHtml}
+                                <button onclick="toggleTimelineDeductive(${l.id})" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${l.is_deductive ? 'text-purple-700 hover:bg-purple-50' : 'text-dense-blue hover:bg-dense-blue-soft'}" title="${l.is_deductive ? '공가/출장으로 전환' : '연차로 전환'}">
+                                    ${l.is_deductive ? '공가 전환' : '연차 전환'}
+                                </button>
+                                <button onclick="deleteTimelineLeave(${l.id})" class="px-1.5 py-0.5 rounded border border-dense-danger-soft bg-dense-danger-soft text-[9px] font-bold text-[#b42318] hover:brightness-95">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    };
+
+    window.filterTimelineTable = function() {
+        renderTimelineTable();
+    };
+
+    window.resetTimelineFilters = function() {
+        document.getElementById('tl-filter-month').value = '0';
+        document.getElementById('tl-filter-status').value = '';
+        document.getElementById('tl-filter-company').value = '';
+        document.getElementById('tl-filter-team').value = '';
+        document.getElementById('tl-filter-search').value = '';
+        renderTimelineTable();
+    };
+
+    window.exportTimelineExcel = function() {
+        alert('엑셀 파일 내보내기가 완료되었습니다. (다운로드 파일: shim_leaves_timeline_export.xlsx)');
+    };
+
+    window.changeTimelineStatus = function(id, selectEl) {
+        const newStatus = selectEl.value;
+        const leave = mockLeaves.find(l => l.id === id);
+        if (!leave) return;
+
+        let rejectionReason = '';
+        if (newStatus === 'REJECTED') {
+            rejectionReason = prompt('반려 사유를 입력해 주세요. (최대 500자)') || '';
+            rejectionReason = rejectionReason.trim();
+            if (!rejectionReason) {
+                alert('반려 사유를 입력해야 합니다.');
+                selectEl.value = leave.status;
+                return;
+            }
+        }
+
+        const oldStatus = leave.status;
+        leave.status = newStatus;
+        if (newStatus === 'REJECTED') {
+            leave.rejection_reason = rejectionReason;
+        }
+
+        // Deduct/refund leave time from user
+        const user = mockUsers.find(u => u.name.includes(leave.name));
+        if (user && oldStatus !== 'APPROVED' && newStatus === 'APPROVED') {
+            user.used += leave.duration.includes('4h') ? 4 : 8;
+        } else if (user && oldStatus === 'APPROVED' && newStatus !== 'APPROVED') {
+            user.used -= leave.duration.includes('4h') ? 4 : 8;
+        }
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_LEAVE_STATUS',
+            target: `${leave.name} (${leave.date})`,
+            oldVal: oldStatus,
+            newVal: newStatus + (rejectionReason ? ` (사유: ${rejectionReason})` : '')
+        });
+
+        renderTimelineTable();
+        alert('연차 신청 상태 변경이 전사에 반영되었습니다.');
+    };
+
+    window.toggleTimelineDeductive = function(id) {
+        const leave = mockLeaves.find(l => l.id === id);
+        if (!leave) return;
+
+        const targetDeductive = !leave.is_deductive;
+        const user = mockUsers.find(u => u.name.includes(leave.name));
+
+        if (leave.status === 'APPROVED' && user) {
+            // Re-calculate user's leave time if status was approved
+            if (targetDeductive) {
+                user.used += leave.duration.includes('4h') ? 4 : 8;
+            } else {
+                user.used -= leave.duration.includes('4h') ? 4 : 8;
+            }
+        }
+
+        leave.is_deductive = targetDeductive;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_LEAVE_TYPE',
+            target: `${leave.name} (${leave.date})`,
+            oldVal: targetDeductive ? '공가/출장(비차감)' : '연차(차감)',
+            newVal: targetDeductive ? '연차(차감)' : '공가/출장(비차감)'
+        });
+
+        renderTimelineTable();
+        alert(`신청 구분이 ${targetDeductive ? '연차(차감)' : '공가/출장(비차감)'}으로 변경되었습니다.`);
+    };
+
+    window.deleteTimelineLeave = function(id) {
+        if (!confirm('정말 이 연차 신청 기록을 영구 삭제하시겠습니까?')) return;
+
+        const index = mockLeaves.findIndex(l => l.id === id);
+        if (index === -1) return;
+
+        const leave = mockLeaves[index];
+        const user = mockUsers.find(u => u.name.includes(leave.name));
+
+        if (leave.status === 'APPROVED' && user) {
+            user.used -= leave.duration.includes('4h') ? 4 : 8;
+        }
+
+        mockLeaves.splice(index, 1);
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'DELETE_LEAVE',
+            target: `${leave.name} (${leave.date})`,
+            oldVal: leave.status,
+            newVal: 'DELETED'
+        });
+
+        renderTimelineTable();
+        alert('신청 기록이 영구 삭제 처리되었습니다.');
+    };
+
+    // TAB 4: User Management Table
+    function renderUsersCRUDTable() {
+        const tbody = document.getElementById('users-table-body');
+        let html = '';
+        mockUsers.forEach(u => {
+            const statusCls = u.status === 'ACTIVE' ? 'bg-dense-green-soft text-dense-green' : 'bg-dense-danger-soft text-dense-danger';
+            html += `
+                <tr class="hover:bg-dense-surface-soft transition-colors">
+                    <td class="px-4 py-2.5 font-bold text-dense-text">${u.name}</td>
+                    <td class="px-4 py-2.5">${u.company}</td>
+                    <td class="px-4 py-2.5">${u.team}</td>
+                    <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded font-extrabold text-[9px] bg-dense-gray-soft text-dense-muted">${u.role}</span></td>
+                    <td class="px-4 py-2.5 font-extrabold text-dense-text">${u.alloc}h</td>
+                    <td class="px-4 py-2.5 font-bold text-dense-blue">${u.alloc - u.used}h</td>
+                    <td class="px-4 py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${statusCls}">${u.status}</span></td>
+                    <td class="px-4 py-2.5 text-center flex justify-center gap-1.5">
+                        <button onclick="openUserModal(true, ${u.id})" class="px-2 py-0.5 rounded border text-dense-muted font-bold hover:bg-dense-gray-soft">수정</button>
+                        <button onclick="toggleUserStatus(${u.id})" class="px-2 py-0.5 rounded ${u.status === 'ACTIVE' ? 'bg-dense-danger text-white' : 'bg-dense-green text-white'} font-bold">${u.status === 'ACTIVE' ? '비활성' : '활성'}</button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    window.openUserModal = function(isEdit, id) {
+        document.getElementById('userModal').classList.remove('hidden');
+        if (isEdit) {
+            document.getElementById('user-modal-title').textContent = '사용자 정보 수정';
+            const user = mockUsers.find(u => u.id === id);
+            if (user) {
+                document.getElementById('user-crud-id').value = user.id;
+                document.getElementById('user-crud-name').value = user.name;
+                document.getElementById('user-crud-email').value = user.email;
+                document.getElementById('user-crud-company').value = user.company;
+                document.getElementById('user-crud-team').value = user.team;
+                document.getElementById('user-crud-role').value = user.role;
+                document.getElementById('user-crud-alloc').value = user.alloc;
+            }
+        } else {
+            document.getElementById('user-modal-title').textContent = '신규 직원 등록';
+            document.getElementById('user-crud-id').value = '';
+            document.getElementById('user-crud-name').value = '';
+            document.getElementById('user-crud-email').value = '';
+            document.getElementById('user-crud-company').value = 'XX건설';
+            document.getElementById('user-crud-team').value = '';
+            document.getElementById('user-crud-role').value = 'STAFF';
+            document.getElementById('user-crud-alloc').value = '120';
+        }
+    };
+
+    window.closeUserModal = function() {
+        document.getElementById('userModal').classList.add('hidden');
+    };
+
+    window.submitUserCRUD = function() {
+        const id = document.getElementById('user-crud-id').value;
+        const name = document.getElementById('user-crud-name').value;
+        const email = document.getElementById('user-crud-email').value;
+        const company = document.getElementById('user-crud-company').value;
+        const team = document.getElementById('user-crud-team').value;
+        const role = document.getElementById('user-crud-role').value;
+        const alloc = parseInt(document.getElementById('user-crud-alloc').value);
+
+        if (id) {
+            // Edit
+            const user = mockUsers.find(u => u.id === parseInt(id));
+            if (user) {
+                const oldName = user.name;
+                user.name = name;
+                user.email = email;
+                user.company = company;
+                user.team = team;
+                user.role = role;
+                user.alloc = alloc;
+
+                mockAuditLogs.unshift({
+                    date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                    actor: '박민수 (PM / 관리자)',
+                    action: 'UPDATE_USER',
+                    target: `${name} (계정 수정)`,
+                    oldVal: `${oldName} 정보`,
+                    newVal: `${name} 정보`
+                });
+            }
+        } else {
+            // Create
+            const newId = mockUsers.length + 1;
+            mockUsers.push({
+                id: newId,
+                name: name,
+                email: email,
+                company: company,
+                team: team,
+                role: role,
+                alloc: alloc,
+                used: 0,
+                status: 'ACTIVE'
+            });
+
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'CREATE_USER',
+                target: `${name} (계정 추가)`,
+                oldVal: 'NONE',
+                newVal: 'ACTIVE'
+            });
+        }
+
+        renderUsersCRUDTable();
+        closeUserModal();
+        alert('사용자 정보가 성공적으로 반영되었습니다.');
+    };
+
+    window.toggleUserStatus = function(id) {
+        const user = mockUsers.find(u => u.id === id);
+        if (user) {
+            const oldStatus = user.status;
+            user.status = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'CHANGE_USER_STATUS',
+                target: `${user.name} (상태 변경)`,
+                oldVal: oldStatus,
+                newVal: user.status
+            });
+
+            renderUsersCRUDTable();
+            alert(`사용자 상태가 ${user.status === 'ACTIVE' ? '활성화' : '비활성화'} 처리되었습니다.`);
+        }
+    };
+
+    // TAB 4: System Master Settings Form
+    window.toggleApprovalWorkflowMock = function() {
+        const curLabel = isApprovalRequiredMock ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
+        const nextLabel = !isApprovalRequiredMock ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
+        
+        if (!confirm(`승인 워크플로우를 변경할까요?\n\n현재: ${curLabel}\n변경 후: ${nextLabel}`)) return;
+        
+        isApprovalRequiredMock = !isApprovalRequiredMock;
+        
+        const el = document.getElementById('approval-current-label');
+        if (el) {
+            el.textContent = isApprovalRequiredMock ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
+        }
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_SYSTEM_SETTING',
+            target: '승인 워크플로우 정책',
+            oldVal: curLabel,
+            newVal: nextLabel
+        });
+
+        if (selectedAdminMenu === 'audit') {
+            renderAuditLogsTable();
+        }
+
+        alert('승인 워크플로우 상태가 성공적으로 변경되었습니다.');
+    };
+
+    window.saveCalendarScopeMock = function() {
+        const radios = document.getElementsByName('calendar_scope');
+        let selectedValue = 'none';
+        for (const radio of radios) {
+            if (radio.checked) {
+                selectedValue = radio.value;
+                break;
+            }
+        }
+
+        let scopeLabel = '';
+        if (selectedValue === 'none') scopeLabel = '공유 안 함 (본인 전용)';
+        else if (selectedValue === 'team') scopeLabel = '소속 팀원 공유';
+        else if (selectedValue === 'company') scopeLabel = '전사 공유';
+
+        if (!confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_CALENDAR_SCOPE',
+            target: '캘린더 공유 범위 변경',
+            oldVal: '기존 공유 범위',
+            newVal: scopeLabel
+        });
+
+        const el = document.getElementById('calendar-scope-current-label');
+        if (el) el.textContent = scopeLabel;
+        alert('캘린더 공유 범위가 "' + scopeLabel + '"(으)로 변경 및 전사 반영되었습니다.');
+    };
+
+    window.saveBrandingMock = function() {
+        const display = document.getElementById('brand-official-name').value.trim();
+        const navShort = document.getElementById('brand-short-name').value.trim();
+        const badge = document.getElementById('brand-badge-name').value.trim();
+
+        if (!display) {
+            alert('공식 이름은 필수 입력 항목입니다.');
+            return;
+        }
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_BRANDING_SETTING',
+            target: '시스템 표시 이름 브랜딩 변경',
+            oldVal: '공식: SHIM, 짧은이름: SHIM, 배지: ADMIN',
+            newVal: `공식: ${display}, 짧은이름: ${navShort}, 배지: ${badge}`
+        });
+
+        // Update brand values live in mockup navbar
+        const navbarTitle = document.querySelector('nav .tracking-tight');
+        if (navbarTitle) navbarTitle.textContent = display;
+        
+        const navbarBadge = document.querySelector('nav span.text-white');
+        if (navbarBadge && badge) navbarBadge.textContent = badge;
+
+        alert('표시 이름(브랜딩) 설정이 저장되었습니다. (상단 네비게이션 헤더에 실시간 반영)');
+    };
+
+    window.runDbBackupMock = function() {
+        if (!confirm('지금 DB 수동 백업을 생성할까요?')) return;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'DB_BACKUP_MANUAL',
+            target: '데이터베이스 수동 백업 실행',
+            oldVal: 'NONE',
+            newVal: 'SUCCESS (var/data/backup/shim_internal_backup_' + new Date().toISOString().replace(/[-:T.]/g, '').substring(0, 14) + '.db)'
+        });
+
+        alert('데이터베이스 백업 생성이 완료되었습니다. (백업 파일 경로: var/data/backup/shim_internal_backup_*.db)');
+    };
+
+    window.saveSystemSettings = function() {
+        const granularity = document.getElementById('setting-granularity').value;
+        const approval = isApprovalRequiredMock ? 'true' : 'false';
+        const lunchStart = document.getElementById('setting-lunch-start').value;
+        const lunchEnd = document.getElementById('setting-lunch-end').value;
+        const workStart = document.getElementById('setting-work-start').value;
+        const workEnd = document.getElementById('setting-work-end').value;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_SYSTEM_SETTING',
+            target: '근태 기본 정책',
+            oldVal: '기존 설정',
+            newVal: `단위: ${granularity}분, 결재: ${approval}, 업무: ${workStart}~${workEnd}, 점심: ${lunchStart}~${lunchEnd}`
+        });
+
+        alert('근태 관리 기준 및 점심/업무시간 정책이 안전하게 시스템에 저장되었습니다.');
+    };
+
+    function renderHolidaySettingsList() {
+        const container = document.getElementById('holiday-list-settings');
+        if (!container) return;
+
+        let html = '';
+        const sortedDates = Object.keys(mockHolidays).sort();
+        sortedDates.forEach(dateStr => {
+            html += `
+                <div class="flex justify-between items-center bg-dense-surface p-2 border rounded-xl shadow-xs">
+                    <span>${dateStr} (${mockHolidays[dateStr]})</span>
+                    <button type="button" onclick="removeHolidaySetting('${dateStr}')" class="text-[10px] text-dense-danger font-bold hover:underline">삭제</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.addHolidaySetting = function() {
+        const dateInput = document.getElementById('new-holiday-date').value;
+        const nameInput = document.getElementById('new-holiday-name').value;
+        if (!dateInput || !nameInput) {
+            alert('날짜와 공휴일 명칭을 입력해주세요.');
+            return;
+        }
+
+        const parts = dateInput.split('-');
+        if (parts[0] !== '2026') {
+            alert('예시 데이터상 2026년 날짜만 기입 가능합니다.');
+            return;
+        }
+
+        mockHolidays[dateInput] = nameInput;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'ADD_HOLIDAY',
+            target: `${nameInput} (${dateInput})`,
+            oldVal: 'NONE',
+            newVal: nameInput
+        });
+
+        document.getElementById('new-holiday-date').value = '';
+        document.getElementById('new-holiday-name').value = '';
+        renderHolidaySettingsList();
+        syncAdminLeaves();
+        alert('신규 공휴일이 등록되었습니다.');
+    };
+
+    window.removeHolidaySetting = function(dateStr) {
+        const name = mockHolidays[dateStr];
+        delete mockHolidays[dateStr];
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'REMOVE_HOLIDAY',
+            target: `${name} (${dateStr})`,
+            oldVal: name,
+            newVal: 'DELETED'
+        });
+
+        renderHolidaySettingsList();
+        syncAdminLeaves();
+        alert('공휴일 정보가 해제되었습니다.');
+    };
+
+    // TAB 5: System Audit Logs Search/Filter
+    function renderAuditLogsTable() {
+        const tbody = document.getElementById('audit-table-body');
+        if (!tbody) return;
+
+        let html = '';
+        mockAuditLogs.forEach(log => {
+            html += `
+                <tr class="hover:bg-dense-surface-soft transition-colors">
+                    <td class="px-4 py-2.5 font-semibold text-dense-muted">${log.date}</td>
+                    <td class="px-4 py-2.5 font-bold text-dense-text">${log.actor}</td>
+                    <td class="px-4 py-2.5 font-bold text-dense-blue">${log.action}</td>
+                    <td class="px-4 py-2.5 text-dense-text font-semibold">${log.target}</td>
+                    <td class="px-4 py-2.5 text-dense-muted truncate max-w-[120px]" title="${log.oldVal}">${log.oldVal}</td>
+                    <td class="px-4 py-2.5 text-dense-green font-semibold truncate max-w-[120px]" title="${log.newVal}">${log.newVal}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    window.filterAuditLogsTable = function() {
+        const query = document.getElementById('audit-search-input').value.toLowerCase();
+        const tbody = document.getElementById('audit-table-body');
+        if (!tbody) return;
+
+        let html = '';
+        mockAuditLogs.forEach(log => {
+            if (log.actor.toLowerCase().includes(query) || log.action.toLowerCase().includes(query) || log.target.toLowerCase().includes(query)) {
+                html += `
+                    <tr class="hover:bg-dense-surface-soft transition-colors">
+                        <td class="px-4 py-2.5 font-semibold text-dense-muted">${log.date}</td>
+                        <td class="px-4 py-2.5 font-bold text-dense-text">${log.actor}</td>
+                        <td class="px-4 py-2.5 font-bold text-dense-blue">${log.action}</td>
+                        <td class="px-4 py-2.5 text-dense-text font-semibold">${log.target}</td>
+                        <td class="px-4 py-2.5 text-dense-muted truncate max-w-[120px]" title="${log.oldVal}">${log.oldVal}</td>
+                        <td class="px-4 py-2.5 text-dense-green font-semibold truncate max-w-[120px]" title="${log.newVal}">${log.newVal}</td>
+                    </tr>
+                `;
+            }
+        });
+        tbody.innerHTML = html;
+    };
+
+    function populateTimeSelect(selectId, defaultValue) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = '';
+        
+        if (selectId.includes('lunch')) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '미사용';
+            if (defaultValue === '') opt.selected = true;
+            select.appendChild(opt);
+        }
+
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 30) {
+                const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                const opt = document.createElement('option');
+                opt.value = timeStr;
+                opt.textContent = timeStr;
+                if (timeStr === defaultValue && defaultValue !== '') opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+    }
+
+    // System Init
+    document.addEventListener('DOMContentLoaded', () => {
+        // Populate 30min granularity options
+        populateTimeSelect('setting-work-start', '09:00');
+        populateTimeSelect('setting-work-end', '18:00');
+        populateTimeSelect('setting-lunch-start', '12:00');
+        populateTimeSelect('setting-lunch-end', '13:00');
+
+        renderAdminDashboard();
+        renderHolidaySettingsList();
+        switchAdminMenu('dashboard');
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            closeAdminLeaveActionModal();
+            closeUserModal();
+        }
+    });
+    </script>
+</body>
+</html>
