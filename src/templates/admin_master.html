@@ -71,22 +71,23 @@
                 <button type="button" onclick="saveCalendarScope()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">공유 범위 저장</button>
             </div>
         </div>
-        <div class="rounded-xl border border-dense-line-strong bg-dense-blue-soft p-4">
-            <p class="mb-3 text-sm font-extrabold text-dense-text">시간 단위/업무시간/점심시간 정책</p>
-            <div class="space-y-4">
-                <section class="rounded-xl border border-dense-line bg-dense-surface p-4">
-                    <label for="policy_granularity" class="mb-2 block text-sm font-bold text-dense-text">1) 시간 단위</label>
-                    <select id="policy_granularity" class="w-full max-w-[14rem] rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                        {% for unit in [30, 60, 120] %}
-                        <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ unit }}분</option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-2 text-xs font-semibold text-dense-muted">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
-                </section>
+        <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3.5">
+            <p class="text-sm font-extrabold text-dense-text">시간 정책 설정 (30분 단위 선택)</p>
+            
+            <div class="space-y-2">
+                <label for="policy_granularity" class="block text-xs font-bold text-dense-text">1) 최소 시간 단위</label>
+                <select id="policy_granularity" class="w-full max-w-[14rem] rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    {% for unit in [30, 60, 120] %}
+                    <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ unit }}분 단위 차감</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs font-semibold text-dense-muted">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+            </div>
 
-                <section class="rounded-xl border border-dense-line bg-dense-surface p-4">
-                    <p class="mb-2 block text-sm font-bold text-dense-text">2) 업무시간 범위</p>
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div class="space-y-3.5 border-t border-dense-line/60 pt-3">
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-dense-text">2) 정규 업무 시간 범위</label>
+                    <div class="grid grid-cols-2 gap-3 max-w-[18rem]">
                         <div>
                             <label for="policy_work_start" class="mb-1 block text-xs font-bold text-dense-muted">시작</label>
                             <select id="policy_work_start" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
@@ -104,12 +105,11 @@
                             </select>
                         </div>
                     </div>
-                    <p class="mt-2 text-xs font-semibold text-dense-muted">신청 화면은 이 구간만 표시됩니다.</p>
-                </section>
+                </div>
 
-                <section class="rounded-xl border border-dense-line bg-dense-surface p-4">
-                    <p class="mb-2 block text-sm font-bold text-dense-text">3) 점심시간 제외(선택)</p>
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div class="space-y-2 border-t border-dense-line/60 pt-3">
+                    <label class="block text-xs font-bold text-dense-text">3) 점심 시간 범위 (차감 제외)</label>
+                    <div class="grid grid-cols-2 gap-3 max-w-[18rem]">
                         <div>
                             <label for="policy_lunch_start" class="mb-1 block text-xs font-bold text-dense-muted">시작</label>
                             <select id="policy_lunch_start" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
@@ -129,10 +129,10 @@
                             </select>
                         </div>
                     </div>
-                    <p class="mt-2 text-xs font-semibold text-dense-muted">각 값은 차감시간 계산에서 자동 제외됩니다.</p>
-                </section>
+                </div>
             </div>
-            <div class="mt-3 flex flex-wrap gap-2">
+
+            <div class="pt-3 border-t border-dense-line/60">
                 <button type="button" onclick="saveTimePolicy()" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">시간 정책 저장</button>
             </div>
             <div class="mt-2.5 text-xs font-semibold text-dense-muted leading-relaxed space-y-1">
