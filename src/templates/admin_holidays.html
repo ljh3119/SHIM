@@ -54,11 +54,11 @@
                             <div class="flex flex-wrap gap-2">
                                 <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
                                        class="rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                                <button type="button" onclick="updateHoliday({{ h.id }})"
+                                <button type="button" onclick="updateHoliday({{ h.id }}, this)"
                                         class="rounded-xl border border-[#fedf89] bg-dense-amber-soft px-3 py-1.5 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">
                                     수정
                                 </button>
-                                <button type="button" onclick="deleteHoliday({{ h.id }})"
+                                <button type="button" onclick="deleteHoliday({{ h.id }}, this)"
                                         class="rounded-xl border border-dense-danger-soft bg-dense-danger-soft px-3 py-1.5 text-sm font-bold text-[#b42318] hover:brightness-95">
                                     삭제
                                 </button>
@@ -67,7 +67,13 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="3" class="px-4 py-8 text-center text-sm font-semibold text-dense-muted">등록된 공휴일이 없습니다.</td>
+                        <td colspan="3" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <span class="text-3xl">📅</span>
+                                <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
+                                <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -88,17 +94,20 @@ async function postForm(url, formData) {
 
 document.getElementById('holidayCreateForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type=submit]');
     const formData = new FormData(e.target);
-    try {
-        const data = await postForm('/api/admin/holiday/create', formData);
-        alert(data.message || '등록되었습니다.');
-        location.reload();
-    } catch (err) {
-        alert(err.message);
-    }
+    simulateButtonLoading(btn, async () => {
+        try {
+            const data = await postForm('/api/admin/holiday/create', formData);
+            alert(data.message || '등록되었습니다.');
+            location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
 });
 
-async function updateHoliday(id) {
+async function updateHoliday(id, btn) {
     const holidayName = document.getElementById(`name-${id}`).value.trim();
     const holidayDate = document.getElementById(`date-${id}`).value;
 
@@ -107,29 +116,33 @@ async function updateHoliday(id) {
     formData.append('holiday_name', holidayName);
     formData.append('holiday_date', holidayDate);
 
-    try {
-        const data = await postForm('/api/admin/holiday/update', formData);
-        alert(data.message || '수정되었습니다.');
-        location.reload();
-    } catch (err) {
-        alert(err.message);
-    }
+    simulateButtonLoading(btn, async () => {
+        try {
+            const data = await postForm('/api/admin/holiday/update', formData);
+            alert(data.message || '수정되었습니다.');
+            location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
 }
 
-async function deleteHoliday(id) {
+async function deleteHoliday(id, btn) {
     if (!confirm('해당 공휴일을 삭제하시겠습니까?')) {
         return;
     }
     const formData = new FormData();
     formData.append('holiday_id', id);
 
-    try {
-        const data = await postForm('/api/admin/holiday/delete', formData);
-        alert(data.message || '삭제되었습니다.');
-        location.reload();
-    } catch (err) {
-        alert(err.message);
-    }
+    simulateButtonLoading(btn, async () => {
+        try {
+            const data = await postForm('/api/admin/holiday/delete', formData);
+            alert(data.message || '삭제되었습니다.');
+            location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
 }
 </script>
 {% endblock %}

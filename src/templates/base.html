@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.3') }} - 연차 관리 시스템</title>
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.4') }} - 연차 관리 시스템</title>
     <!-- Closed-network mode: use local Tailwind CSS only -->
     <link href="/static/css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -116,13 +116,22 @@
             outline: 2px solid #175cd3;
             outline-offset: 2px;
         }
+        /* Toast Container */
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+        .shim-toast { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); font-size: 0.7rem; font-weight: 700; color: #1e293b; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; opacity: 0; pointer-events: auto; white-space: pre-line; }
+        .shim-toast.show { transform: translateX(0); opacity: 1; }
+        .shim-toast-success { border-left: 4px solid #16a34a; }
+        .shim-toast-info { border-left: 4px solid #2563eb; }
+        .shim-toast-warning { border-left: 4px solid #ea580c; }
+        .shim-toast-error { border-left: 4px solid #dc2626; }
+        .shim-sidebar.is-collapsed .system-stats-card { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
 
     {# Top bar only handles branding/account actions. #}
     <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
-        <div class="mx-auto flex h-16 max-w-[90rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto flex h-16 max-w-[92rem] items-center justify-between px-4 sm:px-6 lg:px-8">
             <div class="flex items-center min-w-0">
                 <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/dashboard{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
                     <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
@@ -150,13 +159,13 @@
         </div>
     </nav>
 
-    <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 overflow-x-hidden px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+    <div class="mx-auto flex flex-col md:flex-row min-w-0 w-full max-w-[92rem] flex-1 gap-4 overflow-x-hidden px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
         {% if admin %}
             {% include "partials/sidebar_admin.html" %}
-        {% elif request.cookies.get('access_token') %}
+        {% elif request.cookies.get('access_token') and not hide_base_sidebar %}
             {% include "partials/sidebar_user.html" %}
         {% endif %}
-        <main class="relative min-w-0 flex-1 {% if not admin and not request.cookies.get('access_token') %}max-w-none{% endif %}">
+        <main class="relative min-w-0 flex-1 {% if not admin and (not request.cookies.get('access_token') or hide_base_sidebar) %}max-w-none{% endif %}">
             {% if is_default_password %}
             <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-2">
@@ -171,9 +180,9 @@
     </div>
 
     <footer class="mt-auto border-t border-dense-line bg-dense-surface">
-        <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
             <p class="text-center text-sm text-dense-muted">
-                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.3') }}
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.4') }}
             </p>
         </div>
     </footer>
@@ -405,6 +414,75 @@
             }
         });
     });
+    </script>
+
+    <script>
+    window.showToast = function(message, type = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = `shim-toast shim-toast-${type}`;
+        
+        let icon = 'ℹ️';
+        if (type === 'success') icon = '✅';
+        if (type === 'warning') icon = '⚠️';
+        if (type === 'error') icon = '❌';
+        
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    };
+
+    window.simulateButtonLoading = function(btn, callback, duration = 600) {
+        if (!btn || btn.disabled) {
+            if (callback) callback();
+            return;
+        }
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 처리 중...`;
+        
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHTML;
+            if (callback) callback();
+        }, duration);
+    };
+
+    // Override the native window.alert to automatically route to Toast notifications
+    window.alert = function(message) {
+        if (message === undefined || message === null) return;
+        const msgStr = String(message);
+        let type = 'success';
+        const msgLower = msgStr.toLowerCase();
+        
+        if (msgLower.includes('실패') || msgLower.includes('오류') || msgLower.includes('error') || msgLower.includes('입력해야') || msgLower.includes('필수') || msgLower.includes('입력해') || msgLower.includes('일치하지') || msgLower.includes('제한') || msgLower.includes('오작동') || msgLower.includes('실행되지')) {
+            type = 'error';
+        } else if (msgLower.includes('경고') || msgLower.includes('주의') || msgLower.includes('기입 가능') || msgLower.includes('이미 다른') || msgLower.includes('지나간') || msgLower.includes('없습니다') || msgLower.includes('제외') || msgLower.includes('취소하시겠습니까') || msgLower.includes('삭제하시겠습니까')) {
+            type = 'warning';
+        } else if (msgLower.includes('이동') || msgLower.includes('진행') || msgLower.includes('내보내기') || msgLower.includes('정보가') || msgLower.includes('상세')) {
+            type = 'info';
+        }
+        
+        window.showToast(msgStr, type);
+    };
     </script>
 
 </body>

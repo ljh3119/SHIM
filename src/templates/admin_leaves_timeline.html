@@ -194,18 +194,24 @@
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-center">
                             <div class="flex items-center justify-center gap-1.5">
-                                <button type="button" onclick="changeType({{ leave.id }}, {{ 'false' if leave.is_deductive else 'true' }})" 
+                                <button type="button" onclick="changeType({{ leave.id }}, {{ 'false' if leave.is_deductive else 'true' }}, this)" 
                                         class="inline-flex rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[10px] font-bold {% if leave.is_deductive %}text-purple-700 hover:bg-purple-50{% else %}text-dense-blue hover:bg-dense-blue-soft{% endif %} shadow-sm transition-colors"
                                         title="{% if leave.is_deductive %}공가/출장으로 전환 (연차 복구){% else %}연차로 전환 (연차 차감){% endif %}">
                                     {% if leave.is_deductive %}공가 전환{% else %}연차 전환{% endif %}
                                 </button>
-                                <button type="button" onclick="deleteLeave({{ leave.id }})" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[10px] font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
+                                <button type="button" onclick="deleteLeave({{ leave.id }}, this)" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[10px] font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="9" class="px-6 py-10 text-center text-sm font-semibold text-dense-muted">해당 기간의 연차 내역이 없습니다.</td>
+                        <td colspan="9" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <span class="text-3xl">🔍</span>
+                                <p class="text-xs font-bold text-dense-text">해당 기간의 연차 내역이 없습니다.</p>
+                                <p class="text-[10px] text-dense-muted">부합하는 검색 조건이나 필터 설정을 확인해 보시기 바랍니다.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -253,23 +259,25 @@
 </div>
 
 <script>
-async function deleteLeave(id) {
+async function deleteLeave(id, btn) {
     if(!confirm('정말 이 연차 기록을 삭제하시겠습니까?')) return;
-    try {
-        const response = await fetch('/api/admin/leave/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `leave_id=${id}`
-        });
-        const result = await response.json();
-        if(response.ok) {
-            window.location.reload();
-        } else {
-            alert(result.message || '오류 발생');
+    simulateButtonLoading(btn, async () => {
+        try {
+            const response = await fetch('/api/admin/leave/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `leave_id=${id}`
+            });
+            const result = await response.json();
+            if(response.ok) {
+                window.location.reload();
+            } else {
+                alert(result.message || '오류 발생');
+            }
+        } catch(err) {
+            alert('네트워크 오류');
         }
-    } catch(err) {
-        alert('네트워크 오류');
-    }
+    });
 }
 
 async function changeStatus(leaveId, selectEl) {
@@ -292,6 +300,7 @@ async function changeStatus(leaveId, selectEl) {
         }
     }
 
+    selectEl.disabled = true;
     try {
         const body = new URLSearchParams({
             leave_id: String(leaveId),
@@ -309,38 +318,42 @@ async function changeStatus(leaveId, selectEl) {
             window.location.reload();
         } else {
             alert(result.message || '오류 발생');
+            selectEl.disabled = false;
             window.location.reload();
         }
     } catch(err) {
         alert('네트워크 오류');
+        selectEl.disabled = false;
     }
 }
 
-async function changeType(leaveId, targetIsDeductive) {
+async function changeType(leaveId, targetIsDeductive, btn) {
     const typeName = targetIsDeductive ? '연차(차감)' : '공가/출장(비차감)';
     const warnMsg = targetIsDeductive ? '\n(주의: 사용자의 잔여 연차가 차감됩니다.)' : '\n(사용자의 연차 잔여량이 복구됩니다.)';
     
     if(!confirm(`이 신청 건을 [${typeName}] 유형으로 변경하시겠습니까?${warnMsg}`)) return;
     
-    try {
-        const body = new URLSearchParams({
-            leave_id: String(leaveId),
-            is_deductive: targetIsDeductive
-        });
-        const response = await fetch('/api/admin/leave/update-type', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body
-        });
-        const result = await response.json();
-        if(response.ok) {
-            window.location.reload();
-        } else {
-            alert(result.message || '변경에 실패했습니다.');
+    simulateButtonLoading(btn, async () => {
+        try {
+            const body = new URLSearchParams({
+                leave_id: String(leaveId),
+                is_deductive: targetIsDeductive
+            });
+            const response = await fetch('/api/admin/leave/update-type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+            const result = await response.json();
+            if(response.ok) {
+                window.location.reload();
+            } else {
+                alert(result.message || '변경에 실패했습니다.');
+            }
+        } catch(err) {
+            alert('네트워크 오류가 발생했습니다.');
         }
-    } catch(err) {
-        alert('네트워크 오류가 발생했습니다.');
-    }
+    });
 }
 </script>
 {% endblock %}

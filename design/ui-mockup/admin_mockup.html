@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 마스터 컨트롤 — SHIM Admin Mockup</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
     tailwind.config={theme:{extend:{colors:{'dense-bg':'#f7f8fb','dense-surface':'#ffffff','dense-surface-soft':'#f9fafb','dense-line':'#d0d5dd','dense-line-strong':'#98a2b3','dense-text':'#101828','dense-muted':'#475467','dense-nav-text':'#1d2939','dense-blue':'#175cd3','dense-blue-soft':'#eff8ff','dense-amber':'#b54708','dense-amber-soft':'#fffaeb','dense-green':'#067647','dense-green-soft':'#ecfdf3','dense-gray-soft':'#f2f4f7','dense-danger':'#d92d20','dense-danger-soft':'#fef3f2'}}}}
     </script>
@@ -28,6 +29,16 @@
         .day-block.pending{opacity:.55;border:none!important;box-shadow:none;filter:grayscale(.35)}
         .weekend-head{color:#d92d20!important;background:#fef3f2!important}
         .holiday-head{color:#d92d20!important;background:#fef3f2!important}
+    
+        /* Toast Container */
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+        .shim-toast { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); font-size: 0.7rem; font-weight: 700; color: #1e293b; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; opacity: 0; pointer-events: auto; }
+        .shim-toast.show { transform: translateX(0); opacity: 1; }
+        .shim-toast-success { border-left: 4px solid #16a34a; }
+        .shim-toast-info { border-left: 4px solid #2563eb; }
+        .shim-toast-warning { border-left: 4px solid #ea580c; }
+        .shim-toast-error { border-left: 4px solid #dc2626; }
+
     </style>
 </head>
 <body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
@@ -48,10 +59,10 @@
     </nav>
 
     <!-- Main Layout Container -->
-    <div class="mx-auto flex w-full max-w-[92rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
+    <div class="mx-auto flex flex-col lg:flex-row w-full max-w-[92rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
         
         <!-- Sidebar Navigation Menu -->
-        <aside class="w-[240px] shrink-0 space-y-2 hidden md:block">
+        <aside class="w-full lg:w-[240px] shrink-0 space-y-2 hidden md:block">
             <div class="rounded-2xl border bg-dense-surface p-3 shadow-sm space-y-1">
                 <button id="menu-dashboard" onclick="switchAdminMenu('dashboard')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-dense-blue bg-dense-blue-soft transition-all">
                     <span>📊 어드민 대시보드</span>
@@ -91,22 +102,55 @@
 
             <!-- TAB 1: Admin Dashboard -->
             <section id="section-dashboard" class="space-y-6 fade-in">
+                <!-- 연말/연초 권고 배너 영역 -->
+                <div class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex gap-3 items-start sm:items-center">
+                        <div class="p-2 bg-red-100 rounded-lg text-red-700 shrink-0">
+                            <span class="text-lg">⚠️</span>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-red-900">[새해 연차 일괄 지급 권고] 2027년도 연차 할당 정보가 존재하지 않습니다.</h4>
+                            <p class="text-[10.5px] text-red-700 font-semibold leading-relaxed mt-0.5">원활한 새해 연차 신청 관리를 위해 사용자 관리 탭의 '연차 일괄' 기능을 이용해 2027년도 기본 연차를 일괄 지급해 주시기 바랍니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick="switchAdminMenu('users'); setTimeout(() => openBulkLeaveModal(), 200);" class="px-3 py-1.5 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 transition-colors">연차 일괄 지급 이동</button>
+                        <button onclick="this.parentElement.parentElement.remove()" class="px-3 py-1.5 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">닫기</button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 배정 시간</h3>
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전체 연차 배정 시간</h3>
                         <p class="text-2xl font-extrabold tracking-tight">960<span class="text-xs font-bold text-dense-muted ml-0.5">h</span></p>
                     </div>
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 사용 시간</h3>
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전체 연차 사용 시간</h3>
                         <p class="text-2xl font-extrabold tracking-tight text-dense-blue">148<span class="text-xs font-bold text-dense-muted ml-0.5">h</span></p>
                     </div>
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-dense-muted mb-1">전사 연차 소진율</h3>
+                        <h3 class="text-xs font-bold text-dense-muted mb-1">전체 연차 소진율</h3>
                         <div class="flex items-center gap-3 mt-1">
                             <span class="text-2xl font-extrabold tracking-tight text-dense-green">15.4%</span>
                             <div class="flex-1 bg-dense-gray-soft h-2 rounded-full overflow-hidden">
                                 <div class="bg-dense-green h-2 rounded-full" style="width:15.4%"></div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-3">
+                        <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📊 팀별 연차 사용 현황 (누적)</h3>
+                        <div class="relative h-[220px] w-full">
+                            <canvas id="teamChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-3">
+                        <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📈 월별 연차 사용 트렌드</h3>
+                        <div class="relative h-[220px] w-full">
+                            <canvas id="trendChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -140,6 +184,40 @@
                     <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
                         <button id="btn-admin-timeline" onclick="switchAdminLeavesLayout('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
                         <button id="btn-admin-calendar" onclick="switchAdminLeavesLayout('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm">캘린더</button>
+                        <button id="btn-admin-yearly" onclick="switchAdminLeavesLayout('yearly')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">연간 요약</button>
+                    </div>
+                </div>
+
+                <!-- Leaves Tab Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
+                    <div>
+                        <label class="block mb-1 text-dense-muted">사원명 검색</label>
+                        <input type="text" id="leaves-filter-search" onkeyup="syncAdminLeaves()" placeholder="이름 또는 초성..." class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">회사</label>
+                        <select id="leaves-filter-company" onchange="syncAdminLeaves()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <option value="">전체 회사</option>
+                            <option value="XX건설">XX건설</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">팀</label>
+                        <select id="leaves-filter-team" onchange="syncAdminLeaves()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <option value="">전체 팀</option>
+                            <option value="개발팀">개발팀</option>
+                            <option value="설계팀">설계팀</option>
+                            <option value="QA팀">QA팀</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">계정 상태</label>
+                        <select id="leaves-filter-status" onchange="syncAdminLeaves()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <option value="">전체 상태</option>
+                            <option value="ACTIVE" selected>재직 (ACTIVE)</option>
+                            <option value="INACTIVE">비활성 (INACTIVE)</option>
+                        </select>
                     </div>
                 </div>
 
@@ -163,6 +241,37 @@
                         <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
                     </div>
                     <div class="grid grid-cols-7 gap-2" id="admin-calendar-grid"></div>
+                </div>
+
+                <!-- Admin Yearly Summary View Container -->
+                <div id="admin-yearly-view-container" class="hidden overflow-x-auto rounded-xl border border-dense-line bg-dense-surface">
+                    <table class="cal-table text-xs w-full" style="min-width:900px;">
+                        <thead>
+                            <tr class="bg-dense-surface-soft">
+                                <th class="sticky-col text-left !px-3" style="width:5.5rem">이름</th>
+                                <th style="width:6rem">회사</th>
+                                <th style="width:6rem">팀</th>
+                                <th style="width:4.5rem">배정</th>
+                                <th style="width:4.5rem">사용</th>
+                                <th style="width:4.5rem">잔여</th>
+                                <th style="width:2.5rem">1월</th>
+                                <th style="width:2.5rem">2월</th>
+                                <th style="width:2.5rem">3월</th>
+                                <th style="width:2.5rem">4월</th>
+                                <th style="width:2.5rem">5월</th>
+                                <th style="width:2.5rem">6월</th>
+                                <th style="width:2.5rem">7월</th>
+                                <th style="width:2.5rem">8월</th>
+                                <th style="width:2.5rem">9월</th>
+                                <th style="width:2.5rem">10월</th>
+                                <th style="width:2.5rem">11월</th>
+                                <th style="width:2.5rem">12월</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-dense-line" id="admin-yearlyBody">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
@@ -267,18 +376,46 @@
             <section id="section-users" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
                 <div class="flex justify-between items-center border-b pb-3">
                     <h3 class="text-sm font-extrabold text-dense-text">👥 사용자 계정 및 연차 배정 관리</h3>
-                    <button onclick="openUserModal(false)" class="px-3.5 py-1.5 rounded-xl bg-dense-blue text-white text-xs font-bold hover:bg-dense-blue/90 transition-all">+ 신규 직원 등록</button>
+                    <div class="flex gap-2">
+                        <button onclick="openBulkLeaveModal()" class="px-3.5 py-1.5 rounded-xl bg-dense-amber text-white text-xs font-bold hover:brightness-95 transition-all">연차 일괄</button>
+                        <button onclick="openUserModal(false)" class="px-3.5 py-1.5 rounded-xl bg-dense-blue text-white text-xs font-bold hover:bg-dense-blue/90 transition-all">+ 신규 직원 등록</button>
+                    </div>
                 </div>
+
+                <!-- User CRUD Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
+                    <div>
+                        <label class="block mb-1 text-dense-muted">직원 검색 (이름/초성)</label>
+                        <input type="text" id="users-filter-search" onkeyup="renderUsersCRUDTable()" placeholder="이름 또는 초성 입력..." class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">계정 상태</label>
+                        <select id="users-filter-status" onchange="renderUsersCRUDTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <option value="">전체 상태</option>
+                            <option value="ACTIVE" selected>재직 (ACTIVE)</option>
+                            <option value="INACTIVE">비활성 (INACTIVE)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">조회 연도</label>
+                        <select id="users-filter-year" onchange="renderUsersCRUDTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <option value="2026" selected>2026년</option>
+                            <option value="2027">2027년</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto border rounded-xl">
                     <table class="min-w-full divide-y text-xs">
                         <thead class="bg-dense-surface-soft">
                             <tr>
-                                <th class="px-4 py-2.5 text-left font-bold">이름</th>
+                                <th class="px-4 py-2.5 text-left font-bold">이름 / 직급</th>
                                 <th class="px-4 py-2.5 text-center font-bold">회사</th>
                                 <th class="px-4 py-2.5 text-center font-bold">팀</th>
                                 <th class="px-4 py-2.5 text-left font-bold">역할</th>
-                                <th class="px-4 py-2.5 text-left font-bold">배정 시간</th>
-                                <th class="px-4 py-2.5 text-left font-bold">잔여 시간</th>
+                                <th class="px-4 py-2.5 text-left font-bold" style="width: 14rem;">배정 연차 (일)</th>
+                                <th class="px-4 py-2.5 text-left font-bold">사용 연차 (일)</th>
+                                <th class="px-4 py-2.5 text-left font-bold">잔여 연차 (일)</th>
                                 <th class="px-4 py-2.5 text-left font-bold">계정 상태</th>
                                 <th class="px-4 py-2.5 text-center font-bold">액션</th>
                             </tr>
@@ -321,7 +458,7 @@
                             <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3.5 space-y-2">
                                 <p class="text-xs font-extrabold text-dense-text">
                                     <span>캘린더 공유 범위 설정</span> — 현재:
-                                    <strong id="calendar-scope-current-label" class="text-dense-blue">전사 공유</strong>
+                                    <strong id="calendar-scope-current-label" class="text-dense-blue">프로젝트 전체 공유</strong>
                                 </p>
                                 <p class="text-[11px] leading-relaxed text-dense-muted font-semibold">
                                     일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
@@ -337,7 +474,7 @@
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="radio" name="calendar_scope" value="company" checked class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                                        <span>전사 공유 — 일반 사원과 팀장도 전사 모든 사원의 연차를 조회할 수 있습니다.</span>
+                                        <span>프로젝트 전체 공유 — 일반 사원과 팀장도 프로젝트 내 모든 사원의 연차를 조회할 수 있습니다.</span>
                                     </label>
                                 </div>
                                 <div class="pt-1">
@@ -475,8 +612,8 @@
             <section id="section-holidays" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
                 <div class="border-b pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <div>
-                        <h3 class="text-sm font-extrabold text-dense-text">🏖️ 전사 공휴일 관리 정책</h3>
-                        <p class="text-[11px] font-semibold text-dense-muted mt-0.5">회사 창립기념일, 현치일 등 전사적으로 연차 차감에서 제외할 공휴일을 등록 및 해제합니다.</p>
+                        <h3 class="text-sm font-extrabold text-dense-text">🏖️ 공휴일 관리 정책</h3>
+                        <p class="text-[11px] font-semibold text-dense-muted mt-0.5">회사 창립기념일, 현충일 등 연차 차감에서 제외할 공휴일을 등록 및 해제합니다.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <select id="holiday-selected-year" onchange="changeHolidayYearMock()" class="w-24 border rounded-xl px-2.5 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
@@ -504,7 +641,7 @@
                             </div>
                         </div>
                         <div class="pt-1">
-                            <button type="button" onclick="addHolidaySetting()" class="w-full px-3.5 py-2.5 rounded-xl bg-dense-green text-white font-bold hover:brightness-95 transition-all shadow-xs">새 공휴일 추가</button>
+                            <button type="button" onclick="simulateButtonLoading(this, () => addHolidaySetting())" class="w-full px-3.5 py-2.5 rounded-xl bg-dense-green text-white font-bold hover:brightness-95 transition-all shadow-xs">새 공휴일 추가</button>
                         </div>
                     </div>
 
@@ -521,9 +658,33 @@
             <!-- TAB 5: System Audit Logs -->
             <section id="section-audit" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
-                    <h3 class="text-sm font-extrabold text-dense-text">🔍 시스템 보안 및 활동 감사 로그</h3>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <input type="text" id="audit-search-input" onkeyup="filterAuditLogsTable()" placeholder="수행자 또는 작업 검색..." class="w-full sm:w-64 border rounded-xl px-3 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-dense-text">🔍 시스템 보안 및 활동 감사 로그</h3>
+                        <p class="text-[11px] font-semibold text-dense-muted mt-0.5">시스템 중요 이벤트에 대한 활동 로그 및 사용자 상태 변경 이력을 조회합니다.</p>
+                    </div>
+                </div>
+                <!-- Audit Filters -->
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-5 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
+                    <div>
+                        <label class="block mb-1 text-dense-muted">수행자 (Actor)</label>
+                        <select id="audit-filter-actor" onchange="renderAuditLogsTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                            <!-- JS Populated -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">수행 작업 (Action)</label>
+                        <input type="text" id="audit-filter-action" onkeyup="renderAuditLogsTable()" placeholder="작업 이름 입력..." class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">조회 시작일</label>
+                        <input type="date" id="audit-filter-start" onchange="renderAuditLogsTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-dense-muted">조회 종료일</label>
+                        <input type="date" id="audit-filter-end" onchange="renderAuditLogsTable()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="resetAuditFilters()" class="w-full py-1.5 bg-dense-surface border text-dense-muted hover:bg-dense-surface-soft rounded-xl font-bold transition-colors">필터 초기화</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto border rounded-xl">
@@ -575,20 +736,60 @@
                         <input type="hidden" id="user-crud-id">
                         <div class="space-y-3 text-xs font-bold">
                             <div><label class="block mb-1 text-dense-muted">이름</label><input type="text" id="user-crud-name" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
-                            <div><label class="block mb-1 text-dense-muted">이메일</label><input type="email" id="user-crud-email" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                            <div><label class="block mb-1 text-dense-muted">직급명</label><input type="text" id="user-crud-position" placeholder="예: 대리, 과장, 차장 등" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div><label class="block mb-1 text-dense-muted">회사</label><input type="text" id="user-crud-company" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
                                 <div><label class="block mb-1 text-dense-muted">팀</label><input type="text" id="user-crud-team" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div><label class="block mb-1 text-dense-muted">역할</label><select id="user-crud-role" class="w-full border rounded-xl p-2 bg-dense-surface"><option>STAFF</option><option>TEAM_LEAD</option><option>PM</option></select></div>
-                                <div><label class="block mb-1 text-dense-muted">배정 연차 시간</label><input type="number" id="user-crud-alloc" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
+                                <div><label class="block mb-1 text-dense-muted">배정 연차 일수 (일)</label><input type="number" step="0.5" id="user-crud-alloc" required class="w-full border rounded-xl p-2 bg-dense-surface"></div>
                             </div>
                         </div>
                     </div>
                     <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
                         <button type="submit" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">저장</button>
                         <button type="button" onclick="closeUserModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Leave Allocate Modal -->
+    <div id="bulkLeaveModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/40" onclick="closeBulkLeaveModal()"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border bg-dense-surface text-left align-bottom shadow-xl sm:my-8 sm:max-w-md sm:align-middle">
+                <form onsubmit="simulateButtonLoading(this.querySelector('button[type=submit]'), () => submitBulkLeave()); return false;">
+                    <div class="p-6">
+                        <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 일괄 조정/부여</h3>
+                        <div class="space-y-3 text-xs font-bold">
+                            <div>
+                                <label class="block mb-1 text-dense-muted">대상 연도</label>
+                                <select id="bulk-leave-year" class="w-full border rounded-xl p-2 bg-dense-surface">
+                                    <option value="2026" selected>2026년</option>
+                                    <option value="2027">2027년</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-dense-muted">작업 구분</label>
+                                <select id="bulk-leave-type" class="w-full border rounded-xl p-2 bg-dense-surface">
+                                    <option value="SET">일괄 변경 (기본값 설정)</option>
+                                    <option value="ADD">일괄 추가 (+)</option>
+                                    <option value="SUB">일괄 차감 (-)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-dense-muted">조정 일수 (일 단위)</label>
+                                <input type="number" step="0.5" id="bulk-leave-days" required min="0" max="40" class="w-full border rounded-xl p-2 bg-dense-surface animate-pulse">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
+                        <button type="submit" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">일괄 적용</button>
+                        <button type="button" onclick="closeBulkLeaveModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
                     </div>
                 </form>
             </div>
@@ -636,14 +837,14 @@
 
     // System Mock Database
     let mockUsers = [
-        { id: 1, name: '★ 홍길동', email: 'gildong@shim.com', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 40, status: 'ACTIVE' },
-        { id: 2, name: '김영희', email: 'younghee@shim.com', company: 'XX건설', team: '개발팀', role: 'TEAM_LEAD', alloc: 136, used: 24, status: 'ACTIVE' },
-        { id: 3, name: '이철수', email: 'chulsoo@shim.com', company: 'XX건설', team: '설계팀', role: 'TEAM_LEAD', alloc: 120, used: 12, status: 'ACTIVE' },
-        { id: 4, name: '박민수', email: 'minsu@shim.com', company: 'XX건설', team: 'PM', role: 'PM', alloc: 160, used: 8, status: 'ACTIVE' },
-        { id: 5, name: '정소연', email: 'soyeon@shim.com', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 18, status: 'ACTIVE' },
-        { id: 6, name: '최지훈', email: 'jihoon@shim.com', company: 'XX건설', team: 'QA팀', role: 'STAFF', alloc: 120, used: 16, status: 'ACTIVE' },
-        { id: 7, name: '한수진', email: 'sujin@shim.com', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 4, status: 'ACTIVE' },
-        { id: 8, name: '오영호', email: 'youngho@shim.com', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 8, status: 'ACTIVE' }
+        { id: 1, name: '★ 홍길동', position: '대리', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 40, status: 'ACTIVE' },
+        { id: 2, name: '김영희', position: '과장', company: 'XX건설', team: '개발팀', role: 'TEAM_LEAD', alloc: 136, used: 24, status: 'ACTIVE' },
+        { id: 3, name: '이철수', position: '대리', company: 'XX건설', team: '설계팀', role: 'TEAM_LEAD', alloc: 120, used: 12, status: 'ACTIVE' },
+        { id: 4, name: '박민수', position: '부장', company: 'XX건설', team: 'PM', role: 'PM', alloc: 160, used: 8, status: 'ACTIVE' },
+        { id: 5, name: '정소연', position: '주임', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 18, status: 'ACTIVE' },
+        { id: 6, name: '최지훈', position: '대리', company: 'XX건설', team: 'QA팀', role: 'STAFF', alloc: 120, used: 16, status: 'ACTIVE' },
+        { id: 7, name: '한수진', position: '사원', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 4, status: 'ACTIVE' },
+        { id: 8, name: '오영호', position: '사원', company: 'XX건설', team: '개발팀', role: 'STAFF', alloc: 120, used: 8, status: 'ACTIVE' }
     ];
 
     let mockLeaves = [
@@ -743,19 +944,30 @@
         adminLeavesLayout = layout;
         const btnCalendar = document.getElementById('btn-admin-calendar');
         const btnTimeline = document.getElementById('btn-admin-timeline');
+        const btnYearly = document.getElementById('btn-admin-yearly');
+        
         const calendarContainer = document.getElementById('admin-calendar-view-container');
         const timelineContainer = document.getElementById('admin-timeline-view-container');
+        const yearlyContainer = document.getElementById('admin-yearly-view-container');
+
+        // Reset classes
+        if (btnCalendar) btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        if (btnTimeline) btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        if (btnYearly) btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+
+        if (calendarContainer) calendarContainer.classList.add('hidden');
+        if (timelineContainer) timelineContainer.classList.add('hidden');
+        if (yearlyContainer) yearlyContainer.classList.add('hidden');
 
         if (layout === 'calendar') {
-            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
-            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
-            calendarContainer.classList.remove('hidden');
-            timelineContainer.classList.add('hidden');
-        } else {
-            btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
-            btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
-            timelineContainer.classList.remove('hidden');
-            calendarContainer.classList.add('hidden');
+            if (btnCalendar) btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            if (calendarContainer) calendarContainer.classList.remove('hidden');
+        } else if (layout === 'timeline') {
+            if (btnTimeline) btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            if (timelineContainer) timelineContainer.classList.remove('hidden');
+        } else if (layout === 'yearly') {
+            if (btnYearly) btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            if (yearlyContainer) yearlyContainer.classList.remove('hidden');
         }
         syncAdminLeaves();
     };
@@ -810,20 +1022,177 @@
             `;
         });
         auditList.innerHTML = auditHtml;
+
+        // 3. Update Charts
+        updateAdminCharts();
+    }
+
+    let teamChartInstance = null;
+    let trendChartInstance = null;
+
+    function updateAdminCharts() {
+        // 1. Process Team Leave Usage
+        const teamData = {};
+        mockUsers.forEach(u => {
+            if (!teamData[u.team]) {
+                teamData[u.team] = { used: 0, remaining: 0 };
+            }
+            teamData[u.team].used += u.used;
+            teamData[u.team].remaining += Math.max(0, u.alloc - u.used);
+        });
+
+        const teams = Object.keys(teamData).sort();
+        const usedHours = teams.map(t => teamData[t].used);
+        const remainingHours = teams.map(t => teamData[t].remaining);
+
+        // 2. Process Monthly Trend
+        const monthlyHours = Array(12).fill(0);
+        mockLeaves.forEach(l => {
+            if (l.status === 'APPROVED') {
+                const dateObj = new Date(l.date);
+                if (!isNaN(dateObj.getTime())) {
+                    const month = dateObj.getMonth(); // 0-11
+                    let hours = 8;
+                    if (l.duration.includes('4h')) {
+                        hours = 4;
+                    } else if (l.duration.includes('h')) {
+                        hours = parseFloat(l.duration) || 8;
+                    }
+                    monthlyHours[month] += hours;
+                }
+            }
+        });
+
+        // 3. Render Team Chart
+        const teamCtx = document.getElementById('teamChart');
+        if (teamCtx) {
+            if (teamChartInstance) {
+                teamChartInstance.data.labels = teams;
+                teamChartInstance.data.datasets[0].data = usedHours;
+                teamChartInstance.data.datasets[1].data = remainingHours;
+                teamChartInstance.update();
+            } else {
+                teamChartInstance = new Chart(teamCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: teams,
+                        datasets: [
+                            {
+                                label: '사용 연차 (h)',
+                                data: usedHours,
+                                backgroundColor: 'rgba(23, 92, 211, 0.85)',
+                                borderColor: 'rgb(23, 92, 211)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: '잔여 연차 (h)',
+                                data: remainingHours,
+                                backgroundColor: 'rgba(208, 213, 221, 0.5)',
+                                borderColor: 'rgb(208, 213, 221)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    boxWidth: 10,
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                grid: { display: false },
+                                ticks: { font: { size: 9, weight: 'bold' } }
+                            },
+                            y: {
+                                stacked: true,
+                                grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                                ticks: { font: { size: 9, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 4. Render Trend Chart
+        const trendCtx = document.getElementById('trendChart');
+        if (trendCtx) {
+            const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            if (trendChartInstance) {
+                trendChartInstance.data.datasets[0].data = monthlyHours;
+                trendChartInstance.update();
+            } else {
+                trendChartInstance = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: '월별 사용 시간 (h)',
+                                data: monthlyHours,
+                                borderColor: 'rgb(6, 118, 71)',
+                                backgroundColor: 'rgba(6, 118, 71, 0.08)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgb(6, 118, 71)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    boxWidth: 10,
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 9, weight: 'bold' } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                                ticks: { font: { size: 9, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
     }
 
     // TAB 2: Leaves (Calendar/Timeline) Synchronized
     function syncAdminLeaves() {
         if (adminLeavesLayout === 'calendar') {
             renderAdminCalendar();
-        } else {
+        } else if (adminLeavesLayout === 'timeline') {
             renderAdminTimeline();
+        } else if (adminLeavesLayout === 'yearly') {
+            renderAdminYearlySummary();
         }
     }
 
     function renderAdminCalendar() {
         const grid = document.getElementById('admin-calendar-grid');
         if (!grid) return;
+
+        const search = document.getElementById('leaves-filter-search').value.toLowerCase().trim();
+        const company = document.getElementById('leaves-filter-company').value;
+        const team = document.getElementById('leaves-filter-team').value;
+        const status = document.getElementById('leaves-filter-status').value;
 
         const startOffset = 1; // 2026-06-01 Monday (offset = 1 relative to Sunday layout)
         let html = '';
@@ -848,6 +1217,17 @@
                 const lDay = parseInt(l.date.split('-')[2]);
                 const lMonth = parseInt(l.date.split('-')[1]);
                 if (lMonth === adminSelectedMonth && lDay === d) {
+                    const u = mockUsers.find(user => user.name.replace('★ ', '').trim() === l.name.replace('★ ', '').trim());
+                    if (!u) return;
+                    if (company && u.company !== company) return;
+                    if (team && u.team !== team) return;
+                    if (status && u.status !== status) return;
+                    if (search) {
+                        const searchCho = getChosung(search);
+                        const nameCho = getChosung(u.name);
+                        if (!u.name.toLowerCase().includes(search) && !nameCho.includes(searchCho)) return;
+                    }
+
                     let chipCls = 'rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer ';
                     if (l.status === 'PENDING') {
                         chipCls += 'bg-amber-50 text-amber-800 border-amber-300 border-dashed';
@@ -890,6 +1270,14 @@
     }
 
     function renderAdminTimeline() {
+        const grid = document.getElementById('admin-tlBody');
+        if (!grid) return;
+
+        const search = document.getElementById('leaves-filter-search').value.toLowerCase().trim();
+        const company = document.getElementById('leaves-filter-company').value;
+        const team = document.getElementById('leaves-filter-team').value;
+        const status = document.getElementById('leaves-filter-status').value;
+
         const firstDayMon = (new Date(2026, adminSelectedMonth - 1, 1).getDay() + 6) % 7;
         let thHtml = '';
         for (let d = 1; d <= 30; d++) {
@@ -906,35 +1294,145 @@
             headerRow.innerHTML = `<th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th style="width:3rem">잔여</th>` + thHtml;
         }
 
-        let bodyHtml = '';
-        mockUsers.forEach(u => {
-            bodyHtml += `<tr class="transition-colors hover:bg-dense-surface-soft">`;
-            bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text" style="width:4.25rem">${u.name}</td>`;
-            const badgeStyle = stringToBadgeStyle(u.team, true);
-            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="${badgeStyle}">${u.team}</span></td>`;
-            bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${u.alloc - u.used}h</td>`;
-            
-            for (let d = 1; d <= 30; d++) {
-                const wd = (firstDayMon + d - 1) % 7;
-                const isWE = wd >= 5;
-                const dateKey = `2026-${String(adminSelectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const hol = mockHolidays[dateKey];
-                const isBlocked = isWE || hol;
-                
-                const lRequest = mockLeaves.find(l => l.name === u.name && parseInt(l.date.split('-')[2]) === d && l.status !== 'CANCELED');
-                if (lRequest) {
-                    let cls = 'full';
-                    if (lRequest.duration.includes('4h')) cls = 'half';
-                    if (lRequest.status === 'PENDING') cls += ' pending';
-                    
-                    bodyHtml += `<td><div class="day-block ${cls} cursor-pointer" onclick="openAdminLeaveActionModal(${lRequest.id})">${lRequest.status === 'PENDING' ? '대기' : lRequest.duration.split(' ')[0]}</div></td>`;
-                } else {
-                    bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
-                }
+        let filteredUsers = mockUsers.filter(u => {
+            if (company && u.company !== company) return false;
+            if (team && u.team !== team) return false;
+            if (status && u.status !== status) return false;
+            if (search) {
+                const searchCho = getChosung(search);
+                const nameCho = getChosung(u.name);
+                if (!u.name.toLowerCase().includes(search) && !nameCho.includes(searchCho)) return false;
             }
-            bodyHtml += '</tr>';
+            return true;
         });
+
+        let bodyHtml = '';
+        if (filteredUsers.length === 0) {
+            bodyHtml = `<tr><td colspan="33" class="px-3 py-6 text-center text-dense-muted font-bold">조건에 맞는 사원이 없습니다.</td></tr>`;
+        } else {
+            filteredUsers.forEach(u => {
+                bodyHtml += `<tr class="transition-colors hover:bg-dense-surface-soft">`;
+                bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text" style="width:4.25rem">${u.name}</td>`;
+                const badgeStyle = stringToBadgeStyle(u.team, true);
+                bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="${badgeStyle}">${u.team}</span></td>`;
+                bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${(u.alloc - u.used) / 8}일</td>`;
+                
+                for (let d = 1; d <= 30; d++) {
+                    const wd = (firstDayMon + d - 1) % 7;
+                    const isWE = wd >= 5;
+                    const dateKey = `2026-${String(adminSelectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const hol = mockHolidays[dateKey];
+                    const isBlocked = isWE || hol;
+                    
+                    const lRequest = mockLeaves.find(l => l.name.replace('★ ', '').trim() === u.name.replace('★ ', '').trim() && parseInt(l.date.split('-')[2]) === d && l.status !== 'CANCELED');
+                    if (lRequest) {
+                        let cls = 'full';
+                        if (lRequest.duration.includes('4h')) cls = 'half';
+                        if (lRequest.status === 'PENDING') cls += ' pending';
+                        
+                        bodyHtml += `<td><div class="day-block ${cls} cursor-pointer" onclick="openAdminLeaveActionModal(${lRequest.id})">${lRequest.status === 'PENDING' ? '대기' : lRequest.duration.split(' ')[0]}</div></td>`;
+                    } else {
+                        bodyHtml += `<td class="${isBlocked ? 'bg-dense-gray-soft/40' : ''}"></td>`;
+                    }
+                }
+                bodyHtml += '</tr>';
+            });
+        }
         document.getElementById('admin-tlBody').innerHTML = bodyHtml;
+    }
+
+    // Chosung extraction helper for Korean search
+    function getChosung(str) {
+        const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+        let result = "";
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += cho[Math.floor(code / 588)];
+            } else {
+                result += str.charAt(i);
+            }
+        }
+        return result;
+    }
+
+    function renderAdminYearlySummary() {
+        const tbody = document.getElementById('admin-yearlyBody');
+        if (!tbody) return;
+
+        const search = document.getElementById('leaves-filter-search').value.toLowerCase().trim();
+        const company = document.getElementById('leaves-filter-company').value;
+        const team = document.getElementById('leaves-filter-team').value;
+        const status = document.getElementById('leaves-filter-status').value;
+
+        let filteredUsers = mockUsers.filter(u => {
+            if (company && u.company !== company) return false;
+            if (team && u.team !== team) return false;
+            if (status && u.status !== status) return false;
+            if (search) {
+                const searchCho = getChosung(search);
+                const nameCho = getChosung(u.name);
+                if (!u.name.toLowerCase().includes(search) && !nameCho.includes(searchCho)) return false;
+            }
+            return true;
+        });
+
+        let html = '';
+        if (filteredUsers.length === 0) {
+            html = `<tr><td colspan="18" class="px-6 py-10 text-center text-dense-muted font-bold">해당 필터 조건에 부합하는 사원이 없습니다.</td></tr>`;
+        } else {
+            filteredUsers.forEach(u => {
+                const companyStyle = stringToBadgeStyle(u.company, false);
+                const companyBadge = `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="${companyStyle}">${u.company}</span>`;
+                const teamStyle = stringToBadgeStyle(u.team, true);
+                const teamBadge = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="${teamStyle}">${u.team}</span>`;
+                
+                const monthDays = Array(12).fill(0);
+                mockLeaves.forEach(l => {
+                    if (l.name.replace('★ ', '').trim() === u.name.replace('★ ', '').trim() && l.status === 'APPROVED') {
+                        const dateParts = l.date.split('-');
+                        const month = parseInt(dateParts[1]) - 1; // 0-11
+                        let dHours = 8;
+                        if (l.duration.includes('4h')) dHours = 4;
+                        else if (l.duration.includes('h')) dHours = parseFloat(l.duration) || 8;
+                        monthDays[month] += (dHours / 8);
+                    }
+                });
+
+                html += `<tr class="hover:bg-dense-surface-soft transition-colors">`;
+                html += `<td class="sticky-col whitespace-nowrap !px-3 !py-2 text-left font-bold text-dense-nav-text">${u.name}</td>`;
+                html += `<td class="px-1 text-center">${companyBadge}</td>`;
+                html += `<td class="px-1 text-center">${teamBadge}</td>`;
+                html += `<td class="px-1 font-bold text-dense-text">${u.alloc / 8}일</td>`;
+                html += `<td class="px-1 font-bold text-dense-blue">${u.used / 8}일</td>`;
+                html += `<td class="px-1 font-bold text-dense-green">${(u.alloc - u.used) / 8}일</td>`;
+
+                for (let m = 0; m < 12; m++) {
+                    const days = monthDays[m];
+                    if (days > 0) {
+                        html += `<td class="px-1 font-bold text-dense-blue">${days}일</td>`;
+                    } else {
+                        html += `<td class="px-1 text-dense-muted font-medium">—</td>`;
+                    }
+                }
+                html += `</tr>`;
+            });
+        }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">👥</span>
+                            <p class="text-xs font-bold text-dense-text">일치하는 사용자 정보가 존재하지 않습니다.</p>
+                            <p class="text-[10px] text-dense-muted">검색어나 소속 필터 조건을 다시 확인해 주시기 바랍니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
     }
 
     // Modal: Admin Leave Decisions
@@ -967,13 +1465,13 @@
 
         if (leave.status === 'PENDING') {
             footer.innerHTML = `
-                <button onclick="adminApproveG(${leave.id})" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 승인</button>
-                <button onclick="adminRejectG(${leave.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 반려</button>
+                <button onclick="simulateButtonLoading(this, () => adminApproveG(${leave.id}))" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 승인</button>
+                <button onclick="simulateButtonLoading(this, () => adminRejectG(${leave.id}))" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">결재 반려</button>
                 <button onclick="closeAdminLeaveActionModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">취소</button>
             `;
         } else {
             footer.innerHTML = `
-                <button onclick="adminCancelG(${leave.id})" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">연차 강제 취소</button>
+                <button onclick="simulateButtonLoading(this, () => adminCancelG(${leave.id}))" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95">연차 강제 취소</button>
                 <button onclick="closeAdminLeaveActionModal()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold">닫기</button>
             `;
         }
@@ -1005,7 +1503,7 @@
 
             syncAdminLeaves();
             closeAdminLeaveActionModal();
-            alert('해당 휴가가 승인 완료 처리되었습니다.');
+            showToast('해당 휴가가 승인 완료 처리되었습니다.', 'success');
         }
     };
 
@@ -1025,7 +1523,7 @@
 
             syncAdminLeaves();
             closeAdminLeaveActionModal();
-            alert('해당 휴가가 반려 처리되었습니다.');
+            showToast('해당 휴가가 반려 처리되었습니다.', 'success');
         }
     };
 
@@ -1047,7 +1545,7 @@
 
             syncAdminLeaves();
             closeAdminLeaveActionModal();
-            alert('관리자 권한으로 휴가 취소(반환) 처리가 완료되었습니다.');
+            showToast('관리자 권한으로 휴가 취소(반환) 처리가 완료되었습니다.', 'success');
         }
     };
 
@@ -1145,6 +1643,34 @@
                 `;
             });
         }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">👥</span>
+                            <p class="text-xs font-bold text-dense-text">일치하는 사용자 정보가 존재하지 않습니다.</p>
+                            <p class="text-[10px] text-dense-muted">검색어나 소속 필터 조건을 다시 확인해 주시기 바랍니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">🔍</span>
+                            <p class="text-xs font-bold text-dense-text">부합하는 감사 로그가 없습니다.</p>
+                            <p class="text-[10px] text-dense-muted">수행자, 액션명 또는 기간 필터를 변경해 보세요.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
         tbody.innerHTML = html;
     };
 
@@ -1162,7 +1688,7 @@
     };
 
     window.exportTimelineExcel = function() {
-        alert('엑셀 파일 내보내기가 완료되었습니다. (다운로드 파일: shim_leaves_timeline_export.xlsx)');
+        showToast('엑셀 파일 내보내기가 완료되었습니다. (다운로드 파일: shim_leaves_timeline_export.xlsx)', 'info');
     };
 
     window.changeTimelineStatus = function(id, selectEl) {
@@ -1175,7 +1701,7 @@
             rejectionReason = prompt('반려 사유를 입력해 주세요. (최대 500자)') || '';
             rejectionReason = rejectionReason.trim();
             if (!rejectionReason) {
-                alert('반려 사유를 입력해야 합니다.');
+                showToast('반려 사유를 입력해야 합니다.', 'error');
                 selectEl.value = leave.status;
                 return;
             }
@@ -1187,7 +1713,6 @@
             leave.rejection_reason = rejectionReason;
         }
 
-        // Deduct/refund leave time from user
         const user = mockUsers.find(u => u.name.includes(leave.name));
         if (user && oldStatus !== 'APPROVED' && newStatus === 'APPROVED') {
             user.used += leave.duration.includes('4h') ? 4 : 8;
@@ -1205,7 +1730,7 @@
         });
 
         renderTimelineTable();
-        alert('연차 신청 상태 변경이 전사에 반영되었습니다.');
+        showToast('연차 신청 상태 변경이 실시간으로 반영되었습니다.', 'success');
     };
 
     window.toggleTimelineDeductive = function(id) {
@@ -1216,7 +1741,6 @@
         const user = mockUsers.find(u => u.name.includes(leave.name));
 
         if (leave.status === 'APPROVED' && user) {
-            // Re-calculate user's leave time if status was approved
             if (targetDeductive) {
                 user.used += leave.duration.includes('4h') ? 4 : 8;
             } else {
@@ -1236,7 +1760,7 @@
         });
 
         renderTimelineTable();
-        alert(`신청 구분이 ${targetDeductive ? '연차(차감)' : '공가/출장(비차감)'}으로 변경되었습니다.`);
+        showToast(`신청 구분이 ${targetDeductive ? '연차(차감)' : '공가/출장(비차감)'}으로 변경되었습니다.`, 'success');
     };
 
     window.deleteTimelineLeave = function(id) {
@@ -1264,42 +1788,211 @@
         });
 
         renderTimelineTable();
-        alert('신청 기록이 영구 삭제 처리되었습니다.');
+        showToast('신청 기록이 영구 삭제 처리되었습니다.', 'success');
     };
 
     // TAB 4: User Management Table
     function renderUsersCRUDTable() {
         const tbody = document.getElementById('users-table-body');
-        let html = '';
-        mockUsers.forEach(u => {
-            const statusCls = u.status === 'ACTIVE' ? 'bg-dense-green-soft text-dense-green' : 'bg-dense-danger-soft text-dense-danger';
-            const companyStyle = stringToBadgeStyle(u.company, false);
-            const companyBadge = (u.company && u.company !== '-')
-                ? `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold" style="${companyStyle}">${u.company}</span>`
-                : `<span class="text-dense-muted">—</span>`;
-            const teamStyle = stringToBadgeStyle(u.team, true);
-            const teamBadge = (u.team && u.team !== '-')
-                ? `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="${teamStyle}">${u.team}</span>`
-                : `<span class="text-dense-muted">—</span>`;
+        if (!tbody) return;
 
-            html += `
-                <tr class="hover:bg-dense-surface-soft transition-colors">
-                    <td class="px-4 py-2.5 font-bold text-dense-text">${u.name}</td>
-                    <td class="px-4 py-2.5 text-center">${companyBadge}</td>
-                    <td class="px-4 py-2.5 text-center">${teamBadge}</td>
-                    <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded font-extrabold text-[9px] bg-dense-gray-soft text-dense-muted">${u.role}</span></td>
-                    <td class="px-4 py-2.5 font-extrabold text-dense-text">${u.alloc}h</td>
-                    <td class="px-4 py-2.5 font-bold text-dense-blue">${u.alloc - u.used}h</td>
-                    <td class="px-4 py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${statusCls}">${u.status}</span></td>
-                    <td class="px-4 py-2.5 text-center flex justify-center gap-1.5">
-                        <button onclick="openUserModal(true, ${u.id})" class="px-2 py-0.5 rounded border text-dense-muted font-bold hover:bg-dense-gray-soft">수정</button>
-                        <button onclick="toggleUserStatus(${u.id})" class="px-2 py-0.5 rounded ${u.status === 'ACTIVE' ? 'bg-dense-danger text-white' : 'bg-dense-green text-white'} font-bold">${u.status === 'ACTIVE' ? '비활성' : '활성'}</button>
+        const search = document.getElementById('users-filter-search').value.toLowerCase().trim();
+        const status = document.getElementById('users-filter-status').value;
+
+        let filtered = mockUsers.filter(u => {
+            if (status && u.status !== status) return false;
+            if (search) {
+                const searchCho = getChosung(search);
+                const nameCho = getChosung(u.name);
+                if (!u.name.toLowerCase().includes(search) && !nameCho.includes(searchCho)) return false;
+            }
+            return true;
+        });
+
+        let html = '';
+        if (filtered.length === 0) {
+            html = `<tr><td colspan="9" class="px-4 py-8 text-center text-dense-muted font-bold">부합하는 사원 정보가 없습니다.</td></tr>`;
+        } else {
+            filtered.forEach(u => {
+                const statusCls = u.status === 'ACTIVE' ? 'bg-dense-green-soft text-dense-green' : 'bg-dense-danger-soft text-dense-danger';
+                const companyStyle = stringToBadgeStyle(u.company, false);
+                const companyBadge = (u.company && u.company !== '-')
+                    ? `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="${companyStyle}">${u.company}</span>`
+                    : `<span class="text-dense-muted">—</span>`;
+                const teamStyle = stringToBadgeStyle(u.team, true);
+                const teamBadge = (u.team && u.team !== '-')
+                    ? `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="${teamStyle}">${u.team}</span>`
+                    : `<span class="text-dense-muted">—</span>`;
+
+                html += `
+                    <tr class="hover:bg-dense-surface-soft transition-colors">
+                        <td class="px-4 py-2.5">
+                            <div class="font-bold text-dense-text">${u.name}</div>
+                            <div class="text-[10px] text-dense-muted font-semibold">${u.position || '사원'}</div>
+                        </td>
+                        <td class="px-4 py-2.5 text-center">${companyBadge}</td>
+                        <td class="px-4 py-2.5 text-center">${teamBadge}</td>
+                        <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded font-extrabold text-[9px] bg-dense-gray-soft text-dense-muted">${u.role}</span></td>
+                        <td class="px-4 py-2.5">
+                            <div class="flex items-center gap-1.5 max-w-[12rem]">
+                                <input type="number" step="0.5" id="inline-alloc-${u.id}" value="${u.alloc / 8}" class="w-14 border rounded px-1.5 py-0.5 text-center font-bold bg-dense-surface focus:ring-1 focus:ring-dense-blue text-xs">
+                                <button onclick="saveInlineAlloc(${u.id})" class="px-2 py-0.8 bg-dense-surface border hover:bg-dense-blue-soft hover:text-dense-blue text-[9px] rounded-lg font-bold shadow-2xs transition-colors shrink-0">저장</button>
+                            </div>
+                        </td>
+                        <td class="px-4 py-2.5 font-extrabold text-dense-muted">${u.used / 8}일</td>
+                        <td class="px-4 py-2.5 font-bold text-dense-blue">${(u.alloc - u.used) / 8}일</td>
+                        <td class="px-4 py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${statusCls}">${u.status}</span></td>
+                        <td class="px-4 py-2.5 text-center">
+                            <div class="flex justify-center items-center gap-2">
+                                <button onclick="openUserModal(true, ${u.id})" class="text-dense-muted hover:text-dense-blue transition-colors" title="수정">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button onclick="resetUserPassword(${u.id})" class="text-dense-muted hover:text-dense-amber transition-colors" title="비밀번호 초기화">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                </button>
+                                <button onclick="toggleUserStatus(${u.id})" class="${u.status === 'ACTIVE' ? 'text-dense-green hover:text-dense-danger' : 'text-dense-muted hover:text-dense-green'} transition-colors" title="${u.status === 'ACTIVE' ? '계정 비활성화' : '계정 활성화'}">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                </button>
+                                <button onclick="hardDeleteUser(${u.id})" class="text-dense-muted hover:text-dense-danger transition-colors" title="영구 삭제">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">👥</span>
+                            <p class="text-xs font-bold text-dense-text">일치하는 사용자 정보가 존재하지 않습니다.</p>
+                            <p class="text-[10px] text-dense-muted">검색어나 소속 필터 조건을 다시 확인해 주시기 바랍니다.</p>
+                        </div>
                     </td>
                 </tr>
             `;
-        });
+        }
         tbody.innerHTML = html;
     }
+
+    window.saveInlineAlloc = function(id) {
+        const inputVal = parseFloat(document.getElementById(`inline-alloc-${id}`).value);
+        if (isNaN(inputVal) || inputVal < 0) {
+            showToast('올바른 연차 일수를 입력해 주세요.', 'error');
+            return;
+        }
+        const user = mockUsers.find(u => u.id === id);
+        if (user) {
+            const oldVal = user.alloc / 8;
+            user.alloc = inputVal * 8; // convert days to hours
+
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'UPDATE_USER_ALLOC_INLINE',
+                target: `${user.name} (연차 수정)`,
+                oldVal: `${oldVal}일`,
+                newVal: `${inputVal}일`
+            });
+
+            renderUsersCRUDTable();
+            renderAdminDashboard();
+            showToast(`${user.name} 사원의 배정 연차가 ${inputVal}일로 변경되었습니다.`, 'success');
+        }
+    };
+
+    window.resetUserPassword = function(id) {
+        const user = mockUsers.find(u => u.id === id);
+        if (user) {
+            mockAuditLogs.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                actor: '박민수 (PM / 관리자)',
+                action: 'RESET_PASSWORD',
+                target: `${user.name} (비밀번호 초기화)`,
+                oldVal: 'NONE',
+                newVal: 'SUCCESS (임시 비밀번호 생성)'
+            });
+            showToast(`${user.name} 사원의 비밀번호가 초기화되었습니다. 임시 비밀번호는 사원에게 개별 통보됩니다.`, 'success');
+        }
+    };
+
+    window.hardDeleteUser = function(id) {
+        const index = mockUsers.findIndex(u => u.id === id);
+        if (index === -1) return;
+        const user = mockUsers[index];
+
+        if (!confirm(`정말 ${user.name} 사원을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며, 모든 연차 기록 및 데이터가 유실됩니다.`)) return;
+
+        mockUsers.splice(index, 1);
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'HARD_DELETE_USER',
+            target: `${user.name} (사용자 영구 삭제)`,
+            oldVal: 'ACTIVE',
+            newVal: 'DELETED'
+        });
+
+        renderUsersCRUDTable();
+        renderAdminDashboard();
+        showToast(`${user.name} 사원 계정이 성공적으로 물리 삭제되었습니다.`, 'success');
+    };
+
+    window.openBulkLeaveModal = function() {
+        document.getElementById('bulkLeaveModal').classList.remove('hidden');
+        document.getElementById('bulk-leave-days').value = '15';
+    };
+
+    window.closeBulkLeaveModal = function() {
+        document.getElementById('bulkLeaveModal').classList.add('hidden');
+    };
+
+    window.submitBulkLeave = function() {
+        const year = document.getElementById('bulk-leave-year').value;
+        const type = document.getElementById('bulk-leave-type').value;
+        const days = parseFloat(document.getElementById('bulk-leave-days').value);
+
+        if (isNaN(days) || days < 0) {
+            showToast('올바른 조정 일수를 입력해주세요.', 'success');
+            return;
+        }
+
+        const hours = days * 8; // convert to hours
+        let count = 0;
+
+        mockUsers.forEach(u => {
+            if (u.status === 'ACTIVE') {
+                const oldVal = u.alloc;
+                if (type === 'SET') {
+                    u.alloc = hours;
+                } else if (type === 'ADD') {
+                    u.alloc += hours;
+                } else if (type === 'SUB') {
+                    u.alloc = Math.max(0, u.alloc - hours);
+                }
+                count++;
+            }
+        });
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'BULK_LEAVE_ADJUST',
+            target: `${year}년 일괄 연차 조정 (${type})`,
+            oldVal: '대상: 전사 재직 직원',
+            newVal: `${type === 'SET' ? '설정' : type === 'ADD' ? '추가' : '차감'} ${days}일`
+        });
+
+        closeBulkLeaveModal();
+        renderUsersCRUDTable();
+        renderAdminDashboard();
+        showToast(`재직 중인 ${count}명의 사원에게 ${year}년도 연차 일괄 조정이 정상 적용되었습니다.`, 'success');
+    };
 
     window.openUserModal = function(isEdit, id) {
         document.getElementById('userModal').classList.remove('hidden');
@@ -1309,21 +2002,21 @@
             if (user) {
                 document.getElementById('user-crud-id').value = user.id;
                 document.getElementById('user-crud-name').value = user.name;
-                document.getElementById('user-crud-email').value = user.email;
+                document.getElementById('user-crud-position').value = user.position || '';
                 document.getElementById('user-crud-company').value = user.company;
                 document.getElementById('user-crud-team').value = user.team;
                 document.getElementById('user-crud-role').value = user.role;
-                document.getElementById('user-crud-alloc').value = user.alloc;
+                document.getElementById('user-crud-alloc').value = user.alloc / 8; // show as days
             }
         } else {
             document.getElementById('user-modal-title').textContent = '신규 직원 등록';
             document.getElementById('user-crud-id').value = '';
             document.getElementById('user-crud-name').value = '';
-            document.getElementById('user-crud-email').value = '';
+            document.getElementById('user-crud-position').value = '';
             document.getElementById('user-crud-company').value = 'XX건설';
             document.getElementById('user-crud-team').value = '';
             document.getElementById('user-crud-role').value = 'STAFF';
-            document.getElementById('user-crud-alloc').value = '120';
+            document.getElementById('user-crud-alloc').value = '15'; // default 15 days
         }
     };
 
@@ -1334,11 +2027,12 @@
     window.submitUserCRUD = function() {
         const id = document.getElementById('user-crud-id').value;
         const name = document.getElementById('user-crud-name').value;
-        const email = document.getElementById('user-crud-email').value;
+        const position = document.getElementById('user-crud-position').value;
         const company = document.getElementById('user-crud-company').value;
         const team = document.getElementById('user-crud-team').value;
         const role = document.getElementById('user-crud-role').value;
-        const alloc = parseInt(document.getElementById('user-crud-alloc').value);
+        const allocDays = parseFloat(document.getElementById('user-crud-alloc').value);
+        const alloc = allocDays * 8; // convert to hours
 
         if (id) {
             // Edit
@@ -1346,7 +2040,7 @@
             if (user) {
                 const oldName = user.name;
                 user.name = name;
-                user.email = email;
+                user.position = position;
                 user.company = company;
                 user.team = team;
                 user.role = role;
@@ -1358,7 +2052,7 @@
                     action: 'UPDATE_USER',
                     target: `${name} (계정 수정)`,
                     oldVal: `${oldName} 정보`,
-                    newVal: `${name} 정보`
+                    newVal: `${name} (${position})`
                 });
             }
         } else {
@@ -1367,7 +2061,7 @@
             mockUsers.push({
                 id: newId,
                 name: name,
-                email: email,
+                position: position,
                 company: company,
                 team: team,
                 role: role,
@@ -1388,7 +2082,8 @@
 
         renderUsersCRUDTable();
         closeUserModal();
-        alert('사용자 정보가 성공적으로 반영되었습니다.');
+        renderAdminDashboard();
+        showToast('사용자 정보가 성공적으로 반영되었습니다.', 'success');
     };
 
     window.toggleUserStatus = function(id) {
@@ -1407,7 +2102,8 @@
             });
 
             renderUsersCRUDTable();
-            alert(`사용자 상태가 ${user.status === 'ACTIVE' ? '활성화' : '비활성화'} 처리되었습니다.`);
+            renderAdminDashboard();
+            showToast(`사용자 상태가 ${user.status === 'ACTIVE' ? '활성화' : '비활성화'} 처리되었습니다.`, 'success');
         }
     };
 
@@ -1438,7 +2134,7 @@
             renderAuditLogsTable();
         }
 
-        alert('승인 워크플로우 상태가 성공적으로 변경되었습니다.');
+        showToast('승인 워크플로우 상태가 성공적으로 변경되었습니다.', 'success');
     };
 
     window.saveCalendarScopeMock = function() {
@@ -1454,7 +2150,7 @@
         let scopeLabel = '';
         if (selectedValue === 'none') scopeLabel = '공유 안 함 (본인 전용)';
         else if (selectedValue === 'team') scopeLabel = '소속 팀원 공유';
-        else if (selectedValue === 'company') scopeLabel = '전사 공유';
+        else if (selectedValue === 'company') scopeLabel = '프로젝트 전체 공유';
 
         if (!confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
 
@@ -1469,7 +2165,7 @@
 
         const el = document.getElementById('calendar-scope-current-label');
         if (el) el.textContent = scopeLabel;
-        alert('캘린더 공유 범위가 "' + scopeLabel + '"(으)로 변경 및 전사 반영되었습니다.');
+        showToast('캘린더 공유 범위가 "' + scopeLabel + '"(으)로 변경 및 실시간 반영되었습니다.', 'success');
     };
 
     window.saveBrandingMock = function() {
@@ -1478,7 +2174,7 @@
         const badge = document.getElementById('brand-badge-name').value.trim();
 
         if (!display) {
-            alert('공식 이름은 필수 입력 항목입니다.');
+            showToast('공식 이름은 필수 입력 항목입니다.', 'error');
             return;
         }
 
@@ -1498,7 +2194,7 @@
         const navbarBadge = document.querySelector('nav span.text-white');
         if (navbarBadge && badge) navbarBadge.textContent = badge;
 
-        alert('표시 이름(브랜딩) 설정이 저장되었습니다. (상단 네비게이션 헤더에 실시간 반영)');
+        showToast('표시 이름(브랜딩) 설정이 저장되었습니다. (상단 네비게이션 헤더에 실시간 반영)', 'success');
     };
 
     window.runDbBackupMock = function() {
@@ -1513,7 +2209,7 @@
             newVal: 'SUCCESS (var/data/backup/shim_internal_backup_' + new Date().toISOString().replace(/[-:T.]/g, '').substring(0, 14) + '.db)'
         });
 
-        alert('데이터베이스 백업 생성이 완료되었습니다. (백업 파일 경로: var/data/backup/shim_internal_backup_*.db)');
+        showToast('데이터베이스 백업 생성이 완료되었습니다. (백업 파일 경로: var/data/backup/shim_internal_backup_*.db)', 'success');
     };
 
     window.saveSystemSettings = function() {
@@ -1533,7 +2229,7 @@
             newVal: `단위: ${granularity}분, 결재: ${approval}, 업무: ${workStart}~${workEnd}, 점심: ${lunchStart}~${lunchEnd}`
         });
 
-        alert('근태 관리 기준 및 점심/업무시간 정책이 안전하게 시스템에 저장되었습니다.');
+        showToast('근태 관리 기준 및 점심/업무시간 정책이 안전하게 시스템에 저장되었습니다.', 'success');
     };
 
     let holidaySelectedYearMock = '2026';
@@ -1568,9 +2264,13 @@
             if (dateStr.startsWith(holidaySelectedYearMock)) {
                 count++;
                 html += `
-                    <div class="flex justify-between items-center bg-dense-surface p-2 border rounded-xl shadow-xs">
-                        <span>${dateStr} (${mockHolidays[dateStr]})</span>
-                        <button type="button" onclick="removeHolidaySetting('${dateStr}')" class="text-[10px] text-dense-danger font-bold hover:underline">삭제</button>
+                    <div class="flex flex-col sm:flex-row gap-2 items-center bg-dense-surface p-2 border rounded-xl shadow-xs text-xs">
+                        <input type="date" id="holiday-date-${dateStr}" value="${dateStr}" class="border rounded px-1.5 py-0.5 w-full sm:w-28 font-semibold bg-dense-surface focus:ring-1 focus:ring-dense-blue">
+                        <input type="text" id="holiday-name-${dateStr}" value="${mockHolidays[dateStr]}" class="border rounded px-1.5 py-0.5 w-full sm:flex-1 font-semibold bg-dense-surface focus:ring-1 focus:ring-dense-blue">
+                        <div class="flex gap-1.5 w-full sm:w-auto shrink-0 justify-end">
+                            <button type="button" onclick="updateHolidaySetting('${dateStr}')" class="px-2 py-1 bg-dense-surface border hover:bg-dense-blue-soft hover:text-dense-blue rounded-lg font-bold shadow-2xs transition-colors text-[10px]">수정</button>
+                            <button type="button" onclick="removeHolidaySetting('${dateStr}')" class="px-2 py-1 bg-dense-danger-soft border border-dense-danger-soft hover:bg-dense-danger hover:text-white rounded-lg font-bold text-[#b42318] shadow-2xs transition-colors text-[10px]">삭제</button>
+                        </div>
                     </div>
                 `;
             }
@@ -1578,20 +2278,71 @@
         if (count === 0) {
             html = `<div class="col-span-2 text-center py-6 text-dense-muted font-bold">등록된 공휴일이 없습니다.</div>`;
         }
+        
+        if (!html) {
+            html = `
+                <div class="flex flex-col items-center justify-center py-12 text-center gap-2">
+                    <span class="text-3xl">📅</span>
+                    <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
+                    <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
+                </div>
+            `;
+        }
         container.innerHTML = html;
     }
+
+    window.updateHolidaySetting = function(oldDateStr) {
+        const newDate = document.getElementById(`holiday-date-${oldDateStr}`).value;
+        const newName = document.getElementById(`holiday-name-${oldDateStr}`).value.trim();
+        
+        if (!newDate || !newName) {
+            showToast('날짜와 공휴일 이름을 입력해 주세요.', 'error');
+            return;
+        }
+
+        const parts = newDate.split('-');
+        if (parts[0] !== holidaySelectedYearMock) {
+            showToast(`선택된 ${holidaySelectedYearMock}년의 날짜만 기입 가능합니다.`, 'warning');
+            return;
+        }
+
+        const oldName = mockHolidays[oldDateStr];
+        
+        if (newDate !== oldDateStr && mockHolidays[newDate]) {
+            showToast('해당 날짜에 이미 다른 공휴일이 존재합니다.', 'warning');
+            return;
+        }
+
+        if (newDate !== oldDateStr) {
+            delete mockHolidays[oldDateStr];
+        }
+        mockHolidays[newDate] = newName;
+
+        mockAuditLogs.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            actor: '박민수 (PM / 관리자)',
+            action: 'UPDATE_HOLIDAY',
+            target: `${newName} (${newDate})`,
+            oldVal: `${oldName} (${oldDateStr})`,
+            newVal: `${newName} (${newDate})`
+        });
+
+        renderHolidaySettingsList();
+        syncAdminLeaves();
+        showToast('공휴일 정보가 수정되었습니다.', 'success');
+    };
 
     window.addHolidaySetting = function() {
         const dateInput = document.getElementById('new-holiday-date').value;
         const nameInput = document.getElementById('new-holiday-name').value;
         if (!dateInput || !nameInput) {
-            alert('날짜와 공휴일 명칭을 입력해주세요.');
+            showToast('날짜와 공휴일 명칭을 입력해주세요.', 'success');
             return;
         }
 
         const parts = dateInput.split('-');
         if (parts[0] !== holidaySelectedYearMock) {
-            alert(`선택된 ${holidaySelectedYearMock}년의 날짜만 기입 가능합니다.`);
+            showToast(`선택된 ${holidaySelectedYearMock}년의 날짜만 기입 가능합니다.`, 'warning');
             return;
         }
 
@@ -1610,7 +2361,7 @@
         document.getElementById('new-holiday-name').value = '';
         renderHolidaySettingsList();
         syncAdminLeaves();
-        alert('신규 공휴일이 등록되었습니다.');
+        showToast('신규 공휴일이 등록되었습니다.', 'success');
     };
 
     window.removeHolidaySetting = function(dateStr) {
@@ -1628,20 +2379,70 @@
 
         renderHolidaySettingsList();
         syncAdminLeaves();
-        alert('공휴일 정보가 해제되었습니다.');
+        showToast('공휴일 정보가 해제되었습니다.', 'success');
     };
 
     // TAB 5: System Audit Logs Search/Filter
-    function renderAuditLogsTable() {
+    function populateAuditActors() {
+        const select = document.getElementById('audit-filter-actor');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">전체 수행자</option>';
+        
+        const actors = [...new Set(mockAuditLogs.map(log => log.actor))].sort();
+        actors.forEach(actor => {
+            const opt = document.createElement('option');
+            opt.value = actor;
+            opt.textContent = actor;
+            if (actor === currentVal) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    window.renderAuditLogsTable = function() {
+        populateAuditActors();
+
         const tbody = document.getElementById('audit-table-body');
         if (!tbody) return;
 
+        const filterActor = document.getElementById('audit-filter-actor').value;
+        const filterAction = document.getElementById('audit-filter-action').value.toLowerCase().trim();
+        const filterStart = document.getElementById('audit-filter-start').value;
+        const filterEnd = document.getElementById('audit-filter-end').value;
+
         let html = '';
         mockAuditLogs.forEach(log => {
+            if (filterActor && log.actor !== filterActor) return;
+            if (filterAction && !log.action.toLowerCase().includes(filterAction)) return;
+            
+            const logDateOnly = log.date.split(' ')[0];
+            if (filterStart && logDateOnly < filterStart) return;
+            if (filterEnd && logDateOnly > filterEnd) return;
+
+            const actorCleanName = log.actor.split('(')[0].trim();
+            const user = mockUsers.find(u => u.name.replace('★ ', '').trim() === actorCleanName.replace('★ ', '').trim());
+            
+            let actorCell = '';
+            if (user) {
+                const companyStyle = stringToBadgeStyle(user.company, false);
+                const teamStyle = stringToBadgeStyle(user.team, true);
+                actorCell = `
+                    <div class="flex flex-col gap-0.5">
+                        <div class="font-bold text-dense-text">${log.actor}</div>
+                        <div class="flex gap-1 items-center">
+                            <span class="inline-flex items-center rounded px-1 py-0.2 text-[8px] font-bold" style="${companyStyle}">${user.company}</span>
+                            <span class="inline-flex items-center rounded-full px-1.5 py-0.2 text-[8px] font-semibold" style="${teamStyle}">${user.team}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                actorCell = `<div class="font-bold text-dense-text">${log.actor}</div>`;
+            }
+
             html += `
                 <tr class="hover:bg-dense-surface-soft transition-colors">
                     <td class="px-4 py-2.5 font-semibold text-dense-muted">${log.date}</td>
-                    <td class="px-4 py-2.5 font-bold text-dense-text">${log.actor}</td>
+                    <td class="px-4 py-2.5">${actorCell}</td>
                     <td class="px-4 py-2.5 font-bold text-dense-blue">${log.action}</td>
                     <td class="px-4 py-2.5 text-dense-text font-semibold">${log.target}</td>
                     <td class="px-4 py-2.5 text-dense-muted truncate max-w-[120px]" title="${log.oldVal}">${log.oldVal}</td>
@@ -1649,30 +2450,47 @@
                 </tr>
             `;
         });
+        
+        if (!html) {
+            html = `<tr><td colspan="6" class="px-4 py-8 text-center text-dense-muted font-bold">부합하는 감사 로그가 없습니다.</td></tr>`;
+        }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">👥</span>
+                            <p class="text-xs font-bold text-dense-text">일치하는 사용자 정보가 존재하지 않습니다.</p>
+                            <p class="text-[10px] text-dense-muted">검색어나 소속 필터 조건을 다시 확인해 주시기 바랍니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        if (!html) {
+            html = `
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span class="text-3xl">🔍</span>
+                            <p class="text-xs font-bold text-dense-text">부합하는 감사 로그가 없습니다.</p>
+                            <p class="text-[10px] text-dense-muted">수행자, 액션명 또는 기간 필터를 변경해 보세요.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
         tbody.innerHTML = html;
-    }
+    };
 
-    window.filterAuditLogsTable = function() {
-        const query = document.getElementById('audit-search-input').value.toLowerCase();
-        const tbody = document.getElementById('audit-table-body');
-        if (!tbody) return;
-
-        let html = '';
-        mockAuditLogs.forEach(log => {
-            if (log.actor.toLowerCase().includes(query) || log.action.toLowerCase().includes(query) || log.target.toLowerCase().includes(query)) {
-                html += `
-                    <tr class="hover:bg-dense-surface-soft transition-colors">
-                        <td class="px-4 py-2.5 font-semibold text-dense-muted">${log.date}</td>
-                        <td class="px-4 py-2.5 font-bold text-dense-text">${log.actor}</td>
-                        <td class="px-4 py-2.5 font-bold text-dense-blue">${log.action}</td>
-                        <td class="px-4 py-2.5 text-dense-text font-semibold">${log.target}</td>
-                        <td class="px-4 py-2.5 text-dense-muted truncate max-w-[120px]" title="${log.oldVal}">${log.oldVal}</td>
-                        <td class="px-4 py-2.5 text-dense-green font-semibold truncate max-w-[120px]" title="${log.newVal}">${log.newVal}</td>
-                    </tr>
-                `;
-            }
-        });
-        tbody.innerHTML = html;
+    window.resetAuditFilters = function() {
+        document.getElementById('audit-filter-actor').value = '';
+        document.getElementById('audit-filter-action').value = '';
+        document.getElementById('audit-filter-start').value = '';
+        document.getElementById('audit-filter-end').value = '';
+        renderAuditLogsTable();
     };
 
     function populateTimeSelect(selectId, defaultValue) {
