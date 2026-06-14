@@ -87,7 +87,7 @@
                     <!-- Mini Approvals Card -->
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-xs font-extrabold text-dense-text">👥 결재 대기 목록</h3>
+                            <h3 onclick="switchViewG('approvals')" class="text-xs font-extrabold text-dense-text cursor-pointer hover:text-dense-blue hover:underline transition-colors">👥 결재 대기 목록</h3>
                             <span id="pending-count-g_desktop" class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">0</span>
                         </div>
                         <div id="approvalListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1"></div>
@@ -95,7 +95,7 @@
                     <!-- My Requests Card -->
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-xs font-extrabold text-dense-text">📋 나의 신청 내역</h3>
+                            <h3 onclick="switchViewG('my-requests')" class="text-xs font-extrabold text-dense-text cursor-pointer hover:text-dense-blue hover:underline transition-colors">📋 나의 신청 내역</h3>
                             <button onclick="switchViewG('my-requests')" class="text-[10px] text-dense-blue font-bold hover:underline">전체 내역 보기 →</button>
                         </div>
                         <div id="myRequestsListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1"></div>
@@ -264,7 +264,7 @@
                         
                         <!-- Mobile Personal Requests -->
                         <div class="rounded-xl border bg-dense-surface p-3.5 shadow-sm">
-                            <h3 class="text-xs font-extrabold text-dense-text mb-2">📋 나의 신청 현황</h3>
+                            <h3 onclick="switchMobileTabG('my-requests')" class="text-xs font-extrabold text-dense-text mb-2 cursor-pointer hover:text-dense-blue hover:underline transition-colors">📋 나의 신청 현황</h3>
                             <div id="myRequestsListG_mobile" class="space-y-2 text-xs"></div>
                         </div>
                     </div>
