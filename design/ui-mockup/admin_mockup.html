@@ -274,8 +274,8 @@
                         <thead class="bg-dense-surface-soft">
                             <tr>
                                 <th class="px-4 py-2.5 text-left font-bold">이름</th>
-                                <th class="px-4 py-2.5 text-left font-bold">회사</th>
-                                <th class="px-4 py-2.5 text-left font-bold">팀</th>
+                                <th class="px-4 py-2.5 text-center font-bold">회사</th>
+                                <th class="px-4 py-2.5 text-center font-bold">팀</th>
                                 <th class="px-4 py-2.5 text-left font-bold">역할</th>
                                 <th class="px-4 py-2.5 text-left font-bold">배정 시간</th>
                                 <th class="px-4 py-2.5 text-left font-bold">잔여 시간</th>
@@ -473,10 +473,19 @@
 
             <!-- TAB 5: Holiday Management (공휴일 관리 독자적 탭 신설) -->
             <section id="section-holidays" class="hidden rounded-2xl border bg-dense-surface p-5 shadow-sm space-y-4 fade-in">
-                <div class="border-b pb-3 flex justify-between items-center">
+                <div class="border-b pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <div>
                         <h3 class="text-sm font-extrabold text-dense-text">🏖️ 전사 공휴일 관리 정책</h3>
                         <p class="text-[11px] font-semibold text-dense-muted mt-0.5">회사 창립기념일, 현치일 등 전사적으로 연차 차감에서 제외할 공휴일을 등록 및 해제합니다.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <select id="holiday-selected-year" onchange="changeHolidayYearMock()" class="w-24 border rounded-xl px-2.5 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
+                            <option value="2024">2024년</option>
+                            <option value="2025">2025년</option>
+                            <option value="2026" selected>2026년</option>
+                            <option value="2027">2027년</option>
+                            <option value="2028">2028년</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -501,7 +510,7 @@
 
                     <!-- 공휴일 목록 -->
                     <div class="lg:col-span-2 rounded-xl border bg-dense-surface-soft p-4 space-y-3 text-xs font-semibold">
-                        <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 (2026년 전체)</p>
+                        <p id="holiday-list-header-label" class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 (2026년 전체)</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="holiday-list-settings">
                             <!-- JS Populated -->
                         </div>
@@ -588,6 +597,43 @@
 
     <!-- JavaScript code -->
     <script>
+    // HSL Badge Style Generator (matches Python's string_to_badge_style)
+    function stringToBadgeStyle(text, isTeam) {
+        if (!text || text === '—' || text === '-' || !text.trim()) {
+            return 'background-color: var(--dense-surface-soft); color: var(--dense-muted); border: 1px solid var(--dense-line);';
+        }
+        
+        const prefix = isTeam ? 'team:' : 'company:';
+        const saltedText = prefix + text;
+        
+        let h = 0;
+        for (let i = 0; i < saltedText.length; i++) {
+            h = saltedText.charCodeAt(i) + ((h << 5) - h);
+        }
+        
+        if (isTeam) {
+            const hslHue = 180 + (Math.abs(h) % 160);
+            const hslS = 75;
+            const hslBgL = 91;
+            const hslTextL = 15;
+            return `background-color: hsl(${hslHue}, ${hslS}%, ${hslBgL}%); color: hsl(${hslHue}, ${hslS + 5}%, ${hslTextL}%); border: 1px solid hsl(${hslHue}, ${hslS - 10}%, ${hslBgL - 4}%);`;
+        } else {
+            const companyColors = [
+                [12, 70, 91, 24],
+                [24, 65, 90, 22],
+                [38, 75, 90, 20],
+                [52, 75, 89, 18],
+                [72, 55, 90, 20],
+                [95, 45, 90, 20],
+                [120, 48, 90, 18],
+                [138, 45, 90, 18]
+            ];
+            const colorIdx = Math.abs(h) % companyColors.length;
+            const [hslHue, hslS, hslBgL, hslTextL] = companyColors[colorIdx];
+            return `background-color: hsl(${hslHue}, ${hslS}%, ${hslBgL}%); color: hsl(${hslHue}, ${hslS + 5}%, ${hslTextL}%); border: 1px solid hsl(${hslHue}, ${hslS - 10}%, ${hslBgL - 4}%);`;
+        }
+    }
+
     // System Mock Database
     let mockUsers = [
         { id: 1, name: '★ 홍길동', email: 'gildong@shim.com', company: 'XX건설', team: '설계팀', role: 'STAFF', alloc: 120, used: 40, status: 'ACTIVE' },
@@ -612,6 +658,15 @@
     ];
 
     let mockHolidays = {
+        '2025-01-01': '신정',
+        '2025-03-01': '삼일절',
+        '2025-05-05': '어린이날',
+        '2025-06-06': '현충일',
+        '2025-08-15': '광복절',
+        '2025-10-03': '개천절',
+        '2025-10-09': '한글날',
+        '2025-12-25': '성탄절',
+        
         '2026-01-01': '신정',
         '2026-03-01': '삼일절',
         '2026-05-05': '어린이날',
@@ -619,7 +674,16 @@
         '2026-08-15': '광복절',
         '2026-10-03': '개천절',
         '2026-10-09': '한글날',
-        '2026-12-25': '성탄절'
+        '2026-12-25': '성탄절',
+        
+        '2027-01-01': '신정',
+        '2027-03-01': '삼일절',
+        '2027-05-05': '어린이날',
+        '2027-06-06': '현충일',
+        '2027-08-15': '광복절',
+        '2027-10-03': '개천절',
+        '2027-10-09': '한글날',
+        '2027-12-25': '성탄절'
     };
     
     let mockAuditLogs = [
@@ -630,8 +694,6 @@
         { date: '2026-06-11 09:12:44', actor: '박민수 (PM)', action: 'UPDATE_SETTING', target: '최소 차감 단위 변경', oldVal: '60분', newVal: '30분' }
     ];
 
-    const teamColors = {'설계팀':'hsl(210,60%,92%)','개발팀':'hsl(150,50%,90%)','PM':'hsl(280,50%,92%)','QA팀':'hsl(30,60%,90%)'};
-    const teamTextColors = {'설계팀':'hsl(210,60%,35%)','개발팀':'hsl(150,50%,30%)','PM':'hsl(280,50%,35%)','QA팀':'hsl(30,60%,35%)'};
     const weekdays = ['월','화','수','목','금','토','일'];
 
     let isApprovalRequiredMock = true;
@@ -669,7 +731,7 @@
         } else if (menu === 'users') {
             renderUsersCRUDTable();
         } else if (menu === 'holidays') {
-            renderHolidaySettingsList();
+            changeHolidayYearMock();
         } else if (menu === 'audit') {
             renderAuditLogsTable();
         } else if (menu === 'dashboard') {
@@ -848,9 +910,8 @@
         mockUsers.forEach(u => {
             bodyHtml += `<tr class="transition-colors hover:bg-dense-surface-soft">`;
             bodyHtml += `<td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text" style="width:4.25rem">${u.name}</td>`;
-            const bg = teamColors[u.team] || '#f2f4f7';
-            const tc = teamTextColors[u.team] || '#475467';
-            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="background:${bg};color:${tc}">${u.team}</span></td>`;
+            const badgeStyle = stringToBadgeStyle(u.team, true);
+            bodyHtml += `<td class="text-center px-1" style="width:5rem"><span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style="${badgeStyle}">${u.team}</span></td>`;
             bodyHtml += `<td class="text-[10px] font-extrabold px-1 text-dense-blue">${u.alloc - u.used}h</td>`;
             
             for (let d = 1; d <= 30; d++) {
@@ -1033,10 +1094,10 @@
                                     l.status === 'APPROVED' ? '승인됨' :
                                     l.status === 'REJECTED' ? '반려' : '신청 취소';
 
-                const companyBadge = `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="background: hsl(210,60%,92%); color: hsl(210,60%,35%);">${l.company}</span>`;
-                const teamBg = teamColors[l.team] || '#f2f4f7';
-                const teamTc = teamTextColors[l.team] || '#475467';
-                const teamBadge = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="background:${teamBg};color:${teamTc}">${l.team}</span>`;
+                const companyStyle = stringToBadgeStyle(l.company, false);
+                const companyBadge = `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="${companyStyle}">${l.company}</span>`;
+                const teamStyle = stringToBadgeStyle(l.team, true);
+                const teamBadge = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="${teamStyle}">${l.team}</span>`;
 
                 let actionHtml = '';
                 if (l.status === 'PENDING') {
@@ -1212,11 +1273,20 @@
         let html = '';
         mockUsers.forEach(u => {
             const statusCls = u.status === 'ACTIVE' ? 'bg-dense-green-soft text-dense-green' : 'bg-dense-danger-soft text-dense-danger';
+            const companyStyle = stringToBadgeStyle(u.company, false);
+            const companyBadge = (u.company && u.company !== '-')
+                ? `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold" style="${companyStyle}">${u.company}</span>`
+                : `<span class="text-dense-muted">—</span>`;
+            const teamStyle = stringToBadgeStyle(u.team, true);
+            const teamBadge = (u.team && u.team !== '-')
+                ? `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold" style="${teamStyle}">${u.team}</span>`
+                : `<span class="text-dense-muted">—</span>`;
+
             html += `
                 <tr class="hover:bg-dense-surface-soft transition-colors">
                     <td class="px-4 py-2.5 font-bold text-dense-text">${u.name}</td>
-                    <td class="px-4 py-2.5">${u.company}</td>
-                    <td class="px-4 py-2.5">${u.team}</td>
+                    <td class="px-4 py-2.5 text-center">${companyBadge}</td>
+                    <td class="px-4 py-2.5 text-center">${teamBadge}</td>
                     <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded font-extrabold text-[9px] bg-dense-gray-soft text-dense-muted">${u.role}</span></td>
                     <td class="px-4 py-2.5 font-extrabold text-dense-text">${u.alloc}h</td>
                     <td class="px-4 py-2.5 font-bold text-dense-blue">${u.alloc - u.used}h</td>
@@ -1466,20 +1536,48 @@
         alert('근태 관리 기준 및 점심/업무시간 정책이 안전하게 시스템에 저장되었습니다.');
     };
 
+    let holidaySelectedYearMock = '2026';
+
+    window.changeHolidayYearMock = function() {
+        const yearSelect = document.getElementById('holiday-selected-year');
+        if (yearSelect) {
+            holidaySelectedYearMock = yearSelect.value;
+        }
+        
+        const headerLabel = document.getElementById('holiday-list-header-label');
+        if (headerLabel) {
+            headerLabel.textContent = `📋 현재 등록된 공휴일 목록 (${holidaySelectedYearMock}년 전체)`;
+        }
+        
+        const dateInput = document.getElementById('new-holiday-date');
+        if (dateInput) {
+            dateInput.value = `${holidaySelectedYearMock}-01-01`;
+        }
+
+        renderHolidaySettingsList();
+    };
+
     function renderHolidaySettingsList() {
         const container = document.getElementById('holiday-list-settings');
         if (!container) return;
 
         let html = '';
         const sortedDates = Object.keys(mockHolidays).sort();
+        let count = 0;
         sortedDates.forEach(dateStr => {
-            html += `
-                <div class="flex justify-between items-center bg-dense-surface p-2 border rounded-xl shadow-xs">
-                    <span>${dateStr} (${mockHolidays[dateStr]})</span>
-                    <button type="button" onclick="removeHolidaySetting('${dateStr}')" class="text-[10px] text-dense-danger font-bold hover:underline">삭제</button>
-                </div>
-            `;
+            if (dateStr.startsWith(holidaySelectedYearMock)) {
+                count++;
+                html += `
+                    <div class="flex justify-between items-center bg-dense-surface p-2 border rounded-xl shadow-xs">
+                        <span>${dateStr} (${mockHolidays[dateStr]})</span>
+                        <button type="button" onclick="removeHolidaySetting('${dateStr}')" class="text-[10px] text-dense-danger font-bold hover:underline">삭제</button>
+                    </div>
+                `;
+            }
         });
+        if (count === 0) {
+            html = `<div class="col-span-2 text-center py-6 text-dense-muted font-bold">등록된 공휴일이 없습니다.</div>`;
+        }
         container.innerHTML = html;
     }
 
@@ -1492,8 +1590,8 @@
         }
 
         const parts = dateInput.split('-');
-        if (parts[0] !== '2026') {
-            alert('예시 데이터상 2026년 날짜만 기입 가능합니다.');
+        if (parts[0] !== holidaySelectedYearMock) {
+            alert(`선택된 ${holidaySelectedYearMock}년의 날짜만 기입 가능합니다.`);
             return;
         }
 
@@ -1508,7 +1606,7 @@
             newVal: nameInput
         });
 
-        document.getElementById('new-holiday-date').value = '';
+        document.getElementById('new-holiday-date').value = `${holidaySelectedYearMock}-01-01`;
         document.getElementById('new-holiday-name').value = '';
         renderHolidaySettingsList();
         syncAdminLeaves();
