@@ -1,0 +1,397 @@
+<!-- Left Sidebar Panel (Option G Layout) -->
+<div class="w-full lg:w-[280px] shrink-0 space-y-4">
+    <!-- Stats Summary Card -->
+    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+        <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
+        <div class="space-y-1.5 text-xs font-bold">
+            <div class="flex justify-between"><span>총 연차</span><span>{{ fmt_hours(total_allocated_hours) }}h</span></div>
+            <div class="flex justify-between text-dense-blue"><span>사용</span><span id="myUsedG_desktop">{{ fmt_hours(used_hours) }}h</span></div>
+            <div class="flex justify-between text-dense-green"><span>잔여</span><span id="myRemainingG_desktop">{{ fmt_hours(remaining_hours) }}h</span></div>
+            <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1">
+                <div id="myProgressG_desktop" class="bg-dense-blue h-1.5 rounded-full" style="width: {% if total_allocated_hours > 0 %}{{ (used_hours / total_allocated_hours) * 100 }}{% else %}0{% endif %}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Apply Card -->
+    <div class="rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/20 p-4 shadow-sm">
+        <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
+        <form id="easyApplyFormDesktop" onsubmit="submitEasyApply('desktop'); return false;" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold">시작일</label>
+                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold">종료일</label>
+                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[9px] font-bold">시작</label>
+                    <select id="easy-start-g_desktop" name="start_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                        {% for t in time_options %}
+                        <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold">종료</label>
+                    <select id="easy-end-g_desktop" name="end_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                        {% for t in time_options %}
+                        <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <input type="checkbox" id="easy-deductive-g_desktop" checked onchange="toggleDeductiveG('desktop')" class="rounded text-dense-blue h-3.5 w-3.5">
+                <label for="easy-deductive-g_desktop" class="text-[10px] font-bold cursor-pointer">연차 차감</label>
+            </div>
+            <div id="easy-reason-container-g_desktop" class="hidden">
+                <label class="text-[10px] font-bold">신청 사유 <span class="text-dense-danger">*</span></label>
+                <textarea id="easy-reason-g_desktop" placeholder="사유를 기입해 주세요." class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold mt-1 h-12 resize-none"></textarea>
+            </div>
+            <div id="easy-calc-g_desktop" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
+            <button type="submit" id="easy-submit-btn-g_desktop" class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs hover:bg-dense-blue/90 transition-colors">신청하기</button>
+        </form>
+    </div>
+
+    <!-- Mini Approvals Card -->
+    {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
+    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <a href="/user/approvals" class="text-xs font-extrabold text-dense-text hover:text-dense-blue hover:underline transition-colors">👥 결재 대기 목록</a>
+            <span id="pending-count-g_desktop" class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">{{ pending_team_leaves|length }}</span>
+        </div>
+        <div id="approvalListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
+            {% for leave in pending_team_leaves[:3] %}
+            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
+                <div>
+                    <span class="font-bold text-dense-text">{{ leave.user.user_name }}</span>
+                    <span class="text-[10px] text-dense-muted ml-1">{{ leave.date }}</span>
+                </div>
+                <a href="/user/approvals" class="text-[10px] text-dense-blue font-bold hover:underline">결재 →</a>
+            </div>
+            {% else %}
+            <p class="text-[10px] text-dense-muted text-center py-2">대기 중인 결재가 없습니다.</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- My Requests Card -->
+    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <a href="/user/history" class="text-xs font-extrabold text-dense-text hover:text-dense-blue hover:underline transition-colors">📋 나의 신청 내역</a>
+            <a href="/user/history" class="text-[10px] text-dense-blue font-bold hover:underline">전체 →</a>
+        </div>
+        <div id="myRequestsListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
+            {% for leave in leaves[:3] %}
+            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
+                <div>
+                    <span class="font-bold text-dense-text">
+                        {% if not leave.is_deductive %}<span class="text-purple-600 mr-0.5">[공]</span>{% endif %}
+                        {{ leave.date }}
+                    </span>
+                    <span class="text-[10px] text-dense-muted ml-1">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
+                </div>
+                <div>
+                    {% if leave.status == 'PENDING' %}
+                    <span class="text-dense-amber font-bold">대기</span>
+                    {% elif leave.status == 'APPROVED' %}
+                    <span class="text-dense-green font-bold">승인</span>
+                    {% elif leave.status == 'REJECTED' %}
+                    <span class="text-dense-danger font-bold" title="반려 사유: {{ leave.rejection_reason or '없음' }}">반려</span>
+                    {% else %}
+                    <span class="text-dense-muted font-bold">취소</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="text-[10px] text-dense-muted text-center py-2">신청 내역이 없습니다.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Left Sidebar JavaScript Logic -->
+<script>
+    // Time policy context constants injected from Jinja
+    const workStartMin = {{ work_start_minute | default(540) }};
+    const workEndMin = {{ work_end_minute | default(1080) }};
+    const lunchStartMin = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
+    const lunchEndMin = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
+    const timeGranularity = {{ time_granularity_minutes | default(30) }};
+
+    function parseTimeStr(timeStr) {
+        if (!timeStr) return null;
+        const parts = timeStr.split(':');
+        if (parts.length < 2) return null;
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function calculateDeductedHoursForRange(startTimeStr, endTimeStr) {
+        const startMin = parseTimeStr(startTimeStr);
+        const endMin = parseTimeStr(endTimeStr);
+        if (startMin === null || endMin === null || startMin >= endMin) return 0;
+
+        const totalMinutes = endMin - startMin;
+        let lunchOverlap = 0;
+        if (lunchStartMin >= 0 && lunchEndMin > lunchStartMin) {
+            const overlapStart = Math.max(startMin, lunchStartMin);
+            const overlapEnd = Math.min(endMin, lunchEndMin);
+            if (overlapStart < overlapEnd) {
+                lunchOverlap = overlapEnd - overlapStart;
+            }
+        }
+        return (totalMinutes - lunchOverlap) / 60;
+    }
+
+    function getValidDaysCount(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return 0;
+        const start = new Date(startDateStr);
+        const end = new Date(endDateStr);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
+
+        let count = 0;
+        let curr = new Date(start);
+        while (curr <= end) {
+            const dayOfWeek = curr.getDay(); // 0: Sunday, 6: Saturday
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            
+            // Check public holidays using the holiday map if available globally
+            let isHoliday = false;
+            if (window.holidayMapDates) {
+                const dateKey = curr.toISOString().split('T')[0];
+                if (window.holidayMapDates.includes(dateKey)) {
+                    isHoliday = true;
+                }
+            }
+
+            if (!isWeekend && !isHoliday) {
+                count++;
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
+        return count;
+    }
+
+    window.toggleDeductiveG = function(prefix) {
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+        const reasonContainer = document.getElementById(`easy-reason-container-g_${prefix}`);
+        const reasonTextarea = document.getElementById(`easy-reason-g_${prefix}`);
+        
+        if (deductiveCheckbox && reasonContainer) {
+            if (deductiveCheckbox.checked) {
+                reasonContainer.classList.add('hidden');
+                if (reasonTextarea) reasonTextarea.removeAttribute('required');
+            } else {
+                reasonContainer.classList.remove('hidden');
+                if (reasonTextarea) reasonTextarea.setAttribute('required', 'required');
+            }
+        }
+        updateEstimatedTimeG(prefix);
+    };
+
+    window.updateTimeSelectorAvailabilityG = function(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        
+        if (startInput && endInput && timeStart && timeEnd) {
+            if (startInput.value && endInput.value && startInput.value !== endInput.value) {
+                timeStart.value = '09:00';
+                timeEnd.value = '18:00';
+                timeStart.setAttribute('disabled', 'disabled');
+                timeEnd.setAttribute('disabled', 'disabled');
+            } else {
+                timeStart.removeAttribute('disabled');
+                timeEnd.removeAttribute('disabled');
+            }
+        }
+        updateEstimatedTimeG(prefix);
+    };
+
+    window.updateEstimatedTimeG = function(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const calcEl = document.getElementById(`easy-calc-g_${prefix}`);
+        const submitBtn = document.getElementById(`easy-submit-btn-g_${prefix}`);
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+
+        if (!startInput || !endInput || !calcEl) return;
+
+        const isDeductive = deductiveCheckbox ? deductiveCheckbox.checked : true;
+        const typeStr = isDeductive ? '차감' : '부재';
+
+        if (!startInput.value || !endInput.value) {
+            calcEl.textContent = `예상 ${typeStr} 시간: 0시간`;
+            return;
+        }
+
+        const startVal = startInput.value;
+        const endVal = endInput.value;
+        
+        if (startVal > endVal) {
+            calcEl.textContent = '시작일이 종료일보다 늦습니다.';
+            if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+            return;
+        }
+
+        const workdays = getValidDaysCount(startVal, endVal);
+        if (workdays === 0) {
+            calcEl.textContent = '영업일 기준 0일입니다.';
+            if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+            return;
+        }
+
+        if (submitBtn) submitBtn.removeAttribute('disabled');
+
+        if (startVal === endVal) {
+            // Single day time deduction
+            const hours = calculateDeductedHoursForRange(timeStart.value, timeEnd.value);
+            calcEl.textContent = `예상 ${typeStr} 시간: ${hours}시간`;
+        } else {
+            // Multi-day is always full day (8 hours per workday)
+            calcEl.textContent = `예상 ${typeStr} 시간: ${workdays * 8}시간 (영업일 ${workdays}일)`;
+        }
+    };
+
+    window.submitEasyApply = async function(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+        const reasonTextarea = document.getElementById(`easy-reason-g_${prefix}`);
+        const btn = document.getElementById(`easy-submit-btn-g_${prefix}`);
+
+        if (!startInput || !endInput || !timeStart || !timeEnd) return;
+
+        const startDate = startInput.value;
+        const endDate = endInput.value;
+        const startTime = timeStart.value;
+        const endTime = timeEnd.value;
+        const isDeductive = deductiveCheckbox ? deductiveCheckbox.checked : true;
+        const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+
+        if (!startDate || !endDate) {
+            alert('날짜를 입력해 주세요.');
+            return;
+        }
+
+        if (startDate > endDate) {
+            alert('시작일이 종료일보다 늦습니다.');
+            return;
+        }
+
+        if (!isDeductive && !reason) {
+            alert('공가/출장 신청 시 사유 입력은 필수입니다.');
+            return;
+        }
+
+        // Single date vs range date
+        if (startDate === endDate) {
+            // Submit single date leave
+            const startMin = parseTimeStr(startTime);
+            const endMin = parseTimeStr(endTime);
+            if (startMin === null || endMin === null || startMin >= endMin) {
+                alert('시작/종료 시간을 다시 확인해 주세요.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('date_str', startDate);
+            formData.append('start_time', startTime);
+            formData.append('end_time', endTime);
+            formData.append('is_deductive', isDeductive ? 'true' : 'false');
+            formData.append('reason', reason);
+
+            if (!confirm(`[${isDeductive ? '연차' : '공가/출장'}] 신청하시겠습니까?`)) return;
+
+            simulateButtonLoading(btn, async () => {
+                try {
+                    const response = await fetch('/api/user/leave', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || '성공적으로 신청되었습니다.');
+                        window.location.reload();
+                    } else {
+                        alert(result.message || result.detail || '오류가 발생했습니다.');
+                    }
+                } catch (err) {
+                    alert('네트워크 오류가 발생했습니다.');
+                }
+            });
+        } else {
+            // Range date leave -> bulk request
+            // Range dates are automatically full day
+            // Construct request payload
+            const dates = [];
+            let curr = new Date(startDate);
+            const end = new Date(endDate);
+            while (curr <= end) {
+                const yyyy = curr.getFullYear();
+                const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                const dd = String(curr.getDate()).padStart(2, '0');
+                const dateStrVal = `${yyyy}-${mm}-${dd}`;
+                const dayOfWeek = curr.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                
+                let isHoliday = false;
+                if (window.holidayMapDates) {
+                    if (window.holidayMapDates.includes(dateStrVal)) {
+                        isHoliday = true;
+                    }
+                }
+
+                if (!isWeekend && !isHoliday) {
+                    dates.push(dateStrVal);
+                }
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            if (dates.length === 0) {
+                alert('선택한 범위 내에 신청 가능한 영업일이 없습니다.');
+                return;
+            }
+
+            if (!confirm(`선택한 기간 중 주말/공휴일을 제외한 ${dates.length}일에 대해 하루종일 [${isDeductive ? '연차' : '공가/출장'}] 일괄 신청을 진행하시겠습니까?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('date_str', dates.join(','));
+            formData.append('start_time', '');
+            formData.append('end_time', '');
+            formData.append('is_deductive', isDeductive ? 'true' : 'false');
+            formData.append('reason', reason);
+
+            simulateButtonLoading(btn, async () => {
+                try {
+                    const response = await fetch('/api/user/leave', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || '성공적으로 신청되었습니다.');
+                        window.location.reload();
+                    } else {
+                        alert(result.message || result.detail || '오류가 발생했습니다.');
+                    }
+                } catch (e) {
+                    alert('네트워크 오류가 발생했습니다.');
+                }
+            });
+        }
+    };
+</script>

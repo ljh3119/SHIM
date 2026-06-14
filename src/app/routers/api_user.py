@@ -28,6 +28,71 @@ def _templates(request: Request):
     return request.app.state.templates
 
 
+def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
+    now = utils.get_local_now()
+    current_year = ctx.get("selected_year") or ctx.get("team_cal_year") or now.year
+
+    year_start = date_cls(current_year, 1, 1)
+    year_end = date_cls(current_year, 12, 31)
+    holidays = db.query(models.Holidays).filter(
+        models.Holidays.date >= year_start,
+        models.Holidays.date <= year_end
+    ).all()
+    holiday_map = {(h.date.month, h.date.day): h.name for h in holidays}
+    ctx["holiday_map"] = holiday_map
+
+    total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
+    yearly_leaves = db.query(models.Leaves).filter(
+        models.Leaves.user_id == user.user_id,
+        models.Leaves.year == current_year
+    ).order_by(models.Leaves.date.desc()).all()
+    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED") and getattr(leave, "is_deductive", True))
+    remaining_hours = total_allocated_hours - used_hours
+
+    ctx.update({
+        "total_allocated_hours": total_allocated_hours,
+        "used_hours": used_hours,
+        "remaining_hours": remaining_hours,
+        "leaves": yearly_leaves,
+    })
+
+    time_granularity_minutes, lunch_start_minute, lunch_end_minute, work_start_minute, work_end_minute = resolve_time_policy_setting(db)
+    time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
+
+    ctx.update({
+        "time_granularity_minutes": time_granularity_minutes,
+        "lunch_start_minute": lunch_start_minute,
+        "lunch_end_minute": lunch_end_minute,
+        "work_start_minute": work_start_minute,
+        "work_end_minute": work_end_minute,
+        "time_options": time_options,
+    })
+
+    user_role = getattr(user, 'role', None) or 'STAFF'
+    setting = get_system_settings(db)
+    is_approval_required = bool(setting.is_approval_required) if setting else False
+    pending_team_leaves = []
+    if user_role == 'TEAM_LEAD' and is_approval_required and user.team:
+        pending_team_leaves = (
+            db.query(models.Leaves)
+            .join(models.Users, models.Leaves.user_id == models.Users.user_id)
+            .filter(
+                models.Users.team == user.team,
+                models.Users.company == user.company,
+                models.Leaves.status == "PENDING",
+                models.Leaves.user_id != user.user_id,
+            )
+            .order_by(models.Leaves.created_at.desc())
+            .all()
+        )
+    ctx.update({
+        "user_role": user_role,
+        "is_approval_required": is_approval_required,
+        "pending_team_leaves": pending_team_leaves,
+    })
+
+
+
 @page_router.get("/dashboard", response_class=HTMLResponse)
 def user_dashboard(
     request: Request,
@@ -135,6 +200,7 @@ def user_dashboard(
         )
     ctx["pending_team_leaves"] = pending_team_leaves
 
+    _add_user_layout_context(db, user, ctx)
     return _templates(request).TemplateResponse(request=request, name="user_dashboard.html", context=ctx)
 
 @page_router.get("/team-calendar", response_class=HTMLResponse)
@@ -310,6 +376,7 @@ def user_team_calendar(
         "sort_dir": sort_dir_eff,
         "sort_urls": sort_urls,
     }
+    _add_user_layout_context(db, user, ctx)
     return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
 
 @page_router.get("/history", response_class=HTMLResponse)
@@ -351,8 +418,10 @@ def user_history(
     ctx["user_role"] = getattr(user, 'role', 'STAFF')
     ctx["team_calendar_visible"] = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
     ctx["company_calendar_visible"] = bool(getattr(setting, 'company_calendar_visible', False)) if setting else False
-    ctx["is_approval_required"] = bool(setting.is_approval_required) if setting else False
+    is_approval_required = bool(setting.is_approval_required) if setting else False
+    ctx["is_approval_required"] = is_approval_required
 
+    _add_user_layout_context(db, user, ctx)
     return _templates(request).TemplateResponse(request=request, name="user_history.html", context=ctx)
 
 
@@ -455,6 +524,7 @@ def user_approvals(
         "is_approval_required": is_approval_required,
         "pending_leaves": pending_leaves,
     }
+    _add_user_layout_context(db, approver, ctx)
     return _templates(request).TemplateResponse(request=request, name="user_approvals.html", context=ctx)
 
 

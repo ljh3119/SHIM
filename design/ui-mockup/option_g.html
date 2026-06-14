@@ -33,6 +33,16 @@
         .my-row td.clickable-cell:hover::after{content:'+';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#175cd3;opacity:.6}
         .quick-card{transition:all .2s;cursor:pointer}
         .quick-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(16,24,40,.08)}
+    
+        /* Toast Container */
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+        .shim-toast { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); font-size: 0.7rem; font-weight: 700; color: #1e293b; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; opacity: 0; pointer-events: auto; }
+        .shim-toast.show { transform: translateX(0); opacity: 1; }
+        .shim-toast-success { border-left: 4px solid #16a34a; }
+        .shim-toast-info { border-left: 4px solid #2563eb; }
+        .shim-toast-warning { border-left: 4px solid #ea580c; }
+        .shim-toast-error { border-left: 4px solid #dc2626; }
+
     </style>
 </head>
 <body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
@@ -54,9 +64,9 @@
     <div class="mx-auto flex min-w-0 w-full max-w-[90rem] flex-1 gap-4 px-4 py-6 sm:px-6 lg:gap-6 lg:px-8">
         <main class="relative min-w-0 flex-1">
             <!-- 1. PC & Tablet View (Wide Screen) -->
-            <div class="hidden md:flex gap-5 fade-in">
+            <div class="hidden md:flex flex-col lg:flex-row gap-5 fade-in">
                 <!-- Left Sidebar Panel -->
-                <div class="w-[280px] shrink-0 space-y-4">
+                <div class="w-full lg:w-[280px] shrink-0 space-y-4">
                     <!-- Stats Summary Card -->
                     <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
                         <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
@@ -78,9 +88,18 @@
                                 <div><label class="text-[10px] font-bold">종료일</label><input type="date" id="easy-end-date-g_desktop" value="2026-06-15" onchange="updateTimeSelectorAvailabilityG()" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <div><label class="text-[9px] font-bold">시작</label><select id="easy-start-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>09:00</option><option>13:00</option></select></div>
-                                <div><label class="text-[9px] font-bold">종료</label><select id="easy-end-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>18:00</option><option>13:00</option></select></div>
+                                <div><label class="text-[9px] font-bold">시작</label><select id="easy-start-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>09:00</option></select></div>
+                                <div><label class="text-[9px] font-bold">종료</label><select id="easy-end-g_desktop" class="w-full border rounded p-1 bg-dense-surface text-xs"><option>18:00</option></select></div>
                             </div>
+                            <div class="flex items-center gap-1.5">
+                                <input type="checkbox" id="easy-deductive-g_desktop" checked onchange="toggleDeductiveG('desktop')" class="rounded text-dense-blue h-3.5 w-3.5">
+                                <label for="easy-deductive-g_desktop" class="text-[10px] font-bold cursor-pointer">연차 차감</label>
+                            </div>
+                            <div id="easy-reason-container-g_desktop" class="hidden">
+                                <label class="text-[10px] font-bold">신청 사유 <span class="text-dense-danger">*</span></label>
+                                <textarea id="easy-reason-g_desktop" placeholder="사유를 기입해 주세요." class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold mt-1 h-12 resize-none"></textarea>
+                            </div>
+                            <div id="easy-calc-g_desktop" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
                             <button onclick="applyLeaveG_Desktop()" class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs hover:bg-dense-blue/90 transition-colors">신청하기</button>
                         </div>
                     </div>
@@ -117,6 +136,7 @@
                             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
                                 <button id="btn-timeline-g" onclick="switchViewG('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">타임라인</button>
                                 <button id="btn-calendar-g" onclick="switchViewG('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">캘린더</button>
+                                <button id="btn-yearly-g" onclick="switchViewG('yearly')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">연간 뷰</button>
                                 <button id="btn-approvals-g" onclick="switchViewG('approvals')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">결재 관리</button>
                                 <button id="btn-my-requests-g" onclick="switchViewG('my-requests')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text">내 신청 내역</button>
                             </div>
@@ -132,6 +152,20 @@
 
                         <!-- Calendar Container -->
                         <div id="calendar-view-container-g" class="rounded-xl border border-dense-line bg-dense-surface p-4">
+                            <!-- Calendar Toolbar (Multi-select Toggle) -->
+                            <div class="flex justify-between items-center mb-3 text-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-extrabold text-dense-text text-[11px]">선택 모드:</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="multi-select-mode-toggle" class="sr-only peer" onchange="toggleMultiSelectModeG()">
+                                        <div class="w-7 h-4 bg-dense-line peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-dense-blue"></div>
+                                        <span class="ml-2 font-bold text-dense-muted text-[10px] peer-checked:text-dense-blue transition-colors" id="multi-select-mode-label">범위 선택 (드래그)</span>
+                                    </label>
+                                </div>
+                                <div class="text-[10px] text-dense-muted font-semibold">
+                                    * 드래그: 마우스로 기간 지정 | * 다중 선택: 개별 날짜 비연속 클릭
+                                </div>
+                            </div>
                             <div class="mb-2 grid grid-cols-7 gap-2">
                                 <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-danger">일</div>
                                 <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-muted">월</div>
@@ -142,6 +176,13 @@
                                 <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 text-dense-blue">토</div>
                             </div>
                             <div class="grid grid-cols-7 gap-2" id="calendar-grid-body-g"></div>
+                        </div>
+
+                        <!-- Yearly View Container -->
+                        <div id="yearly-view-container-g" class="hidden rounded-xl border border-dense-line bg-dense-surface p-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="yearly-grid-container-g">
+                                <!-- 12 months generated dynamically -->
+                            </div>
                         </div>
                         
                         <!-- Detailed Approvals Table Container -->
@@ -244,11 +285,20 @@
                                 <div><label class="text-[10px]">종료일</label><input type="date" id="easy-end-date-g_mobile" value="2026-06-15" onchange="updateTimeSelectorAvailabilityG()" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <div><label class="text-[9px]">시작</label><select id="easy-start-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>09:00</option><option>13:00</option></select></div>
-                                <div><label class="text-[9px]">종료</label><select id="easy-end-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>18:00</option><option>13:00</option></select></div>
+                                <div><label class="text-[9px]">시작</label><select id="easy-start-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>09:00</option></select></div>
+                                <div><label class="text-[9px]">종료</label><select id="easy-end-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs"><option>18:00</option></select></div>
                             </div>
+                            <div class="flex items-center gap-1.5">
+                                <input type="checkbox" id="easy-deductive-g_mobile" checked onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-3.5 w-3.5">
+                                <label for="easy-deductive-g_mobile" class="text-[10px] font-bold cursor-pointer">연차 차감</label>
+                            </div>
+                            <div id="easy-reason-container-g_mobile" class="hidden">
+                                <label class="text-[10px] font-bold">신청 사유 <span class="text-dense-danger">*</span></label>
+                                <textarea id="easy-reason-g_mobile" placeholder="사유를 기입해 주세요." class="w-full border rounded p-1 bg-dense-surface mt-1 text-xs h-12 resize-none"></textarea>
+                            </div>
+                            <div id="easy-calc-g_mobile" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
                         </div>
-                        <button onclick="applyLeaveG_Mobile()" class="w-full bg-dense-blue py-1.5 rounded-lg text-white font-bold text-[11px] hover:bg-dense-blue/90 transition-colors">신청 완료</button>
+                        <button id="easy-submit-g_mobile" onclick="applyLeaveG_Mobile()" class="w-full bg-dense-blue py-1.5 rounded-lg text-white font-bold text-[11px] hover:bg-dense-blue/90 transition-colors">신청 완료</button>
                     </div>
 
                     <!-- Lists Widget -->
@@ -341,18 +391,30 @@
                 <div class="p-6">
                     <h3 class="mb-4 text-lg font-extrabold text-dense-text">연차 신청 (G안)</h3>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-2">
+                        <div id="modalDateContainerG" class="grid grid-cols-2 gap-2">
                             <div><label class="block text-xs font-bold">시작일</label><input type="date" id="modalStartDateG" onchange="updateTimeSelectorAvailabilityG()" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
                             <div><label class="block text-xs font-bold">종료일</label><input type="date" id="modalEndDateG" onchange="updateTimeSelectorAvailabilityG()" class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm"></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-xs font-bold">시작 시간</label><select id="modalStartG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>09:00</option><option>13:00</option></select></div>
-                            <div><label class="text-xs font-bold">종료 시간</label><select id="modalEndG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>18:00</option><option>13:00</option></select></div>
+                        <div id="modalMultiSelectAlertG" class="hidden text-xs bg-dense-blue-soft border border-dense-blue/30 rounded-xl p-3 text-dense-blue font-bold">
+                            다중 선택 모드 적용 중: <span id="modalSelectedDatesCountG">0</span>개 비연속 날짜가 동시 신청됩니다.
                         </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-xs font-bold">시작 시간</label><select id="modalStartG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>09:00</option></select></div>
+                            <div><label class="text-xs font-bold">종료 시간</label><select id="modalEndG" class="w-full border rounded-xl p-2 bg-dense-surface"><option>18:00</option></select></div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <input type="checkbox" id="modalDeductiveG" checked onchange="toggleDeductiveG('modal')" class="rounded text-dense-blue h-4 w-4">
+                            <label for="modalDeductiveG" class="text-xs font-bold cursor-pointer">연차 차감</label>
+                        </div>
+                        <div id="modalReasonContainerG" class="hidden">
+                            <label class="block text-xs font-bold">신청 사유 <span class="text-dense-danger">*</span></label>
+                            <textarea id="modalReasonG" placeholder="사유를 입력해 주세요." class="mt-1 block w-full rounded-xl border p-2 bg-dense-surface text-sm h-16 resize-none"></textarea>
+                        </div>
+                        <div id="modalCalcG" class="text-xs font-bold text-dense-blue">예상 차감 시간: 8시간</div>
                     </div>
                 </div>
                 <div class="flex flex-row-reverse gap-3 border-t bg-dense-surface-soft px-4 py-3">
-                    <button onclick="applyLeaveG_Modal()" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:bg-dense-blue/90">신청하기</button>
+                    <button id="modalSubmitG" onclick="simulateButtonLoading(this, () => applyLeaveG_Modal())" class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:bg-dense-blue/90">신청하기</button>
                     <button onclick="closeModalG()" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
                 </div>
             </div>
@@ -414,6 +476,8 @@
     let selectedMobileTabG = 'dashboard';
     let rangeStartG = null;
     let rangeEndG = null;
+    let isMultiSelectModeG = false;
+    let selectedDatesG = [];
     let myRequestFilterG = 'ALL';
 
     function backToMain() {
@@ -424,20 +488,25 @@
         selectedViewG = view;
         const btnTimeline = document.getElementById('btn-timeline-g');
         const btnCalendar = document.getElementById('btn-calendar-g');
+        const btnYearly = document.getElementById('btn-yearly-g');
         const btnApprovals = document.getElementById('btn-approvals-g');
         const btnMyRequests = document.getElementById('btn-my-requests-g');
         const timelineContainer = document.getElementById('timeline-view-container-g');
         const calendarContainer = document.getElementById('calendar-view-container-g');
+        const yearlyContainer = document.getElementById('yearly-view-container-g');
         const approvalsContainer = document.getElementById('approvals-view-container-g');
         const myRequestsContainer = document.getElementById('my-requests-view-container-g');
         if (!btnTimeline) return;
 
         btnTimeline.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
         btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        if (btnYearly) btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
         btnApprovals.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
         if (btnMyRequests) btnMyRequests.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text";
+        
         timelineContainer.classList.add('hidden');
         calendarContainer.classList.add('hidden');
+        if (yearlyContainer) yearlyContainer.classList.add('hidden');
         approvalsContainer.classList.add('hidden');
         if (myRequestsContainer) myRequestsContainer.classList.add('hidden');
 
@@ -449,6 +518,10 @@
             btnCalendar.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
             calendarContainer.classList.remove('hidden');
             renderCalendarGridG();
+        } else if (view === 'yearly') {
+            if (btnYearly) btnYearly.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
+            if (yearlyContainer) yearlyContainer.classList.remove('hidden');
+            renderYearlyViewG();
         } else if (view === 'approvals') {
             btnApprovals.className = "rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm";
             approvalsContainer.classList.remove('hidden');
@@ -551,12 +624,31 @@
                 modalTimeEnd.disabled = false;
             }
         }
+
+        updateEstimatedTimeG();
+    };
+
+    window.toggleMultiSelectModeG = function() {
+        const toggle = document.getElementById('multi-select-mode-toggle');
+        const label = document.getElementById('multi-select-mode-label');
+        if (!toggle || !label) return;
+
+        isMultiSelectModeG = toggle.checked;
+        if (isMultiSelectModeG) {
+            label.textContent = '개별 다중 선택';
+            rangeStartG = null;
+            rangeEndG = null;
+        } else {
+            label.textContent = '범위 선택 (드래그)';
+            selectedDatesG = [];
+        }
+        clearSelectionG();
     };
 
     window.handleCalendarCellClickG = function(dateStr) {
         const d = parseInt(dateStr.split('-')[2]);
         if (d < 13) {
-            alert('지나간 날짜는 신청할 수 없습니다.');
+            showToast('지나간 날짜는 신청할 수 없습니다.', 'error');
             return;
         }
 
@@ -565,51 +657,71 @@
         const isHoliday = optionHolidays[d];
 
         if (isWeekend || isHoliday) {
-            alert('주말 및 공휴일은 시작일이나 종료일로 지정할 수 없습니다.');
+            showToast('주말 및 공휴일은 시작일이나 종료일로 지정할 수 없습니다.', 'error');
             return;
         }
 
-        if (!rangeStartG) {
-            // First click: select single day immediately
-            rangeStartG = dateStr;
-            rangeEndG = dateStr;
-        } else if (rangeStartG === rangeEndG) {
-            // Single day selected already
-            if (dateStr === rangeStartG) {
-                // Clicking the same day clears selection
-                rangeStartG = null;
-                rangeEndG = null;
-            } else if (dateStr > rangeStartG) {
-                // Clicking later day extends range
-                rangeEndG = dateStr;
+        if (isMultiSelectModeG) {
+            const idx = selectedDatesG.indexOf(dateStr);
+            if (idx > -1) {
+                selectedDatesG.splice(idx, 1);
             } else {
-                // Clicking earlier day resets to new single day
-                rangeStartG = dateStr;
-                rangeEndG = dateStr;
+                selectedDatesG.push(dateStr);
+            }
+            selectedDatesG.sort();
+            
+            const startInputDesktop = document.getElementById('easy-start-date-g_desktop');
+            const startInputMobile = document.getElementById('easy-start-date-g_mobile');
+            const endInputDesktop = document.getElementById('easy-end-date-g_desktop');
+            const endInputMobile = document.getElementById('easy-end-date-g_mobile');
+            if (selectedDatesG.length > 0) {
+                const firstDate = selectedDatesG[0];
+                const lastDate = selectedDatesG[selectedDatesG.length - 1];
+                if (startInputDesktop) startInputDesktop.value = firstDate;
+                if (startInputMobile) startInputMobile.value = firstDate;
+                if (endInputDesktop) endInputDesktop.value = lastDate;
+                if (endInputMobile) endInputMobile.value = lastDate;
+            } else {
+                if (startInputDesktop) startInputDesktop.value = '';
+                if (startInputMobile) startInputMobile.value = '';
+                if (endInputDesktop) endInputDesktop.value = '';
+                if (endInputMobile) endInputMobile.value = '';
             }
         } else {
-            // Range (2+ days) selected already: reset to a new single day selection
-            if (dateStr === rangeStartG || dateStr === rangeEndG) {
-                // Clicking boundary day clears selection
-                rangeStartG = null;
-                rangeEndG = null;
-            } else {
+            if (!rangeStartG) {
                 rangeStartG = dateStr;
                 rangeEndG = dateStr;
+            } else if (rangeStartG === rangeEndG) {
+                if (dateStr === rangeStartG) {
+                    rangeStartG = null;
+                    rangeEndG = null;
+                } else if (dateStr > rangeStartG) {
+                    rangeEndG = dateStr;
+                } else {
+                    rangeStartG = dateStr;
+                    rangeEndG = dateStr;
+                }
+            } else {
+                if (dateStr === rangeStartG || dateStr === rangeEndG) {
+                    rangeStartG = null;
+                    rangeEndG = null;
+                } else {
+                    rangeStartG = dateStr;
+                    rangeEndG = dateStr;
+                }
             }
+
+            const startInputDesktop = document.getElementById('easy-start-date-g_desktop');
+            const startInputMobile = document.getElementById('easy-start-date-g_mobile');
+            if (startInputDesktop) startInputDesktop.value = rangeStartG || '';
+            if (startInputMobile) startInputMobile.value = rangeStartG || '';
+
+            const endInputDesktop = document.getElementById('easy-end-date-g_desktop');
+            const endInputMobile = document.getElementById('easy-end-date-g_mobile');
+            const targetEndVal = rangeEndG ? rangeEndG : (rangeStartG ? rangeStartG : '');
+            if (endInputDesktop) endInputDesktop.value = targetEndVal;
+            if (endInputMobile) endInputMobile.value = targetEndVal;
         }
-
-        // 입력 폼 동기화
-        const startInputDesktop = document.getElementById('easy-start-date-g_desktop');
-        const startInputMobile = document.getElementById('easy-start-date-g_mobile');
-        if (startInputDesktop) startInputDesktop.value = rangeStartG || '';
-        if (startInputMobile) startInputMobile.value = rangeStartG || '';
-
-        const endInputDesktop = document.getElementById('easy-end-date-g_desktop');
-        const endInputMobile = document.getElementById('easy-end-date-g_mobile');
-        const targetEndVal = rangeEndG ? rangeEndG : (rangeStartG ? rangeStartG : '');
-        if (endInputDesktop) endInputDesktop.value = targetEndVal;
-        if (endInputMobile) endInputMobile.value = targetEndVal;
 
         updateFloatingBarG();
         updateTimeSelectorAvailabilityG();
@@ -621,47 +733,74 @@
         const label = document.getElementById('selected-range-label-g');
         if (!bar || !label) return;
 
-        if (rangeStartG) {
-            bar.classList.remove('hidden');
-            if (rangeEndG) {
-                const startDay = parseInt(rangeStartG.split('-')[2]);
-                const endDay = parseInt(rangeEndG.split('-')[2]);
-                let workdaysCount = 0;
-                for (let d = startDay; d <= endDay; d++) {
-                    const actualWd = d % 7;
-                    const isWE = (actualWd === 6 || actualWd === 0);
-                    const isHol = optionHolidays[d];
-                    if (!isWE && !isHol) {
-                        workdaysCount++;
-                    }
-                }
-                if (rangeStartG === rangeEndG) {
-                    label.textContent = `${rangeStartG} (영업일 ${workdaysCount}일)`;
-                } else {
-                    label.textContent = `${rangeStartG} ~ ${rangeEndG} (영업일 ${workdaysCount}일)`;
-                }
+        if (isMultiSelectModeG) {
+            if (selectedDatesG.length > 0) {
+                bar.classList.remove('hidden');
+                label.textContent = `비연속 ${selectedDatesG.length}일 선택됨`;
             } else {
-                label.textContent = `${rangeStartG} (영업일 1일)`;
+                bar.classList.add('hidden');
             }
         } else {
-            bar.classList.add('hidden');
+            if (rangeStartG) {
+                bar.classList.remove('hidden');
+                if (rangeEndG) {
+                    const startDay = parseInt(rangeStartG.split('-')[2]);
+                    const endDay = parseInt(rangeEndG.split('-')[2]);
+                    let workdaysCount = 0;
+                    for (let d = startDay; d <= endDay; d++) {
+                        const actualWd = d % 7;
+                        const isWE = (actualWd === 6 || actualWd === 0);
+                        const isHol = optionHolidays[d];
+                        if (!isWE && !isHol) {
+                            workdaysCount++;
+                        }
+                    }
+                    if (rangeStartG === rangeEndG) {
+                        label.textContent = `${rangeStartG} (영업일 ${workdaysCount}일)`;
+                    } else {
+                        label.textContent = `${rangeStartG} ~ ${rangeEndG} (영업일 ${workdaysCount}일)`;
+                    }
+                } else {
+                    label.textContent = `${rangeStartG} (영업일 1일)`;
+                }
+            } else {
+                bar.classList.add('hidden');
+            }
         }
     }
 
     window.clearSelectionG = function() {
         rangeStartG = null;
         rangeEndG = null;
+        selectedDatesG = [];
         updateFloatingBarG();
         updateTimeSelectorAvailabilityG();
         syncG();
     };
 
     window.openBulkApplyG = function() {
-        if (!rangeStartG) return;
-        const end = rangeEndG ? rangeEndG : rangeStartG;
+        const modalDateContainer = document.getElementById('modalDateContainerG');
+        const modalAlert = document.getElementById('modalMultiSelectAlertG');
+        const modalSelectedCount = document.getElementById('modalSelectedDatesCountG');
 
-        document.getElementById('modalStartDateG').value = rangeStartG;
-        document.getElementById('modalEndDateG').value = end;
+        if (isMultiSelectModeG) {
+            if (selectedDatesG.length === 0) return;
+            if (modalDateContainer) modalDateContainer.classList.add('hidden');
+            if (modalAlert) {
+                modalAlert.classList.remove('hidden');
+                modalSelectedCount.textContent = selectedDatesG.length;
+            }
+            document.getElementById('modalStartDateG').value = selectedDatesG[0];
+            document.getElementById('modalEndDateG').value = selectedDatesG[selectedDatesG.length - 1];
+        } else {
+            if (!rangeStartG) return;
+            const end = rangeEndG ? rangeEndG : rangeStartG;
+            if (modalDateContainer) modalDateContainer.classList.remove('hidden');
+            if (modalAlert) modalAlert.classList.add('hidden');
+            document.getElementById('modalStartDateG').value = rangeStartG;
+            document.getElementById('modalEndDateG').value = end;
+        }
+
         document.getElementById('modalStartG').value = '09:00';
         document.getElementById('modalEndG').value = '18:00';
         document.getElementById('applyModalG').classList.remove('hidden');
@@ -671,7 +810,7 @@
     window.openApplyG_Cell = function(dateStr) {
         const d = parseInt(dateStr.split('-')[2]);
         if (d < 13) {
-            alert('지나간 날짜는 연차를 신청할 수 없습니다.');
+            showToast('지나간 날짜는 연차를 신청할 수 없습니다.', 'error');
             return;
         }
         document.getElementById('modalStartDateG').value = dateStr;
@@ -698,6 +837,9 @@
         const isMe = req.name.includes('홍길동');
         title.textContent = isMe ? '나의 연차 신청 정보' : '팀원 연차 결재 승인';
         
+        const deductiveLabel = req.is_deductive === false ? '<span class="ml-1.5 inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>' : '';
+        const reasonContent = req.reason ? req.reason : '—';
+
         content.innerHTML = `
             <div class="grid grid-cols-3 gap-2 border-b pb-2">
                 <span class="font-bold text-dense-muted">신청인</span>
@@ -713,7 +855,11 @@
             </div>
             <div class="grid grid-cols-3 gap-2 border-b pb-2">
                 <span class="font-bold text-dense-muted">연차 구분</span>
-                <span class="col-span-2 font-bold">${req.duration}</span>
+                <span class="col-span-2 font-bold">${req.duration}${deductiveLabel}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 사유</span>
+                <span class="col-span-2 font-semibold text-dense-text">${reasonContent}</span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b pb-2">
                 <span class="font-bold text-dense-muted">결재 상태</span>
@@ -757,6 +903,150 @@
         document.getElementById('approveModalG').classList.add('hidden');
     };
 
+    window.toggleDeductiveG = function(prefix) {
+        let chk, container, txt;
+        if (prefix === 'desktop') {
+            chk = document.getElementById('easy-deductive-g_desktop');
+            container = document.getElementById('easy-reason-container-g_desktop');
+            txt = document.getElementById('easy-reason-g_desktop');
+        } else if (prefix === 'mobile') {
+            chk = document.getElementById('easy-deductive-g_mobile');
+            container = document.getElementById('easy-reason-container-g_mobile');
+            txt = document.getElementById('easy-reason-g_mobile');
+        } else if (prefix === 'modal') {
+            chk = document.getElementById('modalDeductiveG');
+            container = document.getElementById('modalReasonContainerG');
+            txt = document.getElementById('modalReasonG');
+        }
+        
+        if (chk && container) {
+            if (chk.checked) {
+                container.classList.add('hidden');
+                if (txt) txt.required = false;
+            } else {
+                container.classList.remove('hidden');
+                if (txt) txt.required = true;
+            }
+        }
+        updateEstimatedTimeG();
+    };
+
+    function calculateDeductedHoursForRange(startTimeStr, endTimeStr) {
+        const startParts = startTimeStr.split(':');
+        const endParts = endTimeStr.split(':');
+        const startHour = parseInt(startParts[0]) + parseInt(startParts[1]) / 60;
+        const endHour = parseInt(endParts[0]) + parseInt(endParts[1]) / 60;
+
+        if (startHour >= endHour) return 0;
+
+        let duration = endHour - startHour;
+        let overlap = 0;
+        const lunchStart = 12.0;
+        const lunchEnd = 13.0;
+
+        const overlapStart = Math.max(startHour, lunchStart);
+        const overlapEnd = Math.min(endHour, lunchEnd);
+
+        if (overlapStart < overlapEnd) {
+            overlap = overlapEnd - overlapStart;
+        }
+
+        return duration - overlap;
+    }
+
+    function getValidDaysCount(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return 0;
+        const startDay = parseInt(startDateStr.split('-')[2]);
+        const endDay = parseInt(endDateStr.split('-')[2]);
+        if (isNaN(startDay) || isNaN(endDay)) return 0;
+        let count = 0;
+        for (let d = startDay; d <= endDay; d++) {
+            const actualWd = d % 7;
+            const isWE = (actualWd === 6 || actualWd === 0);
+            const isHol = optionHolidays[d];
+            if (!isWE && !isHol) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    window.updateEstimatedTimeG = function() {
+        const prefixes = ['desktop', 'mobile', 'modal'];
+        prefixes.forEach(prefix => {
+            let startInput, endInput, startTimeSelect, endTimeSelect, calcEl, btnEl;
+            if (prefix === 'desktop') {
+                startInput = document.getElementById('easy-start-date-g_desktop');
+                endInput = document.getElementById('easy-end-date-g_desktop');
+                startTimeSelect = document.getElementById('easy-start-g_desktop');
+                endTimeSelect = document.getElementById('easy-end-g_desktop');
+                calcEl = document.getElementById('easy-calc-g_desktop');
+                btnEl = document.querySelector('button[onclick="applyLeaveG_Desktop()"]');
+            } else if (prefix === 'mobile') {
+                startInput = document.getElementById('easy-start-date-g_mobile');
+                endInput = document.getElementById('easy-end-date-g_mobile');
+                startTimeSelect = document.getElementById('easy-start-g_mobile');
+                endTimeSelect = document.getElementById('easy-end-g_mobile');
+                calcEl = document.getElementById('easy-calc-g_mobile');
+                btnEl = document.getElementById('easy-submit-g_mobile');
+            } else if (prefix === 'modal') {
+                startInput = document.getElementById('modalStartDateG');
+                endInput = document.getElementById('modalEndDateG');
+                startTimeSelect = document.getElementById('modalStartG');
+                endTimeSelect = document.getElementById('modalEndG');
+                calcEl = document.getElementById('modalCalcG');
+                btnEl = document.getElementById('modalSubmitG');
+            }
+
+            if (!startInput || !endInput || !startTimeSelect || !endTimeSelect || !calcEl) return;
+
+            const startDate = startInput.value;
+            const endDate = endInput.value;
+            const startTime = startTimeSelect.value;
+            const endTime = endTimeSelect.value;
+
+            if (!startDate || !endDate) {
+                calcEl.textContent = '날짜를 입력해 주세요.';
+                calcEl.className = 'text-[10px] font-bold text-dense-muted';
+                if (btnEl) btnEl.disabled = true;
+                return;
+            }
+
+            if (startDate > endDate) {
+                calcEl.textContent = '⚠️ 종료일이 시작일보다 빠릅니다.';
+                calcEl.className = 'text-[10px] font-bold text-dense-danger';
+                if (btnEl) btnEl.disabled = true;
+                return;
+            }
+
+            let hours = 0;
+            if (isMultiSelectModeG && prefix === 'modal') {
+                hours = selectedDatesG.length * 8;
+            } else if (startDate === endDate) {
+                hours = calculateDeductedHoursForRange(startTime, endTime);
+            } else {
+                const validDays = getValidDaysCount(startDate, endDate);
+                hours = validDays * 8;
+            }
+
+            if (hours <= 0) {
+                calcEl.textContent = '⚠️ 차감 시간이 0시간입니다. (신청 불가)';
+                calcEl.className = 'text-[10px] font-bold text-dense-danger';
+                if (btnEl) {
+                    btnEl.disabled = true;
+                    btnEl.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                calcEl.textContent = `예상 차감 시간: ${hours}시간`;
+                calcEl.className = 'text-[10px] font-bold text-dense-blue';
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        });
+    };
+
     window.applyLeaveG_Desktop = function() {
         const startDateStr = document.getElementById('easy-start-date-g_desktop').value;
         const endDateStr = document.getElementById('easy-end-date-g_desktop').value;
@@ -784,58 +1074,104 @@
     };
 
     function executeBulkApplyG(startDateStr, endDateStr, start, end) {
-        if (!startDateStr || !endDateStr) {
-            alert('시작일과 종료일을 입력해주세요.');
-            return;
+        let activeDeductive = true;
+        let activeReason = '';
+
+        const modal = document.getElementById('applyModalG');
+        const quickPanelMobile = document.getElementById('quickApplyPanelG');
+        
+        if (modal && !modal.classList.contains('hidden')) {
+            activeDeductive = document.getElementById('modalDeductiveG').checked;
+            activeReason = document.getElementById('modalReasonG').value.trim();
+        } else if (quickPanelMobile && !quickPanelMobile.classList.contains('hidden')) {
+            activeDeductive = document.getElementById('easy-deductive-g_mobile').checked;
+            activeReason = document.getElementById('easy-reason-g_mobile').value.trim();
+        } else {
+            const easyDeductiveDesktop = document.getElementById('easy-deductive-g_desktop');
+            if (easyDeductiveDesktop) {
+                activeDeductive = easyDeductiveDesktop.checked;
+                activeReason = document.getElementById('easy-reason-g_desktop').value.trim();
+            }
         }
-        if (startDateStr > endDateStr) {
-            alert('종료일은 시작일보다 빠를 수 없습니다.');
-            return;
-        }
-        if (!startDateStr.startsWith('2026-06-') || !endDateStr.startsWith('2026-06-')) {
-            alert('2026년 6월 날짜만 신청할 수 있습니다.');
+
+        if (!activeDeductive && !activeReason) {
+            showToast('공가/출장(비차감) 신청 시 사유를 입력해 주세요.', 'error');
             return;
         }
 
-        const startDay = parseInt(startDateStr.split('-')[2]);
-        const endDay = parseInt(endDateStr.split('-')[2]);
-
-        if (startDay < 13) {
-            alert('지나간 날짜(6월 12일 이전)는 신청할 수 없습니다.');
-            return;
-        }
-
-        // 대상 영업일 추출 및 중복/충돌 사전 검증
         let targetDays = [];
-        for (let d = startDay; d <= endDay; d++) {
-            const actualWd = d % 7;
-            const isWE = (actualWd === 6 || actualWd === 0);
-            const isHol = optionHolidays[d];
-            if (!isWE && !isHol) {
-                // 이미 승인/대기 중인지 확인
+
+        if (isMultiSelectModeG) {
+            if (selectedDatesG.length === 0) {
+                showToast('선택된 날짜가 없습니다.', 'error');
+                return;
+            }
+            for (let i = 0; i < selectedDatesG.length; i++) {
+                const dateVal = selectedDatesG[i];
+                const d = parseInt(dateVal.split('-')[2]);
                 const hasApproved = mockLeavesData['★ 홍길동 (나)'][d] || mockLeavesData['★ 홍길동'][d];
                 const hasPending = pendingLeavesG.some(p => p.name.includes('홍길동') && parseInt(p.date.split('-')[2]) === d && (p.status === 'PENDING' || p.status === 'APPROVED'));
                 
                 if (hasApproved || hasPending) {
-                    alert(`6월 ${d}일에 이미 연차가 등록되어 있거나 대기 중인 신청이 있어 신청할 수 없습니다. (일괄 취소됨)`);
+                    showToast(`6월 ${d}일에 이미 연차가 등록되어 있거나 대기 중인 신청이 있어 신청할 수 없습니다. (일괄 취소됨)`, 'error');
                     return;
                 }
                 targetDays.push(d);
             }
+        } else {
+            if (!startDateStr || !endDateStr) {
+                showToast('시작일과 종료일을 입력해주세요.', 'success');
+                return;
+            }
+            if (startDateStr > endDateStr) {
+                showToast('종료일은 시작일보다 빠를 수 없습니다.', 'error');
+                return;
+            }
+            if (!startDateStr.startsWith('2026-06-') || !endDateStr.startsWith('2026-06-')) {
+                showToast('2026년 6월 날짜만 신청할 수 있습니다.', 'success');
+                return;
+            }
+
+            const startDay = parseInt(startDateStr.split('-')[2]);
+            const endDay = parseInt(endDateStr.split('-')[2]);
+
+            if (startDay < 13) {
+                showToast('지나간 날짜(6월 12일 이전)는 신청할 수 없습니다.', 'error');
+                return;
+            }
+
+            for (let d = startDay; d <= endDay; d++) {
+                const actualWd = d % 7;
+                const isWE = (actualWd === 6 || actualWd === 0);
+                const isHol = optionHolidays[d];
+                if (!isWE && !isHol) {
+                    const hasApproved = mockLeavesData['★ 홍길동 (나)'][d] || mockLeavesData['★ 홍길동'][d];
+                    const hasPending = pendingLeavesG.some(p => p.name.includes('홍길동') && parseInt(p.date.split('-')[2]) === d && (p.status === 'PENDING' || p.status === 'APPROVED'));
+                    
+                    if (hasApproved || hasPending) {
+                        showToast(`6월 ${d}일에 이미 연차가 등록되어 있거나 대기 중인 신청이 있어 신청할 수 없습니다. (일괄 취소됨)`, 'error');
+                        return;
+                    }
+                    targetDays.push(d);
+                }
+            }
         }
 
         if (targetDays.length === 0) {
-            alert('선택한 범위 내에 신청 가능한 영업일(평일)이 없습니다.');
+            showToast('신청 가능한 영업일(평일)이 없습니다.', 'error');
             return;
         }
 
         let duration = '8h';
-        if (startDateStr === endDateStr) {
+        if (targetDays.length === 1) {
             if (start === '09:00' && end === '13:00') duration = '4h (오전)';
             else if (start === '13:00' && end === '18:00') duration = '4h (오후)';
+            else {
+                const calculatedHours = calculateDeductedHoursForRange(start, end);
+                duration = `${calculatedHours}h`;
+            }
         }
 
-        // 일괄 트랜잭션 추가 (All-or-Nothing)
         targetDays.forEach(d => {
             const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
             pendingLeavesG.push({
@@ -844,12 +1180,18 @@
                 team: '설계팀',
                 date: dateStr,
                 duration: duration,
-                status: 'PENDING'
+                status: 'PENDING',
+                is_deductive: activeDeductive,
+                reason: activeReason
             });
         });
 
-        clearSelectionG(); // 선택 범위 초기화 및 플로팅 바 닫기
-        alert(`총 ${targetDays.length}일의 연차가 일괄 신청되었습니다. 결재 대기 상태로 등록됩니다.`);
+        if (document.getElementById('easy-reason-g_desktop')) document.getElementById('easy-reason-g_desktop').value = '';
+        if (document.getElementById('easy-reason-g_mobile')) document.getElementById('easy-reason-g_mobile').value = '';
+        if (document.getElementById('modalReasonG')) document.getElementById('modalReasonG').value = '';
+
+        clearSelectionG();
+        showToast(`총 ${targetDays.length}일의 연차가 일괄 신청되었습니다. 결재 대기 상태로 등록됩니다.`, 'success');
     }
 
     window.cancelLeaveG = function(id) {
@@ -858,7 +1200,7 @@
             req.status = 'CANCELED';
             syncG();
             closeApproveModalG();
-            alert('연차 신청이 취소되었습니다.');
+            showToast('연차 신청이 취소되었습니다.', 'success');
         }
     };
 
@@ -867,13 +1209,13 @@
         if (req && req.status === 'PENDING') {
             req.status = 'APPROVED';
             const day = parseInt(req.date.split('-')[2]);
-            const hours = req.duration.includes('4h') ? 4 : 8;
+            const hours = req.duration.includes('4h') ? 4 : (parseFloat(req.duration) || 8);
             if (!mockLeavesData[req.name]) mockLeavesData[req.name] = {};
             mockLeavesData[req.name][day] = hours;
             
             syncG();
             closeApproveModalG();
-            alert('승인되었습니다.');
+            showToast('승인되었습니다.', 'success');
         }
     };
 
@@ -887,7 +1229,7 @@
             
             syncG();
             closeApproveModalG();
-            alert('반려되었습니다.');
+            showToast('반려되었습니다.', 'success');
         }
     };
 
@@ -899,7 +1241,7 @@
     window.bulkApproveG = function(isApprove) {
         const checkedBoxes = document.querySelectorAll('.approval-chk-g:checked');
         if (checkedBoxes.length === 0) {
-            alert('선택된 항목이 없습니다.');
+            showToast('선택된 항목이 없습니다.', 'error');
             return;
         }
 
@@ -917,7 +1259,7 @@
                 if (isApprove) {
                     req.status = 'APPROVED';
                     const day = parseInt(req.date.split('-')[2]);
-                    const hours = req.duration.includes('4h') ? 4 : 8;
+                    const hours = req.duration.includes('4h') ? 4 : (parseFloat(req.duration) || 8);
                     if (!mockLeavesData[req.name]) mockLeavesData[req.name] = {};
                     mockLeavesData[req.name][day] = hours;
                 } else {
@@ -932,7 +1274,7 @@
         const selectAll = document.getElementById('selectAllG');
         if (selectAll) selectAll.checked = false;
 
-        alert(`${count}건의 요청이 일괄 ${isApprove ? '승인' : '반려'} 처리되었습니다.`);
+        showToast(`${count}건의 요청이 일괄 ${isApprove ? '승인' : '반려'} 처리되었습니다.`, 'success');
     };
 
     function syncG() {
@@ -944,6 +1286,9 @@
         renderDetailedApprovalsTableG();
         renderDetailedMyRequestsTableG();
         renderMobileScheduleListG();
+        if (selectedViewG === 'yearly') {
+            renderYearlyViewG();
+        }
     }
 
     function renderStatsG() {
@@ -953,6 +1298,18 @@
         for (let d in myLeaves) {
             usedHours += myLeaves[d];
         }
+        
+        // Count approved/deductive requests in pendingLeavesG for 홍길동
+        pendingLeavesG.forEach(p => {
+            if (p.name.includes('홍길동') && p.status === 'APPROVED' && p.is_deductive !== false) {
+                // If it's already in mockLeavesData, don't double count
+                const day = parseInt(p.date.split('-')[2]);
+                if (!myLeaves[day]) {
+                    usedHours += p.duration.includes('4h') ? 4 : (parseFloat(p.duration) || 8);
+                }
+            }
+        });
+
         let remainingHours = totalHours - usedHours;
 
         const desktopUsed = document.getElementById('myUsedG_desktop');
@@ -1032,7 +1389,7 @@
                     const extra = teamPendings.length - 5;
                     html += `
                         <div class="text-center pt-2">
-                            <button onclick="alert('결재 관리 탭에서 전체 목록을 확인할 수 있습니다.')" class="text-[10px] text-dense-blue font-bold hover:underline">... 외 ${extra}건이 더 있습니다. (PC에서 전체 결재 가능)</button>
+                            <button onclick="showToast('결재 관리 탭에서 전체 목록을 확인할 수 있습니다.', 'success')" class="text-[10px] text-dense-blue font-bold hover:underline">... 외 ${extra}건이 더 있습니다. (PC에서 전체 결재 가능)</button>
                         </div>
                     `;
                 }
@@ -1064,9 +1421,11 @@
                     statusBadge = '<span class="text-dense-muted bg-dense-gray-soft px-1.5 py-0.5 rounded-[4px] font-bold">취소됨</span>';
                 }
 
+                const deductiveLabel = r.is_deductive === false ? '<span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.2 text-[8px] font-bold text-purple-700">공가</span>' : '';
+
                 html += `
                     <div class="flex justify-between items-center border-b pb-1">
-                        <span>2026-${r.date.split('-')[1]}-${r.date.split('-')[2]} (${r.duration.split(' ')[0]})</span>
+                        <span class="flex items-center">2026-${r.date.split('-')[1]}-${r.date.split('-')[2]} (${r.duration.split(' ')[0]})${deductiveLabel}</span>
                         <div class="flex items-center text-[10px]">
                             ${statusBadge}
                             ${cancelBtn}
@@ -1148,7 +1507,11 @@
                         bodyHtml += `<td class="bg-dense-gray-soft/40 cursor-not-allowed"></td>`;
                     } else {
                         let highlightCls = "";
-                        if (rangeStartG) {
+                        if (isMultiSelectModeG) {
+                            if (selectedDatesG.includes(dateStr)) {
+                                highlightCls = "bg-dense-blue-soft border-dense-blue border-l-2 border-r-2 rounded";
+                            }
+                        } else if (rangeStartG) {
                             if (dateStr === rangeStartG) {
                                 highlightCls = "bg-dense-blue-soft border-dense-blue border-l-2";
                             } else if (rangeEndG && dateStr === rangeEndG) {
@@ -1222,9 +1585,10 @@
                         chipCls += 'bg-yellow-50 text-yellow-800 border-yellow-200';
                     }
                     
+                    const deductiveLabel = p.is_deductive === false ? ' (공가)' : '';
                     leaveChipsHtml += `
-                        <div class="${chipCls}" onclick="event.stopPropagation(); openApproveModalG(${p.id})" title="${p.name}: ${p.duration} (결재대기)">
-                            ${p.name} <span class="opacity-85 font-semibold text-[8px] ml-0.5">${p.duration.split(' ')[0]}(대기)</span>
+                        <div class="${chipCls}" onclick="event.stopPropagation(); openApproveModalG(${p.id})" title="${p.name}: ${p.duration}${deductiveLabel} (결재대기)">
+                            ${p.name} <span class="opacity-85 font-semibold text-[8px] ml-0.5">${p.duration.split(' ')[0]}(대기)${deductiveLabel}</span>
                         </div>
                     `;
                 }
@@ -1236,7 +1600,11 @@
             let cellCls = "min-h-[9rem] border p-2 flex flex-col justify-between transition-all relative group bg-dense-surface border-dense-line hover:shadow-sm ";
             
             let rangeCls = "";
-            if (rangeStartG) {
+            if (isMultiSelectModeG) {
+                if (selectedDatesG.includes(dateStr)) {
+                    rangeCls = " bg-dense-blue-soft border-dense-blue border rounded-xl ring-2 ring-dense-blue/20 z-10 text-dense-blue ";
+                }
+            } else if (rangeStartG) {
                 if (dateStr === rangeStartG) {
                     if (rangeEndG && rangeEndG !== rangeStartG) {
                         rangeCls = " bg-dense-blue-soft border-dense-blue border-y border-l rounded-l-xl rounded-r-none z-10 text-dense-blue ";
@@ -1299,13 +1667,14 @@
 
         let html = '';
         teamPendings.forEach(r => {
+            const deductiveLabel = r.is_deductive === false ? ' <span class="inline-flex rounded bg-purple-100 px-1 py-0.2 text-[8px] font-bold text-purple-700">공가/출장</span>' : '';
             html += `
                 <tr class="hover:bg-dense-surface-soft transition-colors">
                     <td class="px-4 py-2.5"><input type="checkbox" value="${r.id}" class="approval-chk-g h-4 w-4 rounded text-dense-blue"></td>
                     <td class="px-4 py-2.5 font-bold text-dense-text">${r.name}</td>
                     <td class="px-4 py-2.5">${r.team}</td>
                     <td class="px-4 py-2.5 font-bold">${r.date}</td>
-                    <td class="px-4 py-2.5 text-dense-blue font-semibold">${r.duration}</td>
+                    <td class="px-4 py-2.5 text-dense-blue font-semibold">${r.duration}${deductiveLabel}</td>
                     <td class="px-4 py-2.5"><span class="px-1.5 py-0.5 rounded bg-dense-amber-soft text-dense-amber text-[10px] font-bold">대기 중</span></td>
                     <td class="px-4 py-2.5 text-center flex justify-center gap-1">
                         <button onclick="approveSingleG(${r.id})" class="px-2 py-0.5 rounded bg-dense-green text-white text-[10px] font-bold hover:bg-dense-green/90 transition-colors">승인</button>
@@ -1378,12 +1747,15 @@
                         actionHTML = '<span class="text-dense-muted text-[10px]">-</span>';
                     }
 
-                    const info = r.rejectReason ? `반려 사유: ${r.rejectReason}` : '정보 없음';
+                    const deductiveLabel = r.is_deductive === false ? ' <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.2 text-[8px] font-bold text-purple-700">공가/출장</span>' : '';
+                    const info = r.status === 'REJECTED' && r.rejectReason 
+                        ? `<span class="text-dense-danger">반려 사유: ${r.rejectReason}</span>` 
+                        : (r.reason ? `사유: ${r.reason}` : '—');
 
                     html += `
                         <tr class="hover:bg-dense-surface-soft transition-colors">
                             <td class="px-4 py-2.5 font-bold text-dense-text">${r.date}</td>
-                            <td class="px-4 py-2.5 font-semibold text-dense-blue">${r.duration}</td>
+                            <td class="px-4 py-2.5 font-semibold text-dense-blue">${r.duration}${deductiveLabel}</td>
                             <td class="px-4 py-2.5">${statusHTML}</td>
                             <td class="px-4 py-2.5 text-dense-muted truncate max-w-[200px]" title="${info}">${info}</td>
                             <td class="px-4 py-2.5 text-center">${actionHTML}</td>
@@ -1419,14 +1791,17 @@
                         statusHTML = '<span class="text-dense-muted bg-dense-gray-soft px-2 py-0.5 rounded font-extrabold text-[9px]">취소됨</span>';
                     }
 
+                    const deductiveLabel = r.is_deductive === false ? ' <span class="inline-flex rounded bg-purple-100 px-1 py-0.2 text-[8px] font-bold text-purple-700">공가</span>' : '';
                     const rejectText = r.rejectReason ? `<div class="text-[10px] text-dense-danger font-bold mt-1">반려 사유: ${r.rejectReason}</div>` : '';
+                    const reasonText = r.reason ? `<div class="text-[10px] text-dense-muted mt-0.5">사유: ${r.reason}</div>` : '';
 
                     html += `
                         <div class="bg-dense-surface border p-3 rounded-xl hover:shadow-xs transition-shadow">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <div class="font-extrabold text-dense-text text-xs">${r.date}</div>
-                                    <div class="text-[10px] text-dense-muted font-bold mt-0.5">구분: ${r.duration}</div>
+                                    <div class="text-[10px] text-dense-muted font-bold mt-0.5">구분: ${r.duration}${deductiveLabel}</div>
+                                    ${reasonText}
                                     ${rejectText}
                                 </div>
                                 <div class="flex flex-col items-end gap-1.5">
@@ -1513,6 +1888,145 @@
         container.innerHTML = html;
     }
 
+    function renderYearlyViewG() {
+        const container = document.getElementById('yearly-grid-container-g');
+        if (!container) return;
+
+        let html = '';
+        const months = [1,2,3,4,5,6,7,8,9,10,11,12];
+        
+        const approvedDates = new Set();
+        const pendingDates = new Set();
+        
+        pendingLeavesG.forEach(p => {
+            if (p.name.includes('홍길동')) {
+                if (p.status === 'APPROVED') {
+                    approvedDates.add(p.date);
+                } else if (p.status === 'PENDING') {
+                    pendingDates.add(p.date);
+                }
+            }
+        });
+        
+        const myLeaves = mockLeavesData['★ 홍길동 (나)'] || mockLeavesData['★ 홍길동'] || {};
+        for (let d in myLeaves) {
+            approvedDates.add(`2026-06-${String(d).padStart(2, '0')}`);
+        }
+
+        months.forEach(m => {
+            const firstDay = new Date(2026, m - 1, 1);
+            const startOffset = firstDay.getDay();
+            const totalDays = new Date(2026, m, 0).getDate();
+
+            let monthHtml = `
+                <div class="border rounded-xl p-2.5 bg-dense-surface shadow-2xs flex flex-col justify-between">
+                    <h4 class="text-xs font-extrabold text-dense-text border-b pb-1 mb-2 text-center">${m}월</h4>
+                    <div class="grid grid-cols-7 gap-1 text-[9px] font-bold text-center mb-1">
+                        <span class="text-dense-danger">일</span>
+                        <span>월</span>
+                        <span>화</span>
+                        <span>수</span>
+                        <span>목</span>
+                        <span>금</span>
+                        <span class="text-dense-blue">토</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-[8px] font-semibold text-center">
+            `;
+
+            for (let i = 0; i < startOffset; i++) {
+                monthHtml += `<span class="h-4.5 w-4.5 flex items-center justify-center text-transparent">—</span>`;
+            }
+
+            for (let d = 1; d <= totalDays; d++) {
+                const dateKey = `2026-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayOfWeek = (startOffset + d - 1) % 7;
+                
+                const isHol = (m === 6 && d === 6) || (m === 1 && d === 1) || (m === 3 && d === 1) || (m === 5 && d === 5) || (m === 8 && d === 15) || (m === 10 && d === 3) || (m === 10 && d === 9) || (m === 12 && d === 25);
+                const isWE = (dayOfWeek === 0 || dayOfWeek === 6);
+                
+                let cellClass = "h-4.5 w-4.5 flex items-center justify-center rounded-sm text-[8px] font-bold ";
+                let textCls = "";
+                if (isHol || dayOfWeek === 0) textCls = "text-dense-danger";
+                else if (dayOfWeek === 6) textCls = "text-dense-blue";
+                else textCls = "text-dense-text";
+
+                if (approvedDates.has(dateKey)) {
+                    cellClass += "bg-dense-green text-white shadow-3xs";
+                } else if (pendingDates.has(dateKey)) {
+                    cellClass += "bg-dense-amber text-white shadow-3xs animate-pulse";
+                } else if (isHol) {
+                    cellClass += "bg-dense-danger-soft text-dense-danger border border-dense-danger/10";
+                } else if (isWE) {
+                    cellClass += "bg-dense-gray-soft/40 " + textCls;
+                } else {
+                    cellClass += "hover:bg-dense-blue-soft/50 cursor-pointer " + textCls;
+                }
+
+                const clickHandler = (!isWE && !isHol) ? `onclick="navigateAndSelectDateG('${dateKey}')"` : '';
+
+                monthHtml += `<span class="${cellClass}" ${clickHandler} title="${dateKey}">${d}</span>`;
+            }
+
+            const endOffset = (startOffset + totalDays) % 7;
+            if (endOffset > 0) {
+                for (let i = 0; i < (7 - endOffset); i++) {
+                    monthHtml += `<span class="h-4.5 w-4.5 flex items-center justify-center text-transparent">—</span>`;
+                }
+            }
+
+            monthHtml += `
+                    </div>
+                </div>
+            `;
+            html += monthHtml;
+        });
+
+        container.innerHTML = html;
+    }
+
+    window.navigateAndSelectDateG = function(dateKey) {
+        switchViewG('calendar');
+        
+        const m = parseInt(dateKey.split('-')[1]);
+        if (m !== 6) {
+            showToast('이 목업은 2026년 6월 일정 등록 및 시뮬레이션만 전적으로 지원합니다. 6월 달력의 셀을 선택해 주세요.', 'success');
+            return;
+        }
+        
+        clearSelectionG();
+        handleCalendarCellClickG(dateKey);
+    };
+
+    function populateUserTimeSelects() {
+        const selectIds = [
+            'easy-start-g_desktop', 'easy-end-g_desktop',
+            'easy-start-g_mobile', 'easy-end-g_mobile',
+            'modalStartG', 'modalEndG'
+        ];
+        selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            select.innerHTML = '';
+            for (let h = 9; h <= 18; h++) {
+                for (let m = 0; m <= 30; m += 30) {
+                    if (h === 18 && m === 30) break;
+                    const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    const opt = document.createElement('option');
+                    opt.value = timeStr;
+                    opt.textContent = timeStr;
+                    
+                    if (id.includes('start') || id.includes('Start')) {
+                        if (timeStr === '09:00') opt.selected = true;
+                    } else {
+                        if (timeStr === '18:00') opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                }
+            }
+            select.addEventListener('change', updateEstimatedTimeG);
+        });
+    }
+
     window.initOptionG = function() {
         selectedMobileDayG = 13;
         selectedViewG = 'calendar';
@@ -1543,10 +2057,58 @@
             headerRow.innerHTML = `<th class="sticky-col text-left !px-2" style="width:4.25rem">이름</th><th style="width:5rem">팀</th><th style="width:3rem">잔여</th>` + thHtml;
         }
 
+        populateUserTimeSelects();
         syncG();
         updateTimeSelectorAvailabilityG();
         switchViewG('calendar');
         switchMobileTabG('dashboard');
+    };
+
+    
+    window.showToast = function(message, type = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = `shim-toast shim-toast-${type}`;
+        
+        let icon = 'ℹ️';
+        if (type === 'success') icon = '✅';
+        if (type === 'warning') icon = '⚠️';
+        if (type === 'error') icon = '❌';
+        
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    };
+
+    window.simulateButtonLoading = function(btn, callback, duration = 600) {
+        if (!btn || btn.disabled) return;
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 처리 중...`;
+        
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHTML;
+            if (callback) callback();
+        }, duration);
     };
 
     document.addEventListener('DOMContentLoaded', () => {

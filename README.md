@@ -1,6 +1,6 @@
 # 쉼(休) SHIM / 연차 관리 시스템
 
-**릴리스 버전:** 1.7.3
+**릴리스 버전:** 1.7.4
 
 폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
 
@@ -85,7 +85,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.7.3 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.7.4 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
@@ -125,7 +125,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.7.3` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.7.4` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 

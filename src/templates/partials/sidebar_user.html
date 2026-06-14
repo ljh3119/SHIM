@@ -1,38 +1,63 @@
 {# 사용자 전용 사이드바 — 메인 내비. #}
 {% set path = request.url.path %}
-<aside id="shim-sidebar-user" data-shim-sidebar class="shim-sidebar relative flex w-[220px] shrink-0 flex-col gap-3 self-start overflow-visible rounded-xl border border-dense-line-strong bg-dense-surface p-4 pr-5 shadow-sm transition-[width] duration-200 ease-out min-h-[calc(100vh-6rem)]">
+<aside id="shim-sidebar-user" data-shim-sidebar class="shim-sidebar relative flex w-full md:w-[220px] shrink-0 flex-col gap-3 self-start overflow-visible transition-[width] duration-200 ease-out min-h-0 md:min-h-[calc(100vh-6rem)]">
   <button type="button" class="shim-sidebar-toggle absolute -right-3 top-2.5 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dense-line-strong bg-white text-dense-nav-text shadow-sm transition-colors hover:bg-dense-surface-soft" aria-label="사이드 패널 접기·펼치기" aria-expanded="true" aria-controls="shim-sidebar-user-nav"></button>
-  <h2 class="shim-sidebar-title shim-sidebar-heading-row mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text">
-    <span class="shim-sidebar-heading-stack min-w-0 flex flex-1 flex-col gap-0.5">
-      <span class="shim-sidebar-heading-text min-w-0 truncate pl-1 leading-snug">{{ product_nav_short | default('SHIM') }}</span>
-      {% if brand_nav_show_subtitle %}
-      <span class="shim-sidebar-heading-sub min-w-0 truncate pl-1 text-[11px] font-semibold leading-snug text-dense-muted">{{ product_display_name | default('SHIM') }}</span>
-      {% endif %}
-    </span>
-    <span class="shim-sidebar-heading-emoji" aria-hidden="true">
+  
+  <!-- Navigation Card -->
+  <div class="rounded-2xl border border-dense-line bg-dense-surface p-3 pr-4 shadow-sm flex flex-col gap-2">
+    <h2 class="shim-sidebar-title shim-sidebar-heading-row mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text">
+      <span class="shim-sidebar-heading-stack min-w-0 flex flex-1 flex-col gap-0.5">
+        <span class="shim-sidebar-heading-text min-w-0 truncate pl-1 leading-snug">{{ product_nav_short | default('SHIM') }}</span>
+        {% if brand_nav_show_subtitle %}
+        <span class="shim-sidebar-heading-sub min-w-0 truncate pl-1 text-[11px] font-semibold leading-snug text-dense-muted">{{ product_display_name | default('SHIM') }}</span>
+        {% endif %}
+      </span>
+      <span class="shim-sidebar-heading-emoji" aria-hidden="true">
         <svg class="shim-sidebar-heading-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </span>
-  </h2>
-  <nav id="shim-sidebar-user-nav" class="flex flex-col gap-1" aria-label="사용자 메뉴">
-    <a href="/user/dashboard" class="shim-side-link {% if path == '/user/dashboard' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-      <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
-      <span class="shim-nav-label min-w-0 truncate font-semibold">대시보드</span>
-    </a>
-    <a href="/user/history" class="shim-side-link {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-      <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg>
-      <span class="shim-nav-label min-w-0 truncate font-semibold">신청 내역</span>
-    </a>
-    {% if team_calendar_visible or company_calendar_visible %}
-    <a href="/user/team-calendar" class="shim-side-link {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-      <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
-      <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}프로젝트 캘린더{% else %}팀 캘린더{% endif %}</span>
-    </a>
-    {% endif %}
-    {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-    <a href="/user/approvals" class="shim-side-link {% if path == '/user/approvals' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-      <svg class="shim-side-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-      <span class="shim-nav-label min-w-0 truncate font-semibold">결재 관리</span>
-    </a>
-    {% endif %}
-  </nav>
+      </span>
+    </h2>
+    <nav id="shim-sidebar-user-nav" class="flex flex-col gap-1" aria-label="사용자 메뉴">
+      <a href="/user/dashboard" class="shim-side-link {% if path == '/user/dashboard' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">📊 대시보드</span>
+      </a>
+      <a href="/user/history" class="shim-side-link {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">📋 신청 내역</span>
+      </a>
+      {% if team_calendar_visible or company_calendar_visible %}
+      <a href="/user/team-calendar" class="shim-side-link {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}📅 프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
+      </a>
+      {% endif %}
+      {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
+      <a href="/user/approvals" class="shim-side-link {% if path == '/user/approvals' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <svg class="shim-side-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">📥 결재 관리</span>
+      </a>
+      {% endif %}
+    </nav>
+  </div>
+
+  {% if total_allocated_hours is defined %}
+  <!-- User Stats Card -->
+  <div class="system-stats-card rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-2.5">
+    <h4 class="text-[10px] font-extrabold text-dense-muted uppercase tracking-wider">내 연차 현황</h4>
+    <div class="space-y-1 text-xs">
+      <div class="flex justify-between font-semibold">
+        <span class="text-dense-muted">올해 부여</span>
+        <span class="text-dense-text font-bold">{{ total_allocated_hours|int if total_allocated_hours == total_allocated_hours|int else '%.1f'|format(total_allocated_hours) }}h</span>
+      </div>
+      <div class="flex justify-between font-semibold">
+        <span class="text-dense-muted">사용 완료</span>
+        <span class="text-dense-text font-bold">{{ used_hours|int if used_hours == used_hours|int else '%.1f'|format(used_hours) }}h</span>
+      </div>
+      <div class="flex justify-between font-semibold">
+        <span class="text-dense-muted">잔여 연차</span>
+        <span class="text-dense-blue font-extrabold">{{ remaining_hours|int if remaining_hours == remaining_hours|int else '%.1f'|format(remaining_hours) }}h</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </aside>
