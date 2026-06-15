@@ -2,82 +2,103 @@
 
 {% block content %}
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">공휴일/연휴 관리</h2>
-            <p class="mt-1 text-sm font-semibold text-dense-muted">관리자가 공휴일을 등록, 수정, 삭제할 수 있습니다.</p>
+    <!-- Header Section -->
+    <div class="mb-6 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0 shrink">
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">🏖️ 공휴일/연휴 관리</h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">회사 창립기념일, 현충일 등 연차 차감에서 제외할 공휴일을 등록 및 해제합니다.</p>
         </div>
-        <form action="/admin/holidays" method="GET" class="flex items-center gap-2">
-            <select name="year" onchange="this.form.submit()" class="w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                {% for y in year_options %}
-                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
-                {% endfor %}
-            </select>
-        </form>
-    </div>
-
-    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
-        <h3 class="mb-3 text-base font-extrabold text-dense-text">공휴일 신규 등록</h3>
-        <form id="holidayCreateForm" class="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <input type="date" name="holiday_date" required
-                   class="rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue"
-                   value="{{ '%04d-01-01'|format(selected_year) }}">
-            <input type="text" name="holiday_name" required maxlength="50" placeholder="예: 설 연휴, 어린이날"
-                   class="md:col-span-2 rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-            <button type="submit"
-                    class="rounded-xl bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">
-                등록
-            </button>
-        </form>
-    </div>
-
-    <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 sm:p-6">
-        <h3 class="mb-3 text-base font-extrabold text-dense-text">{{ selected_year }}년 등록 목록</h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-dense-line">
-                <thead class="bg-dense-surface-soft">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">날짜</th>
-                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">이름</th>
-                        <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-dense-line bg-dense-surface">
-                    {% for h in holidays %}
-                    <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">{{ h.date.strftime('%Y-%m-%d') }}</td>
-                        <td class="px-4 py-3">
-                            <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
-                                   class="w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                        </td>
-                        <td class="whitespace-nowrap px-4 py-3">
-                            <div class="flex flex-wrap gap-2">
-                                <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
-                                       class="rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                                <button type="button" onclick="updateHoliday({{ h.id }}, this)"
-                                        class="rounded-xl border border-[#fedf89] bg-dense-amber-soft px-3 py-1.5 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">
-                                    수정
-                                </button>
-                                <button type="button" onclick="deleteHoliday({{ h.id }}, this)"
-                                        class="rounded-xl border border-dense-danger-soft bg-dense-danger-soft px-3 py-1.5 text-sm font-bold text-[#b42318] hover:brightness-95">
-                                    삭제
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="3" class="px-4 py-12 text-center text-dense-muted font-semibold">
-                            <div class="flex flex-col items-center justify-center gap-2">
-                                <span class="text-3xl">📅</span>
-                                <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
-                                <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
-                            </div>
-                        </td>
-                    </tr>
+        <div class="flex items-center gap-2 shrink-0">
+            <form action="/admin/holidays" method="GET" class="flex items-center gap-2">
+                <select name="year" onchange="this.form.submit()" class="w-24 border rounded-xl px-2.5 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
+                    {% for y in year_options %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                     {% endfor %}
-                </tbody>
-            </table>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2컬럼 레이아웃 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- 공휴일 추가 폼 -->
+        <div class="rounded-xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold self-start shadow-xs">
+            <p class="text-xs font-extrabold text-dense-text">📅 신규 공휴일 등록</p>
+            <form id="holidayCreateForm" class="space-y-2.5">
+                <div>
+                    <label class="block mb-1 text-dense-muted text-[11px]">공휴일 날짜</label>
+                    <input type="date" name="holiday_date" required
+                           class="w-full border border-dense-line rounded-xl p-2 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue"
+                           value="{{ '%04d-01-01'|format(selected_year) }}">
+                </div>
+                <div>
+                    <label class="block mb-1 text-dense-muted text-[11px]">공휴일 이름</label>
+                    <input type="text" name="holiday_name" required maxlength="50" placeholder="예: 설 연휴, 어린이날"
+                           class="w-full border border-dense-line rounded-xl p-2 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                </div>
+                <div class="pt-1">
+                    <button type="submit"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-dense-green text-white font-bold hover:brightness-95 transition-all shadow-xs">
+                        새 공휴일 추가
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 공휴일 목록 -->
+        <div class="lg:col-span-2 space-y-3">
+            <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface shadow-xs">
+                <div class="px-4 py-3 border-b border-dense-line">
+                    <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 ({{ selected_year }}년 전체)</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[30rem] table-fixed divide-y divide-dense-line text-xs">
+                        <thead class="bg-dense-surface-soft">
+                            <tr>
+                                <th scope="col" class="w-[35%] px-4 py-2.5 text-left font-extrabold uppercase tracking-wide text-dense-muted">날짜</th>
+                                <th scope="col" class="w-[40%] px-4 py-2.5 text-left font-extrabold uppercase tracking-wide text-dense-muted">공휴일 이름</th>
+                                <th scope="col" class="w-[25%] px-4 py-2.5 text-right font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-dense-line bg-dense-surface">
+                            {% for h in holidays %}
+                            <tr class="transition-colors hover:bg-dense-surface-soft">
+                                <td class="px-4 py-2">
+                                    <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
+                                           class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
+                                           class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    <div class="inline-flex gap-1.5">
+                                        <button type="button" onclick="updateHoliday({{ h.id }}, this)"
+                                                class="rounded-lg border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-colors">
+                                            수정
+                                        </button>
+                                        <button type="button" onclick="deleteHoliday({{ h.id }}, this)"
+                                                class="rounded-lg border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-danger hover:bg-dense-danger-soft transition-colors">
+                                            삭제
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="px-4 py-8 text-center text-dense-muted">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <span class="text-2xl">📅</span>
+                                        <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
+                                        <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>

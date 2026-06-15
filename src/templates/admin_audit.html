@@ -13,38 +13,36 @@
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
-        <div class="border-b border-dense-line p-4 sm:p-5">
-            <form method="get" id="audit-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div>
-                        <label for="audit-user" class="mb-1 block text-xs font-bold text-dense-muted">수행자</label>
-                        <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                            <option value="" {% if not actor_id %}selected{% endif %}>전체</option>
-                            {% for u in users %}
-                            <option value="{{ u.user_id }}" {% if actor_id == u.user_id %}selected{% endif %}>{{ u.user_name }}({{ u.user_id }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="audit-action" class="mb-1 block text-xs font-bold text-dense-muted">액션</label>
-                        <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
-                    </div>
-                    <div>
-                        <label for="audit-start-date" class="mb-1 block text-xs font-bold text-dense-muted">시작일</label>
-                        <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    </div>
-                    <div>
-                        <label for="audit-end-date" class="mb-1 block text-xs font-bold text-dense-muted">종료일</label>
-                        <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    </div>
-                </div>
-                <div class="mt-3 flex justify-end">
-                    <button type="submit" class="rounded-lg bg-dense-blue px-4 py-2 text-sm font-bold text-white hover:brightness-95">검색하기</button>
-                </div>
-            </form>
+    <!-- Audit Filters -->
+    <form method="get" id="audit-filter-form" class="grid grid-cols-2 gap-3 sm:grid-cols-5 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold mb-4">
+        <div>
+            <label for="audit-user" class="block mb-1 text-dense-muted">수행자 (Actor)</label>
+            <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                <option value="" {% if not actor_id %}selected{% endif %}>전체</option>
+                {% for u in users %}
+                <option value="{{ u.user_id }}" {% if actor_id == u.user_id %}selected{% endif %}>{{ u.user_name }}({{ u.user_id }})</option>
+                {% endfor %}
+            </select>
         </div>
+        <div>
+            <label for="audit-action" class="block mb-1 text-dense-muted">수행 작업 (Action)</label>
+            <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+        </div>
+        <div>
+            <label for="audit-start-date" class="block mb-1 text-dense-muted">조회 시작일</label>
+            <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+        </div>
+        <div>
+            <label for="audit-end-date" class="block mb-1 text-dense-muted">조회 종료일</label>
+            <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+        </div>
+        <div class="flex items-end gap-1.5">
+            <button type="submit" class="flex-1 py-1.5 bg-dense-blue text-white rounded-xl font-bold hover:brightness-95 transition-all shadow-xs">검색</button>
+            <a href="/admin/audit" class="flex-1 text-center py-1.5 bg-dense-surface border text-dense-muted hover:bg-dense-surface-soft rounded-xl font-bold transition-all shadow-xs">초기화</a>
+        </div>
+    </form>
+
+    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
 
         <!-- Table Section -->
         <div class="overflow-x-auto">

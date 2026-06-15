@@ -147,7 +147,7 @@
     <!-- Header Greeting for PC only -->
     <div class="hidden md:flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">{% if user_role == 'PM' or company_calendar_visible %}프로젝트 캘린더{% else %}{{ team_name or '소속 미지정' }} 캘린더{% endif %}</h2>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">연차 캘린더</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
                 {% if user_role == 'PM' or company_calendar_visible %}
                 {{ team_cal_year }}년 {{ team_cal_month }}월 프로젝트의 연차 현황입니다.
@@ -156,17 +156,28 @@
                 {% endif %}
             </p>
         </div>
+        <div class="mt-4 flex gap-2 md:mt-0">
+            <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
+                <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">타임라인</a>
+                {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
+                <a href="/user/approvals" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
+                {% endif %}
+                <a href="/user/history" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">내 신청 내역</a>
+            </div>
+        </div>
     </div>
 
     <!-- 1. PC & Tablet View (Wide Screen) -->
-    <div class="hidden md:flex flex-col lg:flex-row gap-5">
+    <div class="hidden md:flex flex-col md:flex-row gap-5">
         <!-- Left Sidebar Panel -->
         {% include "partials/user_left_panel.html" %}
 
         <!-- Right Content Panel -->
-        <div class="min-w-0 flex-1">
-            <div class="rounded-[18px] border bg-dense-surface p-5 shadow-sm">
-                <!-- Switch Bar -->
+        <div class="min-w-0 flex-1 space-y-4">
+
+            <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+                <!-- Header Controls Inside Card -->
                 <div class="mb-4 flex items-center justify-between border-b pb-4">
                     <div class="flex items-center gap-4">
                         {% set prev_year = team_cal_year - 1 if team_cal_month == 1 else team_cal_year %}
@@ -188,14 +199,10 @@
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
-                            <a href="/user/dashboard" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                        <!-- 세부 뷰 전환 토글 (타임라인의 목록형/달력형) -->
+                        <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                             <button type="button" id="layout_timeline_btn" onclick="switchTeamLayout('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all focus:outline-none">타임라인</button>
                             <button type="button" id="layout_calendar_btn" onclick="switchTeamLayout('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all focus:outline-none">캘린더 뷰</button>
-                            {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-                            <a href="/user/approvals" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
-                            {% endif %}
-                            <a href="/user/history" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">내 신청 내역</a>
                         </div>
                         <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
                             <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
@@ -239,7 +246,7 @@
                 </div>
 
                 <!-- Timeline Table View Container -->
-                <div id="team-timeline-view-container" class="overflow-x-auto rounded-xl border border-dense-line hidden">
+                <div id="team-timeline-view-container" class="overflow-x-auto rounded-xl border border-dense-line">
                     <table class="cal-table" style="min-width: 1000px;">
                         <thead>
                             <tr>
@@ -328,8 +335,7 @@
                                     <div class="day-block {% if (ns_t.has_non_deductive or ns_t.has_non_deductive_pending) and total_h == 0 %}public{% elif total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 or ns_t.has_non_deductive_pending %}pending{% endif %} transform transition-transform hover:scale-105" title="{{ tooltip_parts|join(', ') }}">
                                         {% if total_h > 0 %}
                                             {{ fmt_hours(total_h) }}h
-                                            {% if ns_pub_h.h > 0 %}<span class="ml-0.5 text-[7px]">+공가/출장</span>{% endif %}
-                                            {% else %}
+                                        {% else %}
                                             {{ fmt_hours(ns_pub_h.h) }}h
                                         {% endif %}
                                     </div>
@@ -438,7 +444,7 @@
                 <span>←</span> 대시보드 홈으로
             </a>
             
-            <div class="rounded-xl border bg-dense-surface p-4 shadow-sm">
+            <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm">
                 <div class="flex items-center justify-between mb-4 border-b pb-3">
                     <h3 class="text-sm font-extrabold text-dense-text">👥 팀 일정 조회</h3>
                     <button onclick="navigateMobileScheduleG(0)" class="text-[9px] px-2 py-0.5 border rounded-lg bg-dense-surface-soft font-bold hover:bg-dense-surface transition-colors">오늘로</button>
@@ -446,9 +452,9 @@
                 
                 <!-- Date Slider Bar -->
                 <div class="flex items-center justify-between bg-dense-surface-soft p-2 rounded-xl border border-dense-line mb-3">
-                    <button onclick="navigateMobileScheduleG(-1)" class="w-8 h-8 rounded-lg border bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&lt;</button>
+                    <button onclick="navigateMobileScheduleG(-1)" class="w-8 h-8 rounded-lg border border-dense-line bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&lt;</button>
                     <span id="mobile-schedule-date-label-g" class="text-xs font-extrabold text-dense-text"></span>
-                    <button onclick="navigateMobileScheduleG(1)" class="w-8 h-8 rounded-lg border bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&gt;</button>
+                    <button onclick="navigateMobileScheduleG(1)" class="w-8 h-8 rounded-lg border border-dense-line bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&gt;</button>
                 </div>
                 
                 <!-- Absent List -->
@@ -553,7 +559,7 @@
 
         absentees.forEach(item => {
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-3 rounded-xl border bg-dense-surface shadow-xs';
+            div.className = 'flex items-center justify-between p-3 rounded-xl border border-dense-line bg-dense-surface shadow-xs';
             
             const isDeduct = item.leave.is_deductive;
             const totalH = item.leave.snapshot_deduction_hours;

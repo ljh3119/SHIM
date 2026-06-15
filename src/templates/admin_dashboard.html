@@ -51,6 +51,22 @@
         </a>
     </section>
 
+    <!-- Chart Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📊 팀별 연차 사용 현황 (누적)</h3>
+            <div class="relative h-[220px] w-full">
+                <canvas id="teamChart"></canvas>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📈 월별 연차 사용 트렌드</h3>
+            <div class="relative h-[220px] w-full">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <section class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dense-line px-4 py-4 sm:px-5">
             <h3 class="text-lg font-extrabold tracking-tight text-dense-text">
@@ -118,4 +134,108 @@
         </div>
     </section>
 </div>
+
+<script src="/static/js/chart.umd.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chartData = {{ chart_data | tojson | safe }};
+    
+    // 1. 팀별 차트
+    const teamCtx = document.getElementById('teamChart');
+    if (teamCtx && chartData.teams && chartData.teams.length > 0) {
+        new Chart(teamCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.teams,
+                datasets: [
+                    {
+                        label: '사용 연차 (h)',
+                        data: chartData.used_hours,
+                        backgroundColor: 'rgba(23, 92, 211, 0.85)',
+                        borderColor: 'rgb(23, 92, 211)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '잔여 연차 (h)',
+                        data: chartData.remaining_hours,
+                        backgroundColor: 'rgba(208, 213, 221, 0.5)',
+                        borderColor: 'rgb(208, 213, 221)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 10,
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { font: { size: 9, weight: 'bold' } }
+                    },
+                    y: {
+                        stacked: true,
+                        grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                        ticks: { font: { size: 9, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. 월별 사용 트렌드 차트
+    const trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: '월별 사용 시간 (h)',
+                        data: chartData.monthly_hours,
+                        borderColor: 'rgb(6, 118, 71)',
+                        backgroundColor: 'rgba(6, 118, 71, 0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgb(6, 118, 71)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 10,
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 9, weight: 'bold' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                        ticks: { font: { size: 9, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

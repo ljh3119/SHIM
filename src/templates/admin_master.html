@@ -12,116 +12,106 @@
         <p class="mt-1 text-sm font-semibold text-dense-muted">연차 신청에 쓰이는 시간대와 결재·백업 같은 시스템 설정을 한곳에서 다룹니다.</p>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-    <!-- 업무 규칙 설정 -->
-    <div class="glass-panel rounded-[18px] border border-dense-line bg-dense-surface p-6 lg:col-span-3">
-        <h3 class="mb-2 text-lg font-extrabold tracking-tight text-dense-text">업무 규칙 설정</h3>
-        <div class="mb-4 rounded-xl border border-[#fedf89] bg-dense-amber-soft p-4">
-            <p class="text-sm font-semibold text-dense-text">
-                <span class="font-extrabold">승인 워크플로우</span>
-                — 현재:
-                <strong id="approval-current-label" class="text-dense-amber">{% if is_approval_required %}켜짐 (결재 필요){% else %}꺼짐 (즉시 승인){% endif %}</strong>
-            </p>
-            <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
-                <strong class="text-dense-text">꺼짐</strong>: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br>
-                <strong class="text-dense-text">켜짐</strong>: 신규 신청은 «결재 대기»로 들어갑니다. 관리자나 팀장이 대시보드 또는 타임라인에서 결재 처리합니다.
-            </p>
-            <div class="mt-1.5 text-[11px] font-semibold text-dense-amber/90 leading-normal border-l-2 border-[#fedf89] pl-2">
-                * PM(프로젝트 매니저) 본인의 연차 신청은 설정과 관계없이 항상 자동 승인됩니다.<br>
-                * 팀장은 소속 팀원만 결재 가능하며, 본인 신청 건에 대한 자가 승인은 불가능합니다.
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-                <button type="button" onclick="toggleApprovalWorkflow(this)" class="inline-flex items-center justify-center rounded-xl border border-[#fedf89] bg-dense-surface px-3 py-2 text-sm font-bold text-dense-amber hover:bg-[#fffdf6]">승인 워크플로우 변경</button>
-            </div>
-        </div>
-        <div class="mb-4 rounded-xl border border-dense-line bg-dense-surface-soft p-4">
-            <p class="text-sm font-semibold text-dense-text">
-                <span class="font-extrabold">캘린더 공유 범위 설정</span>
-                — 현재:
-                <strong id="calendar-scope-current-label" class="text-dense-blue">
-                    {% if company_calendar_visible %}
-                        프로젝트 전체 공유
-                    {% elif team_calendar_visible %}
-                        소속 팀원 공유
-                    {% else %}
-                        공유 안 함 (본인 전용)
-                    {% endif %}
-                </strong>
-            </p>
-            <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
-                일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
-            </p>
-            
-            <div class="mt-3 space-y-2">
-                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
-                    <input type="radio" name="calendar_scope" value="none" {% if not team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                    <span>공유 안 함 (본인 전용) — 사원은 자신의 휴가 일정만 조회할 수 있습니다.</span>
-                </label>
-                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
-                    <input type="radio" name="calendar_scope" value="team" {% if team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                    <span>소속 팀원 공유 — 본인과 동일한 팀 내 사원의 연차를 조회할 수 있습니다.</span>
-                </label>
-                <label class="flex items-center gap-2 text-sm font-semibold text-dense-text cursor-pointer">
-                    <input type="radio" name="calendar_scope" value="company" {% if company_calendar_visible %}checked{% endif %} class="h-4 w-4 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                    <span>프로젝트 전체 공유 — 일반 사원과 팀장도 프로젝트 내 모든 사원의 연차를 조회할 수 있습니다.</span>
-                </label>
-            </div>
-            
-            <div class="mt-3 flex flex-wrap gap-2">
-                <button type="button" onclick="saveCalendarScope(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">공유 범위 저장</button>
-            </div>
-        </div>
-        <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3.5">
-            <p class="text-sm font-extrabold text-dense-text">시간 정책 설정 (30분 단위 선택)</p>
-            
-            <div class="space-y-2">
-                <label for="policy_granularity" class="block text-xs font-bold text-dense-text">1) 최소 시간 단위</label>
-                <select id="policy_granularity" class="w-full max-w-[14rem] rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    {% for unit in [30, 60, 120] %}
-                    <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ unit }}분 단위 차감</option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs font-semibold text-dense-muted">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+        <!-- 업무 규칙 & 시간 정책 설정 -->
+        <div class="space-y-4 lg:col-span-3">
+            <!-- 승인 워크플로우 안내 & 토글 -->
+            <div class="rounded-xl border border-[#fedf89] bg-dense-amber-soft p-3.5 space-y-2">
+                <p class="text-xs font-extrabold text-dense-text">
+                    <span>승인 워크플로우</span> — 현재:
+                    <strong id="approval-current-label" class="text-dense-amber">{% if is_approval_required %}켜짐 (결재 필요){% else %}꺼짐 (즉시 승인){% endif %}</strong>
+                </p>
+                <p class="text-[11px] leading-relaxed text-dense-muted font-semibold">
+                    <strong>꺼짐</strong>: 사원이 신청하면 바로 «승인됨»으로 기록됩니다.<br>
+                    <strong>켜짐</strong>: 신규 신청은 «결재 대기»로 들어갑니다. 관리자나 팀장이 대시보드 또는 타임라인에서 결재 처리합니다.
+                </p>
+                <div class="text-[10px] leading-normal border-l-2 border-[#fedf89] pl-2 text-dense-amber/90 font-bold">
+                    * PM(프로젝트 매니저) 본인의 연차 신청은 설정과 관계없이 항상 자동 승인됩니다.<br>
+                    * 팀장은 소속 팀원만 결재 가능하며, 본인 신청 건에 대한 자가 승인은 불가능합니다.
+                </div>
+                <div class="pt-1">
+                    <button type="button" onclick="toggleApprovalWorkflow(this)" class="inline-flex items-center justify-center rounded-xl border border-[#fedf89] bg-dense-surface px-3.5 py-2 text-xs font-bold text-dense-amber hover:bg-[#fffdf6] transition-all">승인 워크플로우 변경</button>
+                </div>
             </div>
 
-            <div class="space-y-3.5 border-t border-dense-line/60 pt-3">
-                <div class="space-y-2">
-                    <label class="block text-xs font-bold text-dense-text">2) 정규 업무 시간 범위</label>
-                    <div class="grid grid-cols-2 gap-3 max-w-[18rem]">
-                        <div>
-                            <label for="policy_work_start" class="mb-1 block text-xs font-bold text-dense-muted">시작</label>
-                            <select id="policy_work_start" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+            <!-- 캘린더 공유 범위 설정 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3.5 space-y-2">
+                <p class="text-xs font-extrabold text-dense-text">
+                    <span>캘린더 공유 범위 설정</span> — 현재:
+                    <strong id="calendar-scope-current-label" class="text-dense-blue">
+                        {% if company_calendar_visible %}
+                            프로젝트 전체 공유
+                        {% elif team_calendar_visible %}
+                            소속 팀원 공유
+                        {% else %}
+                            공유 안 함 (본인 전용)
+                        {% endif %}
+                    </strong>
+                </p>
+                <p class="text-[11px] leading-relaxed text-dense-muted font-semibold">
+                    일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
+                </p>
+                <div class="space-y-1.5 pt-1 text-[11px] text-dense-text font-semibold">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="calendar_scope" value="none" {% if not team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                        <span>공유 안 함 (본인 전용) — 사원은 자신의 휴가 일정만 조회할 수 있습니다.</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="calendar_scope" value="team" {% if team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                        <span>소속 팀원 공유 — 본인과 동일한 팀 내 사원의 연차를 조회할 수 있습니다.</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="calendar_scope" value="company" {% if company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                        <span>프로젝트 전체 공유 — 일반 사원과 팀장도 프로젝트 내 모든 사원의 연차를 조회할 수 있습니다.</span>
+                    </label>
+                </div>
+                <div class="pt-1">
+                    <button type="button" onclick="saveCalendarScope(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3.5 py-2 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">공유 범위 저장</button>
+                </div>
+            </div>
+
+            <!-- 시간 단위 & 업무 시간/점심 시간 설정 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 space-y-3">
+                <p class="text-xs font-extrabold text-dense-text">시간 정책 설정 (30분 단위 선택)</p>
+                
+                <div class="space-y-2 text-xs font-semibold">
+                    <label for="policy_granularity" class="block text-dense-text text-[11px] font-bold">1) 최소 시간 단위</label>
+                    <select id="policy_granularity" class="w-full max-w-[14rem] border border-dense-line rounded-xl p-2 bg-dense-surface focus:ring-1 focus:ring-dense-blue font-bold text-dense-text">
+                        {% for unit in [30, 60, 120] %}
+                        <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ unit }}분 단위 차감</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[10px] text-dense-muted font-medium">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+                </div>
+
+                <div class="space-y-3.5 border-t pt-3 text-xs font-semibold">
+                    <div class="space-y-1.5">
+                        <label class="block text-[11px] text-dense-muted font-bold">2) 정규 업무 시간 범위</label>
+                        <div class="flex items-center gap-2 max-w-[18rem]">
+                            <select id="policy_work_start" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 {% for m, label in half_hour_options %}
                                 <option value="{{ m }}" {% if work_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
-                        </div>
-                        <div>
-                            <label for="policy_work_end" class="mb-1 block text-xs font-bold text-dense-muted">종료</label>
-                            <select id="policy_work_end" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <span class="text-dense-muted font-bold text-xs shrink-0">~</span>
+                            <select id="policy_work_end" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 {% for m, label in half_hour_options %}
                                 <option value="{{ m }}" {% if work_end_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
-                </div>
-
-                <div class="space-y-2 border-t border-dense-line/60 pt-3">
-                    <label class="block text-xs font-bold text-dense-text">3) 점심 시간 범위 (차감 제외)</label>
-                    <div class="grid grid-cols-2 gap-3 max-w-[18rem]">
-                        <div>
-                            <label for="policy_lunch_start" class="mb-1 block text-xs font-bold text-dense-muted">시작</label>
-                            <select id="policy_lunch_start" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <div class="space-y-1.5 border-t pt-3">
+                        <label class="block text-[11px] text-dense-muted font-bold">3) 점심 시간 범위 (차감 제외)</label>
+                        <div class="flex items-center gap-2 max-w-[18rem]">
+                            <select id="policy_lunch_start" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 <option value="">미사용</option>
                                 {% for m, label in half_hour_options %}
                                 <option value="{{ m }}" {% if lunch_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
-                        </div>
-                        <div>
-                            <label for="policy_lunch_end" class="mb-1 block text-xs font-bold text-dense-muted">종료</label>
-                            <select id="policy_lunch_end" class="w-full rounded-xl border-0 bg-dense-surface px-2 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <span class="text-dense-muted font-bold text-xs shrink-0">~</span>
+                            <select id="policy_lunch_end" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 <option value="">미사용</option>
                                 {% for m, label in half_hour_options %}
                                 <option value="{{ m }}" {% if lunch_end_minute == m %}selected{% endif %}>{{ label }}</option>
@@ -130,80 +120,80 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="pt-3 border-t">
+                    <button type="button" onclick="saveTimePolicy(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3.5 py-2 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">시간 정책 저장</button>
+                </div>
+                <div class="mt-2.5 text-[10px] font-semibold text-dense-muted leading-relaxed space-y-1">
+                    <p>• 입력 시각은 단위 경계만 가능하나, 하루 전체 신청을 위해 <strong>업무 종료 시각은 예외로 허용</strong>됩니다.</p>
+                    <p>• 설정 단위보다 짧은 신청이나, 점심시간에 완전히 포함되어 <strong>실제 차감 시간이 0시간</strong>인 신청은 제한됩니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 표시 이름(브랜딩) & 운영 작업 설정 -->
+        <div class="space-y-4 lg:col-span-2">
+            <!-- 브랜딩 설정 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold">
+                <p class="text-xs font-extrabold text-dense-text">표시 이름(브랜딩)</p>
+                <div class="text-[10px] leading-snug text-dense-muted font-medium">
+                    <p><span class="font-bold text-dense-text">공식 이름</span>: 제목·푸터·상단 부제(긴 풀네임)</p>
+                    <p class="mt-0.5"><span class="font-bold text-dense-text">상단 짧은 이름</span>: 상단 바 굵은 글자 (비우면 공식과 동일)</p>
+                    <p class="mt-0.5"><span class="font-bold text-dense-text">파란 배지</span>: 왼쪽 네모 상자 안 (최대 24자)</p>
+                </div>
+                <div class="space-y-2.5 pt-1">
+                    <div>
+                        <label for="brand_product_display_name" class="block mb-1 text-dense-muted text-[11px]">공식 이름</label>
+                        <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="w-full border border-dense-line rounded-xl p-2 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="brand_product_nav_short" class="block mb-1 text-dense-muted text-[11px]">상단 짧은 이름 · 선택</label>
+                        <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: SHIM" class="w-full border border-dense-line rounded-xl p-2 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="brand_initial" class="block mb-1 text-dense-muted text-[11px]">파란 배지 (상단 마크) · 최대 24자</label>
+                        <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('S') }}" placeholder="예: S" class="w-full border border-dense-line rounded-xl p-2 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+                    </div>
+                </div>
+                <div class="pt-1">
+                    <button type="button" onclick="saveBranding(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3.5 py-2 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">표시 이름 저장</button>
+                </div>
             </div>
 
-            <div class="pt-3 border-t border-dense-line/60">
-                <button type="button" onclick="saveTimePolicy(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">시간 정책 저장</button>
-            </div>
-            <div class="mt-2.5 text-xs font-semibold text-dense-muted leading-relaxed space-y-1">
-                <p>• 입력 시각은 단위 경계만 가능하나, 하루 전체 신청을 위해 <strong>업무 종료 시각은 예외로 허용</strong>됩니다.</p>
-                <p>• 설정 단위보다 짧은 신청이나, 점심시간에 완전히 포함되어 <strong>실제 차감 시간이 0시간</strong>인 신청은 제한됩니다.</p>
-            </div>
-        </div>
-    </div>
-    <!-- 시스템 운영 작업 -->
-    <div class="glass-panel rounded-[18px] border border-dense-line bg-dense-surface p-6 lg:col-span-2">
-        <h3 class="mb-2 text-lg font-extrabold tracking-tight text-dense-text">시스템 운영 작업</h3>
-        <div class="mb-4 rounded-xl border border-dense-line bg-dense-surface-soft p-4">
-            <p class="mb-2 text-sm font-extrabold text-dense-text">표시 이름(브랜딩)</p>
-            <div class="mb-3 text-[11px] font-semibold leading-snug text-dense-muted">
-                <p><span class="font-extrabold text-dense-text">공식 이름</span> : 제목·푸터·상단 부제(긴 풀네임).</p>
-                <p class="mt-1"><span class="font-extrabold text-dense-text">상단 짧은 이름</span> : 상단 바 굵은 글자 (비우면 공식과 같음).</p>
-                <p class="mt-1"><span class="font-extrabold text-dense-text">파란 배지</span> : 왼쪽 네모 안 (비우면 공식 이름 첫 글자).</p>
-            </div>
-            <div class="mt-3 space-y-3">
-                <div>
-                    <label for="brand_product_display_name" class="mb-1 block text-xs font-bold text-dense-muted">공식 이름</label>
-                    <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
-                </div>
-                <div>
-                    <label for="brand_product_nav_short" class="mb-1 block text-xs font-bold text-dense-muted">상단 짧은 이름 · 선택</label>
-                    <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: SHIM" class="block w-full rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
-                </div>
-                <div>
-                    <label for="brand_initial" class="mb-1 block text-xs font-bold text-dense-muted">파란 배지 · 최대 24자</label>
-                    <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('S') }}" placeholder="예: S" class="block w-full max-w-[16rem] rounded-xl border-0 bg-dense-surface px-3 py-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-2 focus:ring-inset focus:ring-dense-blue" autocomplete="off">
+            <!-- DB 백업 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-2 text-xs font-semibold">
+                <p class="text-xs font-extrabold text-dense-text">데이터베이스 수동 백업</p>
+                <p class="text-[11px] leading-relaxed text-dense-muted">
+                    백업 파일은 <code class="rounded bg-dense-surface px-1 font-mono text-dense-nav-text">var/data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
+                </p>
+                <div class="pt-1">
+                    <button type="button" onclick="runDbBackup(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3.5 py-2 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-all">DB 백업 생성</button>
                 </div>
             </div>
-            <div class="mt-3">
-                <button type="button" onclick="saveBranding(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">표시 이름 저장</button>
+
+            <!-- 운영 메모 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 text-[11px] font-semibold text-dense-muted space-y-1">
+                <p class="font-extrabold text-dense-nav-text text-xs mb-1">💡 운영 메모</p>
+                <ul class="list-inside list-disc space-y-1">
+                    <li>정책 변경 전후로 수동 백업을 권장합니다.</li>
+                    <li>복구 리허설은 운영 복제 DB에서 먼저 확인합니다.</li>
+                    <li>운영 절차 상세는 `docs/1-2_유지보수_가이드`를 참고합니다.</li>
+                </ul>
             </div>
         </div>
-        <div class="mb-4 rounded-xl border border-dense-line-strong bg-dense-blue-soft p-4">
-            <p class="text-sm font-semibold text-dense-text">
-                데이터 보호를 위해 현재 DB를 수동 백업합니다.
-            </p>
-            <p class="mt-2 text-xs font-semibold leading-relaxed text-dense-muted">
-                백업 파일은 <code class="rounded bg-dense-surface px-1 font-mono text-dense-nav-text">var/data/backup/</code> 아래에 날짜·시각이 붙은 이름으로 저장됩니다.
-            </p>
-            <div class="mt-3">
-                <button type="button" onclick="runDbBackup(this)" class="inline-flex items-center justify-center rounded-xl border border-dense-line-strong bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">DB 백업 생성</button>
-            </div>
-        </div>
-        <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
-            <p class="mb-2 text-xs font-extrabold text-dense-nav-text">운영 메모</p>
-            <ul class="list-inside list-disc space-y-1 text-xs font-semibold text-dense-muted">
-                <li>정책 변경 전후로 수동 백업을 권장합니다.</li>
-                <li>복구 리허설은 운영 복제 DB에서 먼저 확인합니다.</li>
-                <li>운영 절차 상세는 `docs/1-2_백업_복구_유지보수_가이드.md`를 참고합니다.</li>
-            </ul>
-        </div>
-    </div>
     </div>
 
-    <!-- 운영/상태 통합 안내 -->
-    <div class="glass-panel rounded-[18px] border border-dense-line bg-dense-surface-soft p-5">
-        <h4 class="mb-3 text-sm font-extrabold text-dense-text flex items-center gap-1.5">
+    <!-- 운영/상태 통합 안내 패널 -->
+    <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3">
+        <h4 class="text-xs font-extrabold text-dense-text flex items-center gap-1.5">
             <span>ℹ️ 운영/상태 통합 안내</span>
         </h4>
-        <div class="space-y-4 text-xs font-semibold leading-relaxed">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-semibold leading-relaxed">
             <!-- 1. 시간 정책 원칙 -->
-            <div>
-                <p class="text-[13px] font-extrabold text-dense-text">⏱️ 시간 정책 원칙</p>
-                <p class="mt-1 text-[11px] font-medium text-dense-muted">
-                    마스터 설정에 따른 연차 신청의 시간 계산 및 제약 조건입니다.
-                </p>
-                <ul class="mt-2 pl-4 list-disc space-y-1.5 text-dense-nav-text">
+            <div class="space-y-1">
+                <p class="font-extrabold text-dense-text text-[13px]">⏱️ 시간 정책 원칙</p>
+                <p class="text-[10px] text-dense-muted leading-tight">마스터 설정에 따른 연차 신청의 시간 계산 및 제약 조건입니다.</p>
+                <ul class="pl-4 list-disc space-y-1 text-dense-nav-text mt-1.5">
                     <li>연차 신청은 시작/종료 시각 기반으로 1건의 스냅샷으로 저장됩니다.</li>
                     <li>입력 시각은 정책 단위 경계(30/60/120분)만 허용됩니다. <span class="text-dense-muted/80">(단, 하루 전체 신청 시 업무 종료 시각은 예외 허용)</span></li>
                     <li>신청 구간이 정책 단위보다 짧거나 점심시간에 완전히 포함되어 실제 차감 시간이 0시간이면 신청이 제한됩니다.</li>
@@ -212,16 +202,11 @@
                 </ul>
             </div>
 
-            <!-- 구분선 -->
-            <div class="border-t border-dense-line/50 my-3"></div>
-
             <!-- 2. 상태값 설명 -->
-            <div>
-                <p class="text-[13px] font-extrabold text-dense-text">📋 연차 신청 상태 설명</p>
-                <p class="mt-1 text-[11px] font-medium text-dense-muted">
-                    각 신청 건의 처리 상태를 뜻하며, 상태에 따라 집계(사용/잔여시간) 반영 여부가 결정됩니다.
-                </p>
-                <ul class="mt-2 pl-4 list-disc space-y-1.5 text-dense-nav-text">
+            <div class="space-y-1">
+                <p class="font-extrabold text-dense-text text-[13px]">📋 연차 신청 상태 설명</p>
+                <p class="text-[10px] text-dense-muted leading-tight">각 신청 건의 처리 상태를 뜻하며, 상태에 따라 집계(사용/잔여시간) 반영 여부가 결정됩니다.</p>
+                <ul class="pl-4 list-disc space-y-1 text-dense-nav-text mt-1.5">
                     <li><strong class="text-dense-amber font-extrabold">결재 대기</strong>: 결재 전 상태입니다. 아직 최종 확정되지 않은 대기 신청입니다.</li>
                     <li><strong class="text-dense-green font-extrabold">승인됨</strong>: 결재가 완료되어 연차 사용으로 최종 확정되었으며, 사용량에 반영됩니다.</li>
                     <li><strong class="text-dense-danger font-extrabold">반려</strong>: 승인 거절된 상태입니다. 사용 시간 및 잔여 연차 계산에서 제외됩니다.</li>

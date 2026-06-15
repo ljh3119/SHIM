@@ -26,3 +26,14 @@
   --color-dense-danger: #d92d20;
   --color-dense-danger-soft: #fef3f2;
 }
+
+/* Quick Apply Card Hover micro-interaction */
+.quick-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.quick-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+}
+
