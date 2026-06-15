@@ -5,36 +5,25 @@
   
   <!-- Navigation Card -->
   <div class="rounded-2xl border border-dense-line bg-dense-surface p-3 pr-4 shadow-sm flex flex-col gap-2">
-    <h2 class="shim-sidebar-title shim-sidebar-heading-row mb-2 mt-0 flex min-h-[1.75rem] items-center gap-2 text-lg font-extrabold tracking-tight text-dense-text">
-      <span class="shim-sidebar-heading-stack min-w-0 flex flex-1 flex-col gap-0.5">
-        <span class="shim-sidebar-heading-text min-w-0 truncate pl-1 leading-snug">{{ product_nav_short | default('SHIM') }}</span>
-        {% if brand_nav_show_subtitle %}
-        <span class="shim-sidebar-heading-sub min-w-0 truncate pl-1 text-[11px] font-semibold leading-snug text-dense-muted">{{ product_display_name | default('SHIM') }}</span>
-        {% endif %}
-      </span>
-      <span class="shim-sidebar-heading-emoji" aria-hidden="true">
-        <svg class="shim-sidebar-heading-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </span>
-    </h2>
     <nav id="shim-sidebar-user-nav" class="flex flex-col gap-1" aria-label="사용자 메뉴">
       <a href="/user/dashboard" class="shim-side-link {% if path == '/user/dashboard' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">📊 대시보드</span>
+        <span class="shim-side-emoji text-sm">📊</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">대시보드</span>
       </a>
       <a href="/user/history" class="shim-side-link {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="M7 16V8M12 16V5M17 16v-3"/></svg>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">📋 신청 내역</span>
+        <span class="shim-side-emoji text-sm">📋</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">신청 내역</span>
       </a>
       {% if team_calendar_visible or company_calendar_visible %}
       <a href="/user/team-calendar" class="shim-side-link {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <svg class="shim-side-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}📅 프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
+        <span class="shim-side-emoji text-sm">📅</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
       </a>
       {% endif %}
       {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
       <a href="/user/approvals" class="shim-side-link {% if path == '/user/approvals' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <svg class="shim-side-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">📥 결재 관리</span>
+        <span class="shim-side-emoji text-sm">📥</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">결재 관리</span>
       </a>
       {% endif %}
     </nav>

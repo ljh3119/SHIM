@@ -32,6 +32,8 @@ def admin_dashboard(
         ).first() is not None
         if has_next_year_allocations:
             show_year_end_notice = False
+            
+    charts_data = admin_service.get_admin_dashboard_charts_data(db, now.year)
     
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={
         "admin": admin,
@@ -43,5 +45,6 @@ def admin_dashboard(
         "recent_leaves": stats["recent_leaves"],
         "current_year": now.year,
         "show_year_end_notice": show_year_end_notice,
-        "next_year": next_year
+        "next_year": next_year,
+        "chart_data": charts_data
     })

@@ -8,30 +8,41 @@
             <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">사원 계정 관리</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">사원 목록을 조회하고 권한 및 상태를 관리합니다.</p>
         </div>
-        <div class="flex min-w-0 w-full shrink-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-            <form action="/admin/users" method="GET" class="flex shrink-0 items-center gap-2">
-                <input type="hidden" name="sort_key" value="{{ sort_key }}">
-                <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
-                <input type="text" name="q" placeholder="사원명 또는 초성 검색" value="{{ q or '' }}" class="w-[9.5rem] shrink-0 rounded-lg border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                <select name="filter" onchange="this.form.submit()" class="w-[7.25rem] shrink-0 rounded-lg border-0 bg-dense-surface py-1.5 px-2 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="all" {% if current_filter == 'all' %}selected{% endif %}>전체 계정</option>
-                    <option value="active" {% if current_filter == 'active' %}selected{% endif %}>활성</option>
-                    <option value="inactive" {% if current_filter == 'inactive' %}selected{% endif %}>비활성</option>
-                </select>
-                <select name="year" onchange="this.form.submit()" class="w-[4.75rem] shrink-0 rounded-lg border-0 bg-dense-surface py-1.5 px-2 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    {% for y in year_options %}
-                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
-                    {% endfor %}
-                </select>
-            </form>
-            <button type="button" onclick="window.shimModal.open('addUserModal', 'new_user_id', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-dense-blue px-2.5 py-1.5 text-xs font-bold text-white hover:brightness-95">
-                + 신규 등록
-            </button>
-            <button type="button" onclick="window.shimModal.open('bulkLeaveModal', 'bulk_year', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-[#fedf89] bg-dense-amber-soft px-2.5 py-1.5 text-xs font-bold text-dense-amber hover:bg-[#fffdf6]">
+        <div class="flex gap-2">
+            <button type="button" onclick="window.shimModal.open('bulkLeaveModal', 'bulk_year', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-[#fedf89] bg-dense-amber-soft px-3.5 py-1.5 text-xs font-bold text-dense-amber hover:bg-[#fffdf6] transition-all">
                 연차 일괄
+            </button>
+            <button type="button" onclick="window.shimModal.open('addUserModal', 'new_user_id', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-dense-blue px-3.5 py-1.5 text-xs font-bold text-white hover:brightness-95 transition-all">
+                + 신규 등록
             </button>
         </div>
     </div>
+
+    <!-- User CRUD Filters -->
+    <form action="/admin/users" method="GET" id="users-filter-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold mb-4">
+        <input type="hidden" name="sort_key" value="{{ sort_key }}">
+        <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+        <div>
+            <label class="block mb-1 text-dense-muted">사원명 또는 초성 검색 (엔터 입력)</label>
+            <input type="text" name="q" placeholder="이름 또는 초성 입력..." value="{{ q or '' }}" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+        </div>
+        <div>
+            <label class="block mb-1 text-dense-muted">계정 상태</label>
+            <select name="filter" onchange="this.form.submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                <option value="all" {% if current_filter == 'all' %}selected{% endif %}>전체 계정</option>
+                <option value="active" {% if current_filter == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
+                <option value="inactive" {% if current_filter == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
+            </select>
+        </div>
+        <div>
+            <label class="block mb-1 text-dense-muted">조회 연도</label>
+            <select name="year" onchange="this.form.submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                {% for y in year_options %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
 
     <!-- Users Table -->
     <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">

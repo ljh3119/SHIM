@@ -16,56 +16,36 @@
             </p>
         </div>
         <div class="mt-4 flex gap-2 md:mt-0">
-            <form action="/user/history" method="GET" class="flex items-center gap-2">
-                <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    {% for y in year_options %}
-                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
-                    {% endfor %}
-                </select>
-            </form>
+            <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
+                <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
+                {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
+                <a href="/user/approvals" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
+                {% endif %}
+                <a href="/user/history" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">내 신청 내역</a>
+            </div>
         </div>
     </div>
 
     <!-- 1. PC & Tablet View (Wide Screen) -->
-    <div class="hidden md:flex flex-col lg:flex-row gap-5">
+    <div class="hidden md:flex flex-col md:flex-row gap-5">
         <!-- Left Sidebar Panel -->
         {% include "partials/user_left_panel.html" %}
 
         <!-- Right Content Panel -->
         <div class="min-w-0 flex-1 space-y-4">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-                <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-                    <span class="mb-1.5 text-xs font-extrabold text-dense-muted">{{ selected_year }}년 총 연차</span>
-                    <span class="text-xl font-extrabold leading-none tracking-tight text-dense-text">{{ fmt_hours(total_allocated_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span></span>
-                </div>
-                <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-                    <span class="mb-1.5 text-xs font-extrabold text-dense-muted">사용 시간</span>
-                    <span class="text-xl font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(used_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span></span>
-                </div>
-                <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-                    <span class="mb-1.5 text-xs font-extrabold text-dense-muted">잔여 시간</span>
-                    <span class="text-xl font-extrabold leading-none tracking-tight text-dense-green">{{ fmt_hours(remaining_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span></span>
-                </div>
-                <div class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-                    <span class="mb-1.5 text-xs font-extrabold text-dense-muted">신청 건수</span>
-                    <span class="text-xl font-extrabold leading-none tracking-tight text-dense-nav-text">{{ leaves|length }}<span class="ml-0.5 text-xs font-bold text-dense-muted">건</span></span>
-                </div>
-            </div>
 
-            <div class="rounded-[18px] border bg-dense-surface p-5 shadow-sm">
-                <!-- Switch Bar -->
+            <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+                <!-- Header Title Inside Card -->
                 <div class="mb-4 flex items-center justify-between border-b pb-4">
                     <h3 class="text-base font-extrabold tracking-tight text-dense-text">신청 내역 전체</h3>
-                    
-                    <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
-                        <a href="/user/dashboard" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
-                        <a href="/user/team-calendar" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
-                        {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-                        <a href="/user/approvals" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
-                        {% endif %}
-                        <button type="button" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all focus:outline-none">내 신청 내역</button>
-                    </div>
+                    <form action="/user/history" method="GET" class="flex items-center">
+                        <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-xs font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line focus:border-dense-blue focus:ring-dense-blue">
+                            {% for y in year_options %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                            {% endfor %}
+                        </select>
+                    </form>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -153,7 +133,7 @@
             <span>←</span> 대시보드 홈으로
         </a>
 
-        <div class="rounded-xl border bg-dense-surface p-4 shadow-sm space-y-3">
+        <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-3">
             <div class="flex items-center justify-between border-b pb-2">
                 <h3 class="text-sm font-extrabold text-dense-text">📋 나의 신청 내역</h3>
                 <span class="text-xs font-bold text-dense-muted">총 {{ leaves|length }}건</span>
@@ -178,7 +158,7 @@
             <!-- Mobile History List of Cards -->
             <div class="space-y-2.5">
                 {% for leave in leaves %}
-                <div class="p-3.5 rounded-xl border bg-dense-surface shadow-xs space-y-2">
+                <div class="p-3.5 rounded-xl border border-dense-line bg-dense-surface shadow-xs space-y-2">
                     <div class="flex items-start justify-between">
                         <div>
                             <span class="text-xs font-bold text-dense-text">

@@ -113,3 +113,68 @@ def get_audit_logs_query(
     if end_date:
         query = query.filter(models.AuditLogs.timestamp < datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
     return query
+
+def get_admin_dashboard_charts_data(db: Session, year: int):
+    # 1. 팀별 사용 및 잔여 연차 데이터 수집
+    active_users = db.query(models.Users).filter(
+        models.Users.role != "ADMIN",
+        models.Users.is_active == True
+    ).all()
+    
+    user_ids = [u.user_id for u in active_users]
+    
+    # 각 사용자의 해당 연도 할당량
+    alloc_map = get_yearly_allocation_map(db, user_ids, year)
+    
+    # 각 사용자의 사용 연차 합계 (APPROVED 상태이며 차감 대상인 것)
+    leaves_approved = db.query(models.Leaves).filter(
+        models.Leaves.user_id.in_(user_ids) if user_ids else False,
+        models.Leaves.year == year,
+        models.Leaves.status == "APPROVED",
+        models.Leaves.is_deductive == True
+    ).all()
+    
+    user_used_map = {uid: 0.0 for uid in user_ids}
+    for leave in leaves_approved:
+        user_used_map[leave.user_id] += float(leave.snapshot_deduction_hours or 0)
+        
+    team_data = {}
+    for user in active_users:
+        team_name = user.team or "미지정"
+        if team_name not in team_data:
+            team_data[team_name] = {"used": 0.0, "remaining": 0.0}
+            
+        alloc_hours = float(alloc_map.get(user.user_id, 0))
+        used_hours = user_used_map.get(user.user_id, 0.0)
+        remaining_hours = max(0.0, alloc_hours - used_hours)
+        
+        team_data[team_name]["used"] += used_hours
+        team_data[team_name]["remaining"] += remaining_hours
+        
+    sorted_teams = sorted(team_data.keys())
+    used_hours_list = [team_data[t]["used"] for t in sorted_teams]
+    remaining_hours_list = [team_data[t]["remaining"] for t in sorted_teams]
+    
+    # 2. 월별 사용 트렌드 (1~12월 각각의 사용 시간 합산)
+    # 해당 연도 전체 APPROVED 차감 대상 연차 가져오기 (전체 유저 대상)
+    all_leaves_year = db.query(models.Leaves).filter(
+        models.Leaves.year == year,
+        models.Leaves.status == "APPROVED",
+        models.Leaves.is_deductive == True
+    ).all()
+    
+    monthly_hours = [0.0] * 12
+    for leave in all_leaves_year:
+        # leave.date는 datetime.date 타입
+        if leave.date:
+            month_idx = leave.date.month - 1  # 0 to 11
+            if 0 <= month_idx < 12:
+                monthly_hours[month_idx] += float(leave.snapshot_deduction_hours or 0)
+                
+    return {
+        "teams": sorted_teams,
+        "used_hours": used_hours_list,
+        "remaining_hours": remaining_hours_list,
+        "monthly_hours": monthly_hours
+    }
+

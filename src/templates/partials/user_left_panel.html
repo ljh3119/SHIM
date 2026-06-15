@@ -1,7 +1,7 @@
 <!-- Left Sidebar Panel (Option G Layout) -->
-<div class="w-full lg:w-[280px] shrink-0 space-y-4">
+<div class="w-full md:w-[240px] xl:w-[280px] shrink-0 space-y-4">
     <!-- Stats Summary Card -->
-    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
         <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
         <div class="space-y-1.5 text-xs font-bold">
             <div class="flex justify-between"><span>총 연차</span><span>{{ fmt_hours(total_allocated_hours) }}h</span></div>
@@ -14,23 +14,23 @@
     </div>
 
     <!-- Quick Apply Card -->
-    <div class="rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/20 p-4 shadow-sm">
-        <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
+    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
+        <h3 class="text-xs font-extrabold text-dense-text mb-2">📅 간편 신청</h3>
         <form id="easyApplyFormDesktop" onsubmit="submitEasyApply('desktop'); return false;" class="space-y-3">
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[10px] font-bold">시작일</label>
-                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface text-xs font-bold shadow-sm focus:border-dense-blue focus:ring-dense-blue">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold">종료일</label>
-                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('desktop')" class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface text-xs font-bold shadow-sm focus:border-dense-blue focus:ring-dense-blue">
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[9px] font-bold">시작</label>
-                    <select id="easy-start-g_desktop" name="start_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <select id="easy-start-g_desktop" name="start_time" class="w-full border border-dense-line rounded-xl p-1 bg-dense-surface text-xs font-bold shadow-sm focus:border-dense-blue focus:ring-dense-blue" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -38,7 +38,7 @@
                 </div>
                 <div>
                     <label class="text-[9px] font-bold">종료</label>
-                    <select id="easy-end-g_desktop" name="end_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <select id="easy-end-g_desktop" name="end_time" class="w-full border border-dense-line rounded-xl p-1 bg-dense-surface text-xs font-bold shadow-sm focus:border-dense-blue focus:ring-dense-blue" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -58,59 +58,71 @@
         </form>
     </div>
 
-    <!-- Mini Approvals Card -->
     {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+    <!-- Mini Approvals Card (PC Only) -->
+    <div class="hidden md:block rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
         <div class="flex items-center justify-between mb-2">
-            <a href="/user/approvals" class="text-xs font-extrabold text-dense-text hover:text-dense-blue hover:underline transition-colors">👥 결재 대기 목록</a>
-            <span id="pending-count-g_desktop" class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">{{ pending_team_leaves|length }}</span>
+            <h3 class="text-xs font-extrabold text-dense-text flex items-center">
+                <a href="/user/approvals" class="hover:text-dense-blue hover:underline flex items-center gap-1.5">
+                    👥 결재 대기 목록
+                </a>
+            </h3>
+            <span class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">{{ pending_team_leaves|length }}</span>
         </div>
-        <div id="approvalListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
-            {% for leave in pending_team_leaves[:3] %}
-            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
-                <div>
+        <div class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
+            {% for leave in pending_team_leaves[:5] %}
+            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1 last:border-b-0 last:pb-0">
+                <div class="truncate max-w-[110px] xl:max-w-[140px]">
                     <span class="font-bold text-dense-text">{{ leave.user.user_name }}</span>
-                    <span class="text-[10px] text-dense-muted ml-1">{{ leave.date }}</span>
+                    <span class="text-[9px] text-dense-muted ml-0.5">{{ leave.date.strftime('%m/%d') }}</span>
+                    <span class="text-[9px] text-dense-blue bg-dense-blue-soft px-1 py-0.2 rounded font-bold">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
                 </div>
-                <a href="/user/approvals" class="text-[10px] text-dense-blue font-bold hover:underline">결재 →</a>
+                <div class="flex gap-1 shrink-0">
+                    <button onclick="teamApproveFromSidebar({{ leave.id }}, this)" class="bg-dense-green text-white text-[9px] font-bold px-1.5 py-0.5 rounded hover:brightness-95 transition-all">승인</button>
+                    <button onclick="teamRejectFromSidebar({{ leave.id }}, this)" class="bg-[#475467] text-white text-[9px] font-bold px-1.5 py-0.5 rounded hover:brightness-95 transition-all">반려</button>
+                </div>
             </div>
             {% else %}
-            <p class="text-[10px] text-dense-muted text-center py-2">대기 중인 결재가 없습니다.</p>
+            <p class="text-[10px] text-dense-muted text-center py-4">대기 중인 결재가 없습니다.</p>
             {% endfor %}
         </div>
     </div>
     {% endif %}
 
-    <!-- My Requests Card -->
-    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+    <!-- My Requests Card (PC Only) -->
+    <div class="hidden md:block rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
         <div class="flex items-center justify-between mb-2">
-            <a href="/user/history" class="text-xs font-extrabold text-dense-text hover:text-dense-blue hover:underline transition-colors">📋 나의 신청 내역</a>
-            <a href="/user/history" class="text-[10px] text-dense-blue font-bold hover:underline">전체 →</a>
+            <h3 class="text-xs font-extrabold text-dense-text flex items-center">
+                <a href="/user/history" class="hover:text-dense-blue hover:underline flex items-center gap-1.5">
+                    📋 나의 신청 내역
+                </a>
+            </h3>
+            <a href="/user/history" class="text-[10px] text-dense-blue font-bold hover:underline">전체 보기 →</a>
         </div>
-        <div id="myRequestsListG_desktop" class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
-            {% for leave in leaves[:3] %}
-            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
-                <div>
-                    <span class="font-bold text-dense-text">
-                        {% if not leave.is_deductive %}<span class="text-purple-600 mr-0.5">[공]</span>{% endif %}
-                        {{ leave.date }}
+        <div class="space-y-1.5 text-xs max-h-[150px] overflow-y-auto pr-1">
+            {% for leave in leaves[:5] %}
+            <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1 last:border-b-0 last:pb-0">
+                <div class="truncate max-w-[130px] xl:max-w-[160px]">
+                    <span class="font-semibold text-dense-text">
+                        {% if not leave.is_deductive %}<span class="text-purple-600 font-bold mr-0.5">[공]</span>{% endif %}
+                        {{ leave.date.strftime('%m/%d') }}
                     </span>
-                    <span class="text-[10px] text-dense-muted ml-1">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
+                    <span class="text-[10px] text-dense-muted ml-0.5">({{ fmt_hours(leave.snapshot_deduction_hours) }}h)</span>
                 </div>
-                <div>
+                <div class="shrink-0">
                     {% if leave.status == 'PENDING' %}
-                    <span class="text-dense-amber font-bold">대기</span>
+                    <span class="text-dense-amber font-bold text-[9px] bg-dense-amber-soft px-1 py-0.2 rounded border border-dense-amber/10">대기</span>
                     {% elif leave.status == 'APPROVED' %}
-                    <span class="text-dense-green font-bold">승인</span>
+                    <span class="text-dense-green font-bold text-[9px] bg-dense-green-soft px-1 py-0.2 rounded border border-dense-green/10">승인</span>
                     {% elif leave.status == 'REJECTED' %}
-                    <span class="text-dense-danger font-bold" title="반려 사유: {{ leave.rejection_reason or '없음' }}">반려</span>
+                    <span class="text-dense-danger font-bold text-[9px] bg-dense-danger-soft px-1 py-0.2 rounded border border-dense-danger/10">반려</span>
                     {% else %}
-                    <span class="text-dense-muted font-bold">취소</span>
+                    <span class="text-dense-muted font-bold text-[9px] bg-dense-gray-soft px-1 py-0.2 rounded">취소</span>
                     {% endif %}
                 </div>
             </div>
             {% else %}
-            <p class="text-[10px] text-dense-muted text-center py-2">신청 내역이 없습니다.</p>
+            <p class="text-[10px] text-dense-muted text-center py-4">신청 내역이 없습니다.</p>
             {% endfor %}
         </div>
     </div>
@@ -393,5 +405,56 @@
                 }
             });
         }
+    };
+
+    window.teamApproveFromSidebar = async function(id, btn) {
+        if (!confirm('승인하시겠습니까?')) return;
+        simulateButtonLoading(btn, async () => {
+            try {
+                const response = await fetch(`/api/user/team-approve/${id}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || '승인되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(result.message || result.detail || '오류가 발생했습니다.');
+                }
+            } catch (err) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
+    };
+
+    window.teamRejectFromSidebar = async function(id, btn) {
+        const reason = prompt('반려 사유를 입력해 주세요:');
+        if (reason === null) return; // 취소 클릭
+        const trimmed = reason.trim();
+        if (!trimmed) {
+            alert('반려 사유 입력은 필수입니다.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('rejection_reason', trimmed);
+
+        simulateButtonLoading(btn, async () => {
+            try {
+                const response = await fetch(`/api/user/team-reject/${id}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || '반려 처리되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(result.message || result.detail || '오류가 발생했습니다.');
+                }
+            } catch (err) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
     };
 </script>

@@ -39,18 +39,18 @@
                 {% if selected_leave_status %}
                 <input type="hidden" name="leave_status" value="{{ selected_leave_status }}">
                 {% endif %}
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 text-xs font-semibold">
                     <div>
-                        <label for="tl-year" class="mb-1 block text-xs font-bold text-dense-muted">연도</label>
-                        <select id="tl-year" name="year" onchange="document.getElementById('tl-filter-form').submit()" class="block w-[6.5rem] rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <label for="tl-year" class="mb-1 block text-dense-muted">연도</label>
+                        <select id="tl-year" name="year" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                             {% for y in year_options %}
                             <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div>
-                        <label for="tl-month" class="mb-1 block text-xs font-bold text-dense-muted">월</label>
-                        <select id="tl-month" name="month" onchange="document.getElementById('tl-filter-form').submit()" class="block w-[7rem] rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <label for="tl-month" class="mb-1 block text-dense-muted">월</label>
+                        <select id="tl-month" name="month" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                             <option value="0" {% if selected_month == 0 %}selected{% endif %}>전체 월</option>
                             {% for m in range(1, 13) %}
                             <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
@@ -58,8 +58,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="tl-user" class="mb-1 block text-xs font-bold text-dense-muted">사용자</label>
-                        <select id="tl-user" name="user_id" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <label for="tl-user" class="mb-1 block text-dense-muted">사용자</label>
+                        <select id="tl-user" name="user_id" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                             <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                             {% for u in users %}
                             <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -67,8 +67,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="tl-company" class="mb-1 block text-xs font-bold text-dense-muted">회사</label>
-                        <select id="tl-company" name="company" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <label for="tl-company" class="mb-1 block text-dense-muted">회사</label>
+                        <select id="tl-company" name="company" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                             <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                             {% for c in company_options %}
                             <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
@@ -76,8 +76,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="tl-team" class="mb-1 block text-xs font-bold text-dense-muted">팀</label>
-                        <select id="tl-team" name="team" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <label for="tl-team" class="mb-1 block text-dense-muted">팀</label>
+                        <select id="tl-team" name="team" onchange="document.getElementById('tl-filter-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                             <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                             {% for t in team_options %}
                             <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>

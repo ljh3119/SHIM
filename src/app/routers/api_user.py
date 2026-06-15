@@ -72,19 +72,31 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
     setting = get_system_settings(db)
     is_approval_required = bool(setting.is_approval_required) if setting else False
     pending_team_leaves = []
-    if user_role == 'TEAM_LEAD' and is_approval_required and user.team:
-        pending_team_leaves = (
-            db.query(models.Leaves)
-            .join(models.Users, models.Leaves.user_id == models.Users.user_id)
-            .filter(
-                models.Users.team == user.team,
-                models.Users.company == user.company,
-                models.Leaves.status == "PENDING",
-                models.Leaves.user_id != user.user_id,
+    if is_approval_required:
+        if user_role == 'PM':
+            pending_team_leaves = (
+                db.query(models.Leaves)
+                .join(models.Users, models.Leaves.user_id == models.Users.user_id)
+                .filter(
+                    models.Leaves.status == "PENDING",
+                    models.Leaves.user_id != user.user_id,
+                )
+                .order_by(models.Leaves.created_at.desc())
+                .all()
             )
-            .order_by(models.Leaves.created_at.desc())
-            .all()
-        )
+        elif user_role == 'TEAM_LEAD' and user.team:
+            pending_team_leaves = (
+                db.query(models.Leaves)
+                .join(models.Users, models.Leaves.user_id == models.Users.user_id)
+                .filter(
+                    models.Users.team == user.team,
+                    models.Users.company == user.company,
+                    models.Leaves.status == "PENDING",
+                    models.Leaves.user_id != user.user_id,
+                )
+                .order_by(models.Leaves.created_at.desc())
+                .all()
+            )
     ctx.update({
         "user_role": user_role,
         "is_approval_required": is_approval_required,
@@ -489,6 +501,7 @@ def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db:
 @page_router.get("/approvals", response_class=HTMLResponse)
 def user_approvals(
     request: Request,
+    status: str = "PENDING",
     db: Session = Depends(get_db),
     approver: models.Users = Depends(get_current_approver),
 ):
@@ -501,18 +514,22 @@ def user_approvals(
 
     query = db.query(models.Leaves).join(models.Users, models.Leaves.user_id == models.Users.user_id)
     
-    # PM은 전사 대기 건 조회, TEAM_LEAD는 소속 팀 대기 건 조회
+    # PM은 전사 건 조회, TEAM_LEAD는 소속 팀 건 조회
     if user_role == 'PM':
-        query = query.filter(
-            models.Leaves.status == "PENDING",
-            models.Leaves.user_id != approver.user_id
-        )
+        query = query.filter(models.Leaves.user_id != approver.user_id)
     else:
         query = query.filter(
             models.Users.team == approver.team,
-            models.Leaves.status == "PENDING",
+            models.Users.company == approver.company,
             models.Leaves.user_id != approver.user_id
         )
+
+    # status 필터 적용
+    selected_status = status.upper()
+    if selected_status in ["PENDING", "APPROVED", "REJECTED", "CANCELED"]:
+        query = query.filter(models.Leaves.status == selected_status)
+    else:
+        selected_status = "ALL"
 
     pending_leaves = query.order_by(models.Leaves.created_at.desc()).all()
 
@@ -523,6 +540,7 @@ def user_approvals(
         "company_calendar_visible": company_calendar_visible,
         "is_approval_required": is_approval_required,
         "pending_leaves": pending_leaves,
+        "selected_status": selected_status,
     }
     _add_user_layout_context(db, approver, ctx)
     return _templates(request).TemplateResponse(request=request, name="user_approvals.html", context=ctx)
