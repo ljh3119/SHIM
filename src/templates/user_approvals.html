@@ -52,13 +52,11 @@
                             <a href="/user/approvals?status=REJECTED" class="inline-flex rounded-full border {% if selected_status == 'REJECTED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-3 py-1.5 text-xs font-extrabold transition-all">반려됨</a>
                             <a href="/user/approvals?status=ALL" class="inline-flex rounded-full border {% if selected_status == 'ALL' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-3 py-1.5 text-xs font-extrabold transition-all">전체</a>
                         </nav>
-                        {% if pending_leaves and selected_status == 'PENDING' %}
-                        <div class="inline-flex items-center gap-2 bg-dense-surface-soft border border-dense-line py-1 px-2.5 rounded-lg">
-                            <span class="text-[11px] font-extrabold text-dense-muted">일괄 결재:</span>
-                            <button onclick="bulkApproveG(true)" class="px-2 py-1 rounded bg-dense-green text-white text-[11px] font-bold hover:bg-dense-green/90 transition-colors shadow-xs">선택 승인</button>
-                            <button onclick="bulkApproveG(false)" class="px-2 py-1 rounded bg-dense-danger text-white text-[11px] font-bold hover:bg-dense-danger/90 transition-colors shadow-xs">선택 반려</button>
+                        <div class="inline-flex items-center gap-2 bg-dense-surface-soft border border-dense-line py-1 px-2.5 rounded-lg {% if selected_status != 'PENDING' %}invisible{% elif not pending_leaves %}opacity-40 select-none pointer-events-none{% endif %}">
+                            <span class="text-[11px] font-extrabold text-dense-muted font-semibold">일괄 결재:</span>
+                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(true)" class="px-2 py-1 rounded bg-dense-green text-white text-[11px] font-bold hover:bg-dense-green/90 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed">선택 승인</button>
+                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(false)" class="px-2 py-1 rounded bg-dense-danger text-white text-[11px] font-bold hover:bg-dense-danger/90 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed">선택 반려</button>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
 
