@@ -200,6 +200,50 @@ def user_dashboard(
     ctx["company_calendar_visible"] = company_calendar_visible
     ctx["is_approval_required"] = is_approval_required
 
+    # 캘린더 공유 설정 로드 및 적용
+    team_members = []
+    if user_role in ('PM', 'ADMIN') or company_calendar_visible:
+        team_members = db.query(models.Users).filter(
+            models.Users.is_active == True,
+            models.Users.role != "ADMIN",
+        ).all()
+    elif team_calendar_visible and user.team:
+        team_members = db.query(models.Users).filter(
+            models.Users.team == user.team,
+            models.Users.company == user.company,
+            models.Users.is_active == True,
+            models.Users.role != "ADMIN",
+        ).all()
+    else:
+        team_members = [user]
+
+    # team_leaves_map: { member_id: { month: { day: [leaves] } } }
+    team_leaves_map = {m.user_id: {month: {} for month in range(1, 13)} for m in team_members}
+    
+    if team_members:
+        team_member_ids = [m.user_id for m in team_members]
+        year_start_dt = date_cls(current_year, 1, 1)
+        year_end_dt = date_cls(current_year, 12, 31)
+        
+        team_leaves_raw = db.query(models.Leaves).filter(
+            models.Leaves.user_id.in_(team_member_ids),
+            models.Leaves.date >= year_start_dt,
+            models.Leaves.date <= year_end_dt,
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"]),
+        ).all()
+        
+        for lv in team_leaves_raw:
+            m_id = lv.user_id
+            if m_id in team_leaves_map:
+                m_val = lv.date.month
+                d_val = lv.date.day
+                if d_val not in team_leaves_map[m_id][m_val]:
+                    team_leaves_map[m_id][m_val][d_val] = []
+                team_leaves_map[m_id][m_val][d_val].append(lv)
+
+    ctx["team_members"] = team_members
+    ctx["team_leaves_map"] = team_leaves_map
+
     # 팀장: 결재 대기 건 목록 (결재 ON + TEAM_LEAD)
     pending_team_leaves = []
     if user_role == 'TEAM_LEAD' and is_approval_required and user.team:
@@ -236,7 +280,9 @@ def user_team_calendar(
     setting = get_system_settings(db)
     team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
     company_calendar_visible = bool(getattr(setting, 'company_calendar_visible', False)) if setting else False
-    if not team_calendar_visible and not company_calendar_visible:
+    user_role = getattr(user, 'role', 'STAFF')
+
+    if not team_calendar_visible and not company_calendar_visible and user_role not in ('PM', 'ADMIN'):
         return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
 
     now = utils.get_local_now()
@@ -251,22 +297,26 @@ def user_team_calendar(
     month_start = date_cls(display_year, display_month, 1)
     month_end = date_cls(display_year, display_month, num_days)
 
-    user_role = getattr(user, 'role', 'STAFF')
-
     team_members = []
     
-    # PM이거나 전사 캘린더 공유 활성화 시 전사 데이터 조회 (관리자와 동일), 그 외에는 소속 팀 기준 조회 (팀 캘린더 활성화 시)
-    if user_role == 'PM' or company_calendar_visible:
+    # 캘린더 공유 설정 적용
+    # 1) PM/ADMIN이거나 전사 캘린더 공유 활성화 시: 전사 데이터 조회
+    if user_role in ('PM', 'ADMIN') or company_calendar_visible:
         team_members = db.query(models.Users).filter(
             models.Users.is_active == True,
             models.Users.role != "ADMIN",
         ).all()
+    # 2) 팀 캘린더 공유 활성화 시: 본인 팀원만 조회 (회사와 팀이 모두 일치해야 함)
     elif team_calendar_visible and user.team:
         team_members = db.query(models.Users).filter(
             models.Users.team == user.team,
+            models.Users.company == user.company,
             models.Users.is_active == True,
             models.Users.role != "ADMIN",
         ).all()
+    # 3) 개인 전용 (scope == "none"): 본인만 보이도록 처리
+    else:
+        team_members = [user]
 
     team_leaves_map = {m.user_id: {} for m in team_members}
     member_stats = {}
@@ -501,8 +551,8 @@ def _validate_approvable_leave(approver: models.Users, leave: models.Leaves, db:
         return target_user
         
     # 그 외(TEAM_LEAD)는 팀내 결재로 제한
-    if target_user.team != approver.team:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="다른 팀의 신청에 대해서는 결재할 수 없습니다.")
+    if target_user.team != approver.team or target_user.company != approver.company:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="다른 회사 혹은 팀의 신청에 대해서는 결재할 수 없습니다.")
     return target_user
 
 

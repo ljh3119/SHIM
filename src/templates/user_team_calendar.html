@@ -141,6 +141,36 @@
         color: #d92d20 !important;
         background: #fef3f2 !important;
     }
+
+    .my-row td.clickable-cell {
+        cursor: pointer;
+        position: relative;
+    }
+
+    .my-row td.clickable-cell:hover {
+        background: #dbeafe !important;
+    }
+
+    .my-row td.clickable-cell:hover::after {
+        content: '+';
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 800;
+        color: #175cd3;
+        opacity: 0.6;
+    }
+
+    .cal-table td.has-leave-cell {
+        cursor: pointer;
+    }
+
+    .cal-table td.has-leave-cell:hover {
+        opacity: 0.85;
+    }
 </style>
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
@@ -279,8 +309,9 @@
                         </thead>
                         <tbody class="divide-y divide-dense-line">
                             {% for m in team_members %}
-                            <tr class="transition-colors hover:bg-dense-surface-soft group">
-                                <td class="sticky-col whitespace-nowrap !px-2 !py-2 text-left text-xs font-bold text-dense-nav-text shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-dense-surface-soft" style="width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem;">
+                            {% set is_me = (m.user_id == user.user_id) %}
+                            <tr class="transition-colors group {% if is_me %}my-row bg-dense-blue-soft hover:bg-[#dbeafe]{% else %}hover:bg-dense-surface-soft{% endif %}">
+                                <td class="sticky-col whitespace-nowrap !py-2 text-left text-xs font-bold {% if is_me %}!pl-1.5 !pr-2 text-dense-blue border-l-4 border-dense-blue bg-dense-blue-soft group-hover:bg-[#dbeafe]{% else %}!px-2 text-dense-nav-text group-hover:bg-dense-surface-soft{% endif %} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style="width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem;">
                                     {{ m.user_name }}
                                 </td>
                                 <td class="text-center px-1" style="width: 7rem; min-width: 7rem; max-width: 7.5rem;">
@@ -299,7 +330,29 @@
                                 {% endif %}
                                 {% for d in range(1, team_cal_num_days + 1) %}
                                 {% set cell_leaves = team_leaves_map.get(m.user_id, {}).get(d, []) %}
-                                <td class="{% if d in team_cal_weekend_days or d in team_cal_holiday_map %}bg-dense-gray-soft/40{% endif %}">
+                                {% set is_weekend = d in team_cal_weekend_days %}
+                                {% set is_holiday = d in team_cal_holiday_map %}
+                                {% set is_blocked = is_weekend or is_holiday %}
+                                <td class="{% if is_blocked %}bg-dense-gray-soft/40{% endif %} 
+                                           {% if is_me and not is_blocked and not cell_leaves %}clickable-cell{% endif %} 
+                                           {% if cell_leaves %}has-leave-cell{% endif %}"
+                                    data-cell-date="{{ team_cal_year }}-{{ '%02d'|format(team_cal_month) }}-{{ '%02d'|format(d) }}"
+                                    data-user-id="{{ m.user_id }}"
+                                    data-user-name="{{ m.user_name }}"
+                                    data-user-team="{{ m.team or '' }}"
+                                    data-user-company="{{ m.company or '' }}"
+                                    {% if cell_leaves %}
+                                        {% set first_lv = cell_leaves[0] %}
+                                        data-has-leave="true"
+                                        data-leave-id="{{ first_lv.id }}"
+                                        data-leave-slot="{{ first_lv.snapshot_slot_label }}"
+                                        data-leave-hours="{{ fmt_hours(first_lv.snapshot_deduction_hours) }}h"
+                                        data-leave-deductive="{{ 'true' if first_lv.is_deductive else 'false' }}"
+                                        data-leave-status="{{ first_lv.status }}"
+                                        data-leave-reason="{{ first_lv.reason or '' }}"
+                                        data-leave-rejection-reason="{{ first_lv.rejection_reason or '' }}"
+                                    {% endif %}
+                                    onclick="handleTimelineCellClick(this)">
                                     {% if cell_leaves %}
                                     {% set ns_t = namespace(th=0, ph=0, has_non_deductive=false, has_non_deductive_pending=false) %}
                                     {% for lv in cell_leaves %}
@@ -616,6 +669,32 @@
             timelineBtn.className = "rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-muted hover:text-dense-text";
             calendarContainer.classList.remove('hidden');
             timelineContainer.classList.add('hidden');
+        }
+    }
+
+    function handleTimelineCellClick(td) {
+        const hasLeave = td.getAttribute('data-has-leave') === 'true';
+        const userId = td.getAttribute('data-user-id');
+        const cellDate = td.getAttribute('data-cell-date');
+
+        if (hasLeave) {
+            const leaveId = td.getAttribute('data-leave-id');
+            const userName = td.getAttribute('data-user-name');
+            const userTeam = td.getAttribute('data-user-team');
+            const userCompany = td.getAttribute('data-user-company');
+            const slot = td.getAttribute('data-leave-slot');
+            const hours = td.getAttribute('data-leave-hours');
+            const isDeductive = td.getAttribute('data-leave-deductive') === 'true';
+            const status = td.getAttribute('data-leave-status');
+            const reason = td.getAttribute('data-leave-reason');
+            const rejectionReason = td.getAttribute('data-leave-rejection-reason');
+
+            openTimelineActionModal(leaveId, userName, userTeam, userCompany, cellDate, `${slot} (${hours})`, isDeductive, status, reason, rejectionReason, userId);
+        } else {
+            const currentUserId = "{{ user.user_id }}";
+            if (userId === currentUserId) {
+                openTimelineApplyModal(cellDate);
+            }
         }
     }
 

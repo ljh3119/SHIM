@@ -178,29 +178,29 @@
 
                         <div class="grid grid-cols-7 gap-1.5">
                             {% for _ in range(month_meta.offset) %}
-                            <div class="h-24 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
+                            <div class="h-32 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
                             {% endfor %}
 
                             {% for day in range(1, month_meta.num_days + 1) %}
                             {% set weekday_idx = (month_meta.offset + day - 1) % 7 %}
-                            {% set leaves_of_day = day_map.get(day, []) %}
-                            {% set ns = namespace(total_h=0, has_deductive=false, has_non_deductive=false) %}
-                            {% for lv in leaves_of_day %}
-                                {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                    {% if lv.is_deductive %}
-                                        {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
-                                        {% set ns.has_deductive = true %}
-                                    {% else %}
-                                        {% set ns.has_non_deductive = true %}
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
                             {% set holiday_name = holiday_map.get((m, day)) %}
                             {% set is_blocked_day = weekday_idx in [0, 6] or holiday_name %}
+                            
+                            {# Check if any team member has leave on this day #}
+                            {% set day_leaves_exist = false %}
+                            {% for mem in team_members %}
+                                {% set mem_leaves = team_leaves_map.get(mem.user_id, {}).get(m, {}).get(day, []) %}
+                                {% for lv in mem_leaves %}
+                                    {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                        {% set day_leaves_exist = true %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+
                             <button type="button"
                                  id="day-btn-monthly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
-                                 class="h-24 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all {% if leaves_of_day %}border-dense-blue/30 bg-dense-blue-soft/30 hover:bg-dense-blue-soft/60{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60 opacity-60{% endif %}"
-                                 title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
+                                 class="h-32 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}border-dense-blue/20 bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60 opacity-60{% endif %}"
+                                 title="{% if holiday_name %}[공휴일] {{ holiday_name }}{% else %}클릭하여 연차 신청 (다중 선택 모드 시 선택){% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
                                  {% endif %}
@@ -213,26 +213,46 @@
                                     <span class="truncate text-[9px] font-bold text-dense-danger bg-dense-danger-soft px-1.5 py-0.5 rounded border border-dense-danger/10" title="{{ holiday_name }}">{{ holiday_name }}</span>
                                     {% endif %}
                                 </div>
-                                {% if leaves_of_day %}
-                                <div class="flex flex-wrap gap-1 mt-1 overflow-y-auto max-h-[52px] w-full">
-                                    {% if ns.total_h > 0 %}
-                                    <div class="inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[9px] font-extrabold text-white leading-none {% if ns.total_h >= 8 %}bg-dense-danger{% elif ns.total_h >= 4 %}bg-[#f79009]{% else %}bg-dense-blue{% endif %} shadow-sm">
-                                        {{ fmt_hours(ns.total_h) }}h
-                                    </div>
-                                    {% endif %}
-                                    {% if ns.has_non_deductive %}
-                                        {% set ns_pub = namespace(h=0) %}
-                                        {% for lv in leaves_of_day %}{% if not lv.is_deductive and lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_pub.h = ns_pub.h + lv.snapshot_deduction_hours %}{% endif %}{% endfor %}
-                                        {% if ns_pub.h > 0 %}
-                                        <div class="inline-flex items-center justify-center rounded-lg bg-purple-600 px-1.5 py-0.5 text-[9px] font-extrabold text-white leading-none shadow-sm" title="공가/출장 신청 포함">
-                                            {{ fmt_hours(ns_pub.h) }}h(공)
-                                        </div>
-                                        {% endif %}
-                                    {% endif %}
+                                <div class="flex-1 overflow-y-auto max-h-[82px] w-full space-y-1 mt-1 pr-0.5">
+                                    {% for mem in team_members %}
+                                        {% set mem_leaves = team_leaves_map.get(mem.user_id, {}).get(m, {}).get(day, []) %}
+                                        {% for lv in mem_leaves %}
+                                            {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                                {% set is_deduct = lv.is_deductive %}
+                                                {% set total_h = lv.snapshot_deduction_hours %}
+                                                {% set is_pending = lv.status == 'PENDING' %}
+                                                <div class="rounded px-1.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold truncate leading-normal shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer block text-left
+                                                            {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
+                                                            {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
+                                                            {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
+                                                            {% else %}bg-blue-50 text-blue-700 border-blue-200
+                                                            {% endif %}
+                                                            {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
+                                                     style="{% if not is_deduct %}border-color: #d8b4fe; background-color: #faf5ff; color: #7e22ce;{% endif %}"
+                                                     title="{{ mem.user_name }} ({{ mem.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                                                     data-has-leave="true"
+                                                     data-cell-date="{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
+                                                     data-user-id="{{ mem.user_id }}"
+                                                     data-user-name="{{ mem.user_name }}"
+                                                     data-user-team="{{ mem.team or '' }}"
+                                                     data-user-company="{{ mem.company or '' }}"
+                                                     data-leave-id="{{ lv.id }}"
+                                                     data-leave-slot="{{ lv.snapshot_slot_label }}"
+                                                     data-leave-hours="{{ fmt_hours(total_h) }}h"
+                                                     data-leave-deductive="{{ 'true' if is_deduct else 'false' }}"
+                                                     data-leave-status="{{ lv.status }}"
+                                                     data-leave-reason="{{ lv.reason or '' }}"
+                                                     data-leave-rejection-reason="{{ lv.rejection_reason or '' }}"
+                                                     onclick="event.stopPropagation(); handleTimelineCellClick(this)">
+                                                    {{ mem.user_name }}
+                                                    <span class="opacity-75 font-semibold text-[8px] sm:text-[8.5px] ml-0.5">
+                                                        {{ fmt_hours(total_h) }}h{% if not is_deduct %}(공){% endif %}{% if is_pending %}(대){% endif %}
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
                                 </div>
-                                {% else %}
-                                <div class="h-4"></div>
-                                {% endif %}
                             </button>
                             {% endfor %}
                         </div>
@@ -1217,5 +1237,40 @@ async function teamRejectPrompt(leaveId, btn) {
         }
     });
 }
+
+function handleTimelineCellClick(td) {
+    const hasLeave = td.getAttribute('data-has-leave') === 'true';
+    const userId = td.getAttribute('data-user-id');
+    const cellDate = td.getAttribute('data-cell-date');
+
+    if (hasLeave) {
+        const leaveId = td.getAttribute('data-leave-id');
+        const userName = td.getAttribute('data-user-name');
+        const userTeam = td.getAttribute('data-user-team');
+        const userCompany = td.getAttribute('data-user-company');
+        const slot = td.getAttribute('data-leave-slot');
+        const hours = td.getAttribute('data-leave-hours');
+        const isDeductive = td.getAttribute('data-leave-deductive') === 'true';
+        const status = td.getAttribute('data-leave-status');
+        const reason = td.getAttribute('data-leave-reason');
+        const rejectionReason = td.getAttribute('data-leave-rejection-reason');
+
+        if (typeof openTimelineActionModal === 'function') {
+            openTimelineActionModal(leaveId, userName, userTeam, userCompany, cellDate, `${slot} (${hours})`, isDeductive, status, reason, rejectionReason, userId);
+        } else {
+            console.error('openTimelineActionModal is not defined in base.html');
+        }
+    } else {
+        const currentUserId = "{{ user.user_id }}";
+        if (userId === currentUserId) {
+            if (typeof openTimelineApplyModal === 'function') {
+                openTimelineApplyModal(cellDate);
+            } else {
+                console.error('openTimelineApplyModal is not defined in base.html');
+            }
+        }
+    }
+}
 </script>
 {% endblock %}
+}

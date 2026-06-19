@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.6') }} - 연차 관리 시스템</title>
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.7') }} - 연차 관리 시스템</title>
     <!-- Closed-network mode: use local Tailwind CSS only -->
     <link href="/static/css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -182,7 +182,7 @@
     <footer class="mt-auto border-t border-dense-line bg-dense-surface">
         <div class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
             <p class="text-center text-sm text-dense-muted">
-                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.6') }}
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.7') }}
             </p>
         </div>
     </footer>
@@ -320,6 +320,399 @@
         } catch (err) {
             alert('네트워크 오류가 발생했습니다.');
         }
+    }
+    </script>
+
+    <!-- Timeline Apply Modal -->
+    <div id="timelineApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('timelineApplyModal')"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 신청</h3>
+                    <form id="timelineApplyForm" class="space-y-4" onsubmit="submitTimelineApply(); return false;">
+                        <div>
+                            <label for="timeline_date_str" class="block text-sm font-bold text-dense-nav-text">날짜</label>
+                            <input type="date" id="timeline_date_str" name="date_str" required readonly lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="timeline_is_deductive_display" checked onchange="toggleTimelineReason()" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                            <label for="timeline_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">연차 차감 (체크 해제 시 공가/출장 신청)</label>
+                            <input type="hidden" name="is_deductive" id="timeline_is_deductive" value="true">
+                        </div>
+                        <div id="timeline_reason_container" class="hidden">
+                            <label for="timeline_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span class="text-dense-danger">*</span></label>
+                            <textarea id="timeline_reason" name="reason" placeholder="예: 예비군 훈련, 외부 세미나 참석 등" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
+                        </div>
+                        <div id="timeline_time_input_container">
+                            <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
+                            <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                <div>
+                                    <label for="timeline_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
+                                    <select id="timeline_start_time" name="start_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                        <option value="">선택</option>
+                                        {% if time_options %}
+                                        {% for t in time_options %}
+                                        <option value="{{ t }}">{{ t }}</option>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="timeline_end_time" class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
+                                    <select id="timeline_end_time" name="end_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                        <option value="">선택</option>
+                                        {% if time_options %}
+                                        {% for t in time_options %}
+                                        <option value="{{ t }}">{{ t }}</option>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 {{ time_granularity_minutes | default(60) }}분 단위만 신청 가능하며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                    <button type="submit" form="timelineApplyForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        신청하기
+                    </button>
+                    <button type="button" onclick="window.shimModal.close('timelineApplyModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        취소
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Detail / Action Modal -->
+    <div id="timelineActionModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('timelineActionModal')"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text" id="actionModalTitle">연차 상세 정보</h3>
+                    <input type="hidden" id="actionLeaveId">
+                    <div class="space-y-3 text-xs" id="actionModalContent">
+                        <!-- Dynamic content will be injected by JavaScript -->
+                    </div>
+                </div>
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6" id="actionModalFooter">
+                    <!-- Action buttons will be injected by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function parseHHMMToMinutes(value) {
+        if (!value) return null;
+        const parts = String(value).split(':');
+        if (parts.length < 2) return null;
+        const h = Number(parts[0]);
+        const m = Number(parts[1]);
+        if (Number.isNaN(h) || Number.isNaN(m)) return null;
+        return h * 60 + m;
+    }
+
+    function overlapMinutes(startA, endA, startB, endB) {
+        return Math.max(0, Math.min(endA, endB) - Math.max(startA, startB));
+    }
+
+    function formatHoursForConfirm(hours) {
+        if (Math.abs(hours - Math.round(hours)) < 1e-9) return String(Math.round(hours));
+        return hours.toFixed(1);
+    }
+
+    function toggleTimelineReason() {
+        const display = document.getElementById('timeline_is_deductive_display');
+        const hidden = document.getElementById('timeline_is_deductive');
+        const container = document.getElementById('timeline_reason_container');
+        const input = document.getElementById('timeline_reason');
+        if (!display || !hidden) return;
+        const isChecked = display.checked;
+        hidden.value = isChecked ? "true" : "false";
+        if (isChecked) {
+            container.classList.add('hidden');
+            input.required = false;
+        } else {
+            container.classList.remove('hidden');
+            input.required = true;
+        }
+    }
+
+    function openTimelineApplyModal(dateStr) {
+        document.getElementById('timeline_date_str').value = dateStr;
+        document.getElementById('timeline_is_deductive_display').checked = true;
+        toggleTimelineReason();
+        document.getElementById('timeline_reason').value = '';
+        document.getElementById('timeline_start_time').value = '09:00';
+        document.getElementById('timeline_end_time').value = '18:00';
+        window.shimModal.open('timelineApplyModal', 'timeline_start_time');
+    }
+
+    function evaluateTimelineLeaveDraft(startTime, endTime, isDeductive) {
+        const startMin = parseHHMMToMinutes(startTime);
+        const endMin = parseHHMMToMinutes(endTime);
+        if (startMin === null || endMin === null || endMin <= startMin) {
+            return { ok: false, message: '시작/종료 시간을 다시 확인해 주세요.' };
+        }
+        const granularity = Number({{ time_granularity_minutes | default(60) }});
+        const totalMinutes = endMin - startMin;
+        if (totalMinutes < granularity) {
+            return { ok: false, message: `선택 구간이 최소 시간 단위(${granularity}분)보다 짧습니다.` };
+        }
+
+        const lunchStartRaw = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
+        const lunchEndRaw = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
+        let excludedLunch = 0;
+        let isFullyInLunch = false;
+        if (lunchStartRaw >= 0 && lunchEndRaw > lunchStartRaw) {
+            excludedLunch = overlapMinutes(startMin, endMin, lunchStartRaw, lunchEndRaw);
+            if (startMin >= lunchStartRaw && endMin <= lunchEndRaw) {
+                isFullyInLunch = true;
+            }
+        }
+        const effectiveMinutes = totalMinutes - excludedLunch;
+        if (effectiveMinutes <= 0) {
+            if (isFullyInLunch) {
+                const formatMin = (m) => {
+                    const hh = Math.floor(m / 60).toString().padStart(2, '0');
+                    const mm = (m % 60).toString().padStart(2, '0');
+                    return `${hh}:${mm}`;
+                };
+                return {
+                    ok: false,
+                    message: `선택하신 시간대(${startTime}~${endTime})는 점심시간(${formatMin(lunchStartRaw)}~${formatMin(lunchEndRaw)})에 완전히 포함되어 실제 차감 시간이 발생하지 않습니다.`
+                };
+            }
+            return { ok: false, message: '점심시간 제외 후 차감 시간이 0 이하입니다. 시간을 다시 확인해 주세요.' };
+        }
+        
+        const deductionHours = effectiveMinutes / 60;
+        const typeStr = isDeductive ? '연차' : '공가/출장';
+        const hoursMsg = isDeductive ? ` (예상 차감: -${formatHoursForConfirm(deductionHours)}h)` : ` (${formatHoursForConfirm(deductionHours)}h 부재)`;
+        
+        return {
+            ok: true,
+            confirmMessage: `[${typeStr}] 신청하시겠습니까?${hoursMsg}`,
+        };
+    }
+
+    async function submitTimelineApply() {
+        const form = document.getElementById('timelineApplyForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const dateStr = document.getElementById('timeline_date_str').value;
+        const isDeductive = document.getElementById('timeline_is_deductive_display').checked;
+        const startTime = document.getElementById('timeline_start_time').value;
+        const endTime = document.getElementById('timeline_end_time').value;
+        const reason = document.getElementById('timeline_reason').value;
+
+        const draft = evaluateTimelineLeaveDraft(startTime, endTime, isDeductive);
+        if (!draft.ok) {
+            alert(draft.message || '입력값을 다시 확인해 주세요.');
+            return;
+        }
+        if (!await window.shimModal.confirm(draft.confirmMessage)) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('date_str', dateStr);
+        formData.append('start_time', startTime);
+        formData.append('end_time', endTime);
+        formData.append('is_deductive', isDeductive);
+        formData.append('reason', reason);
+
+        const btn = form.querySelector('button[type=submit]');
+        simulateButtonLoading(btn, async () => {
+            try {
+                const response = await fetch('/api/user/leave', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || '성공적으로 신청되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(result.message || result.detail || '오류가 발생했습니다.');
+                }
+            } catch (err) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    function openTimelineActionModal(leaveId, userName, userTeam, userCompany, dateStr, duration, isDeductive, status, reason, rejectionReason, applicantId) {
+        document.getElementById('actionLeaveId').value = leaveId;
+        
+        const title = document.getElementById('actionModalTitle');
+        const content = document.getElementById('actionModalContent');
+        const footer = document.getElementById('actionModalFooter');
+        
+        const currentUserId = "{{ user.user_id if user else '' }}";
+        const currentUserRole = "{{ user_role if user_role else '' }}";
+        const currentUserTeam = "{{ user.team if user and user.team else '' }}";
+        const currentUserCompany = "{{ user.company if user and user.company else '' }}";
+        
+        const isMe = (applicantId === currentUserId);
+        title.textContent = isMe ? '나의 연차 신청 정보' : '팀원 연차 결재 승인';
+        
+        const deductiveLabel = !isDeductive ? '<span class="ml-1.5 inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>' : '';
+        const reasonContent = reason ? reason : '—';
+        
+        let statusLabel = '';
+        if (status === 'PENDING') {
+            statusLabel = '<span class="text-dense-amber font-extrabold bg-dense-amber-soft px-1.5 py-0.5 rounded">결재 대기 중</span>';
+        } else if (status === 'APPROVED') {
+            statusLabel = '<span class="text-dense-green font-extrabold bg-dense-green-soft px-1.5 py-0.5 rounded">승인됨</span>';
+        } else if (status === 'REJECTED') {
+            statusLabel = `<span class="text-dense-danger font-extrabold bg-dense-danger-soft px-1.5 py-0.5 rounded">반려됨 (${rejectionReason || '사유 없음'})</span>`;
+        } else {
+            statusLabel = '<span class="text-dense-muted font-extrabold bg-dense-gray-soft px-1.5 py-0.5 rounded">취소됨</span>';
+        }
+
+        content.innerHTML = `
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청인</span>
+                <span class="col-span-2 font-bold">${userName}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">팀</span>
+                <span>${userTeam || '—'}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 일자</span>
+                <span class="col-span-2 font-bold">${dateStr}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">연차 구분</span>
+                <span class="col-span-2 font-bold">${duration}${deductiveLabel}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">신청 사유</span>
+                <span class="col-span-2 font-semibold text-dense-text">${reasonContent}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+                <span class="font-bold text-dense-muted">결재 상태</span>
+                <span class="col-span-2">${statusLabel}</span>
+            </div>
+        `;
+        
+        const canApprove = (currentUserRole === 'PM') || (currentUserRole === 'TEAM_LEAD' && userTeam === currentUserTeam && userCompany === currentUserCompany);
+        
+        if (isMe) {
+            if (status === 'PENDING') {
+                footer.innerHTML = `
+                    <button type="button" id="actionCancelBtn" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">신청 취소</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+                document.getElementById('actionCancelBtn').onclick = (e) => cancelTimelineLeave(leaveId, e.target);
+            } else {
+                footer.innerHTML = `
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+            }
+        } else {
+            if (status === 'PENDING' && canApprove) {
+                footer.innerHTML = `
+                    <button type="button" id="actionApproveBtn" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">승인하기</button>
+                    <button type="button" id="actionRejectBtn" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">반려하기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                `;
+                document.getElementById('actionApproveBtn').onclick = (e) => approveTimelineLeave(leaveId, e.target);
+                document.getElementById('actionRejectBtn').onclick = (e) => rejectTimelineLeave(leaveId, e.target);
+            } else {
+                footer.innerHTML = `
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                `;
+            }
+        }
+        window.shimModal.open('timelineActionModal');
+    }
+
+    async function cancelTimelineLeave(leaveId, btn) {
+        if (!await window.shimModal.confirm('이 연차 신청을 취소하시겠습니까?')) return;
+        simulateButtonLoading(btn, async () => {
+            try {
+                const res = await fetch(`/api/user/leave/cancel/${leaveId}`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message || '취소되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                }
+            } catch (e) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    async function approveTimelineLeave(leaveId, btn) {
+        if (!await window.shimModal.confirm('이 신청을 승인하시겠습니까?')) return;
+        simulateButtonLoading(btn, async () => {
+            try {
+                const res = await fetch(`/api/user/team-approve/${leaveId}`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message || '승인되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                }
+            } catch (e) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    async function rejectTimelineLeave(leaveId, btn) {
+        const reason = await window.shimModal.prompt('반려 사유를 입력해 주세요:', { required: true });
+        if (reason === null) return;
+        if (!reason.trim()) {
+            alert('반려 사유를 입력해야 합니다.');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('rejection_reason', reason);
+        simulateButtonLoading(btn, async () => {
+            try {
+                const res = await fetch(`/api/user/team-reject/${leaveId}`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message || '반려되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                }
+            } catch (e) {
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    function simulateButtonLoading(btn, callback, duration = 600) {
+        if (!btn || btn.disabled) return;
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 처리 중...`;
+        
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHTML;
+            if (callback) callback();
+        }, duration);
     }
     </script>
     {% endif %}
