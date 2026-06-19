@@ -201,8 +201,12 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="text-center py-6 text-dense-muted text-xs font-bold">
-                    신청 내역이 없습니다.
+                <div class="text-center py-12 text-dense-muted font-semibold">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <span class="text-3xl">📋</span>
+                        <p class="text-xs font-bold text-dense-text">연차 신청 내역이 없습니다.</p>
+                        <p class="text-[10px] text-dense-muted">대시보드 또는 캘린더에서 연차를 신청해 보세요.</p>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -212,7 +216,7 @@
 
 <script>
 async function cancelLeave(leaveId, btn) {
-    if (!confirm('이 연차 신청을 취소하시겠습니까?')) return;
+    if (!await shimModal.confirm('이 연차 신청을 취소하시겠습니까?')) return;
     simulateButtonLoading(btn, async () => {
         try {
             const res = await fetch(`/api/user/leave/cancel/${leaveId}`, { method: 'POST' });

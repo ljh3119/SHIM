@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.4') }} - 연차 관리 시스템</title>
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.5') }} - 연차 관리 시스템</title>
     <!-- Closed-network mode: use local Tailwind CSS only -->
     <link href="/static/css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -182,7 +182,7 @@
     <footer class="mt-auto border-t border-dense-line bg-dense-surface">
         <div class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
             <p class="text-center text-sm text-dense-muted">
-                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.4') }}
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.5') }}
             </p>
         </div>
     </footer>
@@ -362,6 +362,170 @@
             }
         }
 
+        function confirm(message, options = {}) {
+            return new Promise((resolve) => {
+                const title = options.title || '확인';
+                const confirmText = options.confirmText || '확인';
+                const cancelText = options.cancelText || '취소';
+                const destructive = options.destructive || false;
+                
+                let modal = document.getElementById('shim-confirm-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'shim-confirm-modal';
+                    modal.className = 'fixed inset-0 z-[9999] hidden overflow-y-auto';
+                    modal.setAttribute('aria-modal', 'true');
+                    modal.innerHTML = `
+                        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" data-backdrop></div>
+                            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                    <h3 id="shim-confirm-title" class="text-base font-extrabold leading-6 text-dense-text"></h3>
+                                    <div class="mt-2">
+                                        <p id="shim-confirm-message" class="text-sm font-semibold text-dense-muted whitespace-pre-line"></p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                                    <button type="button" id="shim-confirm-btn" class="inline-flex w-full justify-center rounded-xl px-4 py-2 text-base font-bold text-white shadow-sm sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                    <button type="button" id="shim-confirm-cancel-btn" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                
+                const titleEl = document.getElementById('shim-confirm-title');
+                const msgEl = document.getElementById('shim-confirm-message');
+                const confirmBtn = document.getElementById('shim-confirm-btn');
+                const cancelBtn = document.getElementById('shim-confirm-cancel-btn');
+                const backdrop = modal.querySelector('[data-backdrop]');
+                
+                titleEl.textContent = title;
+                msgEl.textContent = message;
+                confirmBtn.textContent = confirmText;
+                cancelBtn.textContent = cancelText;
+                
+                if (destructive) {
+                    confirmBtn.className = 'inline-flex w-full justify-center rounded-xl bg-dense-danger px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-danger/90 sm:ml-3 sm:w-auto sm:text-sm';
+                } else {
+                    confirmBtn.className = 'inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:ml-3 sm:w-auto sm:text-sm';
+                }
+                
+                const onConfirm = () => {
+                    cleanup();
+                    resolve(true);
+                };
+                
+                const onCancel = () => {
+                    cleanup();
+                    resolve(false);
+                };
+                
+                const cleanup = () => {
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    backdrop.removeEventListener('click', onCancel);
+                    close('shim-confirm-modal');
+                };
+                
+                confirmBtn.addEventListener('click', onConfirm);
+                cancelBtn.addEventListener('click', onCancel);
+                backdrop.addEventListener('click', onCancel);
+                
+                open('shim-confirm-modal', 'shim-confirm-btn');
+            });
+        }
+
+        function prompt(message, options = {}) {
+            return new Promise((resolve) => {
+                const title = options.title || '입력';
+                const confirmText = options.confirmText || '확인';
+                const cancelText = options.cancelText || '취소';
+                const defaultValue = options.defaultValue || '';
+                const placeholder = options.placeholder || '내용을 입력하세요.';
+                const required = options.required || false;
+                
+                let modal = document.getElementById('shim-prompt-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'shim-prompt-modal';
+                    modal.className = 'fixed inset-0 z-[9999] hidden overflow-y-auto';
+                    modal.setAttribute('aria-modal', 'true');
+                    modal.innerHTML = `
+                        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                            <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" data-backdrop></div>
+                            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                                <form id="shim-prompt-form" onsubmit="return false;">
+                                    <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                        <h3 id="shim-prompt-title" class="text-base font-extrabold leading-6 text-dense-text"></h3>
+                                        <div class="mt-2 space-y-3">
+                                            <p id="shim-prompt-message" class="text-sm font-semibold text-dense-muted whitespace-pre-line"></p>
+                                            <input type="text" id="shim-prompt-input" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                                        <button type="submit" id="shim-prompt-btn" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                        <button type="button" id="shim-prompt-cancel-btn" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                
+                const titleEl = document.getElementById('shim-prompt-title');
+                const msgEl = document.getElementById('shim-prompt-message');
+                const inputEl = document.getElementById('shim-prompt-input');
+                const formEl = document.getElementById('shim-prompt-form');
+                const confirmBtn = document.getElementById('shim-prompt-btn');
+                const cancelBtn = document.getElementById('shim-prompt-cancel-btn');
+                const backdrop = modal.querySelector('[data-backdrop]');
+                
+                titleEl.textContent = title;
+                msgEl.textContent = message;
+                inputEl.value = defaultValue;
+                inputEl.placeholder = placeholder;
+                if (required) {
+                    inputEl.setAttribute('required', 'required');
+                } else {
+                    inputEl.removeAttribute('required');
+                }
+                confirmBtn.textContent = confirmText;
+                cancelBtn.textContent = cancelText;
+                
+                const onSubmit = () => {
+                    if (required && !inputEl.value.trim()) {
+                        inputEl.reportValidity();
+                        return;
+                    }
+                    cleanup();
+                    resolve(inputEl.value);
+                };
+                
+                const onCancel = () => {
+                    cleanup();
+                    resolve(null);
+                };
+                
+                const cleanup = () => {
+                    formEl.removeEventListener('submit', onSubmit);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    backdrop.removeEventListener('click', onCancel);
+                    close('shim-prompt-modal');
+                };
+                
+                formEl.addEventListener('submit', onSubmit);
+                cancelBtn.addEventListener('click', onCancel);
+                backdrop.addEventListener('click', onCancel);
+                
+                open('shim-prompt-modal', 'shim-prompt-input');
+            });
+        }
+
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') return;
             const opened = [...modalState.entries()].filter(([, v]) => v && v.isOpen).map(([k]) => k);
@@ -369,7 +533,7 @@
             close(opened[opened.length - 1]);
         });
 
-        window.shimModal = { open, close };
+        window.shimModal = { open, close, confirm, prompt };
     })();
     </script>
     <script>
@@ -483,6 +647,64 @@
         
         window.showToast(msgStr, type);
     };
+
+    // ── Global Tooltip Utility ──
+    document.addEventListener('DOMContentLoaded', () => {
+        let tooltipEl = null;
+
+        function showTooltip(target, text) {
+            if (!text) return;
+            if (!tooltipEl) {
+                tooltipEl = document.createElement('div');
+                tooltipEl.className = 'fixed z-[99999] pointer-events-none rounded-lg bg-dense-text text-white text-[10px] font-bold p-2 shadow-lg transition-opacity duration-150 opacity-0 whitespace-pre-line';
+                document.body.appendChild(tooltipEl);
+            }
+            tooltipEl.textContent = text;
+            tooltipEl.classList.remove('opacity-0');
+            tooltipEl.classList.add('opacity-100');
+
+            // 강제 리플로우를 발생시켜 정확한 크기를 읽어옴
+            tooltipEl.offsetHeight;
+
+            const rect = target.getBoundingClientRect();
+            const tooltipRect = tooltipEl.getBoundingClientRect();
+            
+            let left = rect.left + (rect.width - tooltipRect.width) / 2;
+            let top = rect.top - tooltipRect.height - 8;
+
+            if (left < 8) left = 8;
+            if (left + tooltipRect.width > window.innerWidth - 8) {
+                left = window.innerWidth - tooltipRect.width - 8;
+            }
+            if (top < 8) {
+                top = rect.bottom + 8;
+            }
+
+            tooltipEl.style.left = `${left}px`;
+            tooltipEl.style.top = `${top}px`;
+        }
+
+        function hideTooltip() {
+            if (tooltipEl) {
+                tooltipEl.classList.remove('opacity-100');
+                tooltipEl.classList.add('opacity-0');
+            }
+        }
+
+        document.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                showTooltip(target, target.getAttribute('data-tooltip'));
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                hideTooltip();
+            }
+        });
+    });
     </script>
 
 </body>

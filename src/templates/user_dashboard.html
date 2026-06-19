@@ -91,7 +91,7 @@
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Greeting for PC only (hidden in mobile as we have greeting inside the mobile hub card) -->
-    <div class="hidden md:flex flex-col md:flex-row md:items-center md:justify-between">
+    <div class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">안녕하세요, {{ user.user_name }} {{ user.position or '' }}님</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
@@ -99,7 +99,7 @@
                 {% if user.team %} / {{ user.team }}{% endif %}
             </p>
         </div>
-        <div class="mt-4 flex gap-2 md:mt-0">
+        <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                 <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">캘린더</a>
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
@@ -112,7 +112,7 @@
     </div>
 
     <!-- 1. PC & Tablet View (Wide Screen) -->
-    <div class="hidden md:flex flex-col md:flex-row gap-5">
+    <div class="hidden lg:flex flex-col lg:flex-row gap-5">
         <!-- Left Sidebar Panel -->
         {% include "partials/user_left_panel.html" %}
 
@@ -311,7 +311,7 @@
     </div>
 
     <!-- 2. Mobile View (Narrow Screen) -->
-    <div class="block md:hidden space-y-4">
+    <div class="block lg:hidden space-y-4">
         <!-- Dashboard Hub Container -->
         <div id="mobile-dashboard-hub-g" class="space-y-4">
             <div>
@@ -627,6 +627,26 @@ function nextMonth() {
 
 document.addEventListener('DOMContentLoaded', () => {
     showMonth(currentMonth);
+    
+    // 키보드 숏컷 (ArrowLeft/ArrowRight)
+    document.addEventListener('keydown', (e) => {
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+            return;
+        }
+        const openedModals = document.querySelectorAll('[aria-modal="true"]:not(.hidden)');
+        if (openedModals.length > 0) {
+            return;
+        }
+        
+        if (currentDashboardLayout === 'monthly') {
+            if (e.key === 'ArrowLeft') {
+                prevMonth();
+            } else if (e.key === 'ArrowRight') {
+                nextMonth();
+            }
+        }
+    });
 });
 
 let isMultiSelectMode = false;
@@ -1035,7 +1055,7 @@ async function submitCalendarApply() {
     formData.append('reason', document.getElementById('calendar_reason').value);
 
     if (isMulti) {
-        if (!confirm('선택된 날짜들에 대해 하루 종일(Full-day) 신청하시겠습니까?')) {
+        if (!await shimModal.confirm('선택된 날짜들에 대해 하루 종일(Full-day) 신청하시겠습니까?')) {
             return;
         }
     } else {
@@ -1044,7 +1064,7 @@ async function submitCalendarApply() {
             alert(draft.message || '입력값을 다시 확인해 주세요.');
             return;
         }
-        if (!confirm(draft.confirmMessage)) {
+        if (!await shimModal.confirm(draft.confirmMessage)) {
             return;
         }
     }
@@ -1120,7 +1140,7 @@ async function submitDirectApply() {
     formData.append('reason', document.getElementById('direct_reason').value);
 
     if (isAllDay || mode !== 'single') {
-        if (!confirm('선택된 날짜들에 대해 하루 종일(Full-day) 신청하시겠습니까?')) {
+        if (!await shimModal.confirm('선택된 날짜들에 대해 하루 종일(Full-day) 신청하시겠습니까?')) {
             return;
         }
     } else {
@@ -1129,7 +1149,7 @@ async function submitDirectApply() {
             alert(draft.message || '입력값을 다시 확인해 주세요.');
             return;
         }
-        if (!confirm(draft.confirmMessage)) {
+        if (!await shimModal.confirm(draft.confirmMessage)) {
             return;
         }
     }
@@ -1156,7 +1176,7 @@ async function submitDirectApply() {
 
 // ── 팀장 결재 함수 ──
 async function teamApprove(leaveId, btn) {
-    if (!confirm('이 신청을 승인하시겠습니까?')) return;
+    if (!await shimModal.confirm('이 신청을 승인하시겠습니까?')) return;
     simulateButtonLoading(btn, async () => {
         try {
             const res = await fetch(`/api/user/team-approve/${leaveId}`, { method: 'POST' });
@@ -1174,7 +1194,7 @@ async function teamApprove(leaveId, btn) {
 }
 
 async function teamRejectPrompt(leaveId, btn) {
-    const reason = prompt('반려 사유를 입력해 주세요:');
+    const reason = await shimModal.prompt('반려 사유를 입력해 주세요:', { required: true });
     if (reason === null) return;
     if (!reason.trim()) {
         alert('반려 사유를 입력해야 합니다.');

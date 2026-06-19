@@ -236,7 +236,7 @@ async function toggleApprovalWorkflow(btn) {
     const next = !cur;
     const curLabel = cur ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
     const nextLabel = next ? '켜짐 (결재 필요)' : '꺼짐 (즉시 승인)';
-    if (!confirm('승인 워크플로우를 변경할까요?\n\n현재: ' + curLabel + '\n변경 후: ' + nextLabel)) return;
+    if (!await shimModal.confirm('승인 워크플로우를 변경할까요?\n\n현재: ' + curLabel + '\n변경 후: ' + nextLabel)) return;
     simulateButtonLoading(btn, async () => {
         const resp = await fetch('/api/admin/settings/approval', {
             method: 'POST',
@@ -264,7 +264,7 @@ async function saveCalendarScope(btn) {
     else if (selectedValue === 'team') scopeLabel = '소속 팀원 공유';
     else if (selectedValue === 'company') scopeLabel = '프로젝트 전체 공유';
 
-    if (!confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
+    if (!await shimModal.confirm('캘린더 공유 범위를 "' + scopeLabel + '"(으)로 변경할까요?')) return;
 
     simulateButtonLoading(btn, async () => {
         const resp = await fetch('/api/admin/settings/calendar-scope', {
@@ -281,7 +281,7 @@ async function saveCalendarScope(btn) {
     });
 }
 async function runDbBackup(btn) {
-    if (!confirm('지금 DB 백업을 생성할까요?')) return;
+    if (!await shimModal.confirm('지금 DB 백업을 생성할까요?')) return;
     simulateButtonLoading(btn, async () => {
         const resp = await fetch('/api/admin/ops/backup', { method: 'POST' });
         const result = await resp.json();

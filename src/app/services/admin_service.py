@@ -35,6 +35,17 @@ def get_admin_dashboard_stats(db: Session):
     recent_leaves = db.query(models.Leaves).options(joinedload(models.Leaves.user)).filter(
         models.Leaves.created_at >= seven_days_ago
     ).order_by(models.Leaves.created_at.desc()).all()
+
+    # 오늘 부재자 목록 (APPROVED/PENDING) - N+1 방지
+    today_leaves = db.query(models.Leaves).options(joinedload(models.Leaves.user)).filter(
+        models.Leaves.date == today.date(),
+        models.Leaves.status.in_(["APPROVED", "PENDING"])
+    ).all()
+
+    # 최근 감사 로그 10건 - N+1 방지
+    recent_audits = db.query(models.AuditLogs).options(
+        joinedload(models.AuditLogs.actor)
+    ).order_by(models.AuditLogs.id.desc()).limit(10).all()
     
     return {
         "active_users_count": active_users_count,
@@ -43,6 +54,8 @@ def get_admin_dashboard_stats(db: Session):
         "is_approval_required": is_approval_required,
         "today_used_hours": today_used_hours,
         "recent_leaves": recent_leaves,
+        "today_absentees": today_leaves,
+        "recent_audits": recent_audits,
     }
 
 def get_leaves_timeline_query(

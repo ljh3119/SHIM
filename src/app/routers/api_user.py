@@ -46,11 +46,15 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
         models.Leaves.user_id == user.user_id,
         models.Leaves.year == current_year
     ).order_by(models.Leaves.date.desc()).all()
-    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED") and getattr(leave, "is_deductive", True))
+    approved_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "APPROVED" and getattr(leave, "is_deductive", True))
+    pending_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "PENDING" and getattr(leave, "is_deductive", True))
+    used_hours = approved_hours + pending_hours
     remaining_hours = total_allocated_hours - used_hours
 
     ctx.update({
         "total_allocated_hours": total_allocated_hours,
+        "approved_hours": approved_hours,
+        "pending_hours": pending_hours,
         "used_hours": used_hours,
         "remaining_hours": remaining_hours,
         "leaves": yearly_leaves,
@@ -133,7 +137,9 @@ def user_dashboard(
     time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
     
     total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
-    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED") and getattr(leave, "is_deductive", True))
+    approved_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "APPROVED" and getattr(leave, "is_deductive", True))
+    pending_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "PENDING" and getattr(leave, "is_deductive", True))
+    used_hours = approved_hours + pending_hours
     remaining_hours = total_allocated_hours - used_hours
     
     # 연간(12개월) 캘린더 데이터
@@ -412,7 +418,9 @@ def user_history(
     ).order_by(models.Leaves.date.desc()).all()
 
     total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
-    used_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status not in ("CANCELED", "REJECTED") and getattr(leave, "is_deductive", True))
+    approved_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "APPROVED" and getattr(leave, "is_deductive", True))
+    pending_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "PENDING" and getattr(leave, "is_deductive", True))
+    used_hours = approved_hours + pending_hours
     remaining_hours = total_allocated_hours - used_hours
 
     ctx = {
