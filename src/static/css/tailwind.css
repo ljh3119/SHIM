@@ -755,14 +755,8 @@
   .max-w-\[100px\] {
     max-width: 100px;
   }
-  .max-w-\[110px\] {
-    max-width: 110px;
-  }
   .max-w-\[120px\] {
     max-width: 120px;
-  }
-  .max-w-\[130px\] {
-    max-width: 130px;
   }
   .max-w-\[200px\] {
     max-width: 200px;
@@ -2612,12 +2606,6 @@
       padding-top: calc(var(--spacing) * 0);
     }
   }
-  .last\:border-b-0 {
-    &:last-child {
-      border-bottom-style: var(--tw-border-style);
-      border-bottom-width: 0px;
-    }
-  }
   .last\:pb-0 {
     &:last-child {
       padding-bottom: calc(var(--spacing) * 0);
@@ -3340,21 +3328,6 @@
   .lg\:px-8 {
     @media (width >= 64rem) {
       padding-inline: calc(var(--spacing) * 8);
-    }
-  }
-  .xl\:w-\[280px\] {
-    @media (width >= 80rem) {
-      width: 280px;
-    }
-  }
-  .xl\:max-w-\[140px\] {
-    @media (width >= 80rem) {
-      max-width: 140px;
-    }
-  }
-  .xl\:max-w-\[160px\] {
-    @media (width >= 80rem) {
-      max-width: 160px;
     }
   }
   .xl\:grid-cols-3 {

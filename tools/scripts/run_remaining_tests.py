@@ -411,18 +411,18 @@ def main():
     assert r.status_code == 400
     assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
     
-    # 새 비밀번호 길이 미달(4자 미만) 시 실패
+    # 새 비밀번호 길이 미달(8자 미만) 시 실패
     r = staff_client.post("/api/user/change-password", data={
         "current_password": "0000",
         "new_password": "abc"
     })
     assert r.status_code == 400
-    assert "최소 4자 이상" in r.json()["message"]
+    assert "최소 8자 이상" in r.json()["message"]
 
     # 성공적인 비밀번호 변경
     r = staff_client.post("/api/user/change-password", data={
         "current_password": "0000",
-        "new_password": "new_staff_password"
+        "new_password": "NewStaffPass123!"
     })
     assert r.status_code == 200
     assert "비밀번호가 성공적으로 변경되었습니다." in r.json()["message"]
@@ -430,7 +430,7 @@ def main():
     # 변경된 비밀번호로 검증
     db = SessionLocal()
     updated_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").first()
-    assert auth.verify_password("new_staff_password", updated_user.password)
+    assert auth.verify_password("NewStaffPass123!", updated_user.password)
     
     # 감사 로그(CHANGE_PASSWORD) 확인
     audit_pwd = db.query(models.AuditLogs).filter(
@@ -451,24 +451,24 @@ def main():
     assert r.status_code == 400
     assert "현재 비밀번호가 일치하지 않습니다." in r.json()["message"]
     
-    # 새 비밀번호 길이 미달(4자 미만)
+    # 새 비밀번호 길이 미달(8자 미만)
     r = admin_client.post("/api/admin/change-password", data={
         "current_password": "0000",
         "new_password": "123"
     })
     assert r.status_code == 400
-    assert "최소 4자 이상" in r.json()["message"]
+    assert "최소 8자 이상" in r.json()["message"]
 
     # 성공적인 변경
     r = admin_client.post("/api/admin/change-password", data={
         "current_password": "0000",
-        "new_password": "new_admin_pwd"
+        "new_password": "NewAdminPass123!"
     })
     assert r.status_code == 200
     
     db = SessionLocal()
     updated_admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
-    assert auth.verify_password("new_admin_pwd", updated_admin.password)
+    assert auth.verify_password("NewAdminPass123!", updated_admin.password)
     
     # 감사 로그(CHANGE_ADMIN_PASSWORD) 확인
     audit_admin = db.query(models.AuditLogs).filter(
@@ -528,7 +528,7 @@ def main():
     print("[CASE 11] JWT Cookie Security Settings")
     # 1. 일반 로그인 응답에서 SameSite=Lax 확인
     cookie_client = TestClient(app)
-    r_login = cookie_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"}, follow_redirects=False)
+    r_login = cookie_client.post("/login", data={"user_id": "u_staff", "password": "NewStaffPass123!"}, follow_redirects=False)
     assert r_login.status_code == 302
     cookie_header = r_login.headers.get("set-cookie", "")
     assert "samesite=lax" in cookie_header.lower()
@@ -536,7 +536,7 @@ def main():
     # 2. SHIM_SECURE_COOKIE 활성화 시 Secure=True 주입 검증
     os.environ["SHIM_SECURE_COOKIE"] = "true"
     secure_cookie_client = TestClient(app)
-    r_secure_login = secure_cookie_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"}, follow_redirects=False)
+    r_secure_login = secure_cookie_client.post("/login", data={"user_id": "u_staff", "password": "NewStaffPass123!"}, follow_redirects=False)
     cookie_header_sec = r_secure_login.headers.get("set-cookie", "")
     assert "secure" in cookie_header_sec.lower()
     os.environ.pop("SHIM_SECURE_COOKIE", None)
@@ -665,7 +665,7 @@ def main():
     db.close()
     
     deactive_client = TestClient(app)
-    r_deactive_login = deactive_client.post("/login", data={"user_id": "u_staff", "password": "new_staff_password"})
+    r_deactive_login = deactive_client.post("/login", data={"user_id": "u_staff", "password": "NewStaffPass123!"})
     assert r_deactive_login.status_code == 200
     assert "비활성" in r_deactive_login.text
     
@@ -1231,3 +1231,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
+(1)
