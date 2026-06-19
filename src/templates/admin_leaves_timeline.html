@@ -260,7 +260,7 @@
 
 <script>
 async function deleteLeave(id, btn) {
-    if(!confirm('정말 이 연차 기록을 삭제하시겠습니까?')) return;
+    if(!await shimModal.confirm('정말 이 연차 기록을 삭제하시겠습니까?', { destructive: true })) return;
     simulateButtonLoading(btn, async () => {
         try {
             const response = await fetch('/api/admin/leave/delete', {
@@ -286,8 +286,12 @@ async function changeStatus(leaveId, selectEl) {
     let rejectionReason = '';
 
     if(newStatus === 'REJECTED') {
-        rejectionReason = prompt('반려 사유를 입력해 주세요. (최대 500자)') || '';
-        rejectionReason = rejectionReason.trim();
+        const reasonPrompt = await shimModal.prompt('반려 사유를 입력해 주세요. (최대 500자)', { required: true });
+        if(reasonPrompt === null) {
+            selectEl.value = previousStatus;
+            return;
+        }
+        rejectionReason = reasonPrompt.trim();
         if(!rejectionReason) {
             alert('반려 사유를 입력해야 합니다.');
             selectEl.value = previousStatus;
@@ -331,7 +335,7 @@ async function changeType(leaveId, targetIsDeductive, btn) {
     const typeName = targetIsDeductive ? '연차(차감)' : '공가/출장(비차감)';
     const warnMsg = targetIsDeductive ? '\n(주의: 사용자의 잔여 연차가 차감됩니다.)' : '\n(사용자의 연차 잔여량이 복구됩니다.)';
     
-    if(!confirm(`이 신청 건을 [${typeName}] 유형으로 변경하시겠습니까?${warnMsg}`)) return;
+    if(!await shimModal.confirm(`이 신청 건을 [${typeName}] 유형으로 변경하시겠습니까?${warnMsg}`)) return;
     
     simulateButtonLoading(btn, async () => {
         try {

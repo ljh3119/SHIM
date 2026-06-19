@@ -18,36 +18,73 @@
     </header>
 
     {% if show_year_end_notice %}
-    <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/30 p-3.5 text-sm text-dense-blue">
-        <div class="flex items-start gap-2.5">
-            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-dense-blue/10 text-xs font-extrabold">i</span>
+    <div data-banner class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex gap-3 items-start sm:items-center">
+            <div class="p-2 bg-red-100 rounded-lg text-red-700 shrink-0 flex items-center justify-center">
+                <span class="text-lg">⚠️</span>
+            </div>
             <div>
-                <span class="font-extrabold">연말/연초 연차 설정 안내:</span> {{ next_year }}년도 연차 일수를 사원별로 확정할 시기입니다. 
-                <p class="mt-0.5 text-xs font-semibold text-dense-muted">연도별 연차 정합성을 유지하기 위해 '사원 관리' 메뉴에서 새해 연차를 일괄 또는 개별 등록해 주세요.</p>
+                <h4 class="text-xs font-extrabold text-red-900">[새해 연차 일괄 지급 권고] {{ next_year }}년도 연차 할당 정보가 존재하지 않습니다.</h4>
+                <p class="text-[10.5px] text-red-700 font-semibold leading-relaxed mt-0.5">원활한 새해 연차 신청 관리를 위해 사원 관리 탭의 '새해 연차 등록' 기능을 이용해 {{ next_year }}년도 기본 연차를 등록해 주시기 바랍니다.</p>
             </div>
         </div>
-        <a href="/admin/users" class="inline-flex items-center justify-center rounded-lg bg-dense-blue px-3 py-1.5 text-xs font-extrabold text-white transition-colors hover:bg-dense-blue/90">사원 관리 바로가기</a>
+        <div class="flex gap-2 shrink-0">
+            <a href="/admin/users" class="px-3 py-1.5 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 transition-colors">사원 관리 바로가기</a>
+            <button onclick="this.closest('[data-banner]').remove()" class="px-3 py-1.5 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">닫기</button>
+        </div>
     </div>
     {% endif %}
 
     <section class="grid grid-cols-1 gap-3 {% if is_approval_required %}md:grid-cols-4{% else %}md:grid-cols-3{% endif %}">
-        <a href="/admin/users" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-            <span class="mb-3 text-xs font-extrabold text-dense-muted">활성 사원 수</span>
-            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-text">{{ active_users_count }}<span class="ml-1 text-sm font-bold text-dense-muted">명</span></span>
+        <a href="/admin/users" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
+            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
+                👤
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">활성 사원 수</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                    {{ active_users_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">명</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">등록된 총 직원 수</span>
+            </div>
         </a>
-        <a href="/admin/leave/timeline" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-            <span class="mb-3 text-xs font-extrabold text-dense-muted">금일 신청 건수</span>
-            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-text">{{ leaves_today_count }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        <a href="/admin/leave/timeline" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
+            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
+                📋
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">금일 신청 건수</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                    {{ leaves_today_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">건</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">오늘 접수된 건수</span>
+            </div>
         </a>
         {% if is_approval_required %}
-        <a href="/admin/leave/timeline?leave_status=PENDING" class="flex flex-col rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 transition-colors hover:bg-dense-amber-soft">
-            <span class="mb-3 text-xs font-extrabold text-dense-muted">결재 대기 건수</span>
-            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-amber">{{ pending_leaves_count }}<span class="ml-1 text-sm font-bold text-dense-muted">건</span></span>
+        <a href="/admin/leave/timeline?leave_status=PENDING" class="flex items-center gap-4 rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 transition-colors hover:bg-dense-amber-soft shadow-sm">
+            <div class="p-3 bg-dense-amber-soft rounded-xl text-dense-amber shrink-0 flex items-center justify-center text-xl font-bold">
+                ⏳
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">결재 대기 건수</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-amber mt-1 block">
+                    {{ pending_leaves_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">건</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-[#b27b00] mt-1">승인 대기 중인 건수</span>
+            </div>
         </a>
         {% endif %}
-        <a href="/admin/leave/calendar" class="flex flex-col rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft">
-            <span class="mb-3 text-xs font-extrabold text-dense-muted">금일 사용 연차(h)</span>
-            <span class="text-[32px] font-extrabold leading-none tracking-tight text-dense-blue">{{ fmt_hours(today_used_hours) }}<span class="ml-1 text-sm font-bold text-dense-muted">h</span></span>
+        <a href="/admin/leave/calendar" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
+            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
+                📊
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">금일 사용 연차(h)</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue mt-1 block">
+                    {{ fmt_hours(today_used_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">오늘 휴가 중인 시간</span>
+            </div>
         </a>
     </section>
 
@@ -63,6 +100,97 @@
             <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📈 월별 연차 사용 트렌드</h3>
             <div class="relative h-[220px] w-full">
                 <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오늘 부재자 및 최근 주요 활동 로그 위젯 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 오늘 부재자 목록 -->
+        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
+            <div class="flex items-center justify-between border-b border-dense-line pb-2">
+                <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
+                    👥 오늘 부재자 목록 <span class="text-[10px] text-dense-muted font-normal">({{ today_date }})</span>
+                </h3>
+                <span class="inline-flex items-center rounded-full bg-dense-blue-soft px-2 py-0.5 text-xs font-extrabold text-dense-blue">{{ today_absentees | length }}명</span>
+            </div>
+            <div class="flex-1 overflow-y-auto max-h-[280px] space-y-2 pr-1">
+                {% for leave in today_absentees %}
+                <div class="flex flex-col gap-1.5 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-dense-text text-sm">{{ leave.user.user_name }}</span>
+                            <span class="text-[10px] text-dense-muted">({{ leave.user_id }})</span>
+                            <span class="text-[10px] font-semibold text-dense-muted">| {{ leave.user.team or "부서 없음" }}</span>
+                        </div>
+                        <div class="flex gap-1.5">
+                            {% if leave.is_deductive %}
+                            <span class="rounded bg-dense-blue-soft border border-dense-blue/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-blue">차감</span>
+                            {% else %}
+                            <span class="rounded bg-purple-50 border border-purple-200 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-700">비차감</span>
+                            {% endif %}
+                            
+                            {% if leave.status == 'PENDING' %}
+                            <span class="rounded bg-dense-amber-soft border border-dense-amber/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-amber">결재 대기</span>
+                            {% else %}
+                            <span class="rounded bg-dense-green-soft border border-dense-green/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-green">승인됨</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-dense-muted font-semibold">
+                        <div>
+                            <span>⏰ {{ leave.start_time or "09:00" }} ~ {{ leave.end_time or "18:00" }}</span>
+                            <span class="ml-1 text-dense-blue font-bold">({{ fmt_hours(leave.snapshot_deduction_hours) }}h)</span>
+                        </div>
+                    </div>
+                    {% if leave.reason %}
+                    <p class="text-[11px] text-dense-muted font-medium bg-white rounded border border-dense-line p-1.5 truncate mt-0.5" data-tooltip="{{ leave.reason }}">
+                        {{ leave.reason }}
+                    </p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
+                    <span class="text-3xl">☕</span>
+                    <h4 class="text-xs font-bold text-dense-text">오늘 부재자가 없습니다.</h4>
+                    <p class="text-[10px] text-dense-muted">모든 사원이 정상 근무 중이거나 오늘 휴가 예정자가 없습니다.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 최근 주요 활동 로그 -->
+        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
+            <div class="flex items-center justify-between border-b border-dense-line pb-2">
+                <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
+                    🔍 최근 주요 활동 로그
+                </h3>
+                <a href="/admin/audit" class="text-[10px] text-dense-blue font-bold hover:underline">전체 보기 →</a>
+            </div>
+            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-line pr-1">
+                {% for log in recent_audits %}
+                <div class="py-2.5 text-xs first:pt-0 last:pb-0">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-dense-text">
+                            {% if log.actor %}
+                            {{ log.actor.user_name }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id }})</span>
+                            {% else %}
+                            {{ log.actor_name or "알 수 없는 사용자" }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id or "system" }})</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-[10px] text-dense-muted font-semibold" data-utc="{{ log.timestamp.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm">{{ log.timestamp | format_datetime_kst('%m-%d %H:%M') }}</span>
+                    </div>
+                    <div class="mt-1 flex items-start gap-1.5">
+                        <span class="shrink-0 rounded bg-dense-gray-soft px-1.5 py-0.5 text-[9px] font-extrabold text-dense-nav-text">{{ log.action }}</span>
+                        <p class="text-dense-muted font-semibold truncate flex-1" data-tooltip="{{ log.target_info }}">{{ log.target_info }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
+                    <span class="text-3xl">📋</span>
+                    <h4 class="text-xs font-bold text-dense-text">감사 로그가 존재하지 않습니다.</h4>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>

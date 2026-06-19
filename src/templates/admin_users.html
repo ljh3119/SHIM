@@ -346,7 +346,7 @@
 
 <script>
 async function apiCall(url, data, confirmMsg, btn) {
-    if(confirmMsg && !confirm(confirmMsg)) return;
+    if(confirmMsg && !await shimModal.confirm(confirmMsg, { destructive: confirmMsg.includes('삭제') })) return;
     
     const action = async () => {
         const formData = new FormData();
@@ -450,7 +450,7 @@ function openEditUserModal(id, name, company, team, role, position, isActive) {
     window.shimModal.open('editUserModal', 'edit_user_name', document.activeElement);
 }
 
-function submitEditUser() {
+async function submitEditUser() {
     const form = document.getElementById('editUserForm');
     if(!form.checkValidity()) {
         form.reportValidity();
@@ -468,7 +468,7 @@ function submitEditUser() {
 
     const initialActive = form.dataset.initialActive;
     if (initialActive === 'true' && data['is_active'] === false) {
-        if (!confirm('사원을 비활성화하시겠습니까?\n비활성화 시 이 사원의 오늘 포함 미래 연차 신청 건은 자동으로 취소(CANCELED) 처리됩니다.')) {
+        if (!await shimModal.confirm('사원을 비활성화하시겠습니까?\n비활성화 시 이 사원의 오늘 포함 미래 연차 신청 건은 자동으로 취소(CANCELED) 처리됩니다.')) {
             return;
         }
     }

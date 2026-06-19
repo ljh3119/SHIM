@@ -149,7 +149,7 @@ async function updateHoliday(id, btn) {
 }
 
 async function deleteHoliday(id, btn) {
-    if (!confirm('해당 공휴일을 삭제하시겠습니까?')) {
+    if (!await shimModal.confirm('해당 공휴일을 삭제하시겠습니까?', { destructive: true })) {
         return;
     }
     const formData = new FormData();

@@ -289,7 +289,7 @@ async function bulkApproveG(approve) {
     const actionText = approve ? '승인' : '반려';
     let rejectionReason = '';
     if (!approve) {
-        rejectionReason = prompt('일괄 반려 사유를 입력해 주세요:');
+        rejectionReason = await shimModal.prompt('일괄 반려 사유를 입력해 주세요:', { required: true });
         if (rejectionReason === null) return;
         if (!rejectionReason.trim()) {
             alert('반려 사유를 입력해야 합니다.');
@@ -297,7 +297,7 @@ async function bulkApproveG(approve) {
         }
     }
 
-    if (!confirm(`선택한 ${leaveIds.length}건을 일괄 ${actionText}하시겠습니까?`)) {
+    if (!await shimModal.confirm(`선택한 ${leaveIds.length}건을 일괄 ${actionText}하시겠습니까?`)) {
         return;
     }
     
@@ -341,7 +341,7 @@ async function bulkApproveG(approve) {
 }
 
 async function teamApprove(leaveId, btn) {
-    if (!confirm('이 신청을 승인하시겠습니까?')) return;
+    if (!await shimModal.confirm('이 신청을 승인하시겠습니까?')) return;
     simulateButtonLoading(btn, async () => {
         try {
             const res = await fetch(`/api/user/team-approve/${leaveId}`, { method: 'POST' });
@@ -359,7 +359,7 @@ async function teamApprove(leaveId, btn) {
 }
 
 async function teamRejectPrompt(leaveId, btn) {
-    const reason = prompt('반려 사유를 입력해 주세요:');
+    const reason = await shimModal.prompt('반려 사유를 입력해 주세요:', { required: true });
     if (reason === null) return;
     if (!reason.trim()) {
         alert('반려 사유를 입력해야 합니다.');

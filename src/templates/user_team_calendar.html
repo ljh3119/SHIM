@@ -145,7 +145,7 @@
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Greeting for PC only -->
-    <div class="hidden md:flex flex-col md:flex-row md:items-center md:justify-between">
+    <div class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">연차 캘린더</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
@@ -156,7 +156,7 @@
                 {% endif %}
             </p>
         </div>
-        <div class="mt-4 flex gap-2 md:mt-0">
+        <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                 <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">타임라인</a>
@@ -169,7 +169,7 @@
     </div>
 
     <!-- 1. PC & Tablet View (Wide Screen) -->
-    <div class="hidden md:flex flex-col md:flex-row gap-5">
+    <div class="hidden lg:flex flex-col lg:flex-row gap-5">
         <!-- Left Sidebar Panel -->
         {% include "partials/user_left_panel.html" %}
 
@@ -185,11 +185,11 @@
                         {% set next_year = team_cal_year + 1 if team_cal_month == 12 else team_cal_year %}
                         {% set next_month = 1 if team_cal_month == 12 else team_cal_month + 1 %}
                         <div class="flex items-center gap-2">
-                            <a href="/user/team-calendar?year={{ prev_year }}&month={{ prev_month }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                            <a href="/user/team-calendar?year={{ prev_year }}&month={{ prev_month }}" id="prevMonthLink" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
                                 <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                             </a>
                             <h3 class="text-lg font-extrabold tracking-tight text-dense-text w-24 text-center">{{ team_cal_year }}년 {{ team_cal_month }}월</h3>
-                            <a href="/user/team-calendar?year={{ next_year }}&month={{ next_month }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                            <a href="/user/team-calendar?year={{ next_year }}&month={{ next_month }}" id="nextMonthLink" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
                                 <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
                             </a>
                         </div>
@@ -437,7 +437,7 @@
     </div>
 
     <!-- 2. Mobile View (Narrow Screen) -->
-    <div class="block md:hidden space-y-4">
+    <div class="block lg:hidden space-y-4">
         <!-- Mobile Team Schedule View (Absentees list with Date Slider) -->
         <div id="mobile-schedule-view-g" class="space-y-4">
             <a href="/user/dashboard" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
@@ -468,7 +468,7 @@
     const teamMembers = [
         {% for m in team_members %}
         {
-            user_id: {{ m.user_id }},
+            user_id: "{{ m.user_id }}",
             user_name: "{{ m.user_name }}",
             team: "{{ m.team or '' }}",
             company: "{{ m.company or '' }}"
@@ -622,6 +622,26 @@
     document.addEventListener('DOMContentLoaded', () => {
         switchTeamLayout(currentTeamLayout);
         renderMobileScheduleListG();
+        
+        // 키보드 숏컷 (ArrowLeft/ArrowRight)
+        document.addEventListener('keydown', (e) => {
+            const activeTag = document.activeElement ? document.activeElement.tagName : '';
+            if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+                return;
+            }
+            const openedModals = document.querySelectorAll('[aria-modal="true"]:not(.hidden)');
+            if (openedModals.length > 0) {
+                return;
+            }
+            
+            if (e.key === 'ArrowLeft') {
+                const prevLink = document.getElementById('prevMonthLink');
+                if (prevLink) prevLink.click();
+            } else if (e.key === 'ArrowRight') {
+                const nextLink = document.getElementById('nextMonthLink');
+                if (nextLink) nextLink.click();
+            }
+        });
     });
 </script>
 {% endblock %}

@@ -1,15 +1,22 @@
 <!-- Left Sidebar Panel (Option G Layout) -->
-<div class="w-full md:w-[240px] xl:w-[280px] shrink-0 space-y-4">
+<div class="w-full lg:w-[240px] xl:w-[280px] shrink-0 space-y-4">
     <!-- Stats Summary Card -->
     <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
         <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
         <div class="space-y-1.5 text-xs font-bold">
             <div class="flex justify-between"><span>총 연차</span><span>{{ fmt_hours(total_allocated_hours) }}h</span></div>
-            <div class="flex justify-between text-dense-blue"><span>사용</span><span id="myUsedG_desktop">{{ fmt_hours(used_hours) }}h</span></div>
+            <div class="flex justify-between text-dense-blue"><span>사용</span><span id="myUsedG_desktop">{{ fmt_hours(approved_hours) }}h</span></div>
+            <div class="flex justify-between text-dense-amber"><span>대기</span><span id="myPendingG_desktop">{{ fmt_hours(pending_hours) }}h</span></div>
             <div class="flex justify-between text-dense-green"><span>잔여</span><span id="myRemainingG_desktop">{{ fmt_hours(remaining_hours) }}h</span></div>
-            <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1">
-                <div id="myProgressG_desktop" class="bg-dense-blue h-1.5 rounded-full" style="width: {% if total_allocated_hours > 0 %}{{ (used_hours / total_allocated_hours) * 100 }}{% else %}0{% endif %}%"></div>
+            
+            {% set approved_pct = ((approved_hours / total_allocated_hours) * 100) if total_allocated_hours > 0 else 0 %}
+            {% set pending_pct = ((pending_hours / total_allocated_hours) * 100) if total_allocated_hours > 0 else 0 %}
+            
+            <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1 flex overflow-hidden">
+                <div id="myProgressUsedG_desktop" class="bg-dense-blue h-1.5" style="width: {{ approved_pct }}%"></div>
+                <div id="myProgressPendingG_desktop" class="bg-dense-amber h-1.5" style="width: {{ pending_pct }}%"></div>
             </div>
+            <div class="text-[10px] font-bold text-dense-muted mt-0.5">소진율 {{ approved_pct | int }}%</div>
         </div>
     </div>
 
@@ -324,7 +331,7 @@
             formData.append('is_deductive', isDeductive ? 'true' : 'false');
             formData.append('reason', reason);
 
-            if (!confirm(`[${isDeductive ? '연차' : '공가/출장'}] 신청하시겠습니까?`)) return;
+            if (!await shimModal.confirm(`[${isDeductive ? '연차' : '공가/출장'}] 신청하시겠습니까?`)) return;
 
             simulateButtonLoading(btn, async () => {
                 try {
@@ -376,7 +383,7 @@
                 return;
             }
 
-            if (!confirm(`선택한 기간 중 주말/공휴일을 제외한 ${dates.length}일에 대해 하루종일 [${isDeductive ? '연차' : '공가/출장'}] 일괄 신청을 진행하시겠습니까?`)) {
+            if (!await shimModal.confirm(`선택한 기간 중 주말/공휴일을 제외한 ${dates.length}일에 대해 하루종일 [${isDeductive ? '연차' : '공가/출장'}] 일괄 신청을 진행하시겠습니까?`)) {
                 return;
             }
 
@@ -408,7 +415,7 @@
     };
 
     window.teamApproveFromSidebar = async function(id, btn) {
-        if (!confirm('승인하시겠습니까?')) return;
+        if (!await shimModal.confirm('승인하시겠습니까?')) return;
         simulateButtonLoading(btn, async () => {
             try {
                 const response = await fetch(`/api/user/team-approve/${id}`, {
@@ -428,7 +435,7 @@
     };
 
     window.teamRejectFromSidebar = async function(id, btn) {
-        const reason = prompt('반려 사유를 입력해 주세요:');
+        const reason = await shimModal.prompt('반려 사유를 입력해 주세요:', { required: true });
         if (reason === null) return; // 취소 클릭
         const trimmed = reason.trim();
         if (!trimmed) {
