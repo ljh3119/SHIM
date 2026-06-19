@@ -278,5 +278,37 @@ def get_local_today() -> str:
     return get_local_now().strftime("%Y-%m-%d")
 
 
+def validate_password_strength(password: str) -> str | None:
+    """
+    KISA (한국인터넷진흥원) 비밀번호 가이드라인에 따른 복잡성 검증:
+    1) 최소 8자 이상
+    2) 영문, 숫자, 특수문자 중 2종류 이상 조합 시 10자 이상
+    3) 영문, 숫자, 특수문자 3종류 모두 조합 시 8자 이상
+    4) 공백(space) 금지
+    """
+    if " " in password:
+        return "비밀번호에 공백을 포함할 수 없습니다."
+    
+    length = len(password)
+    if length < 8:
+        return "비밀번호는 최소 8자 이상이어야 합니다."
+        
+    import re
+    has_letter = 1 if re.search(r'[a-zA-Z]', password) else 0
+    has_digit = 1 if re.search(r'[0-9]', password) else 0
+    # 특수문자 정의: 공백 제외 비알파뉴메릭
+    has_special = 1 if re.search(r'[^a-zA-Z0-9]', password) else 0
+    
+    types_count = has_letter + has_digit + has_special
+    
+    if types_count < 2:
+        return "비밀번호는 영문, 숫자, 특수문자 중 2종류 이상을 혼용해야 합니다."
+        
+    if types_count == 2 and length < 10:
+        return "2종류 조합 시 비밀번호는 10자 이상이어야 합니다. (3종류 모두 조합 시 8자 이상)"
+        
+    return None
+
+
 
 
