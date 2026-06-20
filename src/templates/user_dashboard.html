@@ -102,7 +102,9 @@
         <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                 <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">캘린더</a>
+                {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
+                {% endif %}
                 {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
                 <a href="/user/approvals" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
                 {% endif %}
@@ -186,15 +188,13 @@
                             {% set holiday_name = holiday_map.get((m, day)) %}
                             {% set is_blocked_day = weekday_idx in [0, 6] or holiday_name %}
                             
-                            {# Check if any team member has leave on this day #}
+                            {# Check if user has leave on this day #}
+                            {% set my_leaves = day_map.get(day, []) %}
                             {% set day_leaves_exist = false %}
-                            {% for mem in team_members %}
-                                {% set mem_leaves = team_leaves_map.get(mem.user_id, {}).get(m, {}).get(day, []) %}
-                                {% for lv in mem_leaves %}
-                                    {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                        {% set day_leaves_exist = true %}
-                                    {% endif %}
-                                {% endfor %}
+                            {% for lv in my_leaves %}
+                                {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                    {% set day_leaves_exist = true %}
+                                {% endif %}
                             {% endfor %}
 
                             <button type="button"
@@ -214,43 +214,40 @@
                                     {% endif %}
                                 </div>
                                 <div class="flex-1 overflow-y-auto max-h-[82px] w-full space-y-1 mt-1 pr-0.5">
-                                    {% for mem in team_members %}
-                                        {% set mem_leaves = team_leaves_map.get(mem.user_id, {}).get(m, {}).get(day, []) %}
-                                        {% for lv in mem_leaves %}
-                                            {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                                {% set is_deduct = lv.is_deductive %}
-                                                {% set total_h = lv.snapshot_deduction_hours %}
-                                                {% set is_pending = lv.status == 'PENDING' %}
-                                                <div class="rounded px-1.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold truncate leading-normal shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer block text-left
-                                                            {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
-                                                            {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
-                                                            {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
-                                                            {% else %}bg-blue-50 text-blue-700 border-blue-200
-                                                            {% endif %}
-                                                            {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
-                                                     style="{% if not is_deduct %}border-color: #d8b4fe; background-color: #faf5ff; color: #7e22ce;{% endif %}"
-                                                     title="{{ mem.user_name }} ({{ mem.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
-                                                     data-has-leave="true"
-                                                     data-cell-date="{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
-                                                     data-user-id="{{ mem.user_id }}"
-                                                     data-user-name="{{ mem.user_name }}"
-                                                     data-user-team="{{ mem.team or '' }}"
-                                                     data-user-company="{{ mem.company or '' }}"
-                                                     data-leave-id="{{ lv.id }}"
-                                                     data-leave-slot="{{ lv.snapshot_slot_label }}"
-                                                     data-leave-hours="{{ fmt_hours(total_h) }}h"
-                                                     data-leave-deductive="{{ 'true' if is_deduct else 'false' }}"
-                                                     data-leave-status="{{ lv.status }}"
-                                                     data-leave-reason="{{ lv.reason or '' }}"
-                                                     data-leave-rejection-reason="{{ lv.rejection_reason or '' }}"
-                                                     onclick="event.stopPropagation(); handleTimelineCellClick(this)">
-                                                    {{ mem.user_name }}
-                                                    <span class="opacity-75 font-semibold text-[8px] sm:text-[8.5px] ml-0.5">
-                                                        {{ fmt_hours(total_h) }}h{% if not is_deduct %}(공){% endif %}{% if is_pending %}(대){% endif %}
-                                                    </span>
-                                                </div>
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% for lv in my_leaves %}
+                                        {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                            {% set is_deduct = lv.is_deductive %}
+                                            {% set total_h = lv.snapshot_deduction_hours %}
+                                            {% set is_pending = lv.status == 'PENDING' %}
+                                            <div class="rounded px-1.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold truncate leading-normal shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer block text-left
+                                                        {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
+                                                        {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
+                                                        {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
+                                                        {% else %}bg-blue-50 text-blue-700 border-blue-200
+                                                        {% endif %}
+                                                        {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
+                                                 style="{% if not is_deduct %}border-color: #d8b4fe; background-color: #faf5ff; color: #7e22ce;{% endif %}"
+                                                 title="[본인] {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                                                 data-has-leave="true"
+                                                 data-cell-date="{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
+                                                 data-user-id="{{ user.user_id }}"
+                                                 data-user-name="{{ user.user_name }}"
+                                                 data-user-team="{{ user.team or '' }}"
+                                                 data-user-company="{{ user.company or '' }}"
+                                                 data-leave-id="{{ lv.id }}"
+                                                 data-leave-slot="{{ lv.snapshot_slot_label }}"
+                                                 data-leave-hours="{{ fmt_hours(total_h) }}h"
+                                                 data-leave-deductive="{{ 'true' if is_deduct else 'false' }}"
+                                                 data-leave-status="{{ lv.status }}"
+                                                 data-leave-reason="{{ lv.reason or '' }}"
+                                                 data-leave-rejection-reason="{{ lv.rejection_reason or '' }}"
+                                                 onclick="event.stopPropagation(); handleTimelineCellClick(this)">
+                                                {{ lv.snapshot_slot_label }}
+                                                <span class="opacity-75 font-semibold text-[8px] sm:text-[8.5px] ml-0.5">
+                                                    {% if is_pending %}(대기){% endif %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
                                     {% endfor %}
                                 </div>
                             </button>
@@ -362,15 +359,18 @@
             <!-- Quick Actions Grid -->
             <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 shadow-sm">
                 <h3 class="text-xs font-extrabold mb-2 text-dense-text">⚡ 퀵 액션</h3>
-                <div class="grid grid-cols-3 gap-2.5">
+                {% set show_team_cal = team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
+                <div class="grid {% if show_team_cal %}grid-cols-3{% else %}grid-cols-2{% endif %} gap-2.5">
                     <div class="quick-card rounded-xl border border-dense-blue/20 bg-gradient-to-br from-dense-blue-soft to-white p-2.5 text-center" onclick="toggleQuickApplyPanelG()">
                         <h4 class="text-[11px] font-bold text-dense-blue">📅 연차 신청</h4>
                         <p class="text-[8px] text-dense-muted mt-0.5">간편 연차 신청</p>
                     </div>
+                    {% if show_team_cal %}
                     <a href="/user/team-calendar" class="quick-card rounded-xl border border-dense-green/20 bg-gradient-to-br from-dense-green-soft to-white p-2.5 text-center">
                         <h4 class="text-[11px] font-bold text-dense-green">👥 팀 일정 조회</h4>
                         <p class="text-[8px] text-dense-muted mt-0.5">일별 부재자 명단</p>
                     </a>
+                    {% endif %}
                     <a href="/user/history" class="quick-card rounded-xl border bg-gradient-to-br from-dense-surface-soft to-white p-2.5 text-center">
                         <h4 class="text-[11px] font-bold text-dense-muted">📋 전체 내역</h4>
                         <p class="text-[8px] text-dense-muted mt-0.5">연차 내역 상세</p>

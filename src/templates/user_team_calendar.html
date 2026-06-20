@@ -189,7 +189,9 @@
         <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                 <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">타임라인</a>
+                {% endif %}
                 {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
                 <a href="/user/approvals" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">결재 관리</a>
                 {% endif %}
@@ -229,11 +231,7 @@
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <!-- 세부 뷰 전환 토글 (타임라인의 목록형/달력형) -->
-                        <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
-                            <button type="button" id="layout_timeline_btn" onclick="switchTeamLayout('timeline')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all focus:outline-none">타임라인</button>
-                            <button type="button" id="layout_calendar_btn" onclick="switchTeamLayout('calendar')" class="rounded-lg px-3 py-1 text-xs font-bold text-dense-muted hover:text-dense-text transition-all focus:outline-none">캘린더 뷰</button>
-                        </div>
+
                         <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
                             <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
                                 {% for y in year_options %}
@@ -412,76 +410,7 @@
                     </table>
                 </div>
 
-                <!-- Calendar Grid View Container -->
-                <div id="team-grid-view-container" class="rounded-xl border border-dense-line bg-dense-surface p-4 hidden">
-                    <div class="mb-2 grid grid-cols-7 gap-2">
-                        {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
-                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
-                            {{ wd }}
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    {% if not team_members %}
-                    <div class="py-12 text-center text-dense-muted font-semibold">
-                        <div class="flex flex-col items-center justify-center gap-2">
-                            <span class="text-3xl">👥</span>
-                            <p class="text-xs font-bold text-dense-text">표시할 팀 멤버가 없습니다.</p>
-                            <p class="text-[10px] text-dense-muted">소속 팀에 등록된 멤버가 없거나 조회 권한이 제한되었습니다.</p>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="grid grid-cols-7 gap-2">
-                        {% for _ in range(team_cal_offset) %}
-                        <div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
-                        {% endfor %}
-
-                        {% for day in range(1, team_cal_num_days + 1) %}
-                        {% set weekday_idx = (team_cal_offset + day - 1) % 7 %}
-                        {% set holiday_name = team_cal_holiday_map.get(day) %}
-                        {% set is_weekend = weekday_idx in [0, 6] %}
-                        
-                        <div class="min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line {% if is_weekend or holiday_name %}bg-dense-gray-soft/20{% endif %} hover:shadow-sm">
-                            <div class="flex items-center justify-between w-full leading-none mb-1">
-                                <span class="text-xs {% if is_weekend or holiday_name %}font-extrabold text-dense-danger{% else %}font-bold text-dense-text{% endif %}">
-                                    {{ day }}
-                                </span>
-                                {% if holiday_name %}
-                                <span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10" title="{{ holiday_name }}">{{ holiday_name }}</span>
-                                {% endif %}
-                            </div>
-
-                            <div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5">
-                                {% for m in team_members %}
-                                    {% set m_leaves = team_leaves_map.get(m.user_id, {}).get(day, []) %}
-                                    {% for lv in m_leaves %}
-                                        {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                            {% set is_deduct = lv.is_deductive %}
-                                            {% set total_h = lv.snapshot_deduction_hours %}
-                                            {% set is_pending = lv.status == 'PENDING' %}
-                                            <div class="rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-default
-                                                        {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
-                                                        {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
-                                                        {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
-                                                        {% else %}bg-blue-50 text-blue-700 border-blue-200
-                                                        {% endif %}
-                                                        {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}" style="{% if not is_deduct %}border-color: #d8b4fe; background-color: #faf5ff; color: #7e22ce;{% endif %}" title="{{ m.user_name }} ({{ m.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})">
-                                                {{ m.user_name }}
-                                                <span class="opacity-75 font-semibold text-[8px] ml-0.5">
-                                                    {{ fmt_hours(total_h) }}h{% if not is_deduct %}(공){% endif %}{% if is_pending %}(대){% endif %}
-                                                </span>
-                                            </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="mt-4 flex justify-between items-center text-[11px] font-semibold text-dense-muted px-1">
+<div class="mt-4 flex justify-between items-center text-[11px] font-semibold text-dense-muted px-1">
                     <span>* 승인 및 대기 상태의 연차만 표시됩니다.</span>
                     <span>최종 업데이트: {{ now_str }}</span>
                 </div>
@@ -648,29 +577,7 @@
         });
     }
 
-    let currentTeamLayout = localStorage.getItem('team_calendar_layout') || 'timeline';
 
-    function switchTeamLayout(layout) {
-        currentTeamLayout = layout;
-        localStorage.setItem('team_calendar_layout', layout);
-        
-        const timelineBtn = document.getElementById('layout_timeline_btn');
-        const calendarBtn = document.getElementById('layout_calendar_btn');
-        const timelineContainer = document.getElementById('team-timeline-view-container');
-        const calendarContainer = document.getElementById('team-grid-view-container');
-        
-        if (layout === 'timeline') {
-            timelineBtn.className = "rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-blue bg-dense-surface shadow-sm";
-            calendarBtn.className = "rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-muted hover:text-dense-text";
-            timelineContainer.classList.remove('hidden');
-            calendarContainer.classList.add('hidden');
-        } else {
-            calendarBtn.className = "rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-blue bg-dense-surface shadow-sm";
-            timelineBtn.className = "rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-muted hover:text-dense-text";
-            calendarContainer.classList.remove('hidden');
-            timelineContainer.classList.add('hidden');
-        }
-    }
 
     function handleTimelineCellClick(td) {
         const hasLeave = td.getAttribute('data-has-leave') === 'true';
@@ -699,7 +606,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        switchTeamLayout(currentTeamLayout);
         renderMobileScheduleListG();
         
         // 키보드 숏컷 (ArrowLeft/ArrowRight)
