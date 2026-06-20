@@ -75,6 +75,8 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
     user_role = getattr(user, 'role', None) or 'STAFF'
     setting = get_system_settings(db)
     is_approval_required = bool(setting.is_approval_required) if setting else False
+    team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
+    company_calendar_visible = bool(getattr(setting, 'company_calendar_visible', False)) if setting else False
     pending_team_leaves = []
     if is_approval_required:
         if user_role == 'PM':
@@ -105,6 +107,8 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
         "user_role": user_role,
         "is_approval_required": is_approval_required,
         "pending_team_leaves": pending_team_leaves,
+        "team_calendar_visible": team_calendar_visible,
+        "company_calendar_visible": company_calendar_visible,
     })
 
 

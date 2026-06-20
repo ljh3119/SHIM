@@ -14,10 +14,10 @@
         <span class="shim-side-emoji text-sm">📋</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">신청 내역</span>
       </a>
-      {% if team_calendar_visible or company_calendar_visible %}
+      {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
       <a href="/user/team-calendar" class="shim-side-link {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
         <span class="shim-side-emoji text-sm">📅</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible %}프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible or (user_role in ['PM', 'ADMIN'] and not team_calendar_visible) %}프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
       </a>
       {% endif %}
       {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
