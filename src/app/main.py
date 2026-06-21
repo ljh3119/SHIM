@@ -16,19 +16,21 @@ from contextlib import asynccontextmanager
 import asyncio
 from . import models, database, auth, utils
 from .database import engine, get_db, DB_PATH
-from .services.ops import verify_and_recover_db, daily_backup_scheduler
+from .services.ops import verify_and_recover_db, daily_backup_scheduler, notification_cleanup_scheduler
 from .constants import APP_VERSION, VALID_ROLES
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     startup_event()
     backup_task = asyncio.create_task(daily_backup_scheduler(DB_PATH))
+    cleanup_task = asyncio.create_task(notification_cleanup_scheduler())
     yield
     
     backup_task.cancel()
+    cleanup_task.cancel()
     try:
-        await backup_task
-    except asyncio.CancelledError:
+        await asyncio.gather(backup_task, cleanup_task, return_exceptions=True)
+    except Exception:
         pass
     
     # Shutdown: 임시 바구니 비우기(체크포인트) 수행 후 커넥션 풀 해제
@@ -221,6 +223,9 @@ app.include_router(api_user.page_router)
 app.include_router(api_user.api_router)
 app.include_router(admin_page_router)
 app.include_router(admin_api_router)
+
+from .routers import api_notifications
+app.include_router(api_notifications.router)
 
 
 @app.middleware("http")

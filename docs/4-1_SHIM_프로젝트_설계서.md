@@ -1,7 +1,7 @@
 # SHIM 시스템 상세 설계서 (Technical Specification)
 
-**애플리케이션 버전**: 1.7.3  
-**최종 업데이트**: 2026-06-09  
+**애플리케이션 버전**: 1.7.9  
+**최종 업데이트**: 2026-06-20  
 **문서 성격**: 시스템 아키텍처, 데이터 모델 및 비즈니스 규칙에 대한 기술적 표준 정의
 
 ---
@@ -369,6 +369,31 @@ SHIM 시스템의 주요 코드 구조와 각 파일의 기능적 기술 역할�
 | **`src/app/services/`** | 비즈니스 로직 독립 레이어 (연차 차감 산정 규칙, 결재 전이 로직 등) |
 | **`src/app/routers/`** | API 엔드포인트 라우터 및 화면 Jinja2 템플릿 렌더링 컨트롤러 |
 | **`src/static/css/`** | Tailwind CSS 입력(`app.css`) 및 빌드 출력(`tailwind.css`) 스타일 자산 |
+
+---
+
+## 8. 검증 및 테스트 세트 가이드 (Test Suite Guide)
+
+시스템 정합성 검증은 목적에 따라 **수시 기능 테스트**와 **릴리즈 안정성 테스트**로 나누어 운영합니다. 개발 환경 구동 및 테스트 패키지(`psutil`, `requests`) 설치를 위해 반드시 `requirements-dev.txt`를 사용하십시오.
+
+### 8.1 개발 환경 패키지 설치
+```powershell
+pip install -r requirements-dev.txt
+```
+*주의: 배포 환경 및 Docker 이미지, 포터블 바이너리에는 개발용 라이브러리가 제외되도록 격리되어 있습니다.*
+
+### 8.2 테스트 케이스 분류 및 실행 명령어
+
+| 구분 | 목적 | 실행 명령어 | 권장 실행 시점 |
+|:--- |:--- |:--- |:--- |
+| **코드 정합성 검사** | 모듈 컴파일 오류 조기 감지 | `python -m compileall src/app tools/scripts` | 코드 수정 즉시 |
+| **비즈니스 로직 검증** | 권한(RBAC), 연차 신청/차감 등 무결성 테스트 (26종) | `python tools/scripts/run_remaining_tests.py` | 코드 수정 즉시 |
+| **안정성/종료 검증** | Graceful Shutdown 및 DB Teardown/머지 상태 확인 | `python tools/scripts/test_graceful_shutdown.py` | 릴리즈/배포 전 필수 |
+| **중복 실행 방지 검증** | Mutex 기반 런처 다중 기동 차단 및 트레이 알림 연동 확인 | `python tools/scripts/test_duplicate_execution.py` | 릴리즈/배포 전 필수 |
+| **메모리 누수 검증** | 장기 가동 시 누적 메모리 및 엑셀 내보내기 성능 확인 | `python tools/scripts/test_memory_leak.py` | 릴리즈/배포 전 필수 |
+| **CSS 정적 자산 빌드** | Tailwind CSS 스타일 반영 | `npm run build:css` | UI 수정 시 |
+
+ 및 빌드 출력(`tailwind.css`) 스타일 자산 |
 
 ---
 

@@ -643,6 +643,12 @@ def team_approve_leave(
             new_data=transition.audit_new_data,
         )
     )
+    utils.create_notification(
+        db,
+        user_id=leave.user_id,
+        sender_id=approver.user_id,
+        message=f"[연차 승인] {approver.user_name}님이 {leave.date} 연차 신청을 승인하였습니다."
+    )
     try:
         db.commit()
     except SQLAlchemyError as e:
@@ -688,6 +694,13 @@ def team_reject_leave(
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )
+    )
+    rej_reason_str = f" (사유: {rejection_reason})" if rejection_reason and rejection_reason.strip() else ""
+    utils.create_notification(
+        db,
+        user_id=leave.user_id,
+        sender_id=approver.user_id,
+        message=f"[연차 반려] {approver.user_name}님이 {leave.date} 연차 신청을 반려하였습니다.{rej_reason_str}"
     )
     try:
         db.commit()
@@ -768,6 +781,21 @@ def user_cancel_leave(
             new_data=transition.audit_new_data,
         )
     )
+    approvers = db.query(models.Users).filter(
+        models.Users.is_active == True,
+        (
+            ((models.Users.role == "TEAM_LEAD") & (models.Users.team == user.team) & (models.Users.company == user.company)) |
+            (models.Users.role == "PM")
+        )
+    ).all()
+    for appr in approvers:
+        if appr.user_id != user.user_id:
+            utils.create_notification(
+                db,
+                user_id=appr.user_id,
+                sender_id=user.user_id,
+                message=f"[연차 신청 취소] {user.user_name}님이 {leave.date} 연차 신청을 취소하였습니다."
+            )
     try:
         db.commit()
     except SQLAlchemyError as e:

@@ -192,3 +192,82 @@ def verify_and_recover_db(db_path: Path):
                 print("[SHIM DATABASE WARNING] No backup files found in backup directory. Initializing empty database.")
         else:
             print("[SHIM DATABASE WARNING] Backup directory does not exist. Initializing empty database.")
+
+
+def cleanup_old_notifications():
+    """30일이 경과한 알림을 청크(100건) 단위로 분할하여 삭제합니다."""
+    from src.app.database import SessionLocal
+    from src.app import models
+    from datetime import datetime, timedelta
+    import time
+    
+    # UTC 시각 기준으로 30일 전
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    total_deleted = 0
+    
+    while True:
+        db = SessionLocal()
+        try:
+            # 100건씩 대상 ID 조회
+            targets = db.query(models.Notifications.id).filter(
+                models.Notifications.created_at < thirty_days_ago
+            ).limit(100).all()
+            
+            if not targets:
+                break
+                
+            target_ids = [t[0] for t in targets]
+            
+            deleted_count = db.query(models.Notifications).filter(
+                models.Notifications.id.in_(target_ids)
+            ).delete(synchronize_session=False)
+            
+            db.commit()
+            total_deleted += deleted_count
+            print(f"[SHIM NOTIFICATION CLEANUP] Deleted {deleted_count} notifications chunk. Total: {total_deleted}")
+            
+            if deleted_count < 100:
+                break
+        except Exception as e:
+            db.rollback()
+            print(f"[SHIM NOTIFICATION CLEANUP ERROR] Failed to cleanup old notifications: {e}")
+            break
+        finally:
+            db.close()
+        
+        # SQLite 락 경쟁 방지를 위해 청크 간 짧은 휴식 시간 제공
+        time.sleep(0.1)
+
+
+async def notification_cleanup_scheduler():
+    print("[SHIM NOTIFICATION CLEANUP] Scheduler started.")
+    # 기동 시 즉시 1회 청소 수행하여 사각지대 해소
+    from fastapi.concurrency import run_in_threadpool
+    await run_in_threadpool(cleanup_old_notifications)
+    
+    while True:
+        try:
+            import datetime as datetime_mod
+            from src.app.utils import get_timezone_offset_hours
+            
+            offset = get_timezone_offset_hours()
+            local_tz = datetime_mod.timezone(datetime_mod.timedelta(hours=offset))
+            now_local = datetime_mod.datetime.now(local_tz)
+            
+            # KST 새벽 2시로 설정
+            target_local = now_local.replace(hour=2, minute=0, second=0, microsecond=0)
+            if now_local >= target_local:
+                target_local += datetime_mod.timedelta(days=1)
+                
+            sleep_seconds = (target_local - now_local).total_seconds()
+            print(f"[SHIM NOTIFICATION CLEANUP] Next cleanup scheduled at {target_local} (in {sleep_seconds:.1f}s)")
+            await asyncio.sleep(sleep_seconds)
+            
+            await run_in_threadpool(cleanup_old_notifications)
+        except asyncio.CancelledError:
+            print("[SHIM NOTIFICATION CLEANUP] Scheduler cancelled. Exiting cleanly.")
+            raise
+        except Exception as e:
+            print(f"[SHIM NOTIFICATION CLEANUP ERROR] Error in scheduler: {e}")
+            await asyncio.sleep(3600)
+

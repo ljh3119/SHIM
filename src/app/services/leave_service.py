@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 
-from .. import models
+from .. import models, utils
 from .leave_policy import (
     LeaveInputValidationError,
     build_snapshot_from_timerange,
@@ -177,6 +177,23 @@ def validate_and_apply_leave(
                 reason=reason.strip() if reason else None
             )
             db.add(new_leave)
+
+        # 알림 연동
+        if initial_status == "PENDING":
+            approvers = db.query(models.Users).filter(
+                models.Users.is_active == True,
+                (
+                    (models.Users.role == "TEAM_LEAD") & (models.Users.team == user.team) |
+                    (models.Users.role == "PM")
+                )
+            ).all()
+            
+            comma_dates_str = ",".join([d.strftime("%Y-%m-%d") for d in valid_dates])
+            msg_content = f"[연차 결재 대기] {user.user_name}님이 {comma_dates_str} 연차 신청에 대해 승인을 대기 중입니다."
+            
+            for appr in approvers:
+                if appr.user_id != user.user_id:
+                    utils.create_notification(db, user_id=appr.user_id, sender_id=user.user_id, message=msg_content)
 
         # 단일 감사 로그 연동
         comma_dates_str = ",".join([d.strftime("%Y-%m-%d") for d in valid_dates])
