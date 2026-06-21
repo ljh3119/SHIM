@@ -6,11 +6,11 @@
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
-            <h2 class="text-[28px] font-extrabold tracking-tight text-dense-text">관리자 대시보드</h2>
-            <p class="mt-1 text-sm font-semibold text-dense-muted">시스템 전체 운영 현황을 한눈에 파악합니다.</p>
+            <h2 class="text-[28px] font-extrabold tracking-tight text-dense-text">愿由ъ옄 ??쒕낫??/h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">?쒖뒪???꾩껜 ?댁쁺 ?꾪솴???쒕늿???뚯븙?⑸땲??</p>
         </div>
         {% if is_approval_required %}
-        <span class="inline-flex items-center whitespace-nowrap rounded-full border border-[#fedf89] bg-dense-amber-soft px-3 py-2 text-xs font-extrabold text-dense-amber">결재 대기 {{ pending_leaves_count }}건</span>
+        <span class="inline-flex items-center whitespace-nowrap rounded-full border border-[#fedf89] bg-dense-amber-soft px-3 py-2 text-xs font-extrabold text-dense-amber">寃곗옱 ?湲?{{ pending_leaves_count }}嫄?/span>
         {% endif %}
     </header>
 
@@ -18,52 +18,51 @@
     <div data-banner class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex gap-3 items-start sm:items-center">
             <div class="p-2 bg-red-100 rounded-lg text-red-700 shrink-0 flex items-center justify-center">
-                <span class="text-lg">⚠️</span>
+                <span class="text-lg">?좑툘</span>
             </div>
             <div>
-                <h4 class="text-xs font-extrabold text-red-900">[새해 연차 일괄 지급 권고] {{ next_year }}년도 연차 할당 정보가 존재하지 않습니다.</h4>
-                <p class="text-[10.5px] text-red-700 font-semibold leading-relaxed mt-0.5">원활한 새해 연차 신청 관리를 위해 사원 관리 탭의 '새해 연차 등록' 기능을 이용해 {{ next_year }}년도 기본 연차를 등록해 주시기 바랍니다.</p>
+                <h4 class="text-xs font-extrabold text-red-900">[?덊빐 ?곗감 ?쇨큵 吏湲?沅뚭퀬] {{ next_year }}?꾨룄 ?곗감 ?좊떦 ?뺣낫媛 議댁옱?섏? ?딆뒿?덈떎.</h4>
+                <p class="text-[10.5px] text-red-700 font-semibold leading-relaxed mt-0.5">?먰솢???덊빐 ?곗감 ?좎껌 愿由щ? ?꾪빐 ?ъ썝 愿由???쓽 '?덊빐 ?곗감 ?깅줉' 湲곕뒫???댁슜??{{ next_year }}?꾨룄 湲곕낯 ?곗감瑜??깅줉??二쇱떆湲?諛붾엻?덈떎.</p>
             </div>
         </div>
         <div class="flex gap-2 shrink-0">
-            <a href="/admin/users" class="px-3 py-1.5 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 transition-colors">사원 관리 바로가기</a>
-            <button onclick="this.closest('[data-banner]').remove()" class="px-3 py-1.5 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">닫기</button>
+            <a href="/admin/users" class="px-3 py-1.5 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 transition-colors">?ъ썝 愿由?諛붾줈媛湲?/a>
+            <button onclick="this.closest('[data-banner]').remove()" class="px-3 py-1.5 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">?リ린</button>
         </div>
     </div>
     {% endif %}
 
-    <!-- 3대 핵심 전사 연차 통계 KPI 카드 -->
+    <!-- 3? ?듭떖 ?꾩궗 ?곗감 ?듦퀎 KPI 移대뱶 -->
     <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
             <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
-                💼
+                ?뮳
             </div>
             <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 배정 시간</span>
+                <span class="block text-xs font-extrabold text-dense-muted">?꾩껜 ?곗감 諛곗젙 ?쒓컙</span>
                 <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
                     {{ fmt_hours(total_allocated_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
                 </span>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">올해 부여된 총 연차 시간</span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">?ы빐 遺?щ맂 珥??곗감 ?쒓컙</span>
             </div>
         </div>
         <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
             <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
-                ✅
-            </div>
+                ??            </div>
             <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 사용 시간</span>
+                <span class="block text-xs font-extrabold text-dense-muted">?꾩껜 ?곗감 ?ъ슜 ?쒓컙</span>
                 <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
                     {{ fmt_hours(total_approved_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
                 </span>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">승인 완료된 총 연차 시간</span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">?뱀씤 ?꾨즺??珥??곗감 ?쒓컙</span>
             </div>
         </div>
         <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
             <div class="p-3 bg-dense-green-soft rounded-xl text-dense-green shrink-0 flex items-center justify-center text-xl font-bold">
-                📈
+                ?뱢
             </div>
             <div class="min-w-0 flex-1">
-                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 소진율</span>
+                <span class="block text-xs font-extrabold text-dense-muted">?꾩껜 ?곗감 ?뚯쭊??/span>
                 <div class="flex items-baseline gap-1 mt-1">
                     <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-green">
                         {{ total_exhaustion_rate }}<span class="ml-0.5 text-xs font-bold text-dense-muted">%</span>
@@ -76,71 +75,68 @@
         </div>
     </section>
 
-    <!-- 시스템 운영 현황 미니 위젯 -->
+    <!-- ?쒖뒪???댁쁺 ?꾪솴 誘몃땲 ?꾩젽 -->
     <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <a href="/admin/users" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
             <div class="min-w-0">
-                <span class="block text-[10px] font-extrabold text-dense-muted">활성 사원 수</span>
+                <span class="block text-[10px] font-extrabold text-dense-muted">?쒖꽦 ?ъ썝 ??/span>
                 <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
-                    {{ active_users_count }}명
-                </span>
+                    {{ active_users_count }}紐?                </span>
             </div>
-            <span class="text-lg">👤</span>
+            <span class="text-lg">?뫀</span>
         </a>
         <a href="/admin/leave/timeline" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
             <div class="min-w-0">
-                <span class="block text-[10px] font-extrabold text-dense-muted">금일 신청 건수</span>
+                <span class="block text-[10px] font-extrabold text-dense-muted">湲덉씪 ?좎껌 嫄댁닔</span>
                 <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
-                    {{ leaves_today_count }}건
-                </span>
+                    {{ leaves_today_count }}嫄?                </span>
             </div>
-            <span class="text-lg">📋</span>
+            <span class="text-lg">?뱥</span>
         </a>
         <a href="/admin/leave/timeline?leave_status=PENDING" class="flex items-center justify-between rounded-xl border {% if is_approval_required and pending_leaves_count > 0 %}border-[#fedf89] bg-[#fffdf6] hover:bg-dense-amber-soft{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} px-4 py-2.5 transition-colors shadow-xs">
             <div class="min-w-0">
-                <span class="block text-[10px] font-extrabold text-dense-muted">결재 대기 건수</span>
+                <span class="block text-[10px] font-extrabold text-dense-muted">寃곗옱 ?湲?嫄댁닔</span>
                 <span class="text-sm font-extrabold {% if is_approval_required and pending_leaves_count > 0 %}text-dense-amber{% else %}text-dense-text{% endif %} mt-0.5 block">
-                    {{ pending_leaves_count }}건
-                </span>
+                    {{ pending_leaves_count }}嫄?                </span>
             </div>
-            <span class="text-lg">⏳</span>
+            <span class="text-lg">??/span>
         </a>
         <a href="/admin/leave/calendar" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
             <div class="min-w-0">
-                <span class="block text-[10px] font-extrabold text-dense-muted">금일 사용 연차</span>
+                <span class="block text-[10px] font-extrabold text-dense-muted">湲덉씪 ?ъ슜 ?곗감</span>
                 <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
                     {{ fmt_hours(today_used_hours) }}h
                 </span>
             </div>
-            <span class="text-lg">📊</span>
+            <span class="text-lg">?뱤</span>
         </a>
     </section>
 
     <!-- Chart Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📊 팀별 연차 사용 현황 (누적)</h3>
+            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">?뱤 ?蹂??곗감 ?ъ슜 ?꾪솴 (?꾩쟻)</h3>
             <div class="relative h-[220px] w-full">
                 <canvas id="teamChart"></canvas>
             </div>
         </div>
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">📈 월별 연차 사용 트렌드</h3>
+            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">?뱢 ?붾퀎 ?곗감 ?ъ슜 ?몃젋??/h3>
             <div class="relative h-[220px] w-full">
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- 오늘 부재자 및 최근 주요 활동 로그 위젯 -->
+    <!-- ?ㅻ뒛 遺?ъ옄 諛?理쒓렐 二쇱슂 ?쒕룞 濡쒓렇 ?꾩젽 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 오늘 부재자 목록 -->
+        <!-- ?ㅻ뒛 遺?ъ옄 紐⑸줉 -->
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
             <div class="flex items-center justify-between border-b border-dense-line pb-2">
                 <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
-                    👥 오늘 부재자 목록 <span class="text-[10px] text-dense-muted font-normal">({{ today_date }})</span>
+                    ?뫁 ?ㅻ뒛 遺?ъ옄 紐⑸줉 <span class="text-[10px] text-dense-muted font-normal">({{ today_date }})</span>
                 </h3>
-                <span class="inline-flex items-center rounded-full bg-dense-blue-soft px-2 py-0.5 text-xs font-extrabold text-dense-blue">{{ today_absentees | length }}명</span>
+                <span class="inline-flex items-center rounded-full bg-dense-blue-soft px-2 py-0.5 text-xs font-extrabold text-dense-blue">{{ today_absentees | length }}紐?/span>
             </div>
             <div class="flex-1 overflow-y-auto max-h-[280px] space-y-2 pr-1">
                 {% for leave in today_absentees %}
@@ -149,25 +145,25 @@
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-dense-text text-sm">{{ leave.user.user_name }}</span>
                             <span class="text-[10px] text-dense-muted">({{ leave.user_id }})</span>
-                            <span class="text-[10px] font-semibold text-dense-muted">| {{ leave.user.team or "부서 없음" }}</span>
+                            <span class="text-[10px] font-semibold text-dense-muted">| {{ leave.user.team or "遺???놁쓬" }}</span>
                         </div>
                         <div class="flex gap-1.5">
                             {% if leave.is_deductive %}
-                            <span class="rounded bg-dense-blue-soft border border-dense-blue/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-blue">차감</span>
+                            <span class="rounded bg-dense-blue-soft border border-dense-blue/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-blue">李④컧</span>
                             {% else %}
-                            <span class="rounded bg-purple-50 border border-purple-200 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-700">비차감</span>
+                            <span class="rounded bg-purple-50 border border-purple-200 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-700">鍮꾩감媛?/span>
                             {% endif %}
                             
                             {% if leave.status == 'PENDING' %}
-                            <span class="rounded bg-dense-amber-soft border border-dense-amber/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-amber">결재 대기</span>
+                            <span class="rounded bg-dense-amber-soft border border-dense-amber/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-amber">寃곗옱 ?湲?/span>
                             {% else %}
-                            <span class="rounded bg-dense-green-soft border border-dense-green/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-green">승인됨</span>
+                            <span class="rounded bg-dense-green-soft border border-dense-green/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-green">?뱀씤??/span>
                             {% endif %}
                         </div>
                     </div>
                     <div class="flex items-center justify-between text-dense-muted font-semibold">
                         <div>
-                            <span>⏰ {{ leave.start_time or "09:00" }} ~ {{ leave.end_time or "18:00" }}</span>
+                            <span>??{{ leave.start_time or "09:00" }} ~ {{ leave.end_time or "18:00" }}</span>
                             <span class="ml-1 text-dense-blue font-bold">({{ fmt_hours(leave.snapshot_deduction_hours) }}h)</span>
                         </div>
                     </div>
@@ -179,21 +175,21 @@
                 </div>
                 {% else %}
                 <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
-                    <span class="text-3xl">☕</span>
-                    <h4 class="text-xs font-bold text-dense-text">오늘 부재자가 없습니다.</h4>
-                    <p class="text-[10px] text-dense-muted">모든 사원이 정상 근무 중이거나 오늘 휴가 예정자가 없습니다.</p>
+                    <span class="text-3xl">??/span>
+                    <h4 class="text-xs font-bold text-dense-text">?ㅻ뒛 遺?ъ옄媛 ?놁뒿?덈떎.</h4>
+                    <p class="text-[10px] text-dense-muted">紐⑤뱺 ?ъ썝???뺤긽 洹쇰Т 以묒씠嫄곕굹 ?ㅻ뒛 ?닿? ?덉젙?먭? ?놁뒿?덈떎.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- 최근 주요 활동 로그 -->
+        <!-- 理쒓렐 二쇱슂 ?쒕룞 濡쒓렇 -->
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
             <div class="flex items-center justify-between border-b border-dense-line pb-2">
                 <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
-                    🔍 최근 주요 활동 로그
+                    ?뵇 理쒓렐 二쇱슂 ?쒕룞 濡쒓렇
                 </h3>
-                <a href="/admin/audit" class="text-[10px] text-dense-blue font-bold hover:underline">전체 보기 →</a>
+                <a href="/admin/audit" class="text-[10px] text-dense-blue font-bold hover:underline">?꾩껜 蹂닿린 ??/a>
             </div>
             <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-line pr-1">
                 {% for log in recent_audits %}
@@ -203,7 +199,7 @@
                             {% if log.actor %}
                             {{ log.actor.user_name }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id }})</span>
                             {% else %}
-                            {{ log.actor_name or "알 수 없는 사용자" }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id or "system" }})</span>
+                            {{ log.actor_name or "?????녿뒗 ?ъ슜?? }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id or "system" }})</span>
                             {% endif %}
                         </span>
                         <span class="text-[10px] text-dense-muted font-semibold" data-utc="{{ log.timestamp.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm">{{ log.timestamp | format_datetime_kst('%m-%d %H:%M') }}</span>
@@ -215,8 +211,8 @@
                 </div>
                 {% else %}
                 <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
-                    <span class="text-3xl">📋</span>
-                    <h4 class="text-xs font-bold text-dense-text">감사 로그가 존재하지 않습니다.</h4>
+                    <span class="text-3xl">?뱥</span>
+                    <h4 class="text-xs font-bold text-dense-text">媛먯궗 濡쒓렇媛 議댁옱?섏? ?딆뒿?덈떎.</h4>
                 </div>
                 {% endfor %}
             </div>
@@ -226,13 +222,13 @@
     <section class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dense-line px-4 py-4 sm:px-5">
             <h3 class="text-lg font-extrabold tracking-tight text-dense-text">
-                <a href="/admin/leave/timeline" class="text-dense-text hover:text-dense-blue transition-colors">최근 7일 신청 타임라인</a>
+                <a href="/admin/leave/timeline" class="text-dense-text hover:text-dense-blue transition-colors">理쒓렐 7???좎껌 ??꾨씪??/a>
             </h3>
-            <nav class="flex flex-wrap gap-2" aria-label="상태로 타임라인 이동">
-                <a href="/admin/leave/timeline" class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-3 py-1.5 text-xs font-extrabold text-dense-blue">전체</a>
-                <a href="/admin/leave/timeline?leave_status=PENDING" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">결재 대기</a>
-                <a href="/admin/leave/timeline?leave_status=APPROVED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">승인됨</a>
-                <a href="/admin/leave/timeline?leave_status=REJECTED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">반려</a>
+            <nav class="flex flex-wrap gap-2" aria-label="?곹깭濡???꾨씪???대룞">
+                <a href="/admin/leave/timeline" class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-3 py-1.5 text-xs font-extrabold text-dense-blue">?꾩껜</a>
+                <a href="/admin/leave/timeline?leave_status=PENDING" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">寃곗옱 ?湲?/a>
+                <a href="/admin/leave/timeline?leave_status=APPROVED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">?뱀씤??/a>
+                <a href="/admin/leave/timeline?leave_status=REJECTED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">諛섎젮</a>
             </nav>
         </div>
 
@@ -240,12 +236,12 @@
             <table class="min-w-full divide-y divide-dense-line">
                 <thead class="bg-dense-surface-soft">
                     <tr>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 시각</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용자</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">연차 사용일</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용 시간대</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감(h)</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">?좎껌 ?쒓컖</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">?ъ슜??/th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">?곗감 ?ъ슜??/th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">?ъ슜 ?쒓컙?</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">?곹깭</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">李④컧(h)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
@@ -262,27 +258,27 @@
                             {{ leave.snapshot_slot_label }} 
                             {% if leave.is_deductive %}(-{{ fmt_hours(leave.snapshot_deduction_hours) }}h){% else %}(0h){% endif %}
                             {% if not leave.is_deductive %}
-                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[10px] font-bold text-purple-700" title="공가/출장 신청 (사유: {{ leave.reason or '없음' }})">공가/출장</span>
+                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[10px] font-bold text-purple-700" title="怨듦?/異쒖옣 ?좎껌 (?ъ쑀: {{ leave.reason or '?놁쓬' }})">怨듦?/異쒖옣</span>
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm">
                             {% if leave.status == 'PENDING' %}
-                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber">결재 대기</span>
+                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber">寃곗옱 ?湲?/span>
                             {% elif leave.status == 'APPROVED' %}
-                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green">승인됨</span>
+                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green">?뱀씤??/span>
                             {% elif leave.status == 'REJECTED' %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]">반려</span>
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]">諛섎젮</span>
                             {% elif leave.status == 'CANCELED' %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">신청 취소</span>
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">?좎껌 痍⑥냼</span>
                             {% else %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status or '—' }}</span>
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status or '?? }}</span>
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-5 py-3.5 text-right text-sm font-bold tabular-nums text-dense-text">{{ fmt_hours(leave.snapshot_deduction_hours) }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="px-5 py-10 text-center text-sm font-semibold text-dense-muted">최근 일주일간 연차 내역이 없습니다.</td>
+                        <td colspan="6" class="px-5 py-10 text-center text-sm font-semibold text-dense-muted">理쒓렐 ?쇱＜?쇨컙 ?곗감 ?댁뿭???놁뒿?덈떎.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -296,7 +292,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const chartData = {{ chart_data | tojson | safe }};
     
-    // 1. 팀별 차트
+    // 1. ?蹂?李⑦듃
     const teamCtx = document.getElementById('teamChart');
     if (teamCtx && chartData.teams && chartData.teams.length > 0) {
         new Chart(teamCtx, {
@@ -305,14 +301,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: chartData.teams,
                 datasets: [
                     {
-                        label: '사용 연차 (h)',
+                        label: '?ъ슜 ?곗감 (h)',
                         data: chartData.used_hours,
                         backgroundColor: 'rgba(23, 92, 211, 0.85)',
                         borderColor: 'rgb(23, 92, 211)',
                         borderWidth: 1
                     },
                     {
-                        label: '잔여 연차 (h)',
+                        label: '?붿뿬 ?곗감 (h)',
                         data: chartData.remaining_hours,
                         backgroundColor: 'rgba(208, 213, 221, 0.5)',
                         borderColor: 'rgb(208, 213, 221)',
@@ -347,17 +343,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. 월별 사용 트렌드 차트
+    // 2. ?붾퀎 ?ъ슜 ?몃젋??李⑦듃
     const trendCtx = document.getElementById('trendChart');
     if (trendCtx) {
-        const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+        const months = ['1??, '2??, '3??, '4??, '5??, '6??, '7??, '8??, '9??, '10??, '11??, '12??];
         new Chart(trendCtx, {
             type: 'line',
             data: {
                 labels: months,
                 datasets: [
                     {
-                        label: '월별 사용 시간 (h)',
+                        label: '?붾퀎 ?ъ슜 ?쒓컙 (h)',
                         data: chartData.monthly_hours,
                         borderColor: 'rgb(6, 118, 71)',
                         backgroundColor: 'rgba(6, 118, 71, 0.08)',
@@ -395,14 +391,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
-
-t: 'bold' } }
-                    }
-                }
-            }
-        });
-    }
-});
-</script>
-{% endblock %}
-
