@@ -1,0 +1,262 @@
+{% from "partials/macros.html" import fmt_hours %}
+
+<div class="fade-in space-y-4">
+    <!-- Header Section -->
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+            <h2 class="text-xl font-extrabold tracking-tight text-dense-text flex items-center gap-2">
+                <span>📜 연차 신청 타임라인 이력</span>
+            </h2>
+            <p class="mt-1 text-xs font-semibold text-dense-muted">전체 직원의 연차 신청 이력 조회 및 상태 승인/반려/삭제 관리를 수행합니다.</p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <a href="/admin/leave/timeline/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
+            <button type="button" onclick="refreshTimeline()" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-nav-text hover:bg-dense-surface-soft">🔄 새로고침</button>
+        </div>
+    </div>
+
+    <!-- Table Card Container -->
+    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
+        <div class="flex flex-col gap-3 border-b border-dense-line px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
+            <h3 class="text-sm font-extrabold tracking-tight text-dense-text">
+                {{ selected_year }}년 {% if selected_month > 0 %}{{ selected_month }}월{% else %}전체 월{% endif %} 연차 기록
+                <span class="text-xs font-semibold text-dense-muted">({{ total_count }}건)</span>
+            </h3>
+            <nav class="flex flex-wrap gap-2" aria-label="결재 상태 필터">
+                <a href="{{ timeline_chip_url_all }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if not selected_leave_status %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">전체</a>
+                <a href="{{ timeline_chip_url_pending }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if selected_leave_status == 'PENDING' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">결재 대기</a>
+                <a href="{{ timeline_chip_url_approved }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if selected_leave_status == 'APPROVED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">승인됨</a>
+                <a href="{{ timeline_chip_url_rejected }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if selected_leave_status == 'REJECTED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">반려</a>
+            </nav>
+        </div>
+
+        <div class="border-b border-dense-line p-4 sm:p-5">
+            <form method="get" id="tl-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+                <input type="hidden" name="sort" value="{{ sort_key }}">
+                <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+                {% if selected_leave_status %}
+                <input type="hidden" name="leave_status" value="{{ selected_leave_status }}">
+                {% endif %}
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 text-xs font-semibold">
+                    <div>
+                        <label for="tl-year" class="mb-1 block text-dense-muted text-[10px]">연도</label>
+                        <select id="tl-year" name="year" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            {% for y in year_options %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-month" class="mb-1 block text-dense-muted text-[10px]">월</label>
+                        <select id="tl-month" name="month" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="0" {% if selected_month == 0 %}selected{% endif %}>전체 월</option>
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-user" class="mb-1 block text-dense-muted text-[10px]">사용자</label>
+                        <select id="tl-user" name="user_id" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
+                            {% for u in users %}
+                            <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-company" class="mb-1 block text-dense-muted text-[10px]">회사</label>
+                        <select id="tl-company" name="company" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
+                            {% for c in company_options %}
+                            <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tl-team" class="mb-1 block text-dense-muted text-[10px]">팀</label>
+                        <select id="tl-team" name="team" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
+                            {% for t in team_options %}
+                            <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <p class="border-b border-dense-line px-4 py-3 text-[10px] font-semibold text-dense-muted sm:px-5">정렬은 표 머리글 링크를 누르면 됩니다. 같은 열을 다시 누르면 오름·내림이 전환됩니다. 필터를 바꿔도 현재 정렬이 유지됩니다.</p>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-dense-line text-xs">
+                <thead class="bg-dense-surface-soft">
+                    <tr>
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.created_at }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">신청 시각{% if sort_key == 'created_at' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="w-[1%] max-w-[7.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.user_name }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용자{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[4.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.company }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[4.5rem] whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.team }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.date }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용일{% if sort_key == 'date' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[8.5rem] max-w-[11rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                            <a href="{{ sort_urls.slot }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용 시간대{% if sort_key == 'slot' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                        </th>
+                        <th scope="col" class="min-w-[7rem] max-w-[10rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 사유</th>
+                        <th scope="col" class="w-[7.5rem] min-w-[7.5rem] max-w-[7.5rem] whitespace-normal px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted" title="반려: 승인 불가 판정 / 신청 취소: 철회·무효">상태</th>
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dense-line bg-dense-surface">
+                    {% for leave in leaves %}
+                    <tr class="transition-colors hover:bg-dense-surface-soft" id="row-{{ leave.id }}">
+                        <td class="whitespace-nowrap px-2 py-2 text-[11px] font-semibold text-dense-muted" data-utc="{{ leave.created_at.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm">{{ leave.created_at | format_datetime_kst }}</td>
+                        <td class="max-w-[7.5rem] w-[1%] px-2 py-2" title="{{ leave.user.user_name }} ({{ leave.user.user_id }}){% if leave.user.team or leave.user.company %} — {{ leave.user.team or '—' }} / {{ leave.user.company or '—' }}{% endif %}">
+                            <span class="inline-flex max-w-full items-center whitespace-nowrap text-[11px] font-bold text-dense-text">
+                                <span class="shrink-0">{{ leave.user.user_name }}</span><span class="min-w-0 truncate font-semibold text-dense-muted">({{ leave.user.user_id }})</span>
+                            </span>
+                        </td>
+                        <td class="max-w-[7rem] truncate px-2 py-2 text-[11px] font-semibold" title="{{ leave.user.company or '' }}">
+                            {% if leave.user.company %}
+                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold" style="{{ string_to_badge_style(leave.user.company, is_team=False) }}">{{ leave.user.company }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="max-w-[7rem] truncate px-2 py-2 text-[11px] font-semibold" title="{{ leave.user.team or '' }}">
+                            {% if leave.user.team %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold" style="{{ string_to_badge_style(leave.user.team, is_team=True) }}">{{ leave.user.team }}</span>
+                            {% else %}
+                            <span class="text-dense-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-2 py-2">
+                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-[11px] font-bold text-dense-nav-text">{{ leave.date }}</span>
+                        </td>
+                        <td class="min-w-0 max-w-[11rem] truncate px-2 py-2 text-[11px] font-semibold text-dense-nav-text" title="{{ leave.snapshot_slot_label }} ({% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
+                            {{ leave.snapshot_slot_label }} (<span class="{% if leave.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">{% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>)
+                        </td>
+                        <td class="max-w-[10rem] truncate px-2 py-2 text-[11px] font-semibold text-dense-nav-text">
+                            <div class="flex flex-col gap-1">
+                                {% if not leave.is_deductive %}
+                                <div class="flex">
+                                    <span class="inline-flex items-center justify-center rounded bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>
+                                </div>
+                                {% endif %}
+                                {% if leave.reason %}
+                                <div class="truncate" title="{{ leave.reason }}">
+                                    {{ leave.reason }}
+                                </div>
+                                {% elif not leave.is_deductive %}
+                                {% else %}
+                                <span class="text-dense-line-strong">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="w-[7.5rem] min-w-[7.5rem] max-w-[7.5rem] px-2 py-2 align-top text-xs">
+                            {% if leave.status == "PENDING" %}
+                            <select onchange="changeStatus({{ leave.id }}, this)" data-current-status="{{ leave.status }}" class="w-full rounded-xl border-0 bg-dense-surface py-1 px-1.5 text-[10px] font-semibold shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                                <option value="PENDING" selected title="승인 전">결재 대기</option>
+                                <option value="APPROVED" title="연차 반영">승인됨</option>
+                                <option value="REJECTED" title="관리자가 승인 불가">반려</option>
+                                <option value="CANCELED" title="철회·무효">신청 취소</option>
+                            </select>
+                            {% else %}
+                            <div class="flex flex-col gap-1 items-start">
+                                {% if leave.status == "APPROVED" %}
+                                <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-green" title="승인 완료, 연차 반영">승인됨</span>
+                                {% elif leave.status == "REJECTED" %}
+                                <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-[10px] font-extrabold text-[#475467]" title="관리자가 신청을 반려">반려</span>
+                                {% elif leave.status == "CANCELED" %}
+                                <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-muted" title="신청 철회·무효 처리">신청 취소</span>
+                                {% else %}
+                                <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-muted">{{ leave.status or '—' }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if leave.status == "REJECTED" and leave.rejection_reason %}
+                            <div class="mt-1 max-w-full overflow-hidden text-[10px] font-semibold leading-snug text-[#b42318] line-clamp-2" title="사유 전체: {{ leave.rejection_reason }}">
+                                사유: {{ leave.rejection_reason }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-2 py-2 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" onclick="changeType({{ leave.id }}, {{ 'false' if leave.is_deductive else 'true' }}, this)" 
+                                        class="inline-flex rounded-lg border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[9px] font-bold {% if leave.is_deductive %}text-purple-700 hover:bg-purple-50{% else %}text-dense-blue hover:bg-dense-blue-soft{% endif %} shadow-sm transition-colors"
+                                        title="{% if leave.is_deductive %}공가/출장으로 전환 (연차 복구){% else %}연차로 전환 (연차 차감){% endif %}">
+                                    {% if leave.is_deductive %}공가{% else %}연차{% endif %}
+                                </button>
+                                <button type="button" onclick="deleteLeave({{ leave.id }}, this)" class="rounded-lg border border-dense-danger-soft bg-dense-danger-soft px-1.5 py-0.5 text-[9px] font-bold text-[#b42318] transition-colors hover:brightness-95">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="px-4 py-12 text-center text-dense-muted font-semibold">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <span class="text-3xl">🔍</span>
+                                <p class="text-xs font-bold text-dense-text">해당 기간의 연차 내역이 없습니다.</p>
+                                <p class="text-[10px] text-dense-muted">부합하는 검색 조건이나 필터 설정을 확인해 보시기 바랍니다.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination Section -->
+    {% if total_pages > 1 %}
+    <div class="flex items-center justify-between rounded-[18px] border border-dense-line bg-dense-surface px-4 py-3 sm:px-6">
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+                <p class="text-xs font-semibold text-dense-muted">
+                    총 <span class="font-extrabold text-dense-text">{{ total_count }}</span>건 중 
+                    <span class="font-extrabold text-dense-text">{{ (page-1)*50 + 1 }}</span> ~ 
+                    <span class="font-extrabold text-dense-text">{{ min(page*50, total_count) }}</span> 표시
+                </p>
+            </div>
+            <div>
+                <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm" aria-label="Pagination">
+                    {% set base_params = "year=" ~ selected_year ~ "&month=" ~ selected_month ~ "&user_id=" ~ selected_user_id ~ "&company=" ~ selected_company ~ "&team=" ~ selected_team ~ "&leave_status=" ~ (selected_leave_status or '') ~ "&sort=" ~ sort_key ~ "&sort_dir=" ~ sort_dir %}
+                    
+                    {% if page > 1 %}
+                    <a href="?{{ base_params }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <span class="sr-only">이전</span>
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                    </a>
+                    {% endif %}
+                    
+                    {% for p in range(max(1, page-2), min(total_pages, page+2) + 1) %}
+                    <a href="?{{ base_params }}&page={{ p }}" class="relative inline-flex items-center border {% if p == page %}z-10 border-dense-blue bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-3.5 py-1.5 text-xs font-bold">{{ p }}</a>
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                    <a href="?{{ base_params }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <span class="sr-only">다음</span>
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>

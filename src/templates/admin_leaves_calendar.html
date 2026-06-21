@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 
-{% macro fmt_hours(v) -%}
-{%- set n = (v | float) -%}
-{%- if n == (n | int) -%}{{ n | int }}{%- else -%}{{ n }}{%- endif -%}
-{%- endmacro %}
+{% from "partials/macros.html" import fmt_hours %}
 
 {% block content %}
 <style>
@@ -165,401 +162,561 @@
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header -->
-    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between border-b border-dense-line pb-3 gap-3">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">연차 캘린더</h2>
-            <p class="mt-1 text-sm font-semibold text-dense-muted">
-                {% if is_year_view %}
-                {{ selected_year }}년 전체 · 전 사원 월별 사용 합계 (8시간 = 1일)
-                {% else %}
-                {{ selected_year }}년 {{ selected_month }}월 사원별 일자별 연차 현황
-                {% endif %}
-            </p>
-            <div class="mt-2.5 text-xs font-semibold text-dense-muted leading-relaxed space-y-0.5">
-                <p>• 사용자·회사·팀·상태 필터로 조회 범위를 조정할 수 있습니다.</p>
-                <p>• 표 머리글(<span class="text-dense-text font-bold">사원, 회사, 팀, 잔여, {% if is_year_view %}연사용{% else %}월사용{% endif %}</span>)을 클릭하면 해당 열 기준으로 오름차순/내림차순 정렬됩니다.</p>
-            </div>
+            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text flex items-center gap-2">
+                <span>📅 연차 및 일정 종합 관리</span>
+            </h2>
+            <p class="mt-1 text-sm font-semibold text-dense-muted">사원별 캘린더, 전사 신청 목록, 연간 요약 통계를 통합 관리합니다.</p>
         </div>
-        <div class="mt-4 shrink-0 md:mt-0">
-            <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view={% if is_year_view %}year{% else %}month{% endif %}" class="inline-flex items-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터·정렬 초기화</a>
+        <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line self-start md:self-auto shrink-0 shadow-xs">
+            <button type="button" id="calendar-tab-btn" onclick="switchTab('calendar')"
+               class="tab-btn rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-blue bg-dense-surface shadow-sm">
+                연차 캘린더
+            </button>
+            <button type="button" id="timeline-tab-btn" onclick="switchTab('timeline')"
+               class="tab-btn rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-muted hover:text-dense-text">
+                신청 내역
+            </button>
+            <button type="button" id="yearly-tab-btn" onclick="switchTab('yearly')"
+               class="tab-btn rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none text-dense-muted hover:text-dense-text">
+                연간 요약
+            </button>
         </div>
     </div>
 
-    <form method="get" action="/admin/leave/calendar" id="cal-form" class="mb-4 space-y-3">
-        <input type="hidden" name="sort" value="{{ sort_key or '' }}">
-        <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
-        <input type="hidden" name="year" value="{{ selected_year }}">
-        <input type="hidden" name="view" value="{{ view }}">
-        <input type="hidden" name="month" value="{{ selected_month }}">
+    <!-- 1. Calendar View Container (Server Side Rendered initially) -->
+    <div id="calendar-view-container" class="space-y-4">
+        <form method="get" action="/admin/leave/calendar" id="cal-form" class="space-y-3">
+            <input type="hidden" name="sort" value="{{ sort_key or '' }}">
+            <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <input type="hidden" name="view" value="{{ view }}">
+            <input type="hidden" name="month" value="{{ selected_month }}">
 
-        <!-- 4열 그리드 필터 바 -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
-            <div>
-                <label for="cal-user" class="block mb-1 text-dense-muted">사원명 검색</label>
-                <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
-                    {% for u in users %}
-                    <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — {{ u.team or '—' }} / {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="cal-company" class="block mb-1 text-dense-muted">소속 회사</label>
-                <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_company %}selected{% endif %}>전체</option>
-                    {% for c in company_options %}
-                    <option value="{{ c }}" {% if selected_company == c %}selected{% endif %} title="{{ c }}">{{ c }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="cal-team" class="block mb-1 text-dense-muted">소속 팀</label>
-                <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_team %}selected{% endif %}>전체</option>
-                    {% for t in team_options %}
-                    <option value="{{ t }}" {% if selected_team == t %}selected{% endif %} title="{{ t }}">{{ t }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="cal-active" class="block mb-1 text-dense-muted">계정 상태</label>
-                <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
-                    <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
-                    <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
-                </select>
-            </div>
-        </div>
-    </form>
-
-    <!-- Calendar Grid -->
-    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-4">
-        {% set prev_year = selected_year - 1 if selected_month == 1 else selected_year %}
-        {% set prev_month = 12 if selected_month == 1 else selected_month - 1 %}
-        {% set next_year = selected_year + 1 if selected_month == 12 else selected_year %}
-        {% set next_month = 1 if selected_month == 12 else selected_month + 1 %}
-        {% set base_qs = "user_id=" ~ selected_user_id ~ "&company=" ~ selected_company ~ "&team=" ~ selected_team ~ "&active_state=" ~ selected_active_state ~ "&sort=" ~ (sort_key or '') ~ "&sort_dir=" ~ sort_dir %}
-        
-        <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-3">
-            <div class="flex items-center gap-3">
-                {% if not is_year_view %}
-                <a href="/admin/leave/calendar?year={{ prev_year }}&month={{ prev_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
-                    <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                </a>
-                <h3 class="text-lg font-extrabold tracking-tight text-dense-text w-24 text-center">{{ selected_year }}년 {{ selected_month }}월</h3>
-                <a href="/admin/leave/calendar?year={{ next_year }}&month={{ next_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
-                    <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                </a>
-                {% else %}
-                <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 전체</h3>
-                {% endif %}
-
-                <!-- 연도 및 월 바로가기 드롭다운 추가 -->
-                <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1.5 ml-2">
-                    <input type="hidden" name="view" value="{{ view }}">
-                    <input type="hidden" name="user_id" value="{{ selected_user_id }}">
-                    <input type="hidden" name="company" value="{{ selected_company }}">
-                    <input type="hidden" name="team" value="{{ selected_team }}">
-                    <input type="hidden" name="active_state" value="{{ selected_active_state }}">
-                    <select name="year" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-1 px-1.5 text-xs font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
-                        {% for y in year_options %}
-                        <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+            <!-- 4열 그리드 필터 바 -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
+                <div>
+                    <label for="cal-user" class="block mb-1 text-dense-muted">사원명 검색</label>
+                    <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
+                        {% for u in users %}
+                        <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — {{ u.team or '—' }} / {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
                         {% endfor %}
                     </select>
-                    {% if not is_year_view %}
-                    <select name="month" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-1 px-1.5 text-xs font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
-                        {% for m in range(1, 13) %}
-                        <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
-                        {% endfor %}
-                    </select>
-                    {% endif %}
-                </form>
-            </div>
-            
-            <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
-                <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view=month&{{ base_qs }}" 
-                   class="rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none {% if view == 'month' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
-                    타임라인형
-                </a>
-                <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view=month_grid&{{ base_qs }}" 
-                   class="rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none {% if view == 'month_grid' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
-                    달력형
-                </a>
-                <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view=year&{{ base_qs }}" 
-                   class="rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none {% if view == 'year' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
-                    연간 요약
-                </a>
-            </div>
-        </div>
-
-        {% if not is_year_view %}
-        <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-dense-muted">
-            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-blue/20 bg-dense-blue shadow-sm"></span>반일 이하</span>
-            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-amber/35 bg-gradient-to-b from-[#fde68a] to-[#f79009] shadow-sm"></span>반일(4h)</span>
-            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-danger/45 bg-gradient-to-b from-[#f97066] to-[#d92d20] shadow-sm"></span>전일(8h)</span>
-            <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-purple-600/45 bg-gradient-to-b from-[#9333ea] to-[#7e22ce] shadow-sm"></span>공가/출장 (미차감)</span>
-            <span class="flex items-center gap-1.5 border-l border-dense-line pl-4"><span class="inline-block h-3.5 w-3.5 rounded bg-dense-blue/55 filter grayscale-[35%] shadow-none border-0"></span>대기 중인 연차 (반투명)</span>
-            <span class="w-full font-semibold text-dense-muted/80 sm:w-auto sm:ml-auto">* 각 셀에 마우스를 올리면 상세 정보가 표시되며, 클릭 시 팝업 안내창이 열립니다.</span>
-        </div>
-        {% else %}
-        <div class="mb-3 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-[11px] font-semibold text-dense-muted leading-relaxed">
-            <strong class="text-dense-text">💡 연간 종합 캘린더 안내</strong>
-            <ul class="mt-1 list-inside list-disc space-y-0.5 text-dense-muted/90">
-                <li>잔여 연차, 연간 누적 사용(연사용), 월별 사용 칸의 수치 기준은 모두 <strong class="text-dense-text">8시간 = 1일</strong>입니다.</li>
-                <li>연차 사용 이력이 없는 월이나 값이 0인 항목은 <strong class="text-dense-text">-</strong>로 표기됩니다.</li>
-                <li>공간 최적화를 위해 표기는 <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">9일2h</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">8일</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[10px] text-dense-nav-text">4h</code> 등으로 줄여 표시하며, 마우스 오버 시 전체 상세 문구가 툴팁으로 제공됩니다.</li>
-            </ul>
-        </div>
-        {% endif %}
-        <div>
-            {% if view == 'year' %}
-            <div class="overflow-x-auto">
-                <table class="cal-table cal-one-line cal-year-view">
-                    <thead>
-                        <tr>
-                            <th class="sticky-col col-info text-left">
-                                <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-meta">
-                                <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-meta">
-                                <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-stat" title="올해 잔여 (8시간=1일)">
-                                <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-stat" title="해당 연도 누적 사용 (8시간=1일)">
-                                <a href="{{ sort_urls.period_used }}" class="cal-sort-head">연사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            {% for m in range(1, 13) %}
-                            <th class="col-month-sum">{{ m }}월</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in user_stats %}
-                        <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
-                            <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
-                                <div class="info-one-line text-dense-text">
-                                    {{ stat.user_name }}
-                                </div>
-                            </td>
-                            <td class="col-meta text-center" title="{{ stat.company or '' }}">
-                                {% if stat.company %}
-                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
-                                {% else %}
-                                <span class="text-dense-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-meta text-center" title="{{ stat.team or '' }}">
-                                {% if stat.team %}
-                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
-                                {% else %}
-                                <span class="text-dense-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
-                                <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
-                            </td>
-                            <td class="col-stat font-semibold text-dense-blue">
-                                <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
-                            </td>
-                            {% for m in range(1, 13) %}
-                            <td class="col-month-sum text-dense-text">
-                                <span class="stat-compact text-dense-blue" title="{{ stat.month_used_labels[m] }}">{{ stat.month_used_short_labels[m] }}</span>
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="17" class="py-8 text-sm font-semibold text-dense-muted">표시할 사원 데이터가 없습니다.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% elif view == 'month' %}
-            <!-- Timeline View Container -->
-            <div id="admin-timeline-view-container" class="overflow-x-auto">
-                <table class="cal-table cal-one-line cal-month-view">
-                    <thead>
-                        <tr>
-                            <th class="sticky-col col-info text-left">
-                                <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-meta">
-                                <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-meta">
-                                <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-stat" title="올해 잔여 (8시간=1일)">
-                                <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            <th class="col-stat" title="이번 달 사용 (8시간=1일)">
-                                <a href="{{ sort_urls.period_used }}" class="cal-sort-head">월사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                            </th>
-                            {% for day in days %}
-                            <th class="col-day {% if day in holiday_day_map %}holiday-head{% elif day in weekend_days %}weekend-head{% endif %}"
-                                title="{% if day in holiday_day_map %}{{ holiday_day_map[day].name }}{% elif day in weekend_days %}주말{% endif %}">
-                                <span class="day-num">{{ day }}</span>
-                                <span class="weekday-label">({{ day_weekday_map[day] }})</span>
-                                {% if day in holiday_day_map %}
-                                <span class="holiday-chip">{{ holiday_day_map[day].name }}</span>
-                                {% endif %}
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in user_stats %}
-                        <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
-                            <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
-                                <div class="info-one-line text-dense-text">
-                                    {{ stat.user_name }}
-                                </div>
-                            </td>
-                            <td class="col-meta text-center" title="{{ stat.company or '' }}">
-                                {% if stat.company %}
-                                <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
-                                {% else %}
-                                <span class="text-dense-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-meta text-center" title="{{ stat.team or '' }}">
-                                {% if stat.team %}
-                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
-                                {% else %}
-                                <span class="text-dense-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
-                                <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
-                            </td>
-                            <td class="col-stat font-semibold text-dense-blue">
-                                <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
-                            </td>
-                            {% for day in days %}
-                            <td class="col-day">
-                                {% if day in user_leaves_map[stat.user_id] %}
-                                    {% set dl = user_leaves_map[stat.user_id][day] %}
-                                    {% set ns = namespace(total_h=0, pub_h=0, has_pub=false, has_pending=false) %}
-                                    {% for lv in dl %}
-                                        {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                            {% if lv.status == "PENDING" %}
-                                                {% set ns.has_pending = true %}
-                                            {% endif %}
-                                            {% if lv.is_deductive %}
-                                                {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
-                                            {% else %}
-                                                {% set ns.pub_h = ns.pub_h + lv.snapshot_deduction_hours %}
-                                                {% set ns.has_pub = true %}
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    
-                                    {% if ns.total_h > 0 or ns.has_pub %}
-                                    <div class="day-block {% if ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %} {% if ns.has_pending %}pending{% endif %}"
-                                         title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
-                                         data-user-name="{{ stat.user_name }}"
-                                         data-month="{{ selected_month }}"
-                                         data-day="{{ day }}"
-                                         data-slots="{% for lv in dl %}{{ lv.snapshot_slot_label }}{% if not loop.last %}|{% endif %}{% endfor %}"
-                                         onclick="showLeaveTimeDetails(this)">
-                                         {% if ns.total_h > 0 %}
-                                             {{ fmt_hours(ns.total_h) }}h
-                                         {% else %}
-                                             {{ fmt_hours(ns.pub_h) }}h
-                                         {% endif %}
-                                    </div>
-                                    {% else %}
-                                    <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="{{ days|length + 5 }}" class="py-8 text-sm font-semibold text-dense-muted">표시할 사원 데이터가 없습니다.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% elif view == 'month_grid' %}
-            <!-- Grid Calendar View Container -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface p-4">
-                <div class="mb-2 grid grid-cols-7 gap-2">
-                    {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
-                    <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
-                        {{ wd }}
-                    </div>
-                    {% endfor %}
                 </div>
+                <div>
+                    <label for="cal-company" class="block mb-1 text-dense-muted">소속 회사</label>
+                    <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_company %}selected{% endif %}>전체</option>
+                        {% for c in company_options %}
+                        <option value="{{ c }}" {% if selected_company == c %}selected{% endif %} title="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="cal-team" class="block mb-1 text-dense-muted">소속 팀</label>
+                    <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_team %}selected{% endif %}>전체</option>
+                        {% for t in team_options %}
+                        <option value="{{ t }}" {% if selected_team == t %}selected{% endif %} title="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="cal-active" class="block mb-1 text-dense-muted">계정 상태</label>
+                    <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
+                        <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
+                        <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
+                    </select>
+                </div>
+            </div>
+        </form>
 
-                <div class="grid grid-cols-7 gap-2">
-                    {% for _ in range(offset) %}
-                    <div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
-                    {% endfor %}
+        <!-- Calendar Grid -->
+        <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface p-4">
+            {% set prev_year = selected_year - 1 if selected_month == 1 else selected_year %}
+            {% set prev_month = 12 if selected_month == 1 else selected_month - 1 %}
+            {% set next_year = selected_year + 1 if selected_month == 12 else selected_year %}
+            {% set next_month = 1 if selected_month == 12 else selected_month + 1 %}
+            {% set base_qs = "user_id=" ~ selected_user_id ~ "&company=" ~ selected_company ~ "&team=" ~ selected_team ~ "&active_state=" ~ selected_active_state ~ "&sort=" ~ (sort_key or '') ~ "&sort_dir=" ~ sort_dir %}
+            
+            <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-3">
+                <div class="flex items-center gap-3">
+                    {% if view != 'year' %}
+                    <a href="/admin/leave/calendar?year={{ prev_year }}&month={{ prev_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                    </a>
+                    <h3 class="text-lg font-extrabold tracking-tight text-dense-text w-24 text-center">{{ selected_year }}년 {{ selected_month }}월</h3>
+                    <a href="/admin/leave/calendar?year={{ next_year }}&month={{ next_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                    </a>
+                    {% else %}
+                    <h3 class="text-lg font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 전체</h3>
+                    {% endif %}
 
-                    {% for day in days %}
-                    {% set weekday_idx = (offset + day - 1) % 7 %}
-                    {% set holiday = holiday_day_map.get(day) %}
-                    {% set is_weekend = weekday_idx in [0, 6] %}
-                    
-                    <div class="min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line {% if is_weekend or holiday %}bg-dense-gray-soft/20{% endif %} hover:shadow-sm">
-                        <div class="flex items-center justify-between w-full leading-none mb-1">
-                            <span class="text-xs {% if is_weekend or holiday %}font-extrabold text-dense-danger{% else %}font-bold text-dense-text{% endif %}">
-                                {{ day }}
-                            </span>
-                            {% if holiday %}
-                            <span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10" title="{{ holiday.name }}">{{ holiday.name }}</span>
-                            {% endif %}
-                        </div>
+                    <!-- 연도 및 월 바로가기 드롭다운 추가 -->
+                    <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1.5 ml-2">
+                        <input type="hidden" name="view" value="{{ view }}">
+                        <input type="hidden" name="user_id" value="{{ selected_user_id }}">
+                        <input type="hidden" name="company" value="{{ selected_company }}">
+                        <input type="hidden" name="team" value="{{ selected_team }}">
+                        <input type="hidden" name="active_state" value="{{ selected_active_state }}">
+                        <select name="year" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-1 px-1.5 text-xs font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                            {% for y in year_options %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                            {% endfor %}
+                        </select>
+                        {% if view != 'year' %}
+                        <select name="month" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-1 px-1.5 text-xs font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </form>
+                </div>
+                
+                <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line">
+                    <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view=month&{{ base_qs }}" 
+                       class="rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none {% if view == 'month' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
+                        타임라인형
+                    </a>
+                    <a href="/admin/leave/calendar?year={{ selected_year }}&month={{ selected_month }}&view=month_grid&{{ base_qs }}" 
+                       class="rounded-lg px-3 py-1 text-xs font-bold transition-all focus:outline-none {% if view == 'month_grid' or view == 'year' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
+                        달력형
+                    </a>
+                </div>
+            </div>
 
-                        <div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5">
+            <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-dense-muted">
+                <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-blue/20 bg-dense-blue shadow-sm"></span>반일 이하</span>
+                <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-amber/35 bg-gradient-to-b from-[#fde68a] to-[#f79009] shadow-sm"></span>반일(4h)</span>
+                <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-dense-danger/45 bg-gradient-to-b from-[#f97066] to-[#d92d20] shadow-sm"></span>전일(8h)</span>
+                <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded border border-purple-600/45 bg-gradient-to-b from-[#9333ea] to-[#7e22ce] shadow-sm"></span>공가/출장 (미차감)</span>
+                <span class="flex items-center gap-1.5 border-l border-dense-line pl-4"><span class="inline-block h-3.5 w-3.5 rounded bg-dense-blue/55 filter grayscale-[35%] shadow-none border-0"></span>대기 중인 연차 (반투명)</span>
+                <span class="w-full font-semibold text-dense-muted/80 sm:w-auto sm:ml-auto">* 각 셀에 마우스를 올리면 상세 정보가 표시되며, 클릭 시 팝업 안내창이 열립니다.</span>
+            </div>
+
+            <div>
+                {% if view == 'month' %}
+                <!-- Timeline View Container -->
+                <div id="admin-timeline-view-container" class="overflow-x-auto">
+                    <table class="cal-table cal-one-line cal-month-view">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col col-info text-left">
+                                    <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                                </th>
+                                <th class="col-meta">
+                                    <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                                </th>
+                                <th class="col-meta">
+                                    <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                                </th>
+                                <th class="col-stat" title="올해 잔여 (8시간=1일)">
+                                    <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                                </th>
+                                <th class="col-stat" title="이번 달 사용 (8시간=1일)">
+                                    <a href="{{ sort_urls.period_used }}" class="cal-sort-head">월사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                                </th>
+                                {% for day in days %}
+                                <th class="col-day {% if day in holiday_day_map %}holiday-head{% elif day in weekend_days %}weekend-head{% endif %}"
+                                    title="{% if day in holiday_day_map %}{{ holiday_day_map[day].name }}{% elif day in weekend_days %}주말{% endif %}">
+                                    <span class="day-num">{{ day }}</span>
+                                    <span class="weekday-label">({{ day_weekday_map[day] }})</span>
+                                    {% if day in holiday_day_map %}
+                                    <span class="holiday-chip">{{ holiday_day_map[day].name }}</span>
+                                    {% endif %}
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
                             {% for stat in user_stats %}
-                                {% set m_leaves = user_leaves_map.get(stat.user_id, {}).get(day, []) %}
-                                {% for lv in m_leaves %}
-                                    {% if lv.status not in ["CANCELED", "REJECTED"] %}
-                                        {% set is_deduct = lv.is_deductive %}
-                                        {% set total_h = lv.snapshot_deduction_hours %}
-                                        {% set is_pending = lv.status == 'PENDING' %}
-                                        <div class="rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer
-                                                    {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
-                                                    {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
-                                                    {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
-                                                    {% else %}bg-blue-50 text-blue-700 border-blue-200
-                                                    {% endif %}
-                                                    {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
-                                             title="{{ stat.user_name }} ({{ stat.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                            <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
+                                <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
+                                    <div class="info-one-line text-dense-text">
+                                        {{ stat.user_name }}
+                                    </div>
+                                </td>
+                                <td class="col-meta text-center" title="{{ stat.company or '' }}">
+                                    {% if stat.company %}
+                                    <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                                    {% else %}
+                                    <span class="text-dense-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-meta text-center" title="{{ stat.team or '' }}">
+                                    {% if stat.team %}
+                                    <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                                    {% else %}
+                                    <span class="text-dense-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
+                                    <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
+                                </td>
+                                <td class="col-stat font-semibold text-dense-blue">
+                                    <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
+                                </td>
+                                {% for day in days %}
+                                <td class="col-day">
+                                    {% if day in user_leaves_map[stat.user_id] %}
+                                        {% set dl = user_leaves_map[stat.user_id][day] %}
+                                        {% set ns = namespace(total_h=0, pub_h=0, has_pub=false, has_pending=false) %}
+                                        {% for lv in dl %}
+                                            {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                                {% if lv.status == "PENDING" %}
+                                                    {% set ns.has_pending = true %}
+                                                {% endif %}
+                                                {% if lv.is_deductive %}
+                                                    {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
+                                                {% else %}
+                                                    {% set ns.pub_h = ns.pub_h + lv.snapshot_deduction_hours %}
+                                                    {% set ns.has_pub = true %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if ns.total_h > 0 or ns.has_pub %}
+                                        <div class="day-block {% if ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}full{% elif ns.total_h >= 4 %}half{% endif %} {% if ns.has_pending %}pending{% endif %}"
+                                             title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
                                              data-user-name="{{ stat.user_name }}"
                                              data-month="{{ selected_month }}"
                                              data-day="{{ day }}"
-                                             data-slots="{{ lv.snapshot_slot_label }}"
+                                             data-slots="{% for lv in dl %}{{ lv.snapshot_slot_label }}{% if not loop.last %}|{% endif %}{% endfor %}"
                                              onclick="showLeaveTimeDetails(this)">
-                                            {{ stat.user_name }}
-                                            <span class="opacity-75 font-semibold text-[8px] ml-0.5">
-                                                {{ fmt_hours(total_h) }}h{% if is_pending %}(대){% endif %}
-                                            </span>
+                                             {% if ns.total_h > 0 %}
+                                                 {{ fmt_hours(ns.total_h) }}h
+                                             {% else %}
+                                                 {{ fmt_hours(ns.pub_h) }}h
+                                             {% endif %}
                                         </div>
+                                        {% else %}
+                                        <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="day-block day-block--empty" aria-hidden="true">&#8203;</div>
                                     {% endif %}
+                                </td>
                                 {% endfor %}
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="{{ days|length + 5 }}" class="py-8 text-sm font-semibold text-dense-muted">표시할 사원 데이터가 없습니다.</td>
+                            </tr>
                             {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+                {% else %}
+                <!-- Grid Calendar View Container (Default for 'month_grid' or 'year' compatibility fallback) -->
+                <div class="rounded-xl border border-dense-line bg-dense-surface p-4">
+                    <div class="mb-2 grid grid-cols-7 gap-2">
+                        {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
+                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-line/40 {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
+                            {{ wd }}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-2">
+                        {% for _ in range(offset) %}
+                        <div class="min-h-[9rem] rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
+                        {% endfor %}
+
+                        {% for day in days %}
+                        {% set weekday_idx = (offset + day - 1) % 7 %}
+                        {% set holiday = holiday_day_map.get(day) %}
+                        {% set is_weekend = weekday_idx in [0, 6] %}
+                        
+                        <div class="min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-line {% if is_weekend or holiday %}bg-dense-gray-soft/20{% endif %} hover:shadow-sm">
+                          <div class="flex items-center justify-between w-full leading-none mb-1">
+                                <span class="text-xs {% if is_weekend or holiday %}font-extrabold text-dense-danger{% else %}font-bold text-dense-text{% endif %}">
+                                    {{ day }}
+                                </span>
+                                {% if holiday %}
+                                <span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10" title="{{ holiday.name }}">{{ holiday.name }}</span>
+                                {% endif %}
+                          </div>
+
+                          <div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5">
+                                {% for stat in user_stats %}
+                                    {% set m_leaves = user_leaves_map.get(stat.user_id, {}).get(day, []) %}
+                                    {% for lv in m_leaves %}
+                                        {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                            {% set is_deduct = lv.is_deductive %}
+                                            {% set total_h = lv.snapshot_deduction_hours %}
+                                            {% set is_pending = lv.status == 'PENDING' %}
+                                            <div class="rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer
+                                                        {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
+                                                        {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
+                                                        {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
+                                                        {% else %}bg-blue-50 text-blue-700 border-blue-200
+                                                        {% endif %}
+                                                        {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
+                                                 title="{{ stat.user_name }} ({{ stat.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                                                 data-user-name="{{ stat.user_name }}"
+                                                 data-month="{{ selected_month }}"
+                                                 data-day="{{ day }}"
+                                                 data-slots="{{ lv.snapshot_slot_label }}"
+                                                 onclick="showLeaveTimeDetails(this)">
+                                                {{ stat.user_name }}
+                                                <span class="opacity-75 font-semibold text-[8px] ml-0.5">
+                                                    {{ fmt_hours(total_h) }}h{% if is_pending %}(대){% endif %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                          </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
+
+    <!-- 2. Request Timeline Container (Loaded via fetch) -->
+    <div id="timeline-view-container" class="hidden min-h-[400px] relative">
+        <div class="absolute inset-0 flex items-center justify-center bg-dense-bg/70 z-10" id="timeline-spinner">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-dense-blue"></div>
+        </div>
+        <div id="timeline-content"></div>
+    </div>
+
+    <!-- 3. Yearly Summary Container (Loaded via fetch) -->
+    <div id="yearly-view-container" class="hidden min-h-[400px] relative">
+        <div class="absolute inset-0 flex items-center justify-center bg-dense-bg/70 z-10" id="yearly-spinner">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-dense-blue"></div>
+        </div>
+        <div id="yearly-content"></div>
+    </div>
 </div>
+
 <script>
+// Cache for loaded tabs
+const tabCache = {
+    timeline: null,
+    yearly: null
+};
+
+// Current active tab from URL query param or default
+let currentActiveTab = 'calendar';
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Determine active tab on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const viewParam = urlParams.get('view');
+    if (tabParam && ['calendar', 'timeline', 'yearly'].includes(tabParam)) {
+        currentActiveTab = tabParam;
+    } else if (viewParam === 'year') {
+        currentActiveTab = 'yearly';
+    }
+    
+    // Switch to active tab
+    switchTab(currentActiveTab, false);
+
+    // Setup event delegation for timeline partial container
+    const timelineContainer = document.getElementById('timeline-view-container');
+    
+    timelineContainer.addEventListener('click', async (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            const href = link.getAttribute('href');
+            if (href && (href.startsWith('?') || href.includes('/admin/leave/timeline/partial'))) {
+                e.preventDefault();
+                await loadTimelineData(href);
+            }
+        }
+    });
+
+    timelineContainer.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form');
+        if (form) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            await loadTimelineData('?' + params.toString());
+        }
+    });
+
+    timelineContainer.addEventListener('change', (e) => {
+        const form = e.target.closest('form');
+        if (form && e.target.tagName === 'SELECT') {
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                const event = new Event('submit', { cancelable: true, bubbles: true });
+                form.dispatchEvent(event);
+            }
+        }
+    });
+
+    // Setup event delegation for yearly partial container
+    const yearlyContainer = document.getElementById('yearly-view-container');
+    
+    yearlyContainer.addEventListener('click', async (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            const href = link.getAttribute('href');
+            if (href && (href.startsWith('?') || href.includes('/admin/leave/yearly/partial'))) {
+                e.preventDefault();
+                await loadYearlyData(href);
+            }
+        }
+    });
+
+    yearlyContainer.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form');
+        if (form) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            await loadYearlyData('?' + params.toString());
+        }
+    });
+
+    yearlyContainer.addEventListener('change', (e) => {
+        const form = e.target.closest('form');
+        if (form && e.target.tagName === 'SELECT') {
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                const event = new Event('submit', { cancelable: true, bubbles: true });
+                form.dispatchEvent(event);
+            }
+        }
+    });
+});
+
+function switchTab(tabName, updateUrl = true) {
+    currentActiveTab = tabName;
+
+    // Show/hide containers
+    document.getElementById('calendar-view-container').style.display = tabName === 'calendar' ? 'block' : 'none';
+    document.getElementById('timeline-view-container').style.display = tabName === 'timeline' ? 'block' : 'none';
+    document.getElementById('yearly-view-container').style.display = tabName === 'yearly' ? 'block' : 'none';
+
+    // Update tab button styles
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('text-dense-blue', 'bg-dense-surface', 'shadow-sm');
+        btn.classList.add('text-dense-muted', 'hover:text-dense-text');
+    });
+
+    const activeBtn = document.getElementById(`${tabName}-tab-btn`);
+    if (activeBtn) {
+        activeBtn.classList.add('text-dense-blue', 'bg-dense-surface', 'shadow-sm');
+        activeBtn.classList.remove('text-dense-muted', 'hover:text-dense-text');
+    }
+
+    if (updateUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tabName);
+        window.history.pushState({}, '', url.toString());
+    }
+
+    // Load data if not already cached
+    if (tabName === 'timeline') {
+        if (!tabCache.timeline) {
+            loadTimelineData();
+        }
+    } else if (tabName === 'yearly') {
+        if (!tabCache.yearly) {
+            loadYearlyData();
+        }
+    }
+}
+
+async function loadTimelineData(query = '') {
+    const spinner = document.getElementById('timeline-spinner');
+    const content = document.getElementById('timeline-content');
+    
+    spinner.style.display = 'flex';
+    
+    try {
+        let url = '/admin/leave/timeline/partial';
+        if (query) {
+            if (query.startsWith('?')) {
+                url += query;
+            } else if (query.includes('?')) {
+                url += '?' + query.split('?')[1];
+            }
+        } else {
+            const calParams = new URLSearchParams(window.location.search);
+            calParams.delete('tab');
+            calParams.delete('view');
+            url += '?' + calParams.toString();
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('데이터 로드 실패');
+        const html = await response.text();
+        
+        content.innerHTML = html;
+        tabCache.timeline = html;
+        
+        if (window.convertAllUtcElements) {
+            window.convertAllUtcElements(content);
+        }
+    } catch (err) {
+        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-bold">오류가 발생했습니다: ${err.message}</div>`;
+    } finally {
+        spinner.style.display = 'none';
+    }
+}
+
+async function loadYearlyData(query = '') {
+    const spinner = document.getElementById('yearly-spinner');
+    const content = document.getElementById('yearly-content');
+    
+    spinner.style.display = 'flex';
+    
+    try {
+        let url = '/admin/leave/yearly/partial';
+        if (query) {
+            if (query.startsWith('?')) {
+                url += query;
+            } else if (query.includes('?')) {
+                url += '?' + query.split('?')[1];
+            }
+        } else {
+            const calParams = new URLSearchParams(window.location.search);
+            calParams.delete('tab');
+            calParams.delete('view');
+            url += '?' + calParams.toString();
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('데이터 로드 실패');
+        const html = await response.text();
+        
+        content.innerHTML = html;
+        tabCache.yearly = html;
+    } catch (err) {
+        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-bold">오류가 발생했습니다: ${err.message}</div>`;
+    } finally {
+        spinner.style.display = 'none';
+    }
+}
+
+function refreshTimeline() {
+    tabCache.timeline = null;
+    loadTimelineData();
+    showToast('신청 내역이 새로고침되었습니다.', 'success');
+}
+
+function refreshYearly() {
+    tabCache.yearly = null;
+    loadYearlyData();
+    showToast('연간 요약이 새로고침되었습니다.', 'success');
+}
+
 function slotLabelToTimeRange(label) {
     const match = label.match(/\(([^)]+)\)/);
     if (match) return match[1];
@@ -582,13 +739,157 @@ function showLeaveTimeDetails(el) {
     const slots = (el.dataset.slots || '').split('|').filter(Boolean);
 
     if (!slots.length) {
-        alert('상세 시간 정보가 없습니다.');
+        showToast('상세 시간 정보가 없습니다.', 'warning');
         return;
     }
 
     const when = month ? `${month}월 ${day}일` : `${day}일`;
     const details = slots.map((slot, idx) => `${idx + 1}. ${slot} -> ${slotLabelToTimeRange(slot)}`).join('\n');
-    alert(`${userName} / ${when} 연차 사용 시간\n\n${details}`);
+    window.shimModal.confirm(`${userName} / ${when} 연차 사용 시간\n\n${details}`, { okOnly: true });
+}
+
+// Global Timeline Action script functions (transferred from old timeline view)
+async function deleteLeave(id, btn) {
+    if(!await shimModal.confirm('정말 이 연차 기록을 삭제하시겠습니까?', { destructive: true })) return;
+    simulateButtonLoading(btn, async () => {
+        try {
+            const response = await fetch('/api/admin/leave/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `leave_id=${id}`
+            });
+            const result = await response.json();
+            if(response.ok) {
+                showToast(result.message || '삭제되었습니다.', 'success');
+                refreshTimeline();
+            } else {
+                showToast(result.message || '오류 발생', 'error');
+            }
+        } catch(err) {
+            showToast('네트워크 오류', 'error');
+        }
+    });
+}
+
+async function changeStatus(leaveId, selectEl) {
+    const newStatus = selectEl.value;
+    const previousStatus = selectEl.dataset.currentStatus || '';
+    let rejectionReason = '';
+
+    if(newStatus === 'REJECTED') {
+        const reasonPrompt = await shimModal.prompt('반려 사유를 입력해 주세요. (최대 500자)', { required: true });
+        if(reasonPrompt === null) {
+            selectEl.value = previousStatus;
+            return;
+        }
+        rejectionReason = reasonPrompt.trim();
+        if(!rejectionReason) {
+            showToast('반려 사유를 입력해야 합니다.', 'warning');
+            selectEl.value = previousStatus;
+            return;
+        }
+        if(rejectionReason.length > 500) {
+            showToast('반려 사유는 최대 500자까지 입력할 수 있습니다.', 'warning');
+            selectEl.value = previousStatus;
+            return;
+        }
+    }
+
+    selectEl.disabled = true;
+    try {
+        const body = new URLSearchParams({
+            leave_id: String(leaveId),
+            status_value: newStatus,
+            rejection_reason: rejectionReason
+        });
+        const response = await fetch('/api/admin/leave/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        });
+        const result = await response.json();
+        if(response.ok) {
+            selectEl.dataset.currentStatus = newStatus;
+            showToast('결재 상태가 반영되었습니다.', 'success');
+            refreshTimeline();
+        } else {
+            showToast(result.message || '오류 발생', 'error');
+            selectEl.disabled = false;
+            selectEl.value = previousStatus;
+        }
+    } catch(err) {
+        showToast('네트워크 오류', 'error');
+        selectEl.disabled = false;
+        selectEl.value = previousStatus;
+    }
+}
+
+async function changeType(leaveId, targetIsDeductive, btn) {
+    const typeName = targetIsDeductive ? '연차(차감)' : '공가/출장(비차감)';
+    const warnMsg = targetIsDeductive ? '\n(주의: 사용자의 잔여 연차가 차감됩니다.)' : '\n(사용자의 연차 잔여량이 복구됩니다.)';
+    
+    if(!await shimModal.confirm(`이 신청 건을 [${typeName}] 유형으로 변경하시겠습니까?${warnMsg}`)) return;
+    
+    simulateButtonLoading(btn, async () => {
+        try {
+            const body = new URLSearchParams({
+                leave_id: String(leaveId),
+                is_deductive: targetIsDeductive
+            });
+            const response = await fetch('/api/admin/leave/update-type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+            const result = await response.json();
+            if(response.ok) {
+                showToast(result.message || '변경되었습니다.', 'success');
+                refreshTimeline();
+            } else {
+                showToast(result.message || '변경에 실패했습니다.', 'error');
+            }
+        } catch(err) {
+            showToast('네트워크 오류가 발생했습니다.', 'error');
+        }
+    });
+}
+
+function slotLabelToTimeRange(label) {
+    const match = label.match(/\(([^)]+)\)/);
+    if (match) return match[1];
+    const map = {
+        '오전 1시간': '09:00 ~ 10:00',
+        '오전 2시간': '09:00 ~ 11:00',
+        '오후 1시간': '13:00 ~ 14:00',
+        '오후 2시간': '13:00 ~ 15:00',
+        '오후 반차': '14:00 ~ 18:00',
+        '오후 4시간': '14:00 ~ 18:00',
+        '전일유급(8시간)': '09:00 ~ 18:00'
+    };
+    return map[label] || '시간대 정보 없음';
+}
+
+function showLeaveTimeDetails(el) {
+    const userName = el.dataset.userName || '사원';
+    const month = el.dataset.month || '';
+    const day = el.dataset.day || '';
+    const slots = (el.dataset.slots || '').split('|').filter(Boolean);
+
+    if (!slots.length) {
+        showToast('상세 시간 정보가 없습니다.', 'warning');
+        return;
+    }
+
+    const when = month ? `${month}월 ${day}일` : `${day}일`;
+    const details = slots.map((slot, idx) => `${idx + 1}. ${slot} -> ${slotLabelToTimeRange(slot)}`).join('\n');
+    showToast(`${userName} / ${when} 연차 사용 시간\n\n${details}`, 'info');
 }
 </script>
 {% endblock %}
+ck %}
+'\n');
+    showToast(`${userName} / ${when} 연차 사용 시간\n\n${details}`, 'info');
+}
+</script>
+{% endblock %}
+ck %}
