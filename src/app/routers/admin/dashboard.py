@@ -22,16 +22,21 @@ def admin_dashboard(
 ):
     stats = admin_service.get_admin_dashboard_stats(db)
     
+    # 템플릿 호환성을 위한 키 매핑 추가
+    stats["total_granted_hours"] = stats["total_allocated_hours"]
+    stats["total_used_hours"] = stats["total_approved_hours"]
+    stats["exhaustion_rate"] = stats["total_exhaustion_rate"]
+    
     now = utils.get_local_now()
-    show_year_end_notice = now.month in (12, 1)
+    show_setup_banner = now.month in (12, 1)
     next_year = now.year + 1 if now.month == 12 else now.year
     
-    if show_year_end_notice:
+    if show_setup_banner:
         has_next_year_allocations = db.query(models.UserYearlyLeaveAllocations).filter(
             models.UserYearlyLeaveAllocations.year == next_year
         ).first() is not None
         if has_next_year_allocations:
-            show_year_end_notice = False
+            show_setup_banner = False
             
     charts_data = admin_service.get_admin_dashboard_charts_data(db, now.year)
     
@@ -48,9 +53,11 @@ def admin_dashboard(
         "recent_leaves": stats["recent_leaves"],
         "today_absentees": stats["today_absentees"],
         "recent_audits": stats["recent_audits"],
+        "today_leaves": stats["today_absentees"],  # 템플릿 today_leaves 매핑
         "today_date": now.strftime('%Y-%m-%d'),
         "current_year": now.year,
-        "show_year_end_notice": show_year_end_notice,
+        "show_setup_banner": show_setup_banner,    # 템플릿 show_setup_banner 매핑
         "next_year": next_year,
-        "chart_data": charts_data
+        "chart_data": charts_data,
+        "stats": stats
     })
