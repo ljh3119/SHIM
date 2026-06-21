@@ -4,7 +4,7 @@ import calendar
 import io
 
 from fastapi import APIRouter, Depends, Request, Form, status, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
@@ -48,8 +48,19 @@ def _timeline_leave_status_filter(raw: str | None) -> str:
     return s if s in TIMELINE_LEAVE_STATUS_FILTERS else ""
 
 
-@page_router.get("/leave/timeline", response_class=HTMLResponse)
+@page_router.get("/leave/timeline")
 def admin_leaves_timeline(
+    request: Request,
+    admin: models.Users = Depends(get_current_admin),
+):
+    # Redirect to calendar page with timeline tab active, keeping query params
+    params = dict(request.query_params)
+    params["tab"] = "timeline"
+    return RedirectResponse(url=f"/admin/leave/calendar?{urlencode(params)}")
+
+
+@page_router.get("/leave/timeline/partial", response_class=HTMLResponse)
+def admin_leaves_timeline_partial(
     request: Request,
     year: int = None,
     month: int = 0,
@@ -165,7 +176,7 @@ def admin_leaves_timeline(
 
     return _templates(request).TemplateResponse(
         request=request,
-        name="admin_leaves_timeline.html",
+        name="partials/admin_leaves_timeline_partial.html",
         context={
             "admin": admin,
             "leaves": leaves,
@@ -775,3 +786,179 @@ def update_leave_type(
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": f"유형이 {new_type}로 변경되었습니다."})
+
+
+@page_router.get("/leave/yearly/partial", response_class=HTMLResponse)
+def admin_leaves_yearly_partial(
+    request: Request,
+    year: int = None,
+    user_id: str = "",
+    company: str = "",
+    team: str = "",
+    active_state: str = "all",
+    sort: str = "",
+    sort_dir: str = "asc",
+    db: Session = Depends(get_db),
+    admin: models.Users = Depends(get_current_admin),
+):
+    current_year = year if year else utils.get_local_now().year
+    selected_user_id = user_id.strip()
+    selected_company = company.strip()
+    selected_team = team.strip()
+    selected_active_state = active_state if active_state in ("all", "active", "inactive") else "all"
+    sort_dir_eff = sort_dir if sort_dir in ("asc", "desc") else "asc"
+    sort_param = (sort or "").strip()
+    sort_key_effective = sort_param if sort_param in CALENDAR_SORT_COLUMNS else None
+
+    leave_year_rows = db.query(models.Leaves.year).distinct().all()
+    leave_years = [row[0] for row in leave_year_rows]
+    year_options = utils.build_year_options(utils.get_local_now().year, leave_years)
+
+    all_users = db.query(models.Users).filter(models.Users.role != "ADMIN").all()
+    
+    company_options = sorted(list({u.company for u in all_users if u.company}))
+    team_options = sorted(list({u.team for u in all_users if u.team}))
+    
+    users = [
+        u for u in all_users
+        if (selected_active_state == "all" or (selected_active_state == "active" and u.is_active) or (selected_active_state == "inactive" and not u.is_active))
+        and (not selected_company or u.company == selected_company)
+        and (not selected_team or u.team == selected_team)
+        and (not selected_user_id or u.user_id == selected_user_id)
+    ]
+
+    user_month_hours = {u.user_id: {m: 0.0 for m in range(1, 13)} for u in users}
+    user_ids = [u.user_id for u in users]
+    user_yearly_leaves_map = {uid: [] for uid in user_ids}
+
+    if user_ids:
+        year_leaves = (
+            db.query(models.Leaves)
+            .filter(
+                models.Leaves.user_id.in_(user_ids),
+                models.Leaves.year == current_year,
+                models.Leaves.status.notin_(["CANCELED", "REJECTED"]),
+                models.Leaves.is_deductive == True
+            )
+            .all()
+        )
+        for l in year_leaves:
+            user_yearly_leaves_map[l.user_id].append(l)
+
+    for uid, leaves in user_yearly_leaves_map.items():
+        for l in leaves:
+            user_month_hours[uid][l.date.month] += float(l.snapshot_deduction_hours or 0)
+
+    allocation_map = admin_service.get_yearly_allocation_map(db, [u.user_id for u in users], current_year)
+    user_stats = []
+    for u in users:
+        yearly_used = sum(user_month_hours[u.user_id].values())
+        month_used_labels = {
+            m: (
+                utils.hours_to_days_hours_label(user_month_hours[u.user_id][m])
+                if user_month_hours[u.user_id][m]
+                else "-"
+            )
+            for m in range(1, 13)
+        }
+        month_used_short_labels = {
+            m: (
+                "-"
+                if not user_month_hours[u.user_id][m]
+                else utils.hours_to_days_hours_compact(user_month_hours[u.user_id][m])
+            )
+            for m in range(1, 13)
+        }
+
+        allocated_hours = float(allocation_map.get(u.user_id, u.total_leave_hours or 0))
+        yearly_remain = allocated_hours - float(yearly_used)
+
+        user_stats.append(
+            {
+                "user_id": u.user_id,
+                "user_name": u.user_name,
+                "company": u.company,
+                "team": u.team,
+                "total_hours": allocated_hours,
+                "period_used": yearly_used,
+                "yearly_used": yearly_used,
+                "yearly_remain": yearly_remain,
+                "yearly_remain_label": utils.hours_to_days_hours_label(yearly_remain),
+                "period_used_label": utils.hours_to_days_hours_label(yearly_used),
+                "yearly_remain_short": utils.hours_to_days_hours_compact(yearly_remain),
+                "period_used_short": utils.hours_to_days_hours_compact(yearly_used),
+                "month_used_labels": month_used_labels,
+                "month_used_short_labels": month_used_short_labels,
+                "is_active": u.is_active,
+            }
+        )
+
+    if sort_key_effective is None:
+        user_stats.sort(key=lambda x: (-int(x["is_active"]), x["user_name"].lower(), x["user_id"]))
+    else:
+        rev = sort_dir_eff == "desc"
+        if sort_key_effective == "user_name":
+            user_stats.sort(
+                key=lambda x: (x["user_name"].lower(), x["user_id"]),
+                reverse=rev,
+            )
+        elif sort_key_effective == "company":
+            user_stats.sort(
+                key=lambda x: ((x["company"] or "").lower(), x["user_name"].lower(), x["user_id"]),
+                reverse=rev,
+            )
+        elif sort_key_effective == "team":
+            user_stats.sort(
+                key=lambda x: ((x["team"] or "").lower(), x["user_name"].lower(), x["user_id"]),
+                reverse=rev,
+            )
+        elif sort_key_effective == "yearly_remain":
+            user_stats.sort(
+                key=lambda x: (x["yearly_remain"], x["user_name"].lower(), x["user_id"]),
+                reverse=rev,
+            )
+        elif sort_key_effective == "period_used":
+            user_stats.sort(
+                key=lambda x: (x["period_used"], x["user_name"].lower(), x["user_id"]),
+                reverse=rev,
+            )
+
+    path = request.url.path
+    base_q = {
+        "year": str(current_year),
+    }
+    if selected_user_id:
+        base_q["user_id"] = selected_user_id
+    if selected_company:
+        base_q["company"] = selected_company
+    if selected_team:
+        base_q["team"] = selected_team
+    if selected_active_state != "all":
+        base_q["active_state"] = selected_active_state
+
+    sort_urls = {}
+    for col in CALENDAR_SORT_COLUMNS:
+        nxt = _calendar_next_sort_dir(col, sort_key_effective, sort_dir_eff)
+        q = {**base_q, "sort": col, "sort_dir": nxt}
+        sort_urls[col] = f"{path}?{urlencode(q)}"
+
+    return _templates(request).TemplateResponse(
+        request=request,
+        name="partials/admin_leaves_yearly_partial.html",
+        context={
+            "admin": admin,
+            "user_stats": user_stats,
+            "selected_year": current_year,
+            "selected_user_id": selected_user_id,
+            "selected_company": selected_company,
+            "selected_team": selected_team,
+            "selected_active_state": selected_active_state,
+            "company_options": company_options,
+            "team_options": team_options,
+            "sort_key": sort_key_effective,
+            "sort_dir": sort_dir_eff,
+            "sort_urls": sort_urls,
+            "current_year": utils.get_local_now().year,
+            "year_options": year_options,
+        },
+    )

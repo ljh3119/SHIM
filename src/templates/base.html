@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.7.9') }} - 연차 관리 시스템</title>
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.8.0') }} - 연차 관리 시스템</title>
     <!-- Closed-network mode: use local Tailwind CSS only -->
     <link href="/static/css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -244,7 +244,7 @@
     <footer class="mt-auto border-t border-dense-line bg-dense-surface">
         <div class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
             <p class="text-center text-sm text-dense-muted">
-                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.7.9') }}
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.8.0') }}
             </p>
         </div>
     </footer>
@@ -294,11 +294,11 @@
         const newPwd = document.getElementById('admin_new_password').value;
         const confirmPwd = document.getElementById('admin_confirm_new_password').value;
         if (newPwd.length < 4) {
-            alert('새 비밀번호는 최소 4자 이상이어야 합니다.');
+            showToast('새 비밀번호는 최소 4자 이상이어야 합니다.', 'error');
             return;
         }
         if (newPwd !== confirmPwd) {
-            alert('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+            showToast('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.', 'error');
             return;
         }
         const formData = new FormData(form);
@@ -306,14 +306,14 @@
             const response = await fetch('/api/admin/change-password', { method: 'POST', body: formData });
             const result = await response.json();
             if (response.ok) {
-                alert(result.message || '비밀번호가 변경되었습니다.');
+                showToast(result.message || '비밀번호가 변경되었습니다.', 'success');
                 window.shimModal.close('adminPwdModal');
                 form.reset();
             } else {
-                alert(result.message || result.detail || '오류가 발생했습니다.');
+                showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
             }
         } catch (err) {
-            alert('네트워크 오류가 발생했습니다.');
+            showToast('네트워크 오류가 발생했습니다.', 'error');
         }
     }
     </script>
@@ -361,11 +361,11 @@
         const newPwd = document.getElementById('new_password').value;
         const confirmPwd = document.getElementById('confirm_new_password').value;
         if (newPwd.length < 4) {
-            alert('새 비밀번호는 최소 4자 이상이어야 합니다.');
+            showToast('새 비밀번호는 최소 4자 이상이어야 합니다.', 'error');
             return;
         }
         if (newPwd !== confirmPwd) {
-            alert('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+            showToast('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.', 'error');
             return;
         }
         const formData = new FormData(form);
@@ -373,14 +373,14 @@
             const response = await fetch('/api/user/change-password', { method: 'POST', body: formData });
             const result = await response.json();
             if (response.ok) {
-                alert(result.message || '비밀번호가 변경되었습니다.');
+                showToast(result.message || '비밀번호가 변경되었습니다.', 'success');
                 window.shimModal.close('pwdModal');
                 form.reset();
             } else {
-                alert(result.message || result.detail || '오류가 발생했습니다.');
+                showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
             }
         } catch (err) {
-            alert('네트워크 오류가 발생했습니다.');
+            showToast('네트워크 오류가 발생했습니다.', 'error');
         }
     }
     </script>
@@ -579,7 +579,7 @@
 
         const draft = evaluateTimelineLeaveDraft(startTime, endTime, isDeductive);
         if (!draft.ok) {
-            alert(draft.message || '입력값을 다시 확인해 주세요.');
+            showToast(draft.message || '입력값을 다시 확인해 주세요.', 'error');
             return;
         }
         if (!await window.shimModal.confirm(draft.confirmMessage)) {
@@ -602,13 +602,12 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    alert(result.message || '성공적으로 신청되었습니다.');
-                    window.location.reload();
+                    showToastAndReload(result.message || '성공적으로 신청되었습니다.', 'success');
                 } else {
-                    alert(result.message || result.detail || '오류가 발생했습니다.');
+                    showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
                 }
             } catch (err) {
-                alert('네트워크 오류가 발생했습니다.');
+                showToast('네트워크 오류가 발생했습니다.', 'error');
             }
         });
     }
@@ -708,13 +707,12 @@
                 const res = await fetch(`/api/user/leave/cancel/${leaveId}`, { method: 'POST' });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(data.message || '취소되었습니다.');
-                    window.location.reload();
+                    showToastAndReload(data.message || '취소되었습니다.', 'success');
                 } else {
-                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                    showToast(data.message || data.detail || '오류가 발생했습니다.', 'error');
                 }
             } catch (e) {
-                alert('네트워크 오류가 발생했습니다.');
+                showToast('네트워크 오류가 발생했습니다.', 'error');
             }
         });
     }
@@ -726,13 +724,12 @@
                 const res = await fetch(`/api/user/team-approve/${leaveId}`, { method: 'POST' });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(data.message || '승인되었습니다.');
-                    window.location.reload();
+                    showToastAndReload(data.message || '승인되었습니다.', 'success');
                 } else {
-                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                    showToast(data.message || data.detail || '오류가 발생했습니다.', 'error');
                 }
             } catch (e) {
-                alert('네트워크 오류가 발생했습니다.');
+                showToast('네트워크 오류가 발생했습니다.', 'error');
             }
         });
     }
@@ -741,7 +738,7 @@
         const reason = await window.shimModal.prompt('반려 사유를 입력해 주세요:', { required: true });
         if (reason === null) return;
         if (!reason.trim()) {
-            alert('반려 사유를 입력해야 합니다.');
+            showToast('반려 사유를 입력해야 합니다.', 'error');
             return;
         }
         const formData = new FormData();
@@ -751,13 +748,12 @@
                 const res = await fetch(`/api/user/team-reject/${leaveId}`, { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(data.message || '반려되었습니다.');
-                    window.location.reload();
+                    showToastAndReload(data.message || '반려되었습니다.', 'success');
                 } else {
-                    alert(data.message || data.detail || '오류가 발생했습니다.');
+                    showToast(data.message || data.detail || '오류가 발생했습니다.', 'error');
                 }
             } catch (e) {
-                alert('네트워크 오류가 발생했습니다.');
+                showToast('네트워크 오류가 발생했습니다.', 'error');
             }
         });
     }
@@ -1013,8 +1009,8 @@
     })();
     </script>
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll("[data-utc]").forEach(function(el) {
+    window.convertAllUtcElements = function(container = document) {
+        container.querySelectorAll("[data-utc]").forEach(function(el) {
             const utcVal = el.getAttribute("data-utc");
             if (utcVal) {
                 const dt = new Date(utcVal);
@@ -1032,10 +1028,31 @@
                 }
             }
         });
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Carry toast across page reloads
+        const pendingToast = sessionStorage.getItem('pending_toast');
+        if (pendingToast) {
+            try {
+                const parsed = JSON.parse(pendingToast);
+                if (parsed && parsed.message) {
+                    window.showToast(parsed.message, parsed.type || 'success');
+                }
+            } catch (e) {}
+            sessionStorage.removeItem('pending_toast');
+        }
+
+        window.convertAllUtcElements();
     });
     </script>
 
     <script>
+    window.showToastAndReload = function(message, type = 'success') {
+        sessionStorage.setItem('pending_toast', JSON.stringify({ message, type }));
+        window.location.reload();
+    };
+
     window.showToast = function(message, type = 'success') {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -1085,23 +1102,6 @@
         }, duration);
     };
 
-    // Override the native window.alert to automatically route to Toast notifications
-    window.alert = function(message) {
-        if (message === undefined || message === null) return;
-        const msgStr = String(message);
-        let type = 'success';
-        const msgLower = msgStr.toLowerCase();
-        
-        if (msgLower.includes('실패') || msgLower.includes('오류') || msgLower.includes('error') || msgLower.includes('입력해야') || msgLower.includes('필수') || msgLower.includes('입력해') || msgLower.includes('일치하지') || msgLower.includes('제한') || msgLower.includes('오작동') || msgLower.includes('실행되지')) {
-            type = 'error';
-        } else if (msgLower.includes('경고') || msgLower.includes('주의') || msgLower.includes('기입 가능') || msgLower.includes('이미 다른') || msgLower.includes('지나간') || msgLower.includes('없습니다') || msgLower.includes('제외') || msgLower.includes('취소하시겠습니까') || msgLower.includes('삭제하시겠습니까')) {
-            type = 'warning';
-        } else if (msgLower.includes('이동') || msgLower.includes('진행') || msgLower.includes('내보내기') || msgLower.includes('정보가') || msgLower.includes('상세')) {
-            type = 'info';
-        }
-        
-        window.showToast(msgStr, type);
-    };
 
     // ── Global Tooltip Utility ──
     document.addEventListener('DOMContentLoaded', () => {
@@ -1293,7 +1293,7 @@
         window.readNotification = async function(id, event) {
             if (event) event.stopPropagation();
             try {
-                const res = await fetch(\`/api/notifications/\${id}/read\`, { method: 'POST' });
+                const res = await fetch('/api/notifications/' + id + '/read', { method: 'POST' });
                 if (res.ok) {
                     fetchNotifications(true);
                 }
@@ -1343,4 +1343,3 @@
 
 </body>
 </html>
-
