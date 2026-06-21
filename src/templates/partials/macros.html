@@ -1,0 +1,4 @@
+{% macro fmt_hours(v) -%}
+{%- set n = (v | default(0) | float) -%}
+{%- if n == (n | int) -%}{{ "{:,}".format(n | int) }}{%- else -%}{{ "{:,.1f}".format(n) }}{%- endif -%}
+{%- endmacro %}

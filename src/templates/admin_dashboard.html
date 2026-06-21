@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 
-{% macro fmt_hours(v) -%}
-{%- set n = (v | float) -%}
-{%- if n == (n | int) -%}{{ n | int }}{%- else -%}{{ n }}{%- endif -%}
-{%- endmacro %}
+{% from "partials/macros.html" import fmt_hours %}
 
 {% block content %}
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
@@ -35,68 +32,15 @@
     </div>
     {% endif %}
 
-    <section class="grid grid-cols-1 gap-3 {% if is_approval_required %}md:grid-cols-4{% else %}md:grid-cols-3{% endif %}">
-        <a href="/admin/users" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
-            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
-                👤
-            </div>
-            <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">활성 사원 수</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
-                    {{ active_users_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">명</span>
-                </span>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">등록된 총 직원 수</span>
-            </div>
-        </a>
-        <a href="/admin/leave/timeline" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
-            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
-                📋
-            </div>
-            <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">금일 신청 건수</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
-                    {{ leaves_today_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">건</span>
-                </span>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">오늘 접수된 건수</span>
-            </div>
-        </a>
-        {% if is_approval_required %}
-        <a href="/admin/leave/timeline?leave_status=PENDING" class="flex items-center gap-4 rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 transition-colors hover:bg-dense-amber-soft shadow-sm">
-            <div class="p-3 bg-dense-amber-soft rounded-xl text-dense-amber shrink-0 flex items-center justify-center text-xl font-bold">
-                ⏳
-            </div>
-            <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">결재 대기 건수</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-amber mt-1 block">
-                    {{ pending_leaves_count }}<span class="ml-0.5 text-xs font-bold text-dense-muted">건</span>
-                </span>
-                <span class="block text-[10.5px] font-semibold text-[#b27b00] mt-1">승인 대기 중인 건수</span>
-            </div>
-        </a>
-        {% endif %}
-        <a href="/admin/leave/calendar" class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 transition-colors hover:bg-dense-surface-soft shadow-sm">
-            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
-                📊
-            </div>
-            <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">금일 사용 연차(h)</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-blue mt-1 block">
-                    {{ fmt_hours(today_used_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
-                </span>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">오늘 휴가 중인 시간</span>
-            </div>
-        </a>
-    </section>
-
-    <!-- 전사 연차 통계 KPI 카드 (3열 구조) -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+    <!-- 3대 핵심 전사 연차 통계 KPI 카드 -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
             <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
                 💼
             </div>
             <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">연간 전사 배정 연차(h)</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 배정 시간</span>
+                <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
                     {{ fmt_hours(total_allocated_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
                 </span>
                 <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">올해 부여된 총 연차 시간</span>
@@ -107,25 +51,69 @@
                 ✅
             </div>
             <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">연간 전사 소진 연차(h)</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 사용 시간</span>
+                <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
                     {{ fmt_hours(total_approved_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
                 </span>
                 <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">승인 완료된 총 연차 시간</span>
             </div>
         </div>
-        <div class="flex items-center gap-4 rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 shadow-sm">
-            <div class="p-3 bg-dense-amber-soft rounded-xl text-dense-amber shrink-0 flex items-center justify-center text-xl font-bold">
+        <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
+            <div class="p-3 bg-dense-green-soft rounded-xl text-dense-green shrink-0 flex items-center justify-center text-xl font-bold">
                 📈
             </div>
-            <div class="min-w-0">
-                <span class="block text-xs font-extrabold text-dense-muted">전사 연차 소진율(%)</span>
-                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-amber mt-1 block">
-                    {{ total_exhaustion_rate }}<span class="ml-0.5 text-xs font-bold text-dense-muted">%</span>
-                </span>
-                <span class="block text-[10.5px] font-semibold text-[#b27b00] mt-1">총 배정 대비 소진량 비율</span>
+            <div class="min-w-0 flex-1">
+                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 소진율</span>
+                <div class="flex items-baseline gap-1 mt-1">
+                    <span class="text-2xl font-extrabold leading-none tracking-tight text-dense-green">
+                        {{ total_exhaustion_rate }}<span class="ml-0.5 text-xs font-bold text-dense-muted">%</span>
+                    </span>
+                </div>
+                <div class="w-full bg-dense-gray-soft h-2 rounded-full overflow-hidden mt-2.5">
+                    <div class="bg-dense-green h-2 rounded-full" style="width: {{ total_exhaustion_rate }}%"></div>
+                </div>
             </div>
         </div>
+    </section>
+
+    <!-- 시스템 운영 현황 미니 위젯 -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a href="/admin/users" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
+            <div class="min-w-0">
+                <span class="block text-[10px] font-extrabold text-dense-muted">활성 사원 수</span>
+                <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
+                    {{ active_users_count }}명
+                </span>
+            </div>
+            <span class="text-lg">👤</span>
+        </a>
+        <a href="/admin/leave/timeline" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
+            <div class="min-w-0">
+                <span class="block text-[10px] font-extrabold text-dense-muted">금일 신청 건수</span>
+                <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
+                    {{ leaves_today_count }}건
+                </span>
+            </div>
+            <span class="text-lg">📋</span>
+        </a>
+        <a href="/admin/leave/timeline?leave_status=PENDING" class="flex items-center justify-between rounded-xl border {% if is_approval_required and pending_leaves_count > 0 %}border-[#fedf89] bg-[#fffdf6] hover:bg-dense-amber-soft{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} px-4 py-2.5 transition-colors shadow-xs">
+            <div class="min-w-0">
+                <span class="block text-[10px] font-extrabold text-dense-muted">결재 대기 건수</span>
+                <span class="text-sm font-extrabold {% if is_approval_required and pending_leaves_count > 0 %}text-dense-amber{% else %}text-dense-text{% endif %} mt-0.5 block">
+                    {{ pending_leaves_count }}건
+                </span>
+            </div>
+            <span class="text-lg">⏳</span>
+        </a>
+        <a href="/admin/leave/calendar" class="flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface px-4 py-2.5 transition-colors hover:bg-dense-surface-soft shadow-xs">
+            <div class="min-w-0">
+                <span class="block text-[10px] font-extrabold text-dense-muted">금일 사용 연차</span>
+                <span class="text-sm font-extrabold text-dense-text mt-0.5 block">
+                    {{ fmt_hours(today_used_hours) }}h
+                </span>
+            </div>
+            <span class="text-lg">📊</span>
+        </a>
     </section>
 
     <!-- Chart Section -->
@@ -407,3 +395,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
+
+t: 'bold' } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

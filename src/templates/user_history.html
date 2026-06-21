@@ -2,9 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% macro fmt_hours(v) -%}
-{%- if v == (v|int) -%}{{ v|int }}{%- else -%}{{ '%.1f'|format(v) }}{%- endif -%}
-{%- endmacro %}
+{% from "partials/macros.html" import fmt_hours %}
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section for PC -->

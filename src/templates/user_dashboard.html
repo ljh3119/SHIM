@@ -2,9 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% macro fmt_hours(v) -%}
-{%- if v == (v|int) -%}{{ v|int }}{%- else -%}{{ '%.1f'|format(v) }}{%- endif -%}
-{%- endmacro %}
+{% from "partials/macros.html" import fmt_hours %}
 
 <style>
     .cal-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
