@@ -150,6 +150,19 @@ class SystemSettings(Base):
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
 
+class Notifications(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_unread", "user_id", "is_read"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+    sender_id = Column(String, ForeignKey("users.user_id"), nullable=True)
+    message = Column(String(500), nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+
 @event.listens_for(AuditLogs, 'before_insert')
 def receive_before_insert(mapper, connection, target):
     user = None

@@ -146,6 +146,28 @@
                 </a>
             </div>
             <div class="flex flex-shrink-0 items-center gap-3 sm:gap-4">
+                {% if request.cookies.get('access_token') %}
+                    <!-- Notification Bell -->
+                    <div class="relative" id="shim-notification-bell-container">
+                        <button type="button" id="shim-notification-bell-btn" class="relative rounded-lg p-1.5 text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text transition-all focus:outline-none" onclick="toggleNotificationDropdown(event)">
+                            <svg class="h-5 w-5 stroke-current fill-none stroke-[2]" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <span id="shim-notification-badge" class="absolute -top-1 -right-1 hidden h-4 min-w-[1rem] items-center justify-center rounded-full bg-dense-danger px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-dense-surface">0</span>
+                        </button>
+                        <!-- Dropdown -->
+                        <div id="shim-notification-dropdown" class="absolute right-0 mt-2 hidden w-80 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-dense-line bg-dense-surface p-2 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+                            <div class="flex items-center justify-between border-b border-dense-line px-2 pb-2 pt-1">
+                                <span class="text-xs font-bold text-dense-text">알림</span>
+                                <button type="button" id="shim-notification-readall-btn" class="text-[10px] font-bold text-dense-blue hover:text-dense-blue-strong transition-colors pointer-events-none opacity-30" onclick="readAllNotifications(event)">모두 읽음</button>
+                            </div>
+                            <div id="shim-notification-list" class="max-h-60 overflow-y-auto py-1 divide-y divide-dense-line/50">
+                                <div class="px-3 py-4 text-center text-xs text-dense-muted font-medium">읽지 않은 알림이 없습니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
                 {% if request.cookies.get('access_token') and admin %}
                     <button type="button" onclick="window.shimModal.open('adminPwdModal', 'admin_current_password', this)" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
                 {% endif %}
@@ -166,6 +188,46 @@
             {% include "partials/sidebar_user.html" %}
         {% endif %}
         <main class="relative min-w-0 flex-1 {% if not admin and (not request.cookies.get('access_token') or hide_base_sidebar) %}max-w-none{% endif %}">
+            <!-- Breadcrumb Navigation -->
+            {% if request.cookies.get('access_token') %}
+            <div id="shim-breadcrumb" class="mb-3 flex items-center gap-1.5 text-[11px] font-medium text-dense-muted" style="display: none;">
+                <span class="cursor-pointer hover:text-dense-text transition-colors" onclick="window.location.href='{% if admin %}/admin/dashboard{% else %}/user/dashboard{% endif %}'">
+                    {% if admin %}관리자 홈{% else %}홈{% endif %}
+                </span>
+                <span class="text-dense-line select-none">/</span>
+                <span id="shim-breadcrumb-current" class="text-dense-text">대시보드</span>
+            </div>
+            <script>
+                (function() {
+                    const path = window.location.pathname;
+                    const currentSpan = document.getElementById('shim-breadcrumb-current');
+                    const container = document.getElementById('shim-breadcrumb');
+                    const mapping = {
+                        '/user/dashboard': '대시보드',
+                        '/user/team-calendar': '팀 캘린더',
+                        '/user/history': '신청 이력',
+                        '/user/approvals': '결재 관리',
+                        '/admin/dashboard': '대시보드',
+                        '/admin/users': '사원 관리',
+                        '/admin/leaves/calendar': '연차 캘린더',
+                        '/admin/leaves/timeline': '연차 타임라인',
+                        '/admin/holidays': '공휴일 관리',
+                        '/admin/settings': '마스터 설정',
+                        '/admin/audit': '감사 로그'
+                    };
+                    let matched = mapping[path];
+                    if (!matched) {
+                        if (path.startsWith('/admin/settings')) matched = '마스터 설정';
+                        else if (path.startsWith('/admin/users')) matched = '사원 관리';
+                    }
+                    if (matched) {
+                        currentSpan.textContent = matched;
+                        container.style.display = 'flex';
+                    }
+                })();
+            </script>
+            {% endif %}
+
             {% if is_default_password %}
             <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-2">
@@ -1099,6 +1161,185 @@
         });
     });
     </script>
+
+    {% if request.cookies.get('access_token') %}
+    <script>
+    (function() {
+        let pollTimeoutId = null;
+        let visibilityTimeoutId = null;
+        let lastToggleTime = 0;
+        let currentDelay = 30000; // 기본 30초
+        const minDelay = 30000;
+        const maxDelay = 300000; // 최대 5분
+        let isFetching = false;
+
+        window.toggleNotificationDropdown = function(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('shim-notification-dropdown');
+            if (!dropdown) return;
+            const isHidden = dropdown.classList.contains('hidden');
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                const now = Date.now();
+                if (now - lastToggleTime > 1000) {
+                    lastToggleTime = now;
+                    fetchNotifications(true);
+                }
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('shim-notification-dropdown');
+            const container = document.getElementById('shim-notification-bell-container');
+            if (dropdown && container && !container.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        async function fetchNotifications(force = false) {
+            if (isFetching) return;
+            if (!force && document.hidden) {
+                scheduleNextPoll();
+                return;
+            }
+
+            isFetching = true;
+            try {
+                const res = await fetch('/api/notifications');
+                if (!res.ok) throw new Error('Fetch failed');
+                
+                const data = await res.json();
+                updateNotificationUI(data);
+                
+                currentDelay = minDelay;
+            } catch (err) {
+                console.error('[SHIM notification poll error]', err);
+                currentDelay = Math.min(currentDelay * 2, maxDelay);
+            } finally {
+                isFetching = false;
+                if (!force) {
+                    scheduleNextPoll();
+                }
+            }
+        }
+
+        function updateNotificationUI(notifications) {
+            const badge = document.getElementById('shim-notification-badge');
+            const listContainer = document.getElementById('shim-notification-list');
+            const readAllBtn = document.getElementById('shim-notification-readall-btn');
+            if (!badge || !listContainer) return;
+
+            const count = notifications.length;
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+                if (readAllBtn) readAllBtn.classList.remove('pointer-events-none', 'opacity-30');
+                
+                listContainer.innerHTML = notifications.map(n => {
+                    const relativeTime = formatRelativeTime(n.created_at);
+                    return `
+                        <div class="px-3 py-2 hover:bg-dense-surface-soft transition-colors text-xs flex flex-col gap-1 relative group cursor-pointer" onclick="readNotification(${n.id}, event)">
+                            <div class="pr-5 text-dense-text leading-snug break-all font-medium">${n.message}</div>
+                            <div class="text-[10px] text-dense-muted font-semibold flex items-center justify-between">
+                                <span>${relativeTime}</span>
+                                <span class="opacity-0 group-hover:opacity-100 text-dense-blue text-[9px] transition-opacity font-bold">읽음 처리</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                badge.textContent = '0';
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+                if (readAllBtn) readAllBtn.classList.add('pointer-events-none', 'opacity-30');
+                listContainer.innerHTML = `
+                    <div class="px-3 py-4 text-center text-xs text-dense-muted font-medium">읽지 않은 알림이 없습니다.</div>
+                `;
+            }
+        }
+
+        function formatRelativeTime(isoString) {
+            if (!isoString) return '';
+            try {
+                const date = new Date(isoString + 'Z');
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSec = Math.floor(diffMs / 1000);
+                const diffMin = Math.floor(diffSec / 60);
+                const diffHour = Math.floor(diffMin / 60);
+                const diffDay = Math.floor(diffHour / 24);
+
+                const rtf = new Intl.RelativeTimeFormat('ko', { numeric: 'auto' });
+                
+                if (diffSec < 60) {
+                    return '방금 전';
+                } else if (diffMin < 60) {
+                    return rtf.format(-diffMin, 'minute');
+                } else if (diffHour < 24) {
+                    return rtf.format(-diffHour, 'hour');
+                } else if (diffDay < 30) {
+                    return rtf.format(-diffDay, 'day');
+                } else {
+                    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                }
+            } catch (e) {
+                return '';
+            }
+        }
+
+        window.readNotification = async function(id, event) {
+            if (event) event.stopPropagation();
+            try {
+                const res = await fetch(\`/api/notifications/\${id}/read\`, { method: 'POST' });
+                if (res.ok) {
+                    fetchNotifications(true);
+                }
+            } catch (err) {
+                console.error('[SHIM read notification error]', err);
+            }
+        };
+
+        window.readAllNotifications = async function(event) {
+            if (event) event.stopPropagation();
+            try {
+                const res = await fetch('/api/notifications/read-all', { method: 'POST' });
+                if (res.ok) {
+                    fetchNotifications(true);
+                }
+            } catch (err) {
+                console.error('[SHIM read-all notifications error]', err);
+            }
+        };
+
+        function scheduleNextPoll() {
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            pollTimeoutId = setTimeout(() => fetchNotifications(), currentDelay);
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                if (visibilityTimeoutId) clearTimeout(visibilityTimeoutId);
+                visibilityTimeoutId = setTimeout(() => {
+                    if (!document.hidden) {
+                        currentDelay = minDelay;
+                        fetchNotifications(true);
+                    }
+                }, 1500);
+            } else {
+                if (visibilityTimeoutId) clearTimeout(visibilityTimeoutId);
+                if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            }
+        });
+
+        if (document.getElementById('shim-notification-bell-container')) {
+            fetchNotifications();
+        }
+    })();
+    </script>
+    {% endif %}
 
 </body>
 </html>

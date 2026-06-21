@@ -1,0 +1,116 @@
+<div class="rounded-2xl border bg-dense-surface shadow-sm overflow-hidden" id="shim-timeline-accordion">
+    <!-- Accordion Header -->
+    <button type="button" class="w-full flex items-center justify-between p-4 focus:outline-none select-none hover:bg-dense-surface-soft/50 transition-colors" onclick="toggleTimelineAccordion()">
+        <span class="text-xs font-extrabold text-dense-text flex items-center gap-1.5">
+            <span>⏱️</span> 최근 연차 변경 이력
+        </span>
+        <svg id="timeline-accordion-arrow" class="h-4 w-4 stroke-current fill-none stroke-[2] text-dense-muted transform transition-transform duration-200" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+    </button>
+    
+    <!-- Accordion Content -->
+    <div id="timeline-accordion-content" class="border-t border-dense-line/50 p-4 space-y-4 max-h-[300px] overflow-y-auto">
+        {% set recent_leaves = leaves[:5] %}
+        {% if recent_leaves %}
+            <div class="relative pl-4 border-l border-dense-line space-y-4 py-1 text-xs">
+                {% for leave in recent_leaves %}
+                    <div class="relative group">
+                        <!-- Dot Indicator -->
+                        <div class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white shadow-sm
+                            {% if leave.status == 'APPROVED' %}bg-dense-green
+                            {% elif leave.status == 'PENDING' %}bg-dense-amber
+                            {% elif leave.status == 'REJECTED' %}bg-dense-danger
+                            {% else %}bg-dense-muted{% endif %}">
+                        </div>
+                        
+                        <div class="space-y-0.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-dense-text">{{ leave.date }}</span>
+                                <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded
+                                    {% if leave.status == 'APPROVED' %}text-dense-green bg-dense-green-soft
+                                    {% elif leave.status == 'PENDING' %}text-dense-amber bg-dense-amber-soft
+                                    {% elif leave.status == 'REJECTED' %}text-dense-danger bg-dense-danger-soft
+                                    {% else %}text-dense-muted bg-dense-gray-soft{% endif %}">
+                                    {% if leave.status == 'APPROVED' %}승인
+                                    {% elif leave.status == 'PENDING' %}대기
+                                    {% elif leave.status == 'REJECTED' %}반려
+                                    {% else %}취소{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="text-[10px] text-dense-muted flex items-center justify-between font-semibold">
+                                <span>
+                                    {% if not leave.is_deductive %}[공가/출장] {% endif %}
+                                    {{ leave.snapshot_slot_label }} ({{ fmt_hours(leave.snapshot_deduction_hours) }}h)
+                                </span>
+                                <span class="timeline-relative-time text-[9px]" data-utc-time="{{ leave.created_at.isoformat() if leave.created_at else '' }}">
+                                </span>
+                            </div>
+                            {% if leave.status == 'REJECTED' and leave.rejection_reason %}
+                                <div class="text-[10px] text-dense-danger font-bold bg-dense-danger-soft/40 p-1.5 rounded mt-1 border border-dense-danger/10">
+                                    반려사유: {{ leave.rejection_reason }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-xs text-dense-muted font-medium text-center py-2">최근 변경된 연차 이력이 없습니다.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleTimelineAccordion() {
+    const content = document.getElementById('timeline-accordion-content');
+    const arrow = document.getElementById('timeline-accordion-arrow');
+    if (!content || !arrow) return;
+    
+    const isHidden = content.classList.contains('hidden');
+    if (isHidden) {
+        content.classList.remove('hidden');
+        arrow.classList.remove('-rotate-90');
+    } else {
+        content.classList.add('hidden');
+        arrow.classList.add('-rotate-90');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.timeline-relative-time').forEach(el => {
+        const utcStr = el.getAttribute('data-utc-time');
+        if (!utcStr) return;
+        
+        try {
+            const date = new Date(utcStr + 'Z');
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+
+            const rtf = new Intl.RelativeTimeFormat('ko', { numeric: 'auto' });
+            
+            let display = '';
+            if (diffSec < 60) {
+                display = '방금 전';
+            } else if (diffMin < 60) {
+                display = rtf.format(-diffMin, 'minute');
+            } else if (diffHour < 24) {
+                display = rtf.format(-diffHour, 'hour');
+            } else if (diffDay < 30) {
+                display = rtf.format(-diffDay, 'day');
+            } else {
+                display = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            }
+            el.textContent = display;
+            el.setAttribute('title', date.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
+        } catch (e) {
+            console.error('Failed to parse date', e);
+        }
+    });
+});
+</script>

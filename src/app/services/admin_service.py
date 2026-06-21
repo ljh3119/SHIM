@@ -30,6 +30,25 @@ def get_admin_dashboard_stats(db: Session):
     leaves_used_today = db.query(models.Leaves).filter(models.Leaves.date == today.date(), models.Leaves.is_deductive == True).all()
     today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
     
+    # 전사 총 배정 연차 (해당 연도)
+    yearly_allocations = db.query(models.UserYearlyLeaveAllocations).filter(
+        models.UserYearlyLeaveAllocations.year == today.year
+    ).all()
+    total_allocated_hours = sum(float(row.allocated_hours or 0) for row in yearly_allocations)
+    
+    # 전사 총 사용 완료 연차 (해당 연도, APPROVED이며 차감 대상)
+    leaves_approved_year = db.query(models.Leaves).filter(
+        models.Leaves.year == today.year,
+        models.Leaves.status == "APPROVED",
+        models.Leaves.is_deductive == True
+    ).all()
+    total_approved_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_approved_year)
+    
+    # 전사 소진율
+    total_exhaustion_rate = 0.0
+    if total_allocated_hours > 0:
+        total_exhaustion_rate = round((total_approved_hours / total_allocated_hours) * 100, 1)
+
     # Last 7 days timeline (N+1 최적화를 위해 joinedload(models.Leaves.user) 추가)
     seven_days_ago = today - timedelta(days=7)
     recent_leaves = db.query(models.Leaves).options(joinedload(models.Leaves.user)).filter(
@@ -53,6 +72,9 @@ def get_admin_dashboard_stats(db: Session):
         "pending_leaves_count": pending_leaves_count,
         "is_approval_required": is_approval_required,
         "today_used_hours": today_used_hours,
+        "total_allocated_hours": total_allocated_hours,
+        "total_approved_hours": total_approved_hours,
+        "total_exhaustion_rate": total_exhaustion_rate,
         "recent_leaves": recent_leaves,
         "today_absentees": today_leaves,
         "recent_audits": recent_audits,

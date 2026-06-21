@@ -88,6 +88,46 @@
         </a>
     </section>
 
+    <!-- 전사 연차 통계 KPI 카드 (3열 구조) -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
+            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
+                💼
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">연간 전사 배정 연차(h)</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                    {{ fmt_hours(total_allocated_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">올해 부여된 총 연차 시간</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
+            <div class="p-3 bg-dense-blue-soft rounded-xl text-dense-blue shrink-0 flex items-center justify-center text-xl font-bold">
+                ✅
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">연간 전사 소진 연차(h)</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-text mt-1 block">
+                    {{ fmt_hours(total_approved_hours) }}<span class="ml-0.5 text-xs font-bold text-dense-muted">h</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">승인 완료된 총 연차 시간</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 rounded-2xl border border-[#fedf89] bg-[#fffdf6] p-4 shadow-sm">
+            <div class="p-3 bg-dense-amber-soft rounded-xl text-dense-amber shrink-0 flex items-center justify-center text-xl font-bold">
+                📈
+            </div>
+            <div class="min-w-0">
+                <span class="block text-xs font-extrabold text-dense-muted">전사 연차 소진율(%)</span>
+                <span class="text-[28px] font-extrabold leading-none tracking-tight text-dense-amber mt-1 block">
+                    {{ total_exhaustion_rate }}<span class="ml-0.5 text-xs font-bold text-dense-muted">%</span>
+                </span>
+                <span class="block text-[10.5px] font-semibold text-[#b27b00] mt-1">총 배정 대비 소진량 비율</span>
+            </div>
+        </div>
+    </section>
+
     <!-- Chart Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3">

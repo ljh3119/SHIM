@@ -19,7 +19,7 @@ TEST_DATA_DIR = Path(
 from fastapi.testclient import TestClient
 from src.app.main import app, startup_event
 from src.app.database import SessionLocal
-from src.app import models, auth
+from src.app import models, auth, utils
 
 def next_business_day(start, db):
     d = start
@@ -1218,6 +1218,106 @@ def main():
     # 3. 락 해제 후 정상 삭제되었는지 검증
     assert not lock_dir.exists()
     print("  -> PASS: DBInitLock atomic directory locking verified.")
+
+    # --- 시나리오 27: 알림 폴링 및 읽음 처리 API 검증 ---
+    print("[CASE 27] Notification Polling & Read API Verification")
+    db = SessionLocal()
+    # 청소
+    db.query(models.Notifications).filter(models.Notifications.user_id == "u_staff").delete()
+    db.commit()
+    db.close()
+
+    # 1. 알림 생성
+    db = SessionLocal()
+    utils.create_notification(db, user_id="u_staff", sender_id="u_pm", message="테스트 알림 메시지 1")
+    db.commit()
+    db.close()
+
+    # 2. 알림 조회 (폴링)
+    r_poll = staff_client.get("/api/notifications")
+    assert r_poll.status_code == 200
+    notifications = r_poll.json()
+    assert len(notifications) == 1
+    assert notifications[0]["message"] == "테스트 알림 메시지 1"
+    assert notifications[0]["is_read"] is False
+    noti_id = notifications[0]["id"]
+
+    # 3. 알림 읽음 처리
+    r_read = staff_client.post(f"/api/notifications/{noti_id}/read")
+    assert r_read.status_code == 200
+    assert r_read.json() == {"status": "success"}
+
+    # 4. 재조회 시 읽음 반영 확인
+    r_poll2 = staff_client.get("/api/notifications")
+    assert r_poll2.status_code == 200
+    assert len(r_poll2.json()) == 0
+
+    # 5. 모두 읽기 검증
+    db = SessionLocal()
+    utils.create_notification(db, user_id="u_staff", sender_id="u_pm", message="테스트 알림 메시지 2")
+    utils.create_notification(db, user_id="u_staff", sender_id="u_pm", message="테스트 알림 메시지 3")
+    db.commit()
+    db.close()
+
+    r_poll3 = staff_client.get("/api/notifications")
+    assert len(r_poll3.json()) == 2
+
+    r_read_all = staff_client.post("/api/notifications/read-all")
+    assert r_read_all.status_code == 200
+    assert r_read_all.json() == {"status": "success"}
+
+    r_poll4 = staff_client.get("/api/notifications")
+    assert len(r_poll4.json()) == 0
+    print("  -> PASS: Notification polling and reading APIs verified.")
+
+    # --- 시나리오 28: 정기 알림 삭제(Cleanup) 및 30일 경과 필터 검증 ---
+    print("[CASE 28] Notification Cleanup Scheduler & 30-Day Age Limit")
+    from src.app.services import ops
+    
+    db = SessionLocal()
+    db.query(models.Notifications).filter(models.Notifications.user_id == "u_staff").delete()
+    db.commit()
+    db.close()
+
+    # 오래된 알림(31일 전)과 최근 알림(5일 전) 생성
+    db = SessionLocal()
+    old_noti = models.Notifications(
+        user_id="u_staff",
+        sender_id="u_pm",
+        message="31일 전 오래된 알림",
+        created_at=datetime.utcnow() - timedelta(days=31)
+    )
+    new_noti = models.Notifications(
+        user_id="u_staff",
+        sender_id="u_pm",
+        message="5일 전 최근 알림",
+        created_at=datetime.utcnow() - timedelta(days=5)
+    )
+    db.add(old_noti)
+    db.add(new_noti)
+    db.commit()
+    
+    old_id = old_noti.id
+    new_id = new_noti.id
+    db.close()
+
+    # 클린업 수행
+    ops.cleanup_old_notifications()
+
+    # 검증: 오래된 알림은 지워지고 최근 알림은 남아 있어야 함
+    db = SessionLocal()
+    remaining_old = db.query(models.Notifications).filter(models.Notifications.id == old_id).first()
+    remaining_new = db.query(models.Notifications).filter(models.Notifications.id == new_id).first()
+    
+    assert remaining_old is None, "31일 경과된 오래된 알림이 삭제되지 않았습니다."
+    assert remaining_new is not None, "5일 경과된 최근 알림이 삭제되었습니다."
+    assert remaining_new.message == "5일 전 최근 알림"
+    
+    # 청소
+    db.query(models.Notifications).filter(models.Notifications.user_id == "u_staff").delete()
+    db.commit()
+    db.close()
+    print("  -> PASS: Notification 30-day age cleanup verified.")
 
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()

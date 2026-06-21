@@ -277,6 +277,17 @@ def get_local_now():
 def get_local_today() -> str:
     return get_local_now().strftime("%Y-%m-%d")
 
+def create_notification(db, user_id: str, sender_id: str | None, message: str):
+    from . import models
+    n = models.Notifications(
+        user_id=user_id,
+        sender_id=sender_id,
+        message=message,
+        is_read=False
+    )
+    db.add(n)
+    return n
+
 
 def validate_password_strength(password: str) -> str | None:
     """
