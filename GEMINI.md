@@ -31,7 +31,12 @@ SHIM is a FastAPI-based leave management system designed specifically for closed
   - **Bulk Request**: Process list of dates in a single database transaction. Rollback entirely if any validation fails (All-or-Nothing). Skip weekends and public holidays automatically.
   - **Time Omission (Auto Full-day)**: Allow blank start/end times for seamless date-only selections. Map them to default work hours.
 - **User-Initiated Cancellation**: STAFF can self-cancel their requests only when in `PENDING` state (transitioning status to `CANCELED`).
-- **Session Expiry (token_version)**: User changes (disable status, role changes, password updates) must increment `token_version` in the database to instantly invalidate old JWT tokens.
+- **Session Expiry (token_version)**: User changes (disable status, role changes, password updates, and emergency admin resets via CLI) must increment `token_version` in the database to instantly invalidate old JWT tokens.
+- **Password Strength & Security**:
+  - Enforce KISA guidelines for passwords (minimum 8 characters, or 10 characters if combining only 2 categories, space not allowed).
+  - Sensitive operations like password resets must mask input/output values in AuditLogs to `"*****"`.
+  - For default passwords (`0000`), display a warning banner. Avoid calling CPU-heavy bcrypt hash checks on every page request; instead, check once during login and store the result in the JWT payload (`is_default_password` claim).
+- **Leaves Entity Constraints**: The `snapshot_slot_label` field must only contain pure time slot strings in `HH:MM~HH:MM` format. Do not prepend labels like `[공가]` or `[출장]`; keep them strictly in the `reason` field.
 
 ## 4. AI & Developer Maintenance Standards (CRITICAL)
 - **No Stack Changes**: Do not migrate away from FastAPI or SQLite. 
