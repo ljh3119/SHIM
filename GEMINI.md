@@ -11,7 +11,9 @@ SHIM is a FastAPI-based leave management system designed specifically for closed
   - **Standard Router Rule**: For standard CRUD and DB-heavy APIs, define endpoints using synchronous `def` (not `async def`) to let FastAPI handle synchronous SQLAlchemy DB operations in threadpools.
   - **Async Routing Exceptions**: If non-blocking I/O (e.g., websockets, streaming, external HTTP calls) is required, `async def` may be used. However, any synchronous DB queries inside async endpoints must be explicitly wrapped in threadpools (e.g., using `run_in_threadpool`).
 - **Database**: SQLite with WAL (Write-Ahead Logging) mode and `PRAGMA foreign_keys=ON;` enforced. Located at `var/data/shim_internal.db`.
-- **Frontend**: Server-side rendering using Jinja2 templates (`src/templates`).
+- **Frontend & Templates (DRY)**: Server-side rendering using Jinja2 templates (`src/templates`).
+  - **Shared Macros**: Common formatting macros (e.g. `fmt_hours`) must be defined centrally in `src/templates/partials/macros.html` and imported explicitly where needed (`{% from "partials/macros.html" import fmt_hours %}`) rather than hardcoded.
+  - **Safety Filter**: Ensure formatting macros handle Null or empty string (`""`) values safely using default filters (e.g., `v | default(0) | float`) to prevent 500 Internal Server Errors and blank screens.
 - **Styling**: Tailwind CSS v4 using the custom **"Dense UI"** design system (`src/static/css/app.css`). **No external CDNs allowed.**
 - **Security & PII (Personally Identifiable Information)**:
   - **Stateless JWT**: Stored in HttpOnly Cookies. SameSite and Secure flags must adapt dynamically to HTTPS detection.
@@ -45,6 +47,9 @@ SHIM is a FastAPI-based leave management system designed specifically for closed
   - Windows-specific features (MD5 hash-based Mutex, ctypes system tray menu, child process self-forking, and `signal.CTRL_BREAK_EVENT` graceful shutdown) must be encapsulated. 
   - Ensure Win32-specific imports do not raise errors on Linux/Docker environments.
   - Call `database.engine.dispose()` on server shutdown inside the FastAPI lifespan context manager to clean up WAL locks.
+- **API Call & Scheduler Performance**:
+  - **Notification Polling Guard**: Poll notifications only when the browser tab is active (using Page Visibility API) and enforce throttle/debounce parameters to prevent API call spikes.
+  - **Chunked Database Deletion**: Cron scheduler cleanups (e.g., removing expired notifications) must delete records in chunks (e.g. 100 rows per loop) with a small sleep delay (e.g., 0.1s) to avoid WAL database lock contention.
 
 ## 5. Strict Documentation Boundaries
 Maintaining the documentation structure is mandatory for project integrity:
