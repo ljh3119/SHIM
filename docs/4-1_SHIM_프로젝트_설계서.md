@@ -1,7 +1,7 @@
 # SHIM 시스템 상세 설계서 (Technical Specification)
 
-**애플리케이션 버전**: 1.7.9  
-**최종 업데이트**: 2026-06-20  
+**애플리케이션 버전**: 1.8.0  
+**최종 업데이트**: 2026-06-21  
 **문서 성격**: 시스템 아키텍처, 데이터 모델 및 비즈니스 규칙에 대한 기술적 표준 정의
 
 ---
@@ -19,6 +19,19 @@ SHIM은 대규모 인사 관리 시스템(ERP)을 지향하지 않습니다. 본
 시스템의 복잡도를 낮추고 유지보수성을 높이기 위해 다음의 선을 유지합니다.
 - **포함 범위 (In-Scope)**: 캘린더 가독성 개선, 현장 중심의 상태 정보(출장/공가/기타 부재 등) 확장, 프로젝트 기간 내 통계 리포트, 다수 회사 통합 팀 관리, 관리자 전용 정정 기능.
 - **제외 범위 (Out-of-Scope)**: 급여 산정 및 노무 정산 로직, 인사 고과 관리, 외부 메신저/메일 서버와의 복잡한 연동, 무거운 RDBMS로의 전환.
+
+### 0.3 모던 ERP 대비 포지셔닝 분석
+SHIM은 일반적인 인사/급여 ERP(Workday, 시프티 등)와 경쟁하지 않으며, **폐쇄망/단기 현장/컨소시엄** 환경에 특화된 독자적인 포지션을 점유합니다.
+
+| 비교 항목 | 일반 모던 ERP / SaaS | SHIM (현장 최적화 포인트) |
+| :--- | :--- | :--- |
+| **배포 & 인프라** | 클라우드 SaaS (인터넷 필수, 서버/DB/CDN 의존) | **로컬 SQLite + 포터블 EXE (완전 오프라인, Zero-Config)** |
+| **다중 조직 관리** | Multi-Entity 라이선스 추가 비용 유발 | **다중 회사/팀 배지 기본 내장** 및 3단계 조회 공유 범위 제어 |
+| **연차 차감 엔진** | 일/반일 단위 중심 (소급 정책 변경 취약) | **30/60/120분 정밀 차감**, 점심시간 자동 공제, 정책 스냅샷 보존 |
+| **결재 워크플로우** | 복잡한 다단계 승인 흐름 | **단선 결재 원칙** (팀장/PM 1차 즉시 승인, 셀프결재 금지) |
+| **보안 & 감사** | 벤더 클라우드 중앙 보안 관리 | **투명한 암호화(PII)**, 스냅샷 보존 감사로그, 토큰 버전 즉시 세션 만료 |
+
+**핵심 성공 기준**: "폐쇄망 현장의 PM이 3분 안에 '오늘 실제 일할 수 있는 가용 인력이 누구인가'를 즉각 파악할 수 있는가"
 
 ---
 
@@ -355,6 +368,21 @@ SHIM은 업무용 시스템 특유의 높은 정보 밀도를 수용하기 위�
    - 요청 검증 미들웨어(`dependencies.py`의 `get_current_user`)에서 토큰에 담긴 `token_version`과 데이터베이스의 최신 `token_version` 값을 실시간 대조합니다.
    - 두 값이 불일치할 시 즉각 `NotAuthenticatedException`을 발생시켜 기존 구버전 토큰 세션을 실시간으로 차단 및 강제 만료 처리합니다.
 
+### 6.24 실시간 알림 센터 및 방어적 폴링 (Real-time Notification Center & Defensive Polling)
+1. **CPU 부하 개선**: 알림 메시지 본문은 개인식별정보(PII)나 고도 보안 데이터를 담지 않는 정형문이므로 암호화(`EncryptedString`) 오버헤드를 배제하여 평문 `String`으로 설계 및 보관합니다. 이로 인해 브라우저의 빈번한 조회 호출 시 발생하는 복호화 CPU 리소스 낭비를 차단했습니다.
+2. **방어적 폴링 설계**: 브라우저 탭 활성화 상태를 감시하는 `Page Visibility API`를 연동하여, 사용자가 현재 탭을 볼 때만 API를 호출하도록 제한했습니다.
+3. **호출 폭격 방지 (Thundering Herd Protection)**: 탭 활성화 시점에 즉시 호출을 예방하기 위해 1.5초 디바운스(`visibilitychange` 발생 후 1.5초 대기 후 호출) 및 알림 벨 버튼 다중 클릭 방지를 위해 1초 스로틀 제어 장치를 자바스크립트에 내장했습니다.
+
+### 6.25 심야 알림 청소 및 트랜잭션 락 방지 (Midnight Notification Cleanup & Lock Prevention)
+1. **알림 보존 한도**: 시스템 용량 관리 및 성능 수호를 위해 생성된 지 30일이 경과한 읽은/안 읽은 모든 알림은 자동 정기 삭제 대상이 됩니다.
+2. **청크 분할 삭제 및 슬립 지연**: 대량의 오래된 데이터를 한 번에 DELETE 쿼리로 지우려 할 경우 SQLite 데이터베이스 파일에 트랜잭션 락이 걸려 다른 쓰기 작업이 일시 중단되는 병목이 생깁니다. 이를 방지하고자 [ops.py](file:///v:/M2SSD/Documents/Project/SHIM/src/app/services/ops.py)에 **100건 단위 청크(Chunk) 분할 루프 및 0.1초의 짧은 sleep 지연 시간**을 추가하여 DB 부담을 분산시켰습니다.
+3. **Lifespan 백그라운드 스케줄러**: FastAPI `lifespan` 기동 시 비동기 백그라운드 태스크로 이 스케줄러를 등록하여, 시스템 구동 중 매일 새벽 2시에 백그라운드에서 조용히 청소 작업이 이루어지도록 생명주기를 확립했습니다.
+
+### 6.26 연차 변경 이력 타임라인 (Leave History Timeline & Relative Time)
+1. **타임라인 이력 데이터 맵핑**: 사용자의 연차 신청, 결재, 반려 및 취소 이력을 아코디언 컴포넌트 형태의 타임라인으로 화면 하단에 렌더링합니다.
+2. **KST 기준 상대 시각 렌더링**: 시간 정보를 "방금 전", "3분 전" 등으로 렌더링하기 위해 브라우저 내장 `Intl.RelativeTimeFormat`을 사용합니다.
+3. **UTC 타임스탬프 시차 오류 차단**: 서버로부터 전달받는 UTC ISO 8601 스탬프가 브라우저 단에서 로컬 기준시로 파싱될 때의 오차를 차단하고자 날짜 문자열 끝에 명시적으로 `'Z'`(Zulu 타임 존 명시)를 바인딩하여 브라우저 로컬 시각과의 비교를 완성했습니다.
+
 ---
 
 ## 7. 주요 코드 디렉토리 구조 및 역할 (Code Directory Structure)
@@ -366,8 +394,9 @@ SHIM 시스템의 주요 코드 구조와 각 파일의 기능적 기술 역할�
 | **`src/app/main.py`** | 애플리케이션 진입점, CORS 미들웨어 주입, Lifespan 라이프사이클 관리 및 DB 정합성 점검 |
 | **`src/app/models.py`** | SQLAlchemy 기반 테이블 모델 정의, 인덱스 설정 및 PII 암호화 데코레이터 선언 |
 | **`src/app/auth.py`** | JWT 토큰 발행, 암호화 비밀키 동적 유도 및 검증 서비스 |
-| **`src/app/services/`** | 비즈니스 로직 독립 레이어 (연차 차감 산정 규칙, 결재 전이 로직 등) |
+| **`src/app/services/`** | 비즈니스 로직 독립 레이어 (연차 차감 산정 규칙, 결재 전이 로직, 백업/청소 등) |
 | **`src/app/routers/`** | API 엔드포인트 라우터 및 화면 Jinja2 템플릿 렌더링 컨트롤러 |
+| **`src/app/routers/api_notifications.py`** | 실시간 알림 수신, 읽음 처리 및 폴링 처리를 담당하는 API 라우터 |
 | **`src/static/css/`** | Tailwind CSS 입력(`app.css`) 및 빌드 출력(`tailwind.css`) 스타일 자산 |
 
 ---
@@ -387,32 +416,7 @@ pip install -r requirements-dev.txt
 | 구분 | 목적 | 실행 명령어 | 권장 실행 시점 |
 |:--- |:--- |:--- |:--- |
 | **코드 정합성 검사** | 모듈 컴파일 오류 조기 감지 | `python -m compileall src/app tools/scripts` | 코드 수정 즉시 |
-| **비즈니스 로직 검증** | 권한(RBAC), 연차 신청/차감 등 무결성 테스트 (26종) | `python tools/scripts/run_remaining_tests.py` | 코드 수정 즉시 |
-| **안정성/종료 검증** | Graceful Shutdown 및 DB Teardown/머지 상태 확인 | `python tools/scripts/test_graceful_shutdown.py` | 릴리즈/배포 전 필수 |
-| **중복 실행 방지 검증** | Mutex 기반 런처 다중 기동 차단 및 트레이 알림 연동 확인 | `python tools/scripts/test_duplicate_execution.py` | 릴리즈/배포 전 필수 |
-| **메모리 누수 검증** | 장기 가동 시 누적 메모리 및 엑셀 내보내기 성능 확인 | `python tools/scripts/test_memory_leak.py` | 릴리즈/배포 전 필수 |
-| **CSS 정적 자산 빌드** | Tailwind CSS 스타일 반영 | `npm run build:css` | UI 수정 시 |
-
- 및 빌드 출력(`tailwind.css`) 스타일 자산 |
-
----
-
-## 8. 검증 및 테스트 세트 가이드 (Test Suite Guide)
-
-시스템 정합성 검증은 목적에 따라 **수시 기능 테스트**와 **릴리즈 안정성 테스트**로 나누어 운영합니다. 개발 환경 구동 및 테스트 패키지(`psutil`, `requests`) 설치를 위해 반드시 `requirements-dev.txt`를 사용하십시오.
-
-### 8.1 개발 환경 패키지 설치
-```powershell
-pip install -r requirements-dev.txt
-```
-*주의: 배포 환경 및 Docker 이미지, 포터블 바이너리에는 개발용 라이브러리가 제외되도록 격리되어 있습니다.*
-
-### 8.2 테스트 케이스 분류 및 실행 명령어
-
-| 구분 | 목적 | 실행 명령어 | 권장 실행 시점 |
-|:--- |:--- |:--- |:--- |
-| **코드 정합성 검사** | 모듈 컴파일 오류 조기 감지 | `python -m compileall src/app tools/scripts` | 코드 수정 즉시 |
-| **비즈니스 로직 검증** | 권한(RBAC), 연차 신청/차감 등 무결성 테스트 (26종) | `python tools/scripts/run_remaining_tests.py` | 코드 수정 즉시 |
+| **비즈니스 로직 검증** | 권한(RBAC), 연차 신청/차감 등 무결성 테스트 (28종) | `python tools/scripts/run_remaining_tests.py` | 코드 수정 즉시 |
 | **안정성/종료 검증** | Graceful Shutdown 및 DB Teardown/머지 상태 확인 | `python tools/scripts/test_graceful_shutdown.py` | 릴리즈/배포 전 필수 |
 | **중복 실행 방지 검증** | Mutex 기반 런처 다중 기동 차단 및 트레이 알림 연동 확인 | `python tools/scripts/test_duplicate_execution.py` | 릴리즈/배포 전 필수 |
 | **메모리 누수 검증** | 장기 가동 시 누적 메모리 및 엑셀 내보내기 성능 확인 | `python tools/scripts/test_memory_leak.py` | 릴리즈/배포 전 필수 |

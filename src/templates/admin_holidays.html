@@ -46,58 +46,33 @@
         </div>
 
         <!-- 공휴일 목록 -->
-        <div class="lg:col-span-2 space-y-3">
-            <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface shadow-xs">
-                <div class="px-4 py-3 border-b border-dense-line">
-                    <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 ({{ selected_year }}년 전체)</p>
+        <div class="lg:col-span-2 rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3 text-xs font-semibold">
+            <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 ({{ selected_year }}년 전체)</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for h in holidays %}
+                <div class="flex flex-col sm:flex-row gap-2 items-center bg-dense-surface p-2 border border-dense-line rounded-xl shadow-xs text-xs">
+                    <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
+                           class="border border-dense-line rounded-xl px-2 py-1 w-full sm:w-28 font-bold bg-dense-surface focus:ring-1 focus:ring-dense-blue text-dense-text">
+                    <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
+                           class="border border-dense-line rounded-xl px-2 py-1 w-full sm:flex-1 font-bold bg-dense-surface focus:ring-1 focus:ring-dense-blue text-dense-text">
+                    <div class="flex gap-1.5 w-full sm:w-auto shrink-0 justify-end">
+                        <button type="button" onclick="updateHoliday({{ h.id }}, this)"
+                                class="px-2.5 py-1.5 bg-dense-surface border border-dense-line hover:bg-dense-blue-soft hover:text-dense-blue rounded-lg font-bold shadow-2xs transition-colors text-[10px] text-dense-blue">
+                            수정
+                        </button>
+                        <button type="button" onclick="deleteHoliday({{ h.id }}, this)"
+                                class="px-2.5 py-1.5 bg-dense-danger-soft border border-dense-danger-soft hover:bg-dense-danger hover:text-white rounded-lg font-bold text-dense-danger shadow-2xs transition-colors text-[10px]">
+                            삭제
+                        </button>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[30rem] table-fixed divide-y divide-dense-line text-xs">
-                        <thead class="bg-dense-surface-soft">
-                            <tr>
-                                <th scope="col" class="w-[35%] px-4 py-2.5 text-left font-extrabold uppercase tracking-wide text-dense-muted">날짜</th>
-                                <th scope="col" class="w-[40%] px-4 py-2.5 text-left font-extrabold uppercase tracking-wide text-dense-muted">공휴일 이름</th>
-                                <th scope="col" class="w-[25%] px-4 py-2.5 text-right font-extrabold uppercase tracking-wide text-dense-muted">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-dense-line bg-dense-surface">
-                            {% for h in holidays %}
-                            <tr class="transition-colors hover:bg-dense-surface-soft">
-                                <td class="px-4 py-2">
-                                    <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
-                                           class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue">
-                                </td>
-                                <td class="px-4 py-2">
-                                    <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
-                                           class="w-full border border-dense-line rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text text-xs shadow-sm focus:border-dense-blue focus:ring-dense-blue">
-                                </td>
-                                <td class="px-4 py-2 text-right">
-                                    <div class="inline-flex gap-1.5">
-                                        <button type="button" onclick="updateHoliday({{ h.id }}, this)"
-                                                class="rounded-lg border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft transition-colors">
-                                            수정
-                                        </button>
-                                        <button type="button" onclick="deleteHoliday({{ h.id }}, this)"
-                                                class="rounded-lg border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-danger hover:bg-dense-danger-soft transition-colors">
-                                            삭제
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="px-4 py-8 text-center text-dense-muted">
-                                    <div class="flex flex-col items-center justify-center gap-2">
-                                        <span class="text-2xl">📅</span>
-                                        <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
-                                        <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                {% else %}
+                <div class="col-span-2 flex flex-col items-center justify-center py-12 text-center gap-2 bg-dense-surface border border-dense-line rounded-xl p-4">
+                    <span class="text-3xl">📅</span>
+                    <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
+                    <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -120,10 +95,9 @@ document.getElementById('holidayCreateForm').addEventListener('submit', async (e
     simulateButtonLoading(btn, async () => {
         try {
             const data = await postForm('/api/admin/holiday/create', formData);
-            alert(data.message || '등록되었습니다.');
-            location.reload();
+            showToastAndReload(data.message || '등록되었습니다.', 'success');
         } catch (err) {
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     });
 });
@@ -140,10 +114,9 @@ async function updateHoliday(id, btn) {
     simulateButtonLoading(btn, async () => {
         try {
             const data = await postForm('/api/admin/holiday/update', formData);
-            alert(data.message || '수정되었습니다.');
-            location.reload();
+            showToastAndReload(data.message || '수정되었습니다.', 'success');
         } catch (err) {
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     });
 }
@@ -158,12 +131,12 @@ async function deleteHoliday(id, btn) {
     simulateButtonLoading(btn, async () => {
         try {
             const data = await postForm('/api/admin/holiday/delete', formData);
-            alert(data.message || '삭제되었습니다.');
-            location.reload();
+            showToastAndReload(data.message || '삭제되었습니다.', 'success');
         } catch (err) {
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     });
 }
 </script>
 {% endblock %}
+

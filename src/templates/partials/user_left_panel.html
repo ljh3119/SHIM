@@ -227,17 +227,17 @@
         const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
 
         if (!startDate || !endDate) {
-            alert('날짜를 입력해 주세요.');
+            showToast('날짜를 입력해 주세요.', 'error');
             return;
         }
 
         if (startDate > endDate) {
-            alert('시작일이 종료일보다 늦습니다.');
+            showToast('시작일이 종료일보다 늦습니다.', 'error');
             return;
         }
 
         if (!isDeductive && !reason) {
-            alert('공가/출장 신청 시 사유 입력은 필수입니다.');
+            showToast('공가/출장 신청 시 사유 입력은 필수입니다.', 'error');
             return;
         }
 
@@ -247,7 +247,7 @@
             const startMin = parseTimeStr(startTime);
             const endMin = parseTimeStr(endTime);
             if (startMin === null || endMin === null || startMin >= endMin) {
-                alert('시작/종료 시간을 다시 확인해 주세요.');
+                showToast('시작/종료 시간을 다시 확인해 주세요.', 'error');
                 return;
             }
 
@@ -268,13 +268,12 @@
                     });
                     const result = await response.json();
                     if (response.ok) {
-                        alert(result.message || '성공적으로 신청되었습니다.');
-                        window.location.reload();
+                        showToastAndReload(result.message || '성공적으로 신청되었습니다.', 'success');
                     } else {
-                        alert(result.message || result.detail || '오류가 발생했습니다.');
+                        showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
                     }
                 } catch (err) {
-                    alert('네트워크 오류가 발생했습니다.');
+                    showToast('네트워크 오류가 발생했습니다.', 'error');
                 }
             });
         } else {
@@ -306,7 +305,7 @@
             }
 
             if (dates.length === 0) {
-                alert('선택한 범위 내에 신청 가능한 영업일이 없습니다.');
+                showToast('선택한 범위 내에 신청 가능한 영업일이 없습니다.', 'error');
                 return;
             }
 
@@ -329,13 +328,12 @@
                     });
                     const result = await response.json();
                     if (response.ok) {
-                        alert(result.message || '성공적으로 신청되었습니다.');
-                        window.location.reload();
+                        showToastAndReload(result.message || '성공적으로 신청되었습니다.', 'success');
                     } else {
-                        alert(result.message || result.detail || '오류가 발생했습니다.');
+                        showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
                     }
                 } catch (e) {
-                    alert('네트워크 오류가 발생했습니다.');
+                    showToast('네트워크 오류가 발생했습니다.', 'error');
                 }
             });
         }

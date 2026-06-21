@@ -7,7 +7,8 @@ except ImportError:
     sys.exit(1)
 
 
-BASE_URL = "http://localhost:8000"
+import os
+BASE_URL = os.getenv("SHIM_BASE_URL", "http://localhost:9090")
 
 def test_flow():
     session = requests.Session()

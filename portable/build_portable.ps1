@@ -50,9 +50,11 @@ if (Test-Path var\data) {
 Write-Host "Running Post-Build Hook: Cleaning up unnecessary development artifacts in 'dist\SHIM_Portable\data'..."
 $targetDataDir = "dist\SHIM_Portable\data"
 if (Test-Path $targetDataDir) {
-    # Remove SQLite temporary WAL/SHM locks
+    # Remove SQLite temporary WAL/SHM locks and actual development database files
     Get-ChildItem -Path $targetDataDir -Filter "*.db-wal" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
     Get-ChildItem -Path $targetDataDir -Filter "*.db-shm" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    Get-ChildItem -Path $targetDataDir -Filter "*.db" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    Get-ChildItem -Path $targetDataDir -Filter "*_corrupted*" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
     
     # Remove development secret keys to ensure zero-config random key generation on production site
     if (Test-Path "$targetDataDir\secret.key") {
