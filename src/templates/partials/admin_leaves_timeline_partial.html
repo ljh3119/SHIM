@@ -1,27 +1,19 @@
 {% from "partials/macros.html" import fmt_hours %}
 
 <div class="fade-in space-y-4">
-    <!-- Header Section -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-            <h2 class="text-xl font-extrabold tracking-tight text-dense-text flex items-center gap-2">
-                <span>📜 연차 신청 타임라인 이력</span>
-            </h2>
-            <p class="mt-1 text-xs font-semibold text-dense-muted">전체 직원의 연차 신청 이력 조회 및 상태 승인/반려/삭제 관리를 수행합니다.</p>
-        </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <a href="/admin/leave/timeline/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
-            <button type="button" onclick="refreshTimeline()" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-nav-text hover:bg-dense-surface-soft">🔄 새로고침</button>
-        </div>
-    </div>
-
     <!-- Table Card Container -->
     <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
         <div class="flex flex-col gap-3 border-b border-dense-line px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
-            <h3 class="text-sm font-extrabold tracking-tight text-dense-text">
-                {{ selected_year }}년 {% if selected_month > 0 %}{{ selected_month }}월{% else %}전체 월{% endif %} 연차 기록
-                <span class="text-xs font-semibold text-dense-muted">({{ total_count }}건)</span>
-            </h3>
+            <div class="flex flex-wrap items-center gap-3">
+                <h3 class="text-sm font-extrabold tracking-tight text-dense-text">
+                    {{ selected_year }}년 {% if selected_month > 0 %}{{ selected_month }}월{% else %}전체 월{% endif %} 연차 기록
+                    <span class="text-xs font-semibold text-dense-muted">({{ total_count }}건)</span>
+                </h3>
+                <div class="flex items-center gap-1.5 sm:ml-2">
+                    <a href="/admin/leave/timeline/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-2.5 py-1 text-[11px] font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀</a>
+                    <button type="button" onclick="refreshTimeline()" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-2.5 py-1 text-[11px] font-bold text-dense-nav-text hover:bg-dense-surface-soft">🔄 새로고침</button>
+                </div>
+            </div>
             <nav class="flex flex-wrap gap-2" aria-label="결재 상태 필터">
                 <a href="{{ timeline_chip_url_all }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if not selected_leave_status %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">전체</a>
                 <a href="{{ timeline_chip_url_pending }}" class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors {% if selected_leave_status == 'PENDING' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">결재 대기</a>
@@ -107,7 +99,7 @@
                         <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.date }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용일{% if sort_key == 'date' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
-                        <th scope="col" class="min-w-[8.5rem] max-w-[11rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
+                        <th scope="col" class="whitespace-nowrap px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">
                             <a href="{{ sort_urls.slot }}" class="inline-flex items-center gap-1 text-dense-nav-text hover:text-dense-blue">사용 시간대{% if sort_key == 'slot' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                         </th>
                         <th scope="col" class="min-w-[7rem] max-w-[10rem] px-2 py-2.5 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 사유</th>

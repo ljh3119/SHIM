@@ -386,7 +386,15 @@ def user_team_calendar(
         # 정렬 로직
         rev = (sort_dir_eff == "desc")
         if sort_key == "name":
-            team_members.sort(key=lambda x: x.user_name.lower(), reverse=rev)
+            team_members.sort(
+                key=lambda x: (
+                    0 if x.role == "PM" else 1,
+                    (x.team or "").lower(),
+                    0 if x.role == "TEAM_LEAD" else (1 if x.role == "STAFF" else 2),
+                    x.user_name.lower()
+                ),
+                reverse=rev
+            )
         elif sort_key == "team":
             team_members.sort(key=lambda x: ((x.team or "").lower(), x.user_name.lower()), reverse=rev)
         elif sort_key == "remaining":

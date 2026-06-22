@@ -21,6 +21,12 @@ def seed_data(reset: bool = False):
         # Close all existing connections in connection pool
         engine.dispose()
         
+        try:
+            models.Base.metadata.drop_all(bind=engine)
+            print("[SEED] Dropped all tables from database")
+        except Exception as e:
+            print(f"[SEED WARNING] Failed to drop tables: {e}")
+            
         from src.app.database import DB_PATH
         db_path = DB_PATH
         wal_path = db_path.parent / (db_path.name + "-wal")
@@ -228,67 +234,105 @@ def seed_data(reset: bool = False):
         for u in all_users:
             user_remaining_hours[u.user_id] = {yr: 120.0 for yr in target_years}
 
-        # Generate some past leaves (mostly approved)
-        for u in all_users:
-            if u.role == "ADMIN": continue
-            # Past 14 days
-            for d in range(1, 15):
-                if random.random() > 0.7:
-                    leave_date = today - timedelta(days=d)
-                    if leave_date.weekday() >= 5: continue # Skip weekends
-                    if leave_date in holiday_dates: continue # Skip holidays
-                    
-                    status = random.choices(statuses, weights=[70, 0, 20, 10])[0]
-                    rejection_reason = "업무 과다로 인한 반려" if status == "REJECTED" else ""
-                    
-                    ldata = get_random_leave_data()
-                    req_year = leave_date.year
-                    
-                    # If deductive leave, check limit
-                    if ldata["is_deductive"] and status not in ["CANCELED", "REJECTED"]:
-                        rem = user_remaining_hours[u.user_id].get(req_year, 120.0)
-                        if rem < ldata["hours"]:
-                            continue  # Skip to avoid negative leave balance
-                        user_remaining_hours[u.user_id][req_year] -= ldata["hours"]
+        # Get all working days in range [-14, 14] excluding weekends and holidays
+        working_days = []
+        for d in range(-14, 15):
+            leave_date = today + timedelta(days=d)
+            if leave_date.weekday() >= 5:
+                continue
+            if leave_date in holiday_dates:
+                continue
+            working_days.append(leave_date)
+        working_days.sort()
 
+        def get_leave_data_for_opt(opt, is_deduct):
+            if not is_deduct:
+                prefix = random.choice(["[공가] ", "[출장] "])
+                label = opt[0]
+                reason = prefix + random.choice(["예비군 훈련 참석", "직무 교육 외부 세미나", "고객사 파견 미팅", "정기 건강 검진"])
+            else:
+                label = opt[0]
+                reason = opt[4]
+            return {
+                "label": label,
+                "start": opt[1],
+                "end": opt[2],
+                "hours": opt[3],
+                "is_deductive": is_deduct,
+                "reason": reason
+            }
+
+        # Select 1-2 random users to have 5 consecutive days of leave
+        # PM, Lead, or Staff
+        candidates = [u for u in all_users if u.role != "ADMIN"]
+        heavy_user = random.choice(candidates) if candidates else None
+        
+        if heavy_user and len(working_days) >= 5:
+            # Find 5 consecutive working days
+            start_idx = random.randint(0, len(working_days) - 5)
+            consecutive_days = working_days[start_idx : start_idx + 5]
+            for leave_date in consecutive_days:
+                req_year = leave_date.year
+                
+                # Full day leave
+                ldata = {
+                    "label": "09:00~18:00",
+                    "start": 540,
+                    "end": 1080,
+                    "hours": 8.0,
+                    "is_deductive": True,
+                    "reason": "정기 리프레시 휴가 (5일 연속)"
+                }
+                
+                # Check limit
+                rem = user_remaining_hours[heavy_user.user_id].get(req_year, 120.0)
+                if rem >= 8.0:
+                    user_remaining_hours[heavy_user.user_id][req_year] -= 8.0
                     db.add(models.Leaves(
-                        user_id=u.user_id,
+                        user_id=heavy_user.user_id,
                         date=leave_date,
                         snapshot_slot_label=ldata["label"],
                         snapshot_start_min=ldata["start"],
                         snapshot_end_min=ldata["end"],
                         snapshot_deduction_hours=ldata["hours"],
-                        status=status,
-                        rejection_reason=rejection_reason,
+                        status="APPROVED", # Always approved for 5 consecutive days (annual leave)
                         is_deductive=ldata["is_deductive"],
                         reason=ldata["reason"],
                         year=req_year
                     ))
 
-        # Generate some future leaves (mostly pending)
+        # Generate some leaves for other users
         for u in all_users:
-            if u.role == "ADMIN": continue
-            # Future 14 days
-            for d in range(1, 15):
-                if random.random() > 0.8:
-                    leave_date = today + timedelta(days=d)
-                    if leave_date.weekday() >= 5: continue
-                    if leave_date in holiday_dates: continue # Skip holidays
+            if u.role == "ADMIN":
+                continue
+            if heavy_user and u.user_id == heavy_user.user_id:
+                # Heavy user already has their 5-day block, don't generate more leaves for them
+                continue
+                
+            # Assign a random target monthly limit for active leaves (8h to 16h on average, some less)
+            monthly_limit = random.choices([0.0, 4.0, 8.0, 12.0, 16.0], weights=[10, 15, 30, 25, 20])[0]
+            user_seeded_hours = 0.0
+            non_deductive_count = 0
+            
+            # Shuffle the working days to randomize when leaves occur
+            user_days = list(working_days)
+            random.shuffle(user_days)
+            
+            for leave_date in user_days:
+                req_year = leave_date.year
+                is_past = leave_date < today
+                
+                # 1. Option for non-deductive leave (공가/출장) - independent of monthly limit
+                if non_deductive_count < 1 and random.random() < 0.04:
+                    # Determine status
+                    if is_past:
+                        status = random.choices(["APPROVED", "REJECTED", "CANCELED"], weights=[80, 10, 10])[0]
+                    else:
+                        status = "APPROVED" if u.role == "PM" else random.choices(["PENDING", "APPROVED"], weights=[80, 20])[0]
                     
-                    status = random.choices(["PENDING", "APPROVED"], weights=[80, 20])[0]
-                    # PM leaves are auto-approved
-                    if u.role == "PM": status = "APPROVED"
+                    opt = random.choice(leave_options)
+                    ldata = get_leave_data_for_opt(opt, is_deduct=False)
                     
-                    ldata = get_random_leave_data()
-                    req_year = leave_date.year
-                    
-                    # If deductive leave, check limit
-                    if ldata["is_deductive"] and status not in ["CANCELED", "REJECTED"]:
-                        rem = user_remaining_hours[u.user_id].get(req_year, 120.0)
-                        if rem < ldata["hours"]:
-                            continue  # Skip to avoid negative leave balance
-                        user_remaining_hours[u.user_id][req_year] -= ldata["hours"]
-
                     db.add(models.Leaves(
                         user_id=u.user_id,
                         date=leave_date,
@@ -297,6 +341,50 @@ def seed_data(reset: bool = False):
                         snapshot_end_min=ldata["end"],
                         snapshot_deduction_hours=ldata["hours"],
                         status=status,
+                        rejection_reason="업무 과다로 인한 반려" if status == "REJECTED" else "",
+                        is_deductive=ldata["is_deductive"],
+                        reason=ldata["reason"],
+                        year=req_year
+                    ))
+                    non_deductive_count += 1
+                    continue # Only one leave per day
+                
+                # 2. Option for deductive leave (연차 등) - limited by monthly_limit
+                if user_seeded_hours < monthly_limit and random.random() < 0.25:
+                    # Filter options that fit within remaining limit
+                    remaining = monthly_limit - user_seeded_hours
+                    valid_opts = [o for o in leave_options if o[3] <= remaining]
+                    if not valid_opts:
+                        continue
+                        
+                    opt = random.choice(valid_opts)
+                    
+                    # Determine status
+                    if is_past:
+                        status = random.choices(["APPROVED", "REJECTED", "CANCELED"], weights=[80, 10, 10])[0]
+                    else:
+                        status = "APPROVED" if u.role == "PM" else random.choices(["PENDING", "APPROVED"], weights=[80, 20])[0]
+                    
+                    ldata = get_leave_data_for_opt(opt, is_deduct=True)
+                    
+                    # If status is APPROVED or PENDING, it counts towards limit
+                    if status in ["APPROVED", "PENDING"]:
+                        # Check database/user limits
+                        rem = user_remaining_hours[u.user_id].get(req_year, 120.0)
+                        if rem < ldata["hours"]:
+                            continue
+                        user_remaining_hours[u.user_id][req_year] -= ldata["hours"]
+                        user_seeded_hours += ldata["hours"]
+                        
+                    db.add(models.Leaves(
+                        user_id=u.user_id,
+                        date=leave_date,
+                        snapshot_slot_label=ldata["label"],
+                        snapshot_start_min=ldata["start"],
+                        snapshot_end_min=ldata["end"],
+                        snapshot_deduction_hours=ldata["hours"],
+                        status=status,
+                        rejection_reason="업무 과다로 인한 반려" if status == "REJECTED" else "",
                         is_deductive=ldata["is_deductive"],
                         reason=ldata["reason"],
                         year=req_year

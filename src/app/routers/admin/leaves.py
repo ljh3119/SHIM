@@ -564,6 +564,7 @@ def admin_leaves_calendar(
                 "user_name": u.user_name,
                 "company": u.company,
                 "team": u.team,
+                "role": u.role,
                 "total_hours": allocated_hours,
                 "period_used": period_used,
                 "yearly_used": yearly_used,
@@ -579,7 +580,16 @@ def admin_leaves_calendar(
         )
 
     if sort_key_effective is None:
-        user_stats.sort(key=lambda x: (-int(x["is_active"]), x["user_name"].lower(), x["user_id"]))
+        user_stats.sort(
+            key=lambda x: (
+                -int(x["is_active"]),
+                0 if x["role"] == "PM" else 1,
+                (x["team"] or "").lower(),
+                0 if x["role"] == "TEAM_LEAD" else (1 if x["role"] == "STAFF" else 2),
+                x["user_name"].lower(),
+                x["user_id"]
+            )
+        )
     else:
         rev = sort_dir_eff == "desc"
         if sort_key_effective == "user_name":
@@ -879,6 +889,7 @@ def admin_leaves_yearly_partial(
                 "user_name": u.user_name,
                 "company": u.company,
                 "team": u.team,
+                "role": u.role,
                 "total_hours": allocated_hours,
                 "period_used": yearly_used,
                 "yearly_used": yearly_used,
@@ -894,7 +905,16 @@ def admin_leaves_yearly_partial(
         )
 
     if sort_key_effective is None:
-        user_stats.sort(key=lambda x: (-int(x["is_active"]), x["user_name"].lower(), x["user_id"]))
+        user_stats.sort(
+            key=lambda x: (
+                -int(x["is_active"]),
+                0 if x["role"] == "PM" else 1,
+                (x["team"] or "").lower(),
+                0 if x["role"] == "TEAM_LEAD" else (1 if x["role"] == "STAFF" else 2),
+                x["user_name"].lower(),
+                x["user_id"]
+            )
+        )
     else:
         rev = sort_dir_eff == "desc"
         if sort_key_effective == "user_name":
@@ -948,6 +968,7 @@ def admin_leaves_yearly_partial(
         context={
             "admin": admin,
             "user_stats": user_stats,
+            "users": sorted(all_users, key=lambda u: u.user_name.lower()),
             "selected_year": current_year,
             "selected_user_id": selected_user_id,
             "selected_company": selected_company,
