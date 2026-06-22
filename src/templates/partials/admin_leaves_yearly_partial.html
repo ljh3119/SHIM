@@ -1,70 +1,62 @@
 {% from "partials/macros.html" import fmt_hours %}
 
 <div class="fade-in space-y-4">
-    <!-- Header Section -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-            <h2 class="text-xl font-extrabold tracking-tight text-dense-text flex items-center gap-2">
-                <span>📊 연간 연차 사용 요약 (Yearly Summary)</span>
-            </h2>
-            <p class="mt-1 text-xs font-semibold text-dense-muted">사원별 12개월 연간 연차 소진 통계 및 배정/사용/잔여 시간을 조회합니다.</p>
-        </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <a href="/admin/leave/timeline/export?year={{ selected_year }}&user_id={{ selected_user_id }}&company={{ selected_company }}&team={{ selected_team }}&active_state={{ selected_active_state }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
-            <button type="button" onclick="refreshYearly()" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-nav-text hover:bg-dense-surface-soft">🔄 새로고침</button>
-        </div>
-    </div>
+    <!-- Hidden data elements to update parent card header dynamically -->
+    <span id="yearly-count-data" data-count="{{ user_stats|length }}" style="display:none;"></span>
+    <span id="yearly-export-url" data-url="/admin/leave/timeline/export?year={{ selected_year }}&user_id={{ selected_user_id }}&company={{ selected_company }}&team={{ selected_team }}&active_state={{ selected_active_state }}" style="display:none;"></span>
 
-    <!-- Filter form -->
-    <form method="get" id="yr-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold">
-        <input type="hidden" name="sort" value="{{ sort_key or '' }}">
-        <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
-            <div>
-                <label for="yr-year" class="block mb-1 text-dense-muted text-[10px]">연도 선택</label>
-                <select id="yr-year" name="year" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    {% for y in year_options %}
-                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
-                    {% endfor %}
-                </select>
+    <!-- Filter Form -->
+    <div>
+        <form method="get" id="yr-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+            <input type="hidden" name="sort" value="{{ sort_key or '' }}">
+            <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 text-xs font-semibold">
+                <div>
+                    <label for="yr-year" class="mb-1 block text-dense-muted text-[10px]">연도</label>
+                    <select id="yr-year" name="year" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        {% for y in year_options %}
+                        <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="yr-user" class="mb-1 block text-dense-muted text-[10px]">사용자</label>
+                    <select id="yr-user" name="user_id" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
+                        {% for u in users %}
+                        <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="yr-company" class="mb-1 block text-dense-muted text-[10px]">회사</label>
+                    <select id="yr-company" name="company" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
+                        {% for c in company_options %}
+                        <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="yr-team" class="mb-1 block text-dense-muted text-[10px]">팀</label>
+                    <select id="yr-team" name="team" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
+                        {% for t in team_options %}
+                        <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="yr-active" class="mb-1 block text-dense-muted text-[10px]">계정 상태</label>
+                    <select id="yr-active" name="active_state" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                        <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
+                        <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
+                        <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label for="yr-user" class="block mb-1 text-dense-muted text-[10px]">사원명 검색</label>
-                <select id="yr-user" name="user_id" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
-                    {% for u in user_stats %}
-                    <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }})">{{ u.user_name }}({{ u.user_id }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="yr-company" class="block mb-1 text-dense-muted text-[10px]">소속 회사</label>
-                <select id="yr-company" name="company" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_company %}selected{% endif %}>전체</option>
-                    {% for c in company_options %}
-                    <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="yr-team" class="block mb-1 text-dense-muted text-[10px]">소속 팀</label>
-                <select id="yr-team" name="team" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="" {% if not selected_team %}selected{% endif %}>전체</option>
-                    {% for t in team_options %}
-                    <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="yr-active" class="block mb-1 text-dense-muted text-[10px]">계정 상태</label>
-                <select id="yr-active" name="active_state" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
-                    <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
-                    <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
-                    <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
-                </select>
-            </div>
-        </div>
-    </form>
+        </form>
+    </div>
 
     <!-- Guide / Legend -->
     <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-[10px] font-semibold text-dense-muted leading-relaxed">
@@ -76,77 +68,75 @@
         </ul>
     </div>
 
-    <!-- Yearly Table Card -->
-    <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
-        <div class="overflow-x-auto">
-            <table class="cal-table cal-one-line cal-year-view">
-                <thead>
-                    <tr>
-                        <th class="sticky-col col-info text-left">
-                            <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                        </th>
-                        <th class="col-meta">
-                            <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                        </th>
-                        <th class="col-meta">
-                            <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                        </th>
-                        <th class="col-stat" title="올해 배정 연차">배정</th>
-                        <th class="col-stat" title="올해 잔여 (8시간=1일)">
-                            <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                        </th>
-                        <th class="col-stat" title="해당 연도 누적 사용 (8시간=1일)">
-                            <a href="{{ sort_urls.period_used }}" class="cal-sort-head">연사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
-                        </th>
-                        {% for m in range(1, 13) %}
-                        <th class="col-month-sum">{{ m }}월</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stat in user_stats %}
-                    <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
-                        <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
-                            <div class="info-one-line text-dense-text">
-                                {{ stat.user_name }}
-                            </div>
-                        </td>
-                        <td class="col-meta text-center" title="{{ stat.company or '' }}">
-                            {% if stat.company %}
-                            <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
-                            {% else %}
-                            <span class="text-dense-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-meta text-center" title="{{ stat.team or '' }}">
-                            {% if stat.team %}
-                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
-                            {% else %}
-                            <span class="text-dense-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-stat text-center font-semibold text-dense-muted">
-                            <span class="stat-compact" title="{{ fmt_hours(stat.total_hours) }}h">{{ fmt_hours(stat.total_hours) }}h</span>
-                        </td>
-                        <td class="col-stat {% if stat.yearly_remain <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
-                            <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
-                        </td>
-                        <td class="col-stat font-semibold text-dense-blue">
-                            <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
-                        </td>
-                        {% for m in range(1, 13) %}
-                        <td class="col-month-sum text-dense-text">
-                            <span class="stat-compact text-dense-blue" title="{{ stat.month_used_labels[m] }}">{{ stat.month_used_short_labels[m] }}</span>
-                        </td>
-                        {% endfor %}
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="18" class="py-8 text-sm font-semibold text-dense-muted text-center">표시할 사원 데이터가 없습니다.</td>
-                    </tr>
+    <!-- Yearly Table inside rounded boundary -->
+    <div class="overflow-x-auto rounded-xl border border-dense-line bg-dense-surface shadow-xs">
+        <table class="cal-table cal-one-line cal-year-view">
+            <thead>
+                <tr>
+                    <th class="sticky-col col-info text-left">
+                        <a href="{{ sort_urls.user_name }}" class="cal-sort-head">사원{% if sort_key == 'user_name' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                    </th>
+                    <th class="col-meta">
+                        <a href="{{ sort_urls.company }}" class="cal-sort-head">회사{% if sort_key == 'company' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                    </th>
+                    <th class="col-meta">
+                        <a href="{{ sort_urls.team }}" class="cal-sort-head">팀{% if sort_key == 'team' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                    </th>
+                    <th class="col-stat" title="올해 배정 연차">배정</th>
+                    <th class="col-stat" title="올해 잔여 (8시간=1일)">
+                        <a href="{{ sort_urls.yearly_remain }}" class="cal-sort-head">잔여{% if sort_key == 'yearly_remain' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                    </th>
+                    <th class="col-stat" title="해당 연도 누적 사용 (8시간=1일)">
+                        <a href="{{ sort_urls.period_used }}" class="cal-sort-head">연사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
+                    </th>
+                    {% for m in range(1, 13) %}
+                    <th class="col-month-sum">{{ m }}월</th>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in user_stats %}
+                <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
+                    <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
+                        <div class="info-one-line text-dense-text">
+                            {{ stat.user_name }}
+                        </div>
+                    </td>
+                    <td class="col-meta text-center" title="{{ stat.company or '' }}">
+                        {% if stat.company %}
+                        <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                        {% else %}
+                        <span class="text-dense-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-meta text-center" title="{{ stat.team or '' }}">
+                        {% if stat.team %}
+                        <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                        {% else %}
+                        <span class="text-dense-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-stat text-center font-semibold text-dense-muted">
+                        <span class="stat-compact" title="{{ fmt_hours(stat.total_hours) }}h">{{ fmt_hours(stat.total_hours) }}h</span>
+                    </td>
+                    <td class="col-stat {% if (stat.yearly_remain | default(0) or 0) <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
+                        <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
+                    </td>
+                    <td class="col-stat font-semibold text-dense-blue">
+                        <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
+                    </td>
+                    {% for m in range(1, 13) %}
+                    <td class="col-month-sum text-dense-text">
+                        <span class="stat-compact text-dense-blue" title="{{ stat.month_used_labels[m] }}">{{ stat.month_used_short_labels[m] }}</span>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="18" class="py-8 text-sm font-semibold text-dense-muted text-center">표시할 사원 데이터가 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>

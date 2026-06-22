@@ -10,11 +10,11 @@
         <span class="shim-side-emoji text-sm">📊</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">대시보드</span>
       </a>
-      <a href="/admin/leave/calendar" class="shim-side-link {% if path.startswith('/admin/leave/calendar') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+      <a href="/admin/leave/calendar" class="shim-side-link {% if path.startswith('/admin/leave/calendar') and request.query_params.get('tab') != 'timeline' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
         <span class="shim-side-emoji text-sm">📅</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">연차 캘린더</span>
       </a>
-      <a href="/admin/leave/timeline" class="shim-side-link {% if path.startswith('/admin/leave/timeline') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+      <a href="/admin/leave/timeline" class="shim-side-link {% if path.startswith('/admin/leave/timeline') or (path.startswith('/admin/leave/calendar') and request.query_params.get('tab') == 'timeline') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
         <span class="shim-side-emoji text-sm">📜</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">신청 타임라인</span>
       </a>

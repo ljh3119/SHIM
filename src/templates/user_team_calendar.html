@@ -98,36 +98,41 @@
         font-weight: 700;
         line-height: 1;
         letter-spacing: -0.04em;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: #fff;
-        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
         cursor: default;
+    }
+
+    .cal-table .day-block.leave-light {
+        background: #eff8ff;
+        color: #175cd3;
+        border: none !important;
+    }
+
+    .cal-table .day-block.leave-medium {
+        background: #84caff;
+        color: #175cd3;
+        border: none !important;
+    }
+
+    .cal-table .day-block.leave-dark {
         background: #175cd3;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    }
-
-    .cal-table .day-block.half {
-        background: linear-gradient(180deg, #fde68a 0%, #f79009 100%);
-        border-color: rgba(181, 71, 8, 0.35);
-        color: #1c1917;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
-    }
-
-    .cal-table .day-block.full {
-        background: linear-gradient(180deg, #f97066 0%, #d92d20 100%);
-        border-color: rgba(217, 45, 32, 0.45);
+        color: #ffffff;
+        border: none !important;
     }
 
     .cal-table .day-block.public {
-        background: linear-gradient(180deg, #9333ea 0%, #7e22ce 100%);
-        border-color: rgba(147, 51, 234, 0.45);
+        background: #7e22ce;
+        color: #ffffff;
+        border: none !important;
     }
 
     .cal-table .day-block.pending {
-        opacity: 0.55;
+        background: #f2f4f7 !important;
+        color: #475467 !important;
         border: none !important;
-        box-shadow: none;
-        filter: grayscale(0.35);
+        opacity: 1 !important;
+        filter: none !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
     }
 
     .weekend-head {
@@ -247,24 +252,24 @@
 
                 <div class="mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-line">
                     <div class="flex items-center">
-                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded border border-dense-blue/20 bg-dense-blue shadow-sm"></span>
-                        <span>반일 미만</span>
+                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#eff8ff] text-[#175cd3] text-center text-[8px] font-extrabold shadow-sm"></span>
+                        <span>반일 이하 (4h 미만)</span>
                     </div>
                     <div class="flex items-center">
-                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded border border-dense-amber/35 bg-gradient-to-b from-[#fde68a] to-[#f79009] shadow-sm"></span>
-                        <span>반일(4h)</span>
+                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#84caff] text-[#175cd3] text-center text-[8px] font-extrabold shadow-sm"></span>
+                        <span>반일 (4h~8h 미만)</span>
                     </div>
                     <div class="flex items-center">
-                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded border border-dense-danger/45 bg-gradient-to-b from-[#f97066] to-[#d92d20] shadow-sm"></span>
-                        <span>전일(8h)</span>
+                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#175cd3] text-white text-center text-[8px] font-extrabold shadow-sm"></span>
+                        <span>전일 (8h 이상)</span>
                     </div>
                     <div class="flex items-center">
-                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded border border-purple-600/45 bg-gradient-to-b from-[#9333ea] to-[#7e22ce] shadow-sm"></span>
-                        <span>공가/출장 (연차 미소모)</span>
+                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#7e22ce] text-white text-center text-[8px] font-extrabold shadow-sm"></span>
+                        <span>공가/출장 (미차감)</span>
                     </div>
                     <div class="flex items-center border-l border-dense-line pl-6">
-                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-dense-blue/55 filter grayscale-[35%] shadow-none border-0"></span>
-                        <span class="text-dense-blue font-extrabold">대기 중인 연차 (반투명)</span>
+                        <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#f2f4f7] text-[#475467] text-center text-[8px] font-extrabold shadow-sm"></span>
+                        <span class="text-dense-text font-extrabold">결재 대기 (미결재)</span>
                     </div>
                     <div class="ml-auto font-semibold text-dense-blue/80 text-[10px]">
                         * 해당 셀에 마우스를 올리면 상세 시간대가 표시됩니다.
@@ -381,7 +386,7 @@
                                             {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (대기)") %}
                                         {% endif %}
                                     {% endfor %}
-                                    <div class="day-block {% if (ns_t.has_non_deductive or ns_t.has_non_deductive_pending) and total_h == 0 %}public{% elif total_h >= 8 %}full{% elif total_h >= 4 %}half{% endif %} {% if ns_t.ph > 0 or ns_t.has_non_deductive_pending %}pending{% endif %} transform transition-transform hover:scale-105" title="{{ tooltip_parts|join(', ') }}">
+                                    <div class="day-block {% if ns_t.ph > 0 or ns_t.has_non_deductive_pending %}pending{% elif (ns_t.has_non_deductive or ns_t.has_non_deductive_pending) and total_h == 0 %}public{% elif total_h >= 8 %}leave-dark{% elif total_h >= 4 %}leave-medium{% else %}leave-light{% endif %} transform transition-transform hover:scale-105" title="{{ tooltip_parts|join(', ') }}">
                                         {% if total_h > 0 %}
                                             {{ fmt_hours(total_h) }}h
                                         {% else %}
@@ -546,17 +551,19 @@
             const isPending = item.leave.status === 'PENDING';
             
             let typeBadge = '';
-            if (!isDeduct) {
-                typeBadge = `<span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-200">공가/출장</span>`;
+            if (isPending) {
+                typeBadge = `<span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded border-0">결재 대기</span>`;
+            } else if (!isDeduct) {
+                typeBadge = `<span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded border-0">공가/출장</span>`;
             } else if (totalH >= 8) {
-                typeBadge = `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded border border-red-200">전일</span>`;
+                typeBadge = `<span class="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 rounded border-0">전일</span>`;
             } else if (totalH >= 4) {
-                typeBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">반일</span>`;
+                typeBadge = `<span class="bg-blue-300 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded border-0">반일</span>`;
             } else {
-                typeBadge = `<span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200">${totalH}h</span>`;
+                typeBadge = `<span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border-0">${totalH}h</span>`;
             }
             
-            const pendingBadge = isPending ? `<span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1 border border-gray-200">대기</span>` : '';
+            const pendingBadge = '';
 
             div.innerHTML = `
                 <div class="flex flex-col gap-0.5">

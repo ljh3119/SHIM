@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.8.0') }} - 연차 관리 시스템</title>
+    <title>{{ product_display_name | default('SHIM') }} v{{ app_version | default('1.8.4') }} - 연차 관리 시스템</title>
     <!-- Closed-network mode: use local Tailwind CSS only -->
     <link href="/static/css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -188,45 +188,7 @@
             {% include "partials/sidebar_user.html" %}
         {% endif %}
         <main class="relative min-w-0 flex-1 {% if not admin and (not request.cookies.get('access_token') or hide_base_sidebar) %}max-w-none{% endif %}">
-            <!-- Breadcrumb Navigation -->
-            {% if request.cookies.get('access_token') %}
-            <div id="shim-breadcrumb" class="mb-3 flex items-center gap-1.5 text-[11px] font-medium text-dense-muted" style="display: none;">
-                <span class="cursor-pointer hover:text-dense-text transition-colors" onclick="window.location.href='{% if admin %}/admin/dashboard{% else %}/user/dashboard{% endif %}'">
-                    {% if admin %}관리자 홈{% else %}홈{% endif %}
-                </span>
-                <span class="text-dense-line select-none">/</span>
-                <span id="shim-breadcrumb-current" class="text-dense-text">대시보드</span>
-            </div>
-            <script>
-                (function() {
-                    const path = window.location.pathname;
-                    const currentSpan = document.getElementById('shim-breadcrumb-current');
-                    const container = document.getElementById('shim-breadcrumb');
-                    const mapping = {
-                        '/user/dashboard': '대시보드',
-                        '/user/team-calendar': '팀 캘린더',
-                        '/user/history': '신청 이력',
-                        '/user/approvals': '결재 관리',
-                        '/admin/dashboard': '대시보드',
-                        '/admin/users': '사원 관리',
-                        '/admin/leaves/calendar': '연차 캘린더',
-                        '/admin/leaves/timeline': '연차 타임라인',
-                        '/admin/holidays': '공휴일 관리',
-                        '/admin/settings': '마스터 설정',
-                        '/admin/audit': '감사 로그'
-                    };
-                    let matched = mapping[path];
-                    if (!matched) {
-                        if (path.startsWith('/admin/settings')) matched = '마스터 설정';
-                        else if (path.startsWith('/admin/users')) matched = '사원 관리';
-                    }
-                    if (matched) {
-                        currentSpan.textContent = matched;
-                        container.style.display = 'flex';
-                    }
-                })();
-            </script>
-            {% endif %}
+
 
             {% if is_default_password %}
             <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-center justify-between shadow-sm">
@@ -244,7 +206,7 @@
     <footer class="mt-auto border-t border-dense-line bg-dense-surface">
         <div class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
             <p class="text-center text-sm text-dense-muted">
-                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.8.0') }}
+                &copy; {{ current_year | default('2026') }} {{ product_display_name | default('SHIM') }}. Smart Holiday & Integrated Management. v{{ app_version | default('1.8.4') }}
             </p>
         </div>
     </footer>

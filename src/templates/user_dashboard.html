@@ -51,27 +51,36 @@
         font-weight: 700;
         line-height: 1;
         letter-spacing: -0.04em;
-        border: 1px solid rgba(255,255,255,0.25);
-        color: #fff;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         cursor: default;
+    }
+    .cal-table .day-block.leave-light {
+        background: #eff8ff;
+        color: #175cd3;
+        border: none !important;
+    }
+    .cal-table .day-block.leave-medium {
+        background: #84caff;
+        color: #175cd3;
+        border: none !important;
+    }
+    .cal-table .day-block.leave-dark {
         background: #175cd3;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+        color: #ffffff;
+        border: none !important;
     }
-    .cal-table .day-block.half {
-        background: linear-gradient(180deg, #fde68a 0%, #f79009 100%);
-        border-color: rgba(181,71,8,0.35);
-        color: #1c1917;
-        text-shadow: 0 1px 0 rgba(255,255,255,0.35);
-    }
-    .cal-table .day-block.full {
-        background: linear-gradient(180deg, #f97066 0%, #d92d20 100%);
-        border-color: rgba(217,45,32,0.45);
-    }
-    
     .cal-table .day-block.public {
-        background: linear-gradient(180deg, #9333ea 0%, #7e22ce 100%);
-        border-color: rgba(147,51,234,0.45);
+        background: #7e22ce;
+        color: #ffffff;
+        border: none !important;
+    }
+    .cal-table .day-block.pending {
+        background: #f2f4f7 !important;
+        color: #475467 !important;
+        border: none !important;
+        opacity: 1 !important;
+        filter: none !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
     }
     
     .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
@@ -217,14 +226,13 @@
                                             {% set is_deduct = lv.is_deductive %}
                                             {% set total_h = lv.snapshot_deduction_hours %}
                                             {% set is_pending = lv.status == 'PENDING' %}
-                                            <div class="rounded px-1.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold truncate leading-normal shadow-sm border transform hover:scale-[1.02] transition-transform cursor-pointer block text-left
-                                                        {% if not is_deduct %}bg-purple-50 text-purple-700 border-purple-200
-                                                        {% elif total_h >= 8 %}bg-red-50 text-red-700 border-red-200
-                                                        {% elif total_h >= 4 %}bg-amber-50 text-amber-700 border-amber-200
-                                                        {% else %}bg-blue-50 text-blue-700 border-blue-200
-                                                        {% endif %}
-                                                        {% if is_pending %}opacity-60 grayscale-[25%]{% endif %}"
-                                                 style="{% if not is_deduct %}border-color: #d8b4fe; background-color: #faf5ff; color: #7e22ce;{% endif %}"
+                                            <div class="rounded px-1.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold truncate leading-normal shadow-sm transform hover:scale-[1.02] transition-transform cursor-pointer block text-left border-0
+                                                        {% if is_pending %}bg-dense-gray-soft text-dense-muted
+                                                        {% elif not is_deduct %}bg-purple-600 text-white
+                                                        {% elif total_h >= 8 %}bg-blue-700 text-white
+                                                        {% elif total_h >= 4 %}bg-blue-300 text-blue-800
+                                                        {% else %}bg-blue-50 text-blue-700
+                                                        {% endif %}"
                                                  title="[본인] {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
                                                  data-has-leave="true"
                                                  data-cell-date="{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
@@ -307,7 +315,7 @@
                                 {% if leaves_of_day %}
                                 <div class="mt-1 flex flex-wrap gap-0.5">
                                     {% if ns.total_h > 0 %}
-                                    <div class="inline-block rounded px-1 py-0.5 text-[9px] font-extrabold text-white {% if ns.total_h >= 8 %}bg-dense-danger{% elif ns.total_h >= 4 %}bg-[#f79009]{% else %}bg-dense-blue{% endif %}">
+                                    <div class="inline-block rounded px-1 py-0.5 text-[9px] font-extrabold {% if ns.total_h >= 8 %}bg-blue-700 text-white{% elif ns.total_h >= 4 %}bg-blue-300 text-blue-800{% else %}bg-blue-50 text-blue-700{% endif %}">
                                         {{ fmt_hours(ns.total_h) }}h
                                     </div>
                                     {% endif %}
