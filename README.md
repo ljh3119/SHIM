@@ -86,7 +86,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.8.2 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.8.6 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
@@ -103,7 +103,9 @@ docker compose -f infra/docker/docker-compose.yml up -d
 ### Step 3. 시스템 최초 접속 및 초기 설정
 서버가 정상적으로 기동되었다면 브라우저를 통해 접속합니다.
 
-1.  **브라우저 접속**: `http://localhost:8000`에 접속합니다.
+1.  **브라우저 접속**: 기동한 환경에 맞추어 접속합니다.
+    - **로컬 개발 서버**: `http://localhost:9090`
+    - **Docker 및 포터블 환경**: `http://localhost:8000` (포터블의 경우 포트가 이미 사용 중이면 8001 등으로 자동 할당됩니다)
 2.  **최초 로그인**: 아래 기본 관리자 계정으로 로그인합니다.
     - **ID**: `admin`
     - **PW**: `0000`
@@ -115,7 +117,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 
 본 시스템은 **"연도별 연차 격리 방식"**을 채택하여, 특정 연도의 연차를 변경해도 다른 연도에는 영향을 주지 않습니다. 연말/연초에는 관리자 대시보드에 새해 연차 일괄 지급 안내 배너가 자동으로 표시됩니다.
 
-> 📖 연차 격리 정책, 연말/연초 일괄 지급 절차, 결재 모델 등 상세 운영 가이드는 **[실무 운영 및 결재 가이드](docs/5-1_실무_운영_결재_가이드.md)**를 참조하십시오.
+> 📖 연차 격리 정책, 연말/연초 일괄 지급 절차, 결재 모델 등 상세 운영 가이드는 **[설계서 내 운영/결재 모델 절](docs/4-1_SHIM_프로젝트_설계서.md#38-현장-실무-결재-권한-운영-및-연차-지급-모델-operations--approval-models)**을 참조하십시오.
 
 ---
 
@@ -126,14 +128,14 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.8.2` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.8.6` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
 ### 주요 문서 및 산출물 목록
-- **운영 가이드**: [초심자 가이드](docs/1-1_초심자_구동_가이드.md), [백업/복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md), [실무 운영/결재 가이드](docs/5-1_실무_운영_결재_가이드.md), [포터블 가이드](portable/README_PORTABLE.md)
+- **운영 가이드**: [초심자 가이드](docs/1-1_초심자_구동_가이드.md), [백업/복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md), [실무 운영/결재 내용(설계서 3.8절)](docs/4-1_SHIM_프로젝트_설계서.md#38-현장-실무-결재-권한-운영-및-연차-지급-모델-operations--approval-models), [포터블 가이드](portable/README_PORTABLE.md)
 - **릴리즈 정보**: [통합 산출물 증적](docs/2-1_운영_릴리즈_통합_산출물.md), [변경 이력](docs/1-4_작업_로그.md)
-- **기술 설계**: [프로젝트 설계서](docs/4-1_SHIM_프로젝트_설계서.md), [AI 인수인계 가이드](docs/3-2_AI_인수인계_가이드.md)
+- **기술 설계**: [프로젝트 설계서](docs/4-1_SHIM_프로젝트_설계서.md), [AI 인수인계 내용(설계서 8절)](docs/4-1_SHIM_프로젝트_설계서.md#8-검증-및-테스트-세트-가이드-test-suite-guide)
 - **데이터베이스**: `var/data/shim_internal.db` (운영 시 정기 백업 필수)
 
 ---

@@ -1,6 +1,6 @@
 # SHIM UI/UX 갭 분석 리포트
 
-> 목업 파일([admin_mockup.html](file:///w:/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html), [option_g.html](file:///w:/Documents/Project/SHIM/design/ui-mockup/option_g.html))과 현재 실제 구현([src/templates/](file:///w:/Documents/Project/SHIM/src/templates)) 간의 차이를 분석하고, 남은 개선 작업과 고려사항을 도출합니다.
+> 목업 파일([admin_mockup.html](../admin_mockup.html), [option_g.html](../option_g.html))과 현재 실제 구현([src/templates/](../../../src/templates)) 간의 차이를 분석하고, 남은 개선 작업과 고려사항을 도출합니다.
 
 ---
 
@@ -10,18 +10,18 @@
 
 | 영역 | 상세 | 근거 파일 |
 |:---|:---|:---|
-| **Dense UI 디자인 시스템** | `dense-*` 색상 토큰, 라운드 카드, 폰트 가중치 체계 일치 | [app.css](file:///w:/Documents/Project/SHIM/src/static/css/app.css), [tailwind.css](file:///w:/Documents/Project/SHIM/src/static/css/tailwind.css) |
-| **Navbar 레이아웃** | 상단 sticky nav, 배지+브랜드 네이밍, 로그아웃 링크 | [base.html](file:///w:/Documents/Project/SHIM/src/templates/base.html) |
-| **Toast 알림 시스템** | `window.showToast()` + `window.alert` 오버라이드 구현 완료 | [base.html:L419-L486](file:///w:/Documents/Project/SHIM/src/templates/base.html#L419-L486) |
-| **버튼 로딩 상태** | `simulateButtonLoading()` 전역 유틸 함수 구현 | [base.html:L451-L467](file:///w:/Documents/Project/SHIM/src/templates/base.html#L451-L467) |
-| **사용자 대시보드 2컬럼 레이아웃** | 좌측 패널(나의 현황+간편 신청) + 우측 캘린더 구조 일치 | [user_dashboard.html](file:///w:/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| **모바일 뷰 분리** | `md:hidden` / `hidden md:flex` 반응형 분기 적용 | [user_dashboard.html:L114-L464](file:///w:/Documents/Project/SHIM/src/templates/user_dashboard.html#L114-L464) |
-| **모바일 퀵 액션 허브** | 4칸 통계 그리드 + 3칸 퀵 액션 카드 목업과 일치 | [user_dashboard.html:L322-L358](file:///w:/Documents/Project/SHIM/src/templates/user_dashboard.html#L322-L358) |
-| **관리자 사이드바** | 접기/펼치기 토글, 시스템 현황 카드 | [sidebar_admin.html](file:///w:/Documents/Project/SHIM/src/templates/partials/sidebar_admin.html) |
-| **관리자 대시보드 차트** | 팀별 연차 사용 현황 + 월별 트렌드 차트(Chart.js) | [admin_dashboard.html:L54-L237](file:///w:/Documents/Project/SHIM/src/templates/admin_dashboard.html#L54-L237) |
-| **캘린더 뷰 전환** | 월간/연간 토글, 월 네비게이션 | [user_dashboard.html:L146-L160](file:///w:/Documents/Project/SHIM/src/templates/user_dashboard.html#L146-L160) |
-| **다중 선택(Multi-Select) 모드** | 토글 버튼 + 플로팅 액션 바 + 일괄 신청 모달 | [user_dashboard.html:L152-L482](file:///w:/Documents/Project/SHIM/src/templates/user_dashboard.html#L152-L482) |
-| **모달 시스템** | `window.shimModal` (open/close/ESC/Focus trap) | [base.html:L327-L374](file:///w:/Documents/Project/SHIM/src/templates/base.html#L327-L374) |
+| **Dense UI 디자인 시스템** | `dense-*` 색상 토큰, 라운드 카드, 폰트 가중치 체계 일치 | [app.css](../../../src/static/css/app.css), [tailwind.css](../../../src/static/css/tailwind.css) |
+| **Navbar 레이아웃** | 상단 sticky nav, 배지+브랜드 네이밍, 로그아웃 링크 | [base.html](../../../src/templates/base.html) |
+| **Toast 알림 시스템** | `window.showToast()` + `window.alert` 오버라이드 구현 완료 | [base.html:L419-L486](../../../src/templates/base.html#L419-L486) |
+| **버튼 로딩 상태** | `simulateButtonLoading()` 전역 유틸 함수 구현 | [base.html:L451-L467](../../../src/templates/base.html#L451-L467) |
+| **사용자 대시보드 2컬럼 레이아웃** | 좌측 패널(나의 현황+간편 신청) + 우측 캘린더 구조 일치 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| **모바일 뷰 분리** | `md:hidden` / `hidden md:flex` 반응형 분기 적용 | [user_dashboard.html:L114-L464](../../../src/templates/user_dashboard.html#L114-L464) |
+| **모바일 퀵 액션 허브** | 4칸 통계 그리드 + 3칸 퀵 액션 카드 목업과 일치 | [user_dashboard.html:L322-L358](../../../src/templates/user_dashboard.html#L322-L358) |
+| **관리자 사이드바** | 접기/펼치기 토글, 시스템 현황 카드 | [sidebar_admin.html](../../../src/templates/partials/sidebar_admin.html) |
+| **관리자 대시보드 차트** | 팀별 연차 사용 현황 + 월별 트렌드 차트(Chart.js) | [admin_dashboard.html:L54-L237](../../../src/templates/admin_dashboard.html#L54-L237) |
+| **캘린더 뷰 전환** | 월간/연간 토글, 월 네비게이션 | [user_dashboard.html:L146-L160](../../../src/templates/user_dashboard.html#L146-L160) |
+| **다중 선택(Multi-Select) 모드** | 토글 버튼 + 플로팅 액션 바 + 일괄 신청 모달 | [user_dashboard.html:L152-L482](../../../src/templates/user_dashboard.html#L152-L482) |
+| **모달 시스템** | `window.shimModal` (open/close/ESC/Focus trap) | [base.html:L327-L374](../../../src/templates/base.html#L327-L374) |
 
 ---
 
@@ -31,21 +31,21 @@
 
 #### 2.1.1 좌측 패널 미니 목록 중복 정리
 - **목업 상태**: option_g에서 좌측에 결재 대기 목록 + 나의 신청 내역 미니 리스트가 있음
-- **현재 상태**: [user_left_panel.html](file:///w:/Documents/Project/SHIM/src/templates/partials/user_left_panel.html)에 해당 미니 리스트가 구현되어 있으나, 우측 메인 영역의 탭(결재 관리/내 신청 내역)과 기능적으로 **중복**
-- **개선 방향**: [3-1 백로그](file:///w:/Documents/Project/SHIM/docs/3-1_향후_개선계획.md#L26-L28)에도 이미 등록된 P3 과제. 좌측은 **나의 상태 요약 + 간편 신청 폼**으로 한정하고 미니 리스트 제거 검토
+- **현재 상태**: [user_left_panel.html](../../../src/templates/partials/user_left_panel.html)에 해당 미니 리스트가 구현되어 있으나, 우측 메인 영역의 탭(결재 관리/내 신청 내역)과 기능적으로 **중복**
+- **개선 방향**: [3-1 백로그](../../../docs/3-1_향후_개선계획.md#L26-L28)에도 이미 등록된 P3 과제. 좌측은 **나의 상태 요약 + 간편 신청 폼**으로 한정하고 미니 리스트 제거 검토
 
 > [!IMPORTANT]
 > 이 변경은 사용자 동선에 직접적인 영향을 미칩니다. 제거 시 "한 눈에 보이는 미결재 건수" UX가 사라지므로, 사이드바 배지 카운터(§2.1.2)와 반드시 함께 진행해야 합니다.
 
 #### 2.1.2 사이드바 미결재 배지(Badge) 카운터
 - **목업 상태**: option_g에서 좌측 결재 대기 카드에 숫자 배지가 명시적으로 표시
-- **현재 상태**: [sidebar_user.html](file:///w:/Documents/Project/SHIM/src/templates/partials/sidebar_user.html)에 결재 관리 링크는 있으나 **배지 카운터 미구현**
+- **현재 상태**: [sidebar_user.html](../../../src/templates/partials/sidebar_user.html)에 결재 관리 링크는 있으나 **배지 카운터 미구현**
 - **개선안**: 백엔드에서 `pending_approval_count`를 전역 컨텍스트로 주입 → 사이드바 링크 옆에 `<span>` 배지 추가
 - **난이도**: 하
 
 #### 2.1.3 타임라인 뷰 내 중복 뷰 전환 토글 제거
 - **현재 상태**: 개인 페이지 → 타임라인 탭 진입 시, 상단 메인 탭바에 '타임라인'이 이미 선택되어 있는데도 카드 내부에 다시 뷰 전환 토글이 노출
-- **개선 방향**: [3-1 백로그](file:///w:/Documents/Project/SHIM/docs/3-1_향후_개선계획.md#L29-L31)에 등록된 P3 과제. 타임라인 뷰 내부의 중복 토글을 제거하여 UX 흐름 정돈
+- **개선 방향**: [3-1 백로그](../../../docs/3-1_향후_개선계획.md#L29-L31)에 등록된 P3 과제. 타임라인 뷰 내부의 중복 토글을 제거하여 UX 흐름 정돈
 
 #### 2.1.4 연차 잔여량 프로그레스 바 개선
 - **목업 상태**: option_g 좌측 패널에 사용률 프로그레스 바가 시각적으로 명확하게 표시
@@ -58,7 +58,7 @@
 
 #### 2.2.1 관리자 대시보드 — "오늘 부재자 목록" 위젯 부재
 - **목업 상태**: admin_mockup에 `👥 오늘 부재자 목록 (6월 13일)` 섹션이 차트 하단에 배치
-- **현재 상태**: [admin_dashboard.html](file:///w:/Documents/Project/SHIM/src/templates/admin_dashboard.html)에 해당 위젯 **미구현**
+- **현재 상태**: [admin_dashboard.html](../../../src/templates/admin_dashboard.html)에 해당 위젯 **미구현**
 - **핵심 가치**: SHIM의 정체성 — "**오늘 누가 쓸 수 있는 인력인가**"를 가장 직접적으로 답하는 위젯
 - **개선안**: 백엔드에서 금일 승인/대기 상태 연차 조회 → 부재자 리스트 카드 렌더링
 - **난이도**: 중 (서비스 레이어 쿼리 추가 + 프론트엔드 카드)
@@ -70,17 +70,17 @@
 
 #### 2.2.3 관리자 대시보드 — 전체 연차 배정/사용/소진율 KPI 카드
 - **목업 상태**: admin_mockup에 `전체 연차 배정 시간(960h)`, `전체 연차 사용 시간(148h)`, `전체 연차 소진율(15.4%)` 3개 KPI 카드 + 프로그레스 바
-- **현재 상태**: [admin_dashboard.html](file:///w:/Documents/Project/SHIM/src/templates/admin_dashboard.html#L33-L52)에는 `활성 사원 수`, `금일 신청 건수`, `결재 대기 건수`, `금일 사용 연차` 4개 카드만 존재. **전체 배정/사용/소진율**은 미구현
+- **현재 상태**: [admin_dashboard.html](../../../src/templates/admin_dashboard.html#L33-L52)에는 `활성 사원 수`, `금일 신청 건수`, `결재 대기 건수`, `금일 사용 연차` 4개 카드만 존재. **전체 배정/사용/소진율**은 미구현
 - **개선안**: 백엔드에서 전체 사용자의 연차 배정/사용 합산 → 3개 KPI 카드 추가 (기존 4개와 병행 또는 대체)
 
 #### 2.2.4 관리자 대시보드 — 연말/연초 권고 배너
 - **목업 상태**: admin_mockup 대시보드 상단에 빨간색 경고 배너 `[새해 연차 일괄 지급 권고]` + CTA 버튼
-- **현재 상태**: [admin_dashboard.html:L20-L31](file:///w:/Documents/Project/SHIM/src/templates/admin_dashboard.html#L20-L31)에 파란색 알림 배너가 존재하지만 디자인 톤이 목업과 다름 (파란색 vs 빨간색 경고)
+- **현재 상태**: [admin_dashboard.html:L20-L31](../../../src/templates/admin_dashboard.html#L20-L31)에 파란색 알림 배너가 존재하지만 디자인 톤이 목업과 다름 (파란색 vs 빨간색 경고)
 - **개선안**: 목업처럼 `border-red-200 bg-red-50` 경고 톤으로 변경 + 닫기 버튼 추가 검토
 
 #### 2.2.5 관리자 연차 캘린더 — "연간 요약" 탭
 - **목업 상태**: admin_mockup의 연차 관리 섹션에 `타임라인 | 캘린더 | 연간 요약` 3개 탭이 있고, 연간 요약에는 사용자별 12개월 사용 현황 테이블이 배치
-- **현재 상태**: [admin_leaves_calendar.html](file:///w:/Documents/Project/SHIM/src/templates/admin_leaves_calendar.html)과 [admin_leaves_timeline.html](file:///w:/Documents/Project/SHIM/src/templates/admin_leaves_timeline.html)이 **별도 페이지**로 구현되어 있으나, "연간 요약" 뷰는 **미구현**
+- **현재 상태**: [admin_leaves_calendar.html](../../../src/templates/admin_leaves_calendar.html)과 [admin_leaves_timeline.html](../../../src/templates/admin_leaves_timeline.html)이 **별도 페이지**로 구현되어 있으나, "연간 요약" 뷰는 **미구현**
 - **개선안**: 연간 요약 테이블 뷰 구현 (사용자별 배정/사용/잔여 + 월별 사용 시간 히트맵)
 - **난이도**: 중~상 (백엔드 월별 집계 쿼리 + 프론트엔드 테이블 렌더링)
 
@@ -99,7 +99,7 @@
 
 #### 2.3.2 결재 관리 — 상태별 필터 탭
 - **목업 상태**: option_g의 결재 관리 뷰에 `전체 | 대기 중 | 승인됨 | 반려됨` 필터 탭 존재
-- **현재 상태**: [user_approvals.html](file:///w:/Documents/Project/SHIM/src/templates/user_approvals.html)에서 PENDING 상태만 표시 → 이전 승인/반려 이력 확인 불가
+- **현재 상태**: [user_approvals.html](../../../src/templates/user_approvals.html)에서 PENDING 상태만 표시 → 이전 승인/반려 이력 확인 불가
 - **개선안**: 라우터에 `status` 쿼리 파라미터 + 서비스 레이어 필터 추가 + 상태별 탭 UI
 - **난이도**: 중
 
@@ -129,7 +129,7 @@
 | 제약 | 영향 | 대응 |
 |:---|:---|:---|
 | **Jinja2 SSR** | SPA처럼 탭 간 상태를 JS로 관리할 수 없음. 각 페이지가 독립적 SSR 렌더링 | 목업의 SPA 스타일 탭 전환을 실제 구현 시 **페이지 이동**(a href)으로 구현하거나, 필요한 경우 JS로 `hidden` 클래스 토글 방식 사용 |
-| **외부 CDN 금지** | 목업에서 사용된 `cdn.tailwindcss.com`, `cdn.jsdelivr.net/npm/chart.js`는 실제 구현에서 사용 불가 | 로컬 [tailwind.css](file:///w:/Documents/Project/SHIM/src/static/css/tailwind.css) + [chart.umd.js](file:///w:/Documents/Project/SHIM/src/static/js/chart.umd.js) 사용 (이미 적용됨) |
+| **외부 CDN 금지** | 목업에서 사용된 `cdn.tailwindcss.com`, `cdn.jsdelivr.net/npm/chart.js`는 실제 구현에서 사용 불가 | 로컬 [tailwind.css](../../../src/static/css/tailwind.css) + [chart.umd.js](../../../src/static/js/chart.umd.js) 사용 (이미 적용됨) |
 | **SQLite 성능** | 대시보드 KPI(전체 배정/사용 합산), 오늘 부재자 조회 등 새 쿼리 추가 시 N+1 방지 필수 | 벌크 `in_()` 쿼리 + 메모리 맵핑 패턴 준수 |
 
 ### 3.2 디자인 시스템 일관성
