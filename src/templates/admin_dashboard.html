@@ -22,7 +22,7 @@
     {% endif %}
 
     <!-- 통계 카드 섹션 -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-3">
         <!-- 부여 연차 -->
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
             <div class="flex items-center justify-between">
@@ -56,59 +56,6 @@
             <div class="mt-4 space-y-1">
                 <h3 class="text-2xl font-extrabold text-dense-text tabular-nums">{{ stats.exhaustion_rate }} <span class="text-xs font-bold text-dense-muted">%</span></h3>
                 <span class="block text-xs font-extrabold text-dense-muted">전체 연차 소진율</span>
-            </div>
-        </div>
-
-        <!-- 시스템 운영 현황 미니 위젯 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm flex flex-col justify-between">
-            <div class="flex items-center justify-between border-b border-dense-line pb-2">
-                <span class="text-[11px] font-extrabold text-dense-text uppercase tracking-wider">시스템 운영 현황</span>
-                <div class="flex items-center gap-1">
-                    <span class="h-1.5 w-1.5 rounded-full {% if system_metrics.is_healthy %}bg-dense-green{% else %}bg-dense-danger animate-pulse{% endif %}"></span>
-                    <span class="text-[9px] font-extrabold {% if system_metrics.is_healthy %}text-dense-green{% else %}text-dense-danger{% endif %}">
-                        {% if system_metrics.is_healthy %}정상{% else %}지연/점검필요{% endif %}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] font-semibold text-dense-muted">
-                <!-- 활성 사원 -->
-                <div class="flex flex-col justify-between border-r border-dense-line pr-2.5">
-                    <span class="text-[9px] font-bold text-dense-muted">활성 사원</span>
-                    <span class="font-extrabold text-dense-text mt-0.5">{{ stats.active_users_count }}명</span>
-                </div>
-                <!-- 가동 시간 -->
-                <div class="flex flex-col justify-between">
-                    <span class="text-[9px] font-bold text-dense-muted">가동 시간</span>
-                    <span class="font-extrabold text-dense-text mt-0.5 truncate" title="{{ system_metrics.uptime }}">{{ system_metrics.uptime }}</span>
-                </div>
-                <!-- DB 용량 -->
-                <div class="flex flex-col justify-between border-r border-dense-line pr-2.5 border-t border-dense-line pt-1.5">
-                    <span class="text-[9px] font-bold text-dense-muted">DB 용량</span>
-                    <span class="font-extrabold text-dense-text mt-0.5">{{ system_metrics.db_size }}</span>
-                </div>
-                <!-- PII 보안 -->
-                <div class="flex flex-col justify-between border-t border-dense-line pt-1.5">
-                    <span class="text-[9px] font-bold text-dense-muted">PII 보안</span>
-                    <span class="font-extrabold mt-0.5 {% if '보안 활성' in system_metrics.security_mode %}text-dense-green{% else %}text-dense-amber{% endif %}">
-                        {{ system_metrics.security_mode }}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="mt-3.5 space-y-1.5 border-t border-dense-line pt-2.5 text-[9px] font-semibold text-dense-muted">
-                <div class="flex items-center justify-between">
-                    <span>최종 자동 백업</span>
-                    <span class="font-bold text-dense-text truncate max-w-[130px]" title="{{ system_metrics.last_backup_time }} (보관: {{ system_metrics.last_backup_count }}개)">
-                        {{ system_metrics.last_backup_time }} {% if system_metrics.last_backup_count > 0 %}({{ system_metrics.last_backup_count }}개){% endif %}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span>최종 알림 정리</span>
-                    <span class="font-bold text-dense-text truncate max-w-[130px]" title="{{ system_metrics.last_cleanup_time }}">
-                        {{ system_metrics.last_cleanup_time }}
-                    </span>
-                </div>
             </div>
         </div>
     </div>
@@ -203,73 +150,60 @@
         </div>
     </div>
 
-    <!-- 최근 7일 신청 타임라인 -->
-    <section class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dense-line px-4 py-4 sm:px-5">
-            <h3 class="text-lg font-extrabold tracking-tight text-dense-text">
-                <a href="/admin/leave/timeline" class="text-dense-text hover:text-dense-blue transition-colors">최근 7일 신청 타임라인</a>
-            </h3>
-            <nav class="flex flex-wrap gap-2" aria-label="상태로 타임라인 이동">
-                <a href="/admin/leave/timeline" class="inline-flex rounded-full border border-dense-line-strong bg-dense-blue-soft px-3 py-1.5 text-xs font-extrabold text-dense-blue">전체</a>
-                <a href="/admin/leave/timeline?leave_status=PENDING" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">결재 대기</a>
-                <a href="/admin/leave/timeline?leave_status=APPROVED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">승인됨</a>
-                <a href="/admin/leave/timeline?leave_status=REJECTED" class="inline-flex rounded-full border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-extrabold text-dense-nav-text hover:bg-dense-surface-soft">반려</a>
-            </nav>
+    <!-- 시스템 운영 현황 (제일 밑에 가로 1단으로 배치) -->
+    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-dense-line pb-3">
+            <div class="flex items-center gap-2">
+                <span class="text-sm">⚙️</span>
+                <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">시스템 운영 현황</h3>
+            </div>
+            <div class="flex items-center gap-1.5 rounded-full border border-dense-line bg-dense-surface-soft px-2.5 py-1">
+                <span class="h-2 w-2 rounded-full {% if system_metrics.is_healthy %}bg-dense-green{% else %}bg-dense-danger animate-pulse{% endif %}"></span>
+                <span class="text-[10px] font-extrabold {% if system_metrics.is_healthy %}text-dense-green{% else %}text-dense-danger{% endif %}">
+                    상태: {% if system_metrics.is_healthy %}정상 작동 중{% else %}동작 지연/점검필요{% endif %}
+                </span>
+            </div>
         </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-dense-line">
-                <thead class="bg-dense-surface-soft">
-                    <tr>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청 시각</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용자</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">연차 사용일</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">사용 시간대</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">상태</th>
-                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-dense-muted">차감(h)</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-dense-line bg-dense-surface">
-                    {% for leave in recent_leaves %}
-                    <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text" data-utc="{{ leave.created_at.isoformat() }}Z" data-format="YYYY-MM-DD HH:mm:ss">{{ leave.created_at | format_datetime_kst('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm text-dense-text">
-                            <span class="font-bold">{{ leave.user.user_name }}</span><span class="text-dense-muted">({{ leave.user.user_id }})</span>
-                        </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left">
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-bold text-dense-nav-text">{{ leave.date }}</span>
-                        </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm font-semibold text-dense-nav-text">
-                            {{ leave.snapshot_slot_label }} 
-                            {% if leave.is_deductive %}(-{{ fmt_hours(leave.snapshot_deduction_hours) }}h){% else %}(0h){% endif %}
-                            {% if not leave.is_deductive %}
-                            <span class="ml-1 inline-flex rounded bg-purple-100 px-1 py-0.5 text-[10px] font-bold text-purple-700" title="공가/출장 신청 (사유: {{ leave.reason or '없음' }})">공가/출장</span>
-                            {% endif %}
-                        </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-left text-sm">
-                            {% if leave.status == 'PENDING' %}
-                            <span class="inline-flex rounded-full border border-[#fedf89] bg-dense-amber-soft px-2 py-0.5 text-xs font-extrabold text-dense-amber">결재 대기</span>
-                            {% elif leave.status == 'APPROVED' %}
-                            <span class="inline-flex rounded-full border border-[#abefc6] bg-dense-green-soft px-2 py-0.5 text-xs font-extrabold text-dense-green">승인됨</span>
-                            {% elif leave.status == 'REJECTED' %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-[#475467]">반려</span>
-                            {% elif leave.status == 'CANCELED' %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">신청 취소</span>
-                            {% else %}
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status or '—' }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-right text-sm font-bold tabular-nums text-dense-text">{{ fmt_hours(leave.snapshot_deduction_hours) }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="px-5 py-10 text-center text-sm font-semibold text-dense-muted">최근 일주일간 연차 내역이 없습니다.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        
+        <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 text-xs">
+            <!-- 활성 사원 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">활성 사원</span>
+                <span class="font-extrabold text-dense-text mt-1 text-sm">{{ stats.active_users_count }}명</span>
+            </div>
+            <!-- 가동 시간 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">가동 시간 (Uptime)</span>
+                <span class="font-extrabold text-dense-text mt-1 text-sm truncate" title="{{ system_metrics.uptime }}">{{ system_metrics.uptime }}</span>
+            </div>
+            <!-- DB 용량 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">데이터베이스 용량</span>
+                <span class="font-extrabold text-dense-text mt-1 text-sm">{{ system_metrics.db_size }}</span>
+            </div>
+            <!-- PII 보안 모드 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">PII 보안 모드</span>
+                <span class="font-extrabold mt-1 text-sm {% if '보안 활성' in system_metrics.security_mode %}text-dense-green{% else %}text-dense-amber{% endif %}">
+                    {{ system_metrics.security_mode }}
+                </span>
+            </div>
+            <!-- 최종 자동 백업 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">최종 자동 백업</span>
+                <span class="font-extrabold text-dense-text mt-1 text-[11px] truncate" title="{{ system_metrics.last_backup_time }} (보관: {{ system_metrics.last_backup_count }}개)">
+                    {{ system_metrics.last_backup_time }} {% if system_metrics.last_backup_count > 0 %}({{ system_metrics.last_backup_count }}개){% endif %}
+                </span>
+            </div>
+            <!-- 최종 알림 정리 -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
+                <span class="text-[10px] font-bold text-dense-muted">최종 알림 정리</span>
+                <span class="font-extrabold text-dense-text mt-1 text-[11px] truncate" title="{{ system_metrics.last_cleanup_time }}">
+                    {{ system_metrics.last_cleanup_time }}
+                </span>
+            </div>
         </div>
-    </section>
+    </div>
 </div>
 
 <script src="/static/js/chart.umd.js"></script>
@@ -375,4 +309,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-{% endblock %}
+{% endblock %}}
