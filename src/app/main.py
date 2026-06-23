@@ -122,7 +122,7 @@ def _load_branding_into_request(request: Request) -> None:
 
 
 def branding_template_context(request: Request) -> dict:
-    return {
+    ctx = {
         "product_display_name": getattr(request.state, "product_display_name", DEFAULT_PRODUCT_DISPLAY_NAME),
         "product_nav_short": getattr(request.state, "product_nav_short", DEFAULT_PRODUCT_DISPLAY_NAME),
         "product_nav_short_raw": getattr(request.state, "product_nav_short_raw", ""),
@@ -131,6 +131,27 @@ def branding_template_context(request: Request) -> dict:
         "brand_badge_display": getattr(request.state, "brand_badge_display", DEFAULT_BRAND_INITIAL),
         "is_default_password": getattr(request.state, "is_default_password", False),
     }
+
+    # 관리자 페이지(/admin/*) 요청일 경우 사이드바용 실시간 시스템 현황 주입
+    if request.url.path.startswith("/admin"):
+        db = database.SessionLocal()
+        try:
+            active_users_count = db.query(models.Users).filter(
+                models.Users.role != "ADMIN",
+                models.Users.is_active == True
+            ).count()
+            pending_leaves_count = db.query(models.Leaves).filter(
+                models.Leaves.status == "PENDING"
+            ).count()
+            
+            ctx["active_users_count"] = active_users_count
+            ctx["pending_leaves_count"] = pending_leaves_count
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
+
+    return ctx
 
 def _resolve_runtime_base() -> Path:
     project_root = Path(__file__).resolve().parents[2]

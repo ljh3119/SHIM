@@ -43,11 +43,11 @@
     <div class="space-y-1 text-xs">
       <div class="flex justify-between font-semibold">
         <span class="text-dense-muted">활성 사용자</span>
-        <span id="stat-active-users" class="text-dense-text font-bold">{{ active_users_count | default('18명') }}</span>
+        <span id="stat-active-users" class="text-dense-text font-bold">{{ active_users_count | default(0) }}명</span>
       </div>
       <div class="flex justify-between font-semibold">
         <span class="text-dense-muted">결재 대기 건수</span>
-        <span id="stat-pending-count" class="text-dense-amber font-extrabold">{{ pending_leaves|length if pending_leaves is defined else '51건' }}</span>
+        <span id="stat-pending-count" class="text-dense-amber font-extrabold">{{ pending_leaves_count | default(0) }}건</span>
       </div>
     </div>
   </div>
