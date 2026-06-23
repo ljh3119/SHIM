@@ -16,8 +16,10 @@ from contextlib import asynccontextmanager
 import asyncio
 from . import models, database, auth, utils
 from .database import engine, get_db, DB_PATH
-from .services.ops import verify_and_recover_db, daily_backup_scheduler, notification_cleanup_scheduler
+from .services.ops import verify_and_recover_db, daily_backup_scheduler, notification_cleanup_scheduler, update_system_metrics_in_db
 from .constants import APP_VERSION, VALID_ROLES
+
+START_TIME = utils.get_local_now()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -420,6 +422,12 @@ def startup_event():
                     sys.exit(1)
 
         db.commit()
+        
+        # 5. 시스템 메트릭 초기화 (예외 안전망 캡슐화)
+        try:
+            update_system_metrics_in_db(db)
+        except Exception as metrics_err:
+            print(f"[SHIM WARNING] Failed to initialize system metrics on startup: {metrics_err}")
     finally:
         db.close()
 

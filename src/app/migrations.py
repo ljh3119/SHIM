@@ -45,3 +45,22 @@ def run_all_migrations(engine):
                     print(f"[MIGRATION ERROR] Failed to apply {version}: {e}")
                     raise e
 
+
+@migration("v1_8_5_system_metrics_columns")
+def add_system_metrics_columns(conn):
+    # system_settings 테이블 정보 조회
+    res = conn.execute(text("PRAGMA table_info(system_settings)"))
+    existing_cols = {row[1] for row in res.fetchall()}
+
+    new_cols = {
+        "last_backup_time": "DATETIME",
+        "last_cleanup_time": "DATETIME",
+        "last_backup_count": "INTEGER DEFAULT 0",
+        "last_db_size_kb": "INTEGER DEFAULT 0"
+    }
+
+    for col_name, col_type in new_cols.items():
+        if col_name not in existing_cols:
+            conn.execute(text(f"ALTER TABLE system_settings ADD COLUMN {col_name} {col_type}"))
+
+

@@ -9,6 +9,8 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from src.app.utils import get_local_now
+from src.app import models
+from src.app.database import DB_PATH
 
 # 전역 백업 스레드 락 도입 (동시 백업 쓰기 방지 및 SQLite 락 충돌 우회)
 _backup_lock = threading.Lock()
@@ -99,6 +101,23 @@ def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
                             print(f"[SHIM BACKUP ROTATION ERROR] Failed to delete {oldest}: {rm_err}")
                 except Exception as rot_err:
                     print(f"[SHIM BACKUP ROTATION ERROR] Error during rotation: {rot_err}")
+                
+                if backup_path:
+                    from src.app.database import SessionLocal
+                    db = SessionLocal()
+                    try:
+                        settings = db.query(models.SystemSettings).first()
+                        if settings:
+                            settings.last_backup_time = get_local_now().replace(tzinfo=None)
+                            settings.last_backup_count = len(backup_files)
+                            size_bytes = os.path.getsize(db_path)
+                            settings.last_db_size_kb = int(size_bytes // 1024)
+                            db.commit()
+                    except Exception as db_err:
+                        db.rollback()
+                        print(f"[SHIM BACKUP METRICS ERROR] Failed to update backup metrics: {db_err}")
+                    finally:
+                        db.close()
                     
                 return backup_path
     except Exception as lock_err:
@@ -238,6 +257,22 @@ def cleanup_old_notifications():
         # SQLite 락 경쟁 방지를 위해 청크 간 짧은 휴식 시간 제공
         time.sleep(0.1)
 
+    # 청소 완료 후 메트릭 업데이트
+    db = SessionLocal()
+    try:
+        settings = db.query(models.SystemSettings).first()
+        if settings:
+            settings.last_cleanup_time = get_local_now().replace(tzinfo=None)
+            if DB_PATH.exists():
+                size_bytes = os.path.getsize(DB_PATH)
+                settings.last_db_size_kb = int(size_bytes // 1024)
+            db.commit()
+    except Exception as db_err:
+        db.rollback()
+        print(f"[SHIM CLEANUP METRICS ERROR] Failed to update cleanup metrics: {db_err}")
+    finally:
+        db.close()
+
 
 async def notification_cleanup_scheduler():
     print("[SHIM NOTIFICATION CLEANUP] Scheduler started.")
@@ -270,4 +305,39 @@ async def notification_cleanup_scheduler():
         except Exception as e:
             print(f"[SHIM NOTIFICATION CLEANUP ERROR] Error in scheduler: {e}")
             await asyncio.sleep(3600)
+
+
+def update_system_metrics_in_db(db):
+    """현재 DB 파일 용량(KB) 및 백업본 개수를 구하여 system_settings에 영속 업데이트합니다.
+    기동 시 혹은 스케줄러 성공 시 호출되며, I/O 에러 발생 시 기동 Fatal Crash 방지를 위해 예외를 캡슐화 처리합니다.
+    """
+    try:
+        if not DB_PATH.exists():
+            return
+
+        # 1. 파일 크기 구하기 및 KB 단위로 캐스팅
+        size_bytes = os.path.getsize(DB_PATH)
+        size_kb = int(size_bytes // 1024)
+
+        # 2. 백업 파일 개수 구하기
+        backup_dir = DB_PATH.parent / "backup"
+        backup_count = 0
+        if backup_dir.exists():
+            backup_count = len(list(backup_dir.glob("*.bak")))
+
+        # 3. DB 업데이트
+        settings = db.query(models.SystemSettings).first()
+        if settings:
+            settings.last_db_size_kb = size_kb
+            settings.last_backup_count = backup_count
+            db.commit()
+    except Exception as e:
+        if db:
+            db.rollback()
+        import logging
+        logging.getLogger("shim.ops").error(
+            f"Failed to update system metrics in DB: {e}",
+            exc_info=True
+        )
+
 
