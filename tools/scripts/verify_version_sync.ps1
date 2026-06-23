@@ -63,11 +63,19 @@ if (Test-Path $portableReadme) {
     }
 }
 
-$designDoc = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "4-1_SHIM_*.md" | Select-Object -First 1).FullName
+$designDoc = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "4-1_*.md" | Select-Object -First 1).FullName
 if ($designDoc -and (Test-Path $designDoc)) {
     $dd = Read-Text $designDoc
     if ($dd -notmatch ('\*\*([^*]+)\*\*\s*:?\s*' + [regex]::Escape($ver))) {
         Add-Err "docs/4-1_SHIM_프로젝트_설계서.md: must match package.json version ($ver)"
+    }
+}
+
+$maintenanceDoc = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "1-2_*.md" | Select-Object -First 1).FullName
+if ($maintenanceDoc -and (Test-Path $maintenanceDoc)) {
+    $mc = Read-Text $maintenanceDoc
+    if ($mc -notmatch ('-Version\s+' + [regex]::Escape($ver))) {
+        Add-Err "docs/1-2_백업_복구_유지보수_가이드.md: release command example must match version ($ver)"
     }
 }
 
