@@ -1,6 +1,6 @@
 # SHIM UI 목업 마이그레이션 갭 분석 보고서
 
-> **분석 기준**: [option_g.html](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/option_g.html) (사용자 화면) + [admin_mockup.html](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html) (관리자 화면)을 현재 구현([src/templates/](file:///v:/M2SSD/Documents/Project/SHIM/src/templates))과 1:1 대조한 결과입니다.
+> **분석 기준**: [option_g.html](../option_g.html) (사용자 화면) + [admin_mockup.html](../admin_mockup.html) (관리자 화면)을 현재 구현([src/templates/](../../../src/templates))과 1:1 대조한 결과입니다.
 >
 > **분석 일시**: 2026-06-19 | **최종 업데이트**: 사용자 피드백 반영 (항목 제외/재분류/이미 구현 확인)
 
@@ -10,23 +10,23 @@
 
 | # | 영역 | 목업 요소 | 근거 |
 |:-:|:---|:---|:---|
-| 1 | Dense UI 디자인 시스템 | `dense-*` 색상 토큰, 라운드 카드, 폰트 가중치 | [app.css](file:///v:/M2SSD/Documents/Project/SHIM/src/static/css/app.css) |
-| 2 | Navbar 레이아웃 | 상단 sticky nav, 브랜딩 배지, 로그아웃 | [base.html:L132-L160](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html#L132-L160) |
-| 3 | Toast 알림 시스템 | `window.showToast()` + `window.alert` 오버라이드 | [base.html:L419-L486](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html#L419-L486) |
-| 4 | 버튼 로딩 상태 | `simulateButtonLoading()` 전역 유틸 | [base.html:L451-L467](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html#L451-L467) |
-| 5 | 사용자 대시보드 2컬럼 | 좌측 패널(나의 현황+간편 신청) + 우측 캘린더 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| 6 | 모바일 뷰 분리 | `md:hidden` / `hidden md:flex` 반응형 분기 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| 7 | 모바일 퀵 액션 허브 | 4칸 통계 그리드 + 3칸 퀵 액션 카드 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| 8 | 관리자 사이드바 | 접기/펼치기 토글 + 시스템 현황 카드 | [sidebar_admin.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/sidebar_admin.html) |
-| 9 | 관리자 대시보드 차트 | 팀별 연차 사용 현황 + 월별 트렌드 차트 (Chart.js) | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) |
-| 10 | 캘린더 뷰 전환 | 월간/연간 토글, 월 네비게이션 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| 11 | 다중 선택(Multi-Select) 모드 | 토글 버튼 + 플로팅 액션 바 + 일괄 신청 모달 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) |
-| 12 | 모달 시스템 | `window.shimModal` (open/close/ESC/Focus trap) | [base.html:L327-L374](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html#L327-L374) |
-| 13 | 결재 상태별 필터 탭 | `전체 \| 대기 중 \| 승인됨 \| 반려됨` 탭 | [user_approvals.html:L49-L54](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_approvals.html#L49-L54) |
-| 14 | 관리자 마스터 설정 | 승인 워크플로우, 캘린더 공유 범위, 시간 정책, 브랜딩, DB 백업 | [admin_master.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_master.html) |
-| 15 | 관리자 연간 요약 테이블 뷰 | 사용자별 12개월 사용 현황 매트릭스 (`타임라인형 \| 달력형 \| 연간 요약` 3탭) | [admin_leaves_calendar.html:L288-L381](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_leaves_calendar.html#L288-L381) |
+| 1 | Dense UI 디자인 시스템 | `dense-*` 색상 토큰, 라운드 카드, 폰트 가중치 | [app.css](../../../src/static/css/app.css) |
+| 2 | Navbar 레이아웃 | 상단 sticky nav, 브랜딩 배지, 로그아웃 | [base.html:L132-L160](../../../src/templates/base.html#L132-L160) |
+| 3 | Toast 알림 시스템 | `window.showToast()` + `window.alert` 오버라이드 | [base.html:L419-L486](../../../src/templates/base.html#L419-L486) |
+| 4 | 버튼 로딩 상태 | `simulateButtonLoading()` 전역 유틸 | [base.html:L451-L467](../../../src/templates/base.html#L451-L467) |
+| 5 | 사용자 대시보드 2컬럼 | 좌측 패널(나의 현황+간편 신청) + 우측 캘린더 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| 6 | 모바일 뷰 분리 | `md:hidden` / `hidden md:flex` 반응형 분기 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| 7 | 모바일 퀵 액션 허브 | 4칸 통계 그리드 + 3칸 퀵 액션 카드 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| 8 | 관리자 사이드바 | 접기/펼치기 토글 + 시스템 현황 카드 | [sidebar_admin.html](../../../src/templates/partials/sidebar_admin.html) |
+| 9 | 관리자 대시보드 차트 | 팀별 연차 사용 현황 + 월별 트렌드 차트 (Chart.js) | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) |
+| 10 | 캘린더 뷰 전환 | 월간/연간 토글, 월 네비게이션 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| 11 | 다중 선택(Multi-Select) 모드 | 토글 버튼 + 플로팅 액션 바 + 일괄 신청 모달 | [user_dashboard.html](../../../src/templates/user_dashboard.html) |
+| 12 | 모달 시스템 | `window.shimModal` (open/close/ESC/Focus trap) | [base.html:L327-L374](../../../src/templates/base.html#L327-L374) |
+| 13 | 결재 상태별 필터 탭 | `전체 \| 대기 중 \| 승인됨 \| 반려됨` 탭 | [user_approvals.html:L49-L54](../../../src/templates/user_approvals.html#L49-L54) |
+| 14 | 관리자 마스터 설정 | 승인 워크플로우, 캘린더 공유 범위, 시간 정책, 브랜딩, DB 백업 | [admin_master.html](../../../src/templates/admin_master.html) |
+| 15 | 관리자 연간 요약 테이블 뷰 | 사용자별 12개월 사용 현황 매트릭스 (`타임라인형 \| 달력형 \| 연간 요약` 3탭) | [admin_leaves_calendar.html:L288-L381](../../../src/templates/admin_leaves_calendar.html#L288-L381) |
 | 16 | 좌측 패널 미니 목록 | 결재 대기 + 나의 신청 미니 카드 | 목업과 구현 동일 구조 확인 |
-| 17 | 타임라인 뷰 전환 토글 | 상단 탭(페이지 간 전환) + 카드 내 뷰 토글(같은 페이지 내) | [user_team_calendar.html:L160-L206](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_team_calendar.html#L160-L206) — 2단계 네비게이션 |
+| 17 | 타임라인 뷰 전환 토글 | 상단 탭(페이지 간 전환) + 카드 내 뷰 토글(같은 페이지 내) | [user_team_calendar.html:L160-L206](../../../src/templates/user_team_calendar.html#L160-L206) — 2단계 네비게이션 |
 
 ---
 
@@ -34,7 +34,7 @@
 
 > [!NOTE]
 > **2026-06-19 기준 업데이트**: 아래의 모든 미완료 갭 항목(GAP-01 ~ GAP-13)에 대한 개선 개발 작업이 성공적으로 완료되었습니다.
-> 상세 구현 내역은 [운영/릴리즈 통합 산출물](file:///v:/M2SSD/Documents/Project/SHIM/docs/2-1_운영_릴리즈_통합_산출물.md) v1.7.5 릴리즈 이력을 참고하십시오.
+> 상세 구현 내역은 [운영/릴리즈 통합 산출물](../../../docs/2-1_운영_릴리즈_통합_산출물.md) v1.7.5 릴리즈 이력을 참고하십시오.
  갭 항목 — 최종 목록 🔧
 
 ### 2.1 🔴 높은 우선순위
@@ -45,7 +45,7 @@
 
 | 항목 | 내용 |
 |:---|:---|
-| **목업** | [admin_mockup.html:L160-L165](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html#L160-L165) — `👥 오늘 부재자 목록` 섹션. 부재자 이름/팀/시간대/사유를 카드형으로 표시 |
+| **목업** | [admin_mockup.html:L160-L165](../admin_mockup.html#L160-L165) — `👥 오늘 부재자 목록` 섹션. 부재자 이름/팀/시간대/사유를 카드형으로 표시 |
 | **현재** | **완전 미구현**. 관리자가 오늘 누가 쉬는지 알려면 타임라인/캘린더 페이지로 이동 필요 |
 | **핵심 영향** | SHIM 정체성 — "오늘 누가 쓸 수 있는 인력인가"를 가장 직접적으로 답하는 위젯 |
 | **필요 작업** | ① 백엔드: 금일 `APPROVED`/`PENDING` 연차 조회 서비스 함수 ② 프론트: 부재자 리스트 카드 렌더링 ③ 라우터 컨텍스트에 데이터 주입 |
@@ -57,7 +57,7 @@
 
 | 항목 | 내용 |
 |:---|:---|
-| **목업** | [admin_mockup.html:L167-L172](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html#L167-L172) — `🔍 최근 주요 활동 로그` 위젯. 최근 5건 + "전체 보기 →" 링크 |
+| **목업** | [admin_mockup.html:L167-L172](../admin_mockup.html#L167-L172) — `🔍 최근 주요 활동 로그` 위젯. 최근 5건 + "전체 보기 →" 링크 |
 | **현재** | 감사 로그는 별도 페이지(`/admin/audit`)에만 존재. 대시보드 미리보기 없음 |
 | **필요 작업** | ① 백엔드: 최근 5~10건 `AuditLog` 조회 ② 프론트: 미니 카드 + "전체 보기 →" 링크 ③ `actor_name`/`actor_department` 스냅샷 활용 |
 | **난이도** | **하~중** |
@@ -68,8 +68,8 @@
 
 | 항목 | 내용 |
 |:---|:---|
-| **목업** | [admin_mockup.html:L122-L140](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html#L122-L140) — 카드 내부에 아이콘, 라벨, 큰 숫자, 서브텍스트가 있는 디자인 |
-| **현재** | [admin_dashboard.html:L33-L52](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html#L33-L52) — 기존 4개 카드(`활성 사원 수`, `금일 신청 건수`, `결재 대기 건수`, `금일 사용 연차`)의 **데이터는 유지**, 디자인 스타일만 목업과 맞춤 |
+| **목업** | [admin_mockup.html:L122-L140](../admin_mockup.html#L122-L140) — 카드 내부에 아이콘, 라벨, 큰 숫자, 서브텍스트가 있는 디자인 |
+| **현재** | [admin_dashboard.html:L33-L52](../../../src/templates/admin_dashboard.html#L33-L52) — 기존 4개 카드(`활성 사원 수`, `금일 신청 건수`, `결재 대기 건수`, `금일 사용 연차`)의 **데이터는 유지**, 디자인 스타일만 목업과 맞춤 |
 | **변경 범위** | 카드 레이아웃·색상·타이포그래피를 목업 스타일로 통일. **새로운 데이터 쿼리 불필요** |
 | **난이도** | **하** (CSS/HTML 변경만) |
 
@@ -79,8 +79,8 @@
 
 | 항목 | 내용 |
 |:---|:---|
-| **목업** | [admin_mockup.html:L105-L120](file:///v:/M2SSD/Documents/Project/SHIM/design/ui-mockup/admin_mockup.html#L105-L120) — **빨간색** 경고 톤 + ⚠️ 아이콘 + "닫기" 버튼 |
-| **현재** | [admin_dashboard.html:L20-L31](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html#L20-L31) — **파란색** 정보 톤. 닫기 버튼 없음 |
+| **목업** | [admin_mockup.html:L105-L120](../admin_mockup.html#L105-L120) — **빨간색** 경고 톤 + ⚠️ 아이콘 + "닫기" 버튼 |
+| **현재** | [admin_dashboard.html:L20-L31](../../../src/templates/admin_dashboard.html#L20-L31) — **파란색** 정보 톤. 닫기 버튼 없음 |
 | **필요 작업** | 색상 변경(`border-red-200 bg-red-50`) + ⚠️ 아이콘 + 닫기 버튼 추가 |
 | **난이도** | **하** |
 
@@ -107,7 +107,7 @@
 
 | 항목 | 내용 |
 |:---|:---|
-| **현재** | [user_left_panel.html:L10-L12](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html#L10-L12) — 단일 파란색 바 |
+| **현재** | [user_left_panel.html:L10-L12](../../../src/templates/partials/user_left_panel.html#L10-L12) — 단일 파란색 바 |
 | **필요 작업** | ① 대기(`PENDING`) 시간 집계 추가 ② 사용(파란) / 대기(앰버) / 잔여(회색) 3구간 ③ 소진율 퍼센트 텍스트 |
 | **난이도** | **하~중** |
 
@@ -118,7 +118,7 @@
 | 항목 | 내용 |
 |:---|:---|
 | **대상** | **사용자 페이지만** (관리자 페이지 제외) |
-| **필요 작업** | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html), [user_left_panel.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html), [user_team_calendar.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_team_calendar.html)에 CSS 미디어쿼리 조정 |
+| **필요 작업** | [user_dashboard.html](../../../src/templates/user_dashboard.html), [user_left_panel.html](../../../src/templates/partials/user_left_panel.html), [user_team_calendar.html](../../../src/templates/user_team_calendar.html)에 CSS 미디어쿼리 조정 |
 | **난이도** | **하~중** |
 
 ---
@@ -183,25 +183,25 @@ graph TD
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
-| GAP-03: KPI 카드 디자인 통일 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) | HTML/CSS | ❌ |
-| GAP-04: 연말 배너 빨간색 경고 톤 + 닫기 버튼 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) | CSS/JS | ❌ |
-| GAP-07: 프로그레스 바 3구간 색분리 | [user_left_panel.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html) | HTML/CSS | 최소 (대기 시간 집계) |
+| GAP-03: KPI 카드 디자인 통일 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) | HTML/CSS | ❌ |
+| GAP-04: 연말 배너 빨간색 경고 톤 + 닫기 버튼 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) | CSS/JS | ❌ |
+| GAP-07: 프로그레스 바 3구간 색분리 | [user_left_panel.html](../../../src/templates/partials/user_left_panel.html) | HTML/CSS | 최소 (대기 시간 집계) |
 
 ### Phase 2: 핵심 기능 + UX 정제 (예상 3~5일)
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
-| GAP-01: 오늘 부재자 목록 위젯 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 서비스 쿼리 1개 |
-| GAP-02: 감사 로그 미니 위젯 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 쿼리 1개 |
-| GAP-06: 커스텀 Confirm/Prompt 모달 | [base.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html) + 전체 호출부 | JS 인프라 | ❌ |
-| GAP-09: 사용자 피벗 최적화 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html), [user_left_panel.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html), [user_team_calendar.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_team_calendar.html) | CSS | ❌ |
+| GAP-01: 오늘 부재자 목록 위젯 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 서비스 쿼리 1개 |
+| GAP-02: 감사 로그 미니 위젯 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 쿼리 1개 |
+| GAP-06: 커스텀 Confirm/Prompt 모달 | [base.html](../../../src/templates/base.html) + 전체 호출부 | JS 인프라 | ❌ |
+| GAP-09: 사용자 피벗 최적화 | [user_dashboard.html](../../../src/templates/user_dashboard.html), [user_left_panel.html](../../../src/templates/partials/user_left_panel.html), [user_team_calendar.html](../../../src/templates/user_team_calendar.html) | CSS | ❌ |
 
 ### Phase 3: 세부 폴리시 (예상 1~3일)
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
 | GAP-10: 빈 상태 일러스트 통일 | 여러 템플릿 | HTML | ❌ |
-| GAP-12: 키보드 숏컷 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html) | JS | ❌ |
+| GAP-12: 키보드 숏컷 | [user_dashboard.html](../../../src/templates/user_dashboard.html) | JS | ❌ |
 | GAP-13: Tooltip 고도화 | 여러 템플릿 | CSS/JS | ❌ |
 
 ---
@@ -270,24 +270,24 @@ graph TD
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
-| GAP-04: 연말 배너 빨간색 경고 톤 + 닫기 버튼 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) | CSS 변경 | ❌ |
-| GAP-05: 사이드바 미결재 배지 | [sidebar_user.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/sidebar_user.html) + 전역 컨텍스트 | HTML 추가 | 최소 (변수 1개) |
-| GAP-07: 프로그레스 바 3구간 색분리 | [user_left_panel.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html) | HTML/CSS | 최소 (대기 시간 집계) |
+| GAP-04: 연말 배너 빨간색 경고 톤 + 닫기 버튼 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) | CSS 변경 | ❌ |
+| GAP-05: 사이드바 미결재 배지 | [sidebar_user.html](../../../src/templates/partials/sidebar_user.html) + 전역 컨텍스트 | HTML 추가 | 최소 (변수 1개) |
+| GAP-07: 프로그레스 바 3구간 색분리 | [user_left_panel.html](../../../src/templates/partials/user_left_panel.html) | HTML/CSS | 최소 (대기 시간 집계) |
 
 ### Phase 2: 핵심 가시성 강화 (예상 3~5일)
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
-| GAP-01: 오늘 부재자 목록 위젯 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 서비스 쿼리 1개 |
-| GAP-03: 전체 배정/사용/소진율 KPI | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 카드 3개 | SQL SUM 쿼리 |
-| GAP-02: 감사 로그 미니 위젯 | [admin_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 쿼리 1개 |
+| GAP-01: 오늘 부재자 목록 위젯 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 서비스 쿼리 1개 |
+| GAP-03: 전체 배정/사용/소진율 KPI | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 카드 3개 | SQL SUM 쿼리 |
+| GAP-02: 감사 로그 미니 위젯 | [admin_dashboard.html](../../../src/templates/admin_dashboard.html) + 서비스/라우터 | 신규 위젯 | 쿼리 1개 |
 
 ### Phase 3: UX 정제 (예상 2~3일)
 
 | 작업 | 대상 파일 | 변경 유형 | 백엔드 |
 |:---|:---|:---:|:---:|
-| GAP-06: 커스텀 Confirm/Prompt 모달 | [base.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/base.html) + 전체 `confirm()`/`prompt()` 호출 교체 | JS 인프라 + 전파 | ❌ |
-| GAP-09: 피벗 모니터 최적화 | [user_dashboard.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/user_dashboard.html), [user_left_panel.html](file:///v:/M2SSD/Documents/Project/SHIM/src/templates/partials/user_left_panel.html) | CSS 미디어쿼리 | ❌ |
+| GAP-06: 커스텀 Confirm/Prompt 모달 | [base.html](../../../src/templates/base.html) + 전체 `confirm()`/`prompt()` 호출 교체 | JS 인프라 + 전파 | ❌ |
+| GAP-09: 피벗 모니터 최적화 | [user_dashboard.html](../../../src/templates/user_dashboard.html), [user_left_panel.html](../../../src/templates/partials/user_left_panel.html) | CSS 미디어쿼리 | ❌ |
 
 ### Phase 4: 세부 폴리시 (예상 3~5일)
 
