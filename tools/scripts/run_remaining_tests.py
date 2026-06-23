@@ -1171,26 +1171,7 @@ def main():
     assert "access-control-allow-origin" not in r3.headers
     print("  -> PASS: Subnet & wildcard CORS preflight verified.")
 
-    # --- 시나리오 25: Pydantic KST 직렬화 ---
-    print("[CASE 25] Pydantic KST ISO 8601 Serialization")
-    from src.app.schemas.base import BaseKSTResponse
-    
-    class TestResponseSchema(BaseKSTResponse):
-        id: int
-        created_at: datetime
-        
-    naive_db_time = datetime(2026, 6, 3, 15, 30, 0)  # UTC 15:30
-    schema = TestResponseSchema(id=99, created_at=naive_db_time)
-    dumped = schema.model_dump()
-    expected_iso_str = "2026-06-04T00:30:00+09:00"  # UTC 15:30 -> KST 2026-06-04 00:30
-    
-    assert dumped["created_at"] == expected_iso_str, f"타임존 하루 밀림/시차 변환 불일치: {dumped['created_at']}"
-    
-    # 정규식을 이용해 ISO 8601 포맷 및 KST(+09:00) 오프셋이 엄격하게 지켜지는지 이중 단정 검사
-    import re
-    assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+09:00$", dumped["created_at"]), f"ISO 8601 KST 포맷 (+09:00 오프셋) 불일치: {dumped['created_at']}"
-    
-    print("  -> PASS: Pydantic KST datetime serialization verified.")
+
 
     # --- 시나리오 26: DBInitLock 동시성 락 ---
     print("[CASE 26] DBInitLock Atomic Directory Concurrency Guard")

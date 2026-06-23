@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
-    image: ${SHIM_IMAGE:-shim:1.8.5}
+    image: ${SHIM_IMAGE:-shim:1.8.6}
     container_name: shim
     ports:
       - "8000:8000"
