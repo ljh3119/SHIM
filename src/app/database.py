@@ -38,6 +38,7 @@ def set_sqlite_pragmas(dbapi_connection, connection_record):
     cursor.execute("PRAGMA cache_size=-64000;") # 64MB cache
     cursor.execute("PRAGMA temp_store=MEMORY;")  # Temporary tables in memory
     cursor.execute("PRAGMA mmap_size=268435456;") # Memory map file up to 256MB
+    cursor.execute("PRAGMA wal_autocheckpoint=1000;")
     cursor.close()
 
 

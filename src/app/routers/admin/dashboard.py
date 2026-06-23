@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
-from src.app import models, utils
+from src.app import models, utils, auth
 from src.app.database import get_db
 from src.app.services import admin_service
 from src.app.dependencies import get_current_admin
@@ -40,6 +40,66 @@ def admin_dashboard(
             
     charts_data = admin_service.get_admin_dashboard_charts_data(db, now.year)
     
+    settings = db.query(models.SystemSettings).first()
+    
+    # Uptime 계산 (로컬 임포트로 순환 참조 예방)
+    from src.app.main import START_TIME
+    uptime_td = now - START_TIME
+    days = uptime_td.days
+    hours = uptime_td.seconds // 3600
+    minutes = (uptime_td.seconds % 3600) // 60
+    if days > 0:
+        uptime_str = f"{days}일 {hours}시간"
+    else:
+        if hours > 0:
+            uptime_str = f"{hours}시간 {minutes}분"
+        else:
+            uptime_str = f"{minutes}분"
+            
+    # 보안 모드 판정
+    has_encryption_key = auth.get_encryption_key() is not None
+    security_mode_str = "보안 활성(암호화)" if has_encryption_key else "평문 모드(주의)"
+    
+    # 헬스 체크 임계치 및 지연 상태 판정 (26시간 임계치)
+    is_healthy = True
+    now_naive = now.replace(tzinfo=None)
+    
+    if settings:
+        if settings.last_backup_time is not None:
+            backup_time_naive = settings.last_backup_time.replace(tzinfo=None)
+            if (now_naive - backup_time_naive).total_seconds() > 26 * 3600:
+                is_healthy = False
+                
+        if settings.last_cleanup_time is not None:
+            cleanup_time_naive = settings.last_cleanup_time.replace(tzinfo=None)
+            if (now_naive - cleanup_time_naive).total_seconds() > 26 * 3600:
+                is_healthy = False
+                
+        db_size_kb = settings.last_db_size_kb or 0
+        if db_size_kb >= 1024:
+            db_size_str = f"{db_size_kb / 1024:.1f} MB"
+        else:
+            db_size_str = f"{db_size_kb} KB"
+            
+        last_backup_count = settings.last_backup_count or 0
+        last_backup_time_str = utils.format_datetime_kst(settings.last_backup_time) if settings.last_backup_time else "백업본 없음 (스케줄링 대기)"
+        last_cleanup_time_str = utils.format_datetime_kst(settings.last_cleanup_time) if settings.last_cleanup_time else "정리 이력 없음 (대기 중)"
+    else:
+        db_size_str = "0 KB"
+        last_backup_count = 0
+        last_backup_time_str = "백업본 없음 (스케줄링 대기)"
+        last_cleanup_time_str = "정리 이력 없음 (대기 중)"
+        
+    system_metrics = {
+        "is_healthy": is_healthy,
+        "uptime": uptime_str,
+        "security_mode": security_mode_str,
+        "db_size": db_size_str,
+        "last_backup_time": last_backup_time_str,
+        "last_backup_count": last_backup_count,
+        "last_cleanup_time": last_cleanup_time_str
+    }
+    
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={
         "admin": admin,
         "active_users_count": stats["active_users_count"],
@@ -59,5 +119,6 @@ def admin_dashboard(
         "show_setup_banner": show_setup_banner,    # 템플릿 show_setup_banner 매핑
         "next_year": next_year,
         "chart_data": charts_data,
-        "stats": stats
+        "stats": stats,
+        "system_metrics": system_metrics
     })

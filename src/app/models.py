@@ -149,6 +149,10 @@ class SystemSettings(Base):
     key_hash_snapshot = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    last_backup_time = Column(DateTime, nullable=True)
+    last_cleanup_time = Column(DateTime, nullable=True)
+    last_backup_count = Column(Integer, nullable=True, default=0)
+    last_db_size_kb = Column(Integer, nullable=True, default=0)
 
 class Notifications(Base):
     __tablename__ = "notifications"
