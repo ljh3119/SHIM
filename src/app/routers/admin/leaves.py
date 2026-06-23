@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 import calendar
 import io
 
-from fastapi import APIRouter, Depends, Request, Form, status, BackgroundTasks
+from fastapi import APIRouter, Depends, Request, Form, status
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session, contains_eager
@@ -676,7 +676,6 @@ def admin_leaves_calendar(
 def delete_leave(
     request: Request,
     leave_id: int = Form(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -712,7 +711,6 @@ def update_leave_status(
     leave_id: int = Form(...),
     status_value: str = Form(...),
     rejection_reason: str = Form(""),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -752,7 +750,6 @@ def update_leave_type(
     request: Request,
     leave_id: int = Form(...),
     is_deductive: bool = Form(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):

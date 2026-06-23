@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Request, Form, status, BackgroundTasks
+from fastapi import APIRouter, Depends, Request, Form, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -137,7 +137,6 @@ def admin_users(
 @api_router.post("/user/toggle")
 def toggle_user_active(
     request: Request,
-    background_tasks: BackgroundTasks,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
@@ -189,7 +188,6 @@ def toggle_user_active(
 @api_router.post("/user/reset-password")
 def reset_password(
     request: Request,
-    background_tasks: BackgroundTasks,
     target_user_id: str = Form(...),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
@@ -227,7 +225,6 @@ def update_user(
     role: str = Form("STAFF"),
     position: str = Form(""),
     is_active: bool = Form(True),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -310,7 +307,6 @@ def create_user(
     position: str = Form(""),
     total_leave_days: int = Form(15),
     year: int = Form(None),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -373,7 +369,6 @@ def update_user_leave_days(
     target_user_id: str = Form(...),
     total_leave_days: int = Form(...),
     year: int = Form(None),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -425,7 +420,6 @@ def bulk_update_user_leave_days(
     total_leave_days: int = Form(...),
     year: int = Form(None),
     filter_scope: str = Form("all"),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
@@ -486,7 +480,6 @@ def bulk_update_user_leave_days(
 def hard_delete_user(
     request: Request,
     target_user_id: str = Form(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Form, status, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy import func
@@ -515,7 +515,6 @@ def apply_leave(
     end_time: str = Form(""),
     is_deductive: bool = Form(True),
     reason: str = Form(""),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     user: models.Users = Depends(get_current_user),
 ):
@@ -620,7 +619,6 @@ def user_approvals(
 def team_approve_leave(
     request: Request,
     leave_id: int,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     approver: models.Users = Depends(get_current_approver),
 ):
@@ -670,7 +668,6 @@ def team_reject_leave(
     request: Request,
     leave_id: int,
     rejection_reason: str = Form(""),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     approver: models.Users = Depends(get_current_approver),
 ):
@@ -756,7 +753,6 @@ def user_change_password(
 def user_cancel_leave(
     request: Request,
     leave_id: int,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: models.Users = Depends(get_current_user),
 ):
