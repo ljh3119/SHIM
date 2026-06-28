@@ -183,7 +183,7 @@ def validate_and_apply_leave(
             approvers = db.query(models.Users).filter(
                 models.Users.is_active == True,
                 (
-                    (models.Users.role == "TEAM_LEAD") & (models.Users.team == user.team) |
+                    ((models.Users.role == "TEAM_LEAD") & (models.Users.company == user.company) & (models.Users.team == user.team)) |
                     (models.Users.role == "PM")
                 )
             ).all()
