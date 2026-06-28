@@ -33,7 +33,7 @@ engine = create_engine(
 def set_sqlite_pragmas(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL;")
-    cursor.execute("PRAGMA synchronous=NORMAL;")
+    cursor.execute("PRAGMA synchronous=FULL;")
     cursor.execute("PRAGMA foreign_keys=ON;")
     cursor.execute("PRAGMA cache_size=-64000;") # 64MB cache
     cursor.execute("PRAGMA temp_store=MEMORY;")  # Temporary tables in memory

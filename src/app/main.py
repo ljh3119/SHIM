@@ -34,16 +34,7 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     
-    # Shutdown: 임시 바구니 비우기(체크포인트) 수행 후 커넥션 풀 해제
-    db = database.SessionLocal()
-    try:
-        db.execute(text("PRAGMA wal_checkpoint(TRUNCATE);"))
-        print("[SHIM] Database wal_checkpoint(TRUNCATE) completed successfully on shutdown.")
-    except Exception as e:
-        print(f"[SHIM ERROR] Database wal_checkpoint failed on shutdown: {e}")
-    finally:
-        db.close()
-        
+    # Shutdown: 커넥션 풀 해제 (SQLite가 커넥션 종료 시 자동으로 WAL 병합 및 정리 수행)
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
