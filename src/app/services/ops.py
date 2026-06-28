@@ -117,20 +117,42 @@ def verify_and_recover_db(db_path: Path):
     print(f"[SHIM DATABASE] Verifying integrity of database: {db_path}")
     is_corrupt = False
     conn = None
-    try:
-        conn = sqlite3.connect(db_path, timeout=5.0)
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA quick_check;")
-        res = cursor.fetchall()
-        if not res or res[0][0] != "ok":
-            print(f"[SHIM DATABASE] quick_check failed: {res}")
+    
+    # NAS 등 느린 네트워크 스토리지의 파일 락 해제 대기를 위해 최대 5회 재시도
+    for attempt in range(5):
+        try:
+            conn = sqlite3.connect(db_path, timeout=10.0)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA quick_check;")
+            res = cursor.fetchall()
+            if not res or res[0][0] != "ok":
+                print(f"[SHIM DATABASE] quick_check failed: {res}")
+                is_corrupt = True
+            break
+        except sqlite3.OperationalError as oe:
+            err_msg = str(oe).lower()
+            if "locked" in err_msg or "busy" in err_msg:
+                print(f"[SHIM DATABASE WARNING] Database is busy/locked (attempt {attempt + 1}/5). Retrying in 1s...")
+                time.sleep(1.0)
+                if attempt == 4:
+                    # 락 해제가 지연되는 경우 파일 격리(삭제)를 수행하지 않고 예외를 던져 안전하게 재기동되도록 조치
+                    raise oe
+                continue
+            print(f"[SHIM DATABASE] OperationalError during quick_check: {oe}")
             is_corrupt = True
-    except Exception as e:
-        print(f"[SHIM DATABASE] quick_check error: {e}")
-        is_corrupt = True
-    finally:
-        if conn:
-            conn.close()
+            break
+        except sqlite3.DatabaseError as de:
+            print(f"[SHIM DATABASE CORRUPT] DatabaseError during quick_check (corruption suspected): {de}")
+            is_corrupt = True
+            break
+        except Exception as e:
+            print(f"[SHIM DATABASE] Unexpected error during quick_check: {e}")
+            is_corrupt = True
+            break
+        finally:
+            if conn:
+                conn.close()
+                conn = None
 
     if is_corrupt:
         print("[SHIM DATABASE CORRUPT] Database corruption detected!")
