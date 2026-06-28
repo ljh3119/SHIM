@@ -19,11 +19,13 @@
         border-left: 2px solid #175cd3 !important;
         border-top-left-radius: 6px !important;
         border-bottom-left-radius: 6px !important;
+        background-clip: padding-box !important;
     }
     .timeline-selected-mid {
         background-color: #dbeafe !important;
         border-top: 2px solid #175cd3 !important;
         border-bottom: 2px solid #175cd3 !important;
+        background-clip: padding-box !important;
     }
     .timeline-selected-end {
         background-color: #dbeafe !important;
@@ -32,11 +34,13 @@
         border-right: 2px solid #175cd3 !important;
         border-top-right-radius: 6px !important;
         border-bottom-right-radius: 6px !important;
+        background-clip: padding-box !important;
     }
     .timeline-selected-single {
         background-color: #dbeafe !important;
         border: 2px solid #175cd3 !important;
         border-radius: 6px !important;
+        background-clip: padding-box !important;
     }
 
     .cal-table th,
@@ -1188,9 +1192,22 @@
     document.addEventListener('DOMContentLoaded', () => {
         renderMobileScheduleListG();
         
-        // 1. document.referrer 빈 문자열 및 직접 진입/이동 시 상태 청소
+        // 1. sessionStorage last page 및 document.referrer를 복합 검사하여 외부/타메뉴 진입 상태를 감지
         const prevUrl = document.referrer;
-        if (!prevUrl || !prevUrl.includes('/user/team-calendar')) {
+        const lastPage = sessionStorage.getItem('shim_last_page');
+        
+        let shouldClear = false;
+        if (lastPage) {
+            if (!lastPage.includes('/user/team-calendar')) {
+                shouldClear = true;
+            }
+        } else {
+            if (!prevUrl || !prevUrl.includes('/user/team-calendar')) {
+                shouldClear = true;
+            }
+        }
+
+        if (shouldClear) {
             sessionStorage.removeItem('shim_timeline_start_date');
             sessionStorage.removeItem('shim_timeline_end_date');
         } else {
@@ -1234,7 +1251,7 @@
             }
         }
         
-        // 키보드 숏컷 (ArrowLeft/ArrowRight)
+        // 키보드 숏컷 (ArrowLeft/ArrowRight / Escape)
         document.addEventListener('keydown', (e) => {
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
             if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
@@ -1245,7 +1262,9 @@
                 return;
             }
             
-            if (e.key === 'ArrowLeft') {
+            if (e.key === 'Escape') {
+                cancelMultiSelect();
+            } else if (e.key === 'ArrowLeft') {
                 const prevLink = document.getElementById('prevMonthLink');
                 if (prevLink) prevLink.click();
             } else if (e.key === 'ArrowRight') {

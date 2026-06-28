@@ -85,6 +85,10 @@
     
     .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
     .holiday-head { color: #d92d20 !important; background: #fef3f2 !important; }
+    
+    .selected-start, .selected-mid, .selected-end, .selected-single {
+        background-clip: padding-box !important;
+    }
 </style>
 
 <script>
@@ -672,7 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        if (currentDashboardLayout === 'monthly') {
+        if (e.key === 'Escape') {
+            cancelMultiSelect();
+        } else if (currentDashboardLayout === 'monthly') {
             if (e.key === 'ArrowLeft') {
                 prevMonth();
             } else if (e.key === 'ArrowRight') {
