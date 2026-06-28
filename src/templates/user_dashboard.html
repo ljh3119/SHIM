@@ -159,7 +159,7 @@
                         </div>
                         
                         <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-dense-muted">다중 선택</span>
+                            <span class="text-xs font-bold text-dense-muted">기간 선택</span>
                             <button type="button" id="multiSelectToggleBtn" onclick="toggleMultiSelectMode()" class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent bg-dense-line-strong transition-colors duration-200 ease-in-out focus:outline-none">
                                 <span id="multiSelectToggleCircle" class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
                             </button>
@@ -391,11 +391,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[10px]">시작일</label>
-                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
+                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
                         </div>
                         <div>
                             <label class="text-[10px]">종료일</label>
-                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" onchange="updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
+                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
@@ -417,12 +417,12 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <input type="checkbox" id="easy-deductive-g_mobile" checked onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-3.5 w-3.5">
-                        <label for="easy-deductive-g_mobile" class="text-[10px] font-bold cursor-pointer">연차 차감</label>
+                        <input type="checkbox" id="easy-deductive-g_mobile" onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-3.5 w-3.5">
+                        <label for="easy-deductive-g_mobile" class="text-[10px] font-bold cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
                     </div>
-                    <div id="easy-reason-container-g_mobile" class="hidden">
-                        <label class="text-[10px] font-bold">신청 사유 <span class="text-dense-danger">*</span></label>
-                        <textarea id="easy-reason-g_mobile" placeholder="사유를 기입해 주세요." class="w-full border rounded p-1 bg-dense-surface mt-1 text-xs h-12 resize-none"></textarea>
+                    <div id="easy-reason-container-g_mobile">
+                        <label class="text-[10px] font-bold">신청 사유 <span id="easy-reason-star-g_mobile" class="text-dense-danger hidden">*</span></label>
+                        <textarea id="easy-reason-g_mobile" placeholder="사유를 기입해 주세요. (선택 사항)" class="w-full border rounded p-1 bg-dense-surface mt-1 text-xs h-12 resize-none"></textarea>
                     </div>
                     <div id="easy-calc-g_mobile" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
                     <button type="submit" id="easy-submit-btn-g_mobile" class="w-full bg-dense-blue py-1.5 rounded-lg text-white font-bold text-[11px] hover:bg-dense-blue/90 transition-colors">신청 완료</button>
@@ -527,13 +527,13 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="checkbox" id="calendar_is_deductive_display" checked onchange="toggleReason('calendar')" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                        <label for="calendar_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">연차 차감 (체크 해제 시 공가/출장 신청)</label>
+                        <input type="checkbox" id="calendar_is_deductive_display" onchange="toggleReason('calendar')" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                        <label for="calendar_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">공가/출장 신청 (체크 시 연차 미차감)</label>
                         <input type="hidden" name="is_deductive" id="calendar_is_deductive" value="true">
                     </div>
-                    <div id="calendar_reason_container" class="hidden">
-                        <label for="calendar_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span class="text-dense-danger">*</span></label>
-                        <textarea id="calendar_reason" name="reason" placeholder="예: 예비군 훈련, 외부 세미나 참석 등" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
+                    <div id="calendar_reason_container">
+                        <label for="calendar_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span id="calendar_reason_required_star" class="text-dense-danger hidden">*</span></label>
+                        <textarea id="calendar_reason" name="reason" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                     </div>
                     <div id="calendar_time_input_container">
                         <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
@@ -680,6 +680,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let isMultiSelectMode = false;
 let selectedDates = [];
+let rangeStartDate = null;
+let rangeEndDate = null;
+let isSyncing = false;
+let inputFilledByCalendar = false;
+
+window.parseLocalDate = function(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+};
+
+function isBusinessDay(dateStr) {
+    const d = window.parseLocalDate(dateStr);
+    if (!d || isNaN(d.getTime())) return false;
+    const day = d.getDay();
+    if (day === 0 || day === 6) return false;
+    if (window.holidayMapDates && window.holidayMapDates.includes(dateStr)) return false;
+    return true;
+}
+
+function getDatesInRange(startStr, endStr) {
+    const dates = [];
+    const start = window.parseLocalDate(startStr);
+    const end = window.parseLocalDate(endStr);
+    if (!start || !end || start > end) return dates;
+    
+    let curr = new Date(start);
+    while (curr <= end) {
+        const yyyy = curr.getFullYear();
+        const mm = String(curr.getMonth() + 1).padStart(2, '0');
+        const dd = String(curr.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        if (isBusinessDay(dateStr)) {
+            dates.push(dateStr);
+        }
+        curr.setDate(curr.getDate() + 1);
+    }
+    return dates;
+}
+
+function clearCellHighlight(dateStr) {
+    const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
+    const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
+    const removeHighlight = (btn, isBlocked) => {
+        if (!btn) return;
+        btn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue', 'bg-dense-blue-soft/30', 'border-2', 'border-dashed', 'border-dense-blue/40', 'bg-dense-blue-soft/10');
+        if (isBlocked) {
+            btn.classList.add('opacity-60');
+        }
+    };
+    
+    const isBiz = isBusinessDay(dateStr);
+    removeHighlight(mBtn, !isBiz);
+    removeHighlight(yBtn, !isBiz);
+}
 
 function parseHHMMToMinutes(value) {
     if (!value) return null;
@@ -702,17 +757,24 @@ function formatHoursForConfirm(hours) {
 function toggleReason(prefix) {
     const isDeductiveDisplay = document.getElementById(`${prefix}_is_deductive_display`);
     const isDeductiveHidden = document.getElementById(`${prefix}_is_deductive`);
-    const reasonContainer = document.getElementById(`${prefix}_reason_container`);
     const reasonInput = document.getElementById(`${prefix}_reason`);
+    const star = document.getElementById(`${prefix}_reason_required_star`);
     
-    const isChecked = isDeductiveDisplay.checked;
-    isDeductiveHidden.value = isChecked ? "true" : "false";
-    if (isChecked) {
-        reasonContainer.classList.add('hidden');
-        reasonInput.required = false;
+    const isOfficialLeave = isDeductiveDisplay.checked;
+    isDeductiveHidden.value = isOfficialLeave ? "false" : "true";
+    
+    if (!isOfficialLeave) {
+        if (reasonInput) {
+            reasonInput.required = false;
+            reasonInput.placeholder = "예: 개인 사정, 휴식 등 (선택 사항)";
+        }
+        if (star) star.classList.add('hidden');
     } else {
-        reasonContainer.classList.remove('hidden');
-        reasonInput.required = true;
+        if (reasonInput) {
+            reasonInput.required = true;
+            reasonInput.placeholder = "예: 예비군 훈련, 외부 세미나 참석 등 (필수 입력)";
+        }
+        if (star) star.classList.remove('hidden');
     }
     
     if (prefix === 'direct') {
@@ -915,23 +977,40 @@ function handleDayClick(event, dateStr) {
         return;
     }
     
-    const idx = selectedDates.indexOf(dateStr);
+    // B-4. 시작일 재클릭 시 선택 취소(Deselect) 토글
+    if (dateStr === rangeStartDate && !rangeEndDate) {
+        cancelMultiSelect();
+        return;
+    }
     
-    if (idx === -1) {
-        selectedDates.push(dateStr);
-        const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
-        const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
-        if (mBtn) mBtn.classList.add('ring-2', 'ring-dense-blue', 'border-dense-blue');
-        if (yBtn) yBtn.classList.add('ring-2', 'ring-dense-blue', 'border-dense-blue');
+    const clickedDate = window.parseLocalDate(dateStr);
+    if (!clickedDate || isNaN(clickedDate.getTime())) return;
+    
+    if (!rangeStartDate || (rangeStartDate && rangeEndDate)) {
+        // 첫 번째 클릭
+        cancelMultiSelect();
+        rangeStartDate = dateStr;
+        rangeEndDate = null;
+        selectedDates = isBusinessDay(dateStr) ? [dateStr] : [];
+        highlightSelectedDates();
     } else {
-        selectedDates.splice(idx, 1);
-        const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
-        const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
-        if (mBtn) mBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
-        if (yBtn) yBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
+        // 두 번째 클릭
+        const start = window.parseLocalDate(rangeStartDate);
+        if (clickedDate < start) {
+            cancelMultiSelect();
+            rangeStartDate = dateStr;
+            rangeEndDate = null;
+            selectedDates = isBusinessDay(dateStr) ? [dateStr] : [];
+            highlightSelectedDates();
+        } else {
+            rangeEndDate = dateStr;
+            selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+            highlightSelectedDates();
+        }
     }
     
     updateFloatingBar();
+    syncCalendarToInputs();
 }
 
 function updateFloatingBar() {
@@ -947,14 +1026,44 @@ function updateFloatingBar() {
 }
 
 function cancelMultiSelect() {
-    selectedDates.forEach(dateStr => {
-        const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
-        const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
-        if (mBtn) mBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
-        if (yBtn) yBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
-    });
+    if (rangeStartDate) {
+        const start = window.parseLocalDate(rangeStartDate);
+        const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
+        if (start && end) {
+            let curr = new Date(start);
+            while (curr <= end) {
+                const yyyy = curr.getFullYear();
+                const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                const dd = String(curr.getDate()).padStart(2, '0');
+                const dateStr = `${yyyy}-${mm}-${dd}`;
+                clearCellHighlight(dateStr);
+                curr.setDate(curr.getDate() + 1);
+            }
+        }
+    }
+    
     selectedDates = [];
+    rangeStartDate = null;
+    rangeEndDate = null;
     updateFloatingBar();
+    
+    // C-5. inputFilledByCalendar 플래그가 참인 경우에만 좌측 패널 Input 초기화
+    if (inputFilledByCalendar) {
+        const dStart = document.getElementById('easy-start-date-g_desktop');
+        const dEnd = document.getElementById('easy-end-date-g_desktop');
+        const mStart = document.getElementById('easy-start-date-g_mobile');
+        const mEnd = document.getElementById('easy-end-date-g_mobile');
+        if (dStart) dStart.value = '';
+        if (dEnd) dEnd.value = '';
+        if (mStart) mStart.value = '';
+        if (mEnd) mEnd.value = '';
+        
+        if (typeof updateTimeSelectorAvailabilityG === 'function') {
+            updateTimeSelectorAvailabilityG('desktop');
+            updateTimeSelectorAvailabilityG('mobile');
+        }
+    }
+    inputFilledByCalendar = false;
 }
 
 function openCalendarApplyModal(dateStr) {
@@ -975,17 +1084,25 @@ function openCalendarApplyModal(dateStr) {
     document.getElementById('calendar_end_time').required = true;
     
     // 초기화
-    document.getElementById('calendar_is_deductive_display').checked = true;
+    document.getElementById('calendar_is_deductive_display').checked = false;
     document.getElementById('calendar_is_deductive').value = "true";
     document.getElementById('calendar_reason').value = "";
-    document.getElementById('calendar_reason_container').classList.add('hidden');
+    toggleReason('calendar');
     
     window.shimModal.open('calendarApplyModal', 'calendar_date_str', document.activeElement);
 }
 
 function openMultiSelectApplyModal() {
+    // B-2. 단일일 신청 시점의 데이터 명확화 (오픈 시 강제 동기화)
+    if (rangeStartDate && !rangeEndDate) {
+        rangeEndDate = rangeStartDate;
+        selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+        highlightSelectedDates();
+    }
+
+    // B-3. 공휴일/주말 단일 선택 시의 모달 진입 원천 차단
     if (selectedDates.length === 0) {
-        alert('선택된 날짜가 없습니다.');
+        alert('영업일을 선택해 주세요. (주말 및 공휴일은 신청 목록에서 제외됩니다.)');
         return;
     }
     
@@ -1013,10 +1130,8 @@ function openMultiSelectApplyModal() {
             const idx = selectedDates.indexOf(dateStr);
             if (idx !== -1) {
                 selectedDates.splice(idx, 1);
-                const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
-                const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
-                if (mBtn) mBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
-                if (yBtn) yBtn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue');
+                // C-3. 칩 삭제 시 범위 하이라이트 클래스 불일치 해소 (clearCellHighlight 사용)
+                clearCellHighlight(dateStr);
                 chip.remove();
                 updateFloatingBar();
                 if (selectedDates.length === 0) {
@@ -1040,10 +1155,10 @@ function openMultiSelectApplyModal() {
     document.getElementById('calendar_end_time').required = false;
     
     // 초기화
-    document.getElementById('calendar_is_deductive_display').checked = true;
+    document.getElementById('calendar_is_deductive_display').checked = false;
     document.getElementById('calendar_is_deductive').value = "true";
     document.getElementById('calendar_reason').value = "";
-    document.getElementById('calendar_reason_container').classList.add('hidden');
+    toggleReason('calendar');
     
     window.shimModal.open('calendarApplyModal', 'calendar_start_time', document.activeElement);
 }
@@ -1052,6 +1167,130 @@ function closeCalendarApplyModal() {
     window.shimModal.close('calendarApplyModal');
 }
 
+function highlightSelectedDates() {
+    if (!rangeStartDate) return;
+    
+    const start = window.parseLocalDate(rangeStartDate);
+    const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
+    if (!start || !end) return;
+    
+    // Clear highlights first
+    document.querySelectorAll('button[id^="day-btn-monthly-"], button[id^="day-btn-yearly-"]').forEach(btn => {
+        const idParts = btn.id.split('-');
+        const dateStr = idParts.slice(3).join('-');
+        clearCellHighlight(dateStr);
+    });
+    
+    // Add highlights
+    document.querySelectorAll('button[id^="day-btn-monthly-"], button[id^="day-btn-yearly-"]').forEach(btn => {
+        const idParts = btn.id.split('-');
+        const dateStr = idParts.slice(3).join('-');
+        const btnDate = window.parseLocalDate(dateStr);
+        
+        if (btnDate && btnDate >= start && btnDate <= end) {
+            const isBiz = isBusinessDay(dateStr);
+            if (isBiz) {
+                btn.classList.add('ring-2', 'ring-dense-blue', 'border-dense-blue', 'bg-dense-blue-soft/30');
+            } else {
+                // C-1. 주말/공휴일 셀 스타일 충돌 해소 (opacity-60 일시 제거)
+                btn.classList.remove('opacity-60');
+                btn.classList.add('border-2', 'border-dashed', 'border-dense-blue/40', 'bg-dense-blue-soft/10');
+            }
+        }
+    });
+}
+
+function syncCalendarToInputs() {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+        const start = rangeStartDate || '';
+        const end = rangeEndDate || rangeStartDate || '';
+        
+        const dStart = document.getElementById('easy-start-date-g_desktop');
+        const dEnd = document.getElementById('easy-end-date-g_desktop');
+        const mStart = document.getElementById('easy-start-date-g_mobile');
+        const mEnd = document.getElementById('easy-end-date-g_mobile');
+        
+        if (dStart) dStart.value = start;
+        if (dEnd) dEnd.value = end;
+        if (mStart) mStart.value = start;
+        if (mEnd) mEnd.value = end;
+        
+        inputFilledByCalendar = true;
+        
+        if (typeof updateTimeSelectorAvailabilityG === 'function') {
+            updateTimeSelectorAvailabilityG('desktop');
+            updateTimeSelectorAvailabilityG('mobile');
+        }
+    } finally {
+        isSyncing = false;
+    }
+}
+
+let syncInputsDebounceTimer = null;
+window.syncInputsToCalendar = function(prefix) {
+    if (syncInputsDebounceTimer) clearTimeout(syncInputsDebounceTimer);
+    syncInputsDebounceTimer = setTimeout(() => {
+        window.syncInputsToCalendarImmediate(prefix);
+    }, 150);
+};
+
+window.syncInputsToCalendarImmediate = function(prefix) {
+    if (isSyncing) return;
+    
+    const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+    const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+    if (!startInput) return;
+    
+    const startVal = startInput.value;
+    const endVal = endInput ? endInput.value : '';
+    
+    // B-2. 불완전 입력(Partial Input)에 대한 조기 반환 (정규식 검증)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (startVal && !dateRegex.test(startVal)) return;
+    if (endVal && !dateRegex.test(endVal)) return;
+    
+    isSyncing = true;
+    try {
+        const otherPrefix = prefix === 'desktop' ? 'mobile' : 'desktop';
+        const otherStart = document.getElementById(`easy-start-date-g_${otherPrefix}`);
+        const otherEnd = document.getElementById(`easy-end-date-g_${otherPrefix}`);
+        if (otherStart) otherStart.value = startVal;
+        if (otherEnd) otherEnd.value = endVal;
+        
+        inputFilledByCalendar = false;
+        
+        if (typeof updateTimeSelectorAvailabilityG === 'function') {
+            updateTimeSelectorAvailabilityG('desktop');
+            updateTimeSelectorAvailabilityG('mobile');
+        }
+        
+        if (!startVal) {
+            cancelMultiSelect();
+            return;
+        }
+        
+        if (!isMultiSelectMode) {
+            toggleMultiSelectMode();
+        }
+        
+        rangeStartDate = startVal;
+        if (endVal && endVal >= startVal) {
+            rangeEndDate = endVal;
+            selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+        } else {
+            rangeEndDate = null;
+            selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+        }
+        
+        highlightSelectedDates();
+        updateFloatingBar();
+    } finally {
+        isSyncing = false;
+    }
+};
+
 async function submitCalendarApply() {
     const form = document.getElementById('calendarApplyForm');
     if (!form.checkValidity()) {
@@ -1059,7 +1298,7 @@ async function submitCalendarApply() {
         return;
     }
 
-    const isDeductive = document.getElementById('calendar_is_deductive_display').checked;
+    const isDeductive = !document.getElementById('calendar_is_deductive_display').checked;
     
     let dateStr = '';
     const isMulti = !document.getElementById('calendar_multi_date_container').classList.contains('hidden');

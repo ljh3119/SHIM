@@ -361,13 +361,13 @@
                             <input type="date" id="timeline_date_str" name="date_str" required readonly lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="timeline_is_deductive_display" checked onchange="toggleTimelineReason()" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                            <label for="timeline_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">연차 차감 (체크 해제 시 공가/출장 신청)</label>
+                            <input type="checkbox" id="timeline_is_deductive_display" onchange="toggleTimelineReason()" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                            <label for="timeline_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">공가/출장 신청 (체크 시 연차 미차감)</label>
                             <input type="hidden" name="is_deductive" id="timeline_is_deductive" value="true">
                         </div>
-                        <div id="timeline_reason_container" class="hidden">
-                            <label for="timeline_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span class="text-dense-danger">*</span></label>
-                            <textarea id="timeline_reason" name="reason" placeholder="예: 예비군 훈련, 외부 세미나 참석 등" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
+                        <div id="timeline_reason_container">
+                            <label for="timeline_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span id="timeline_reason_required_star" class="text-dense-danger hidden">*</span></label>
+                            <textarea id="timeline_reason" name="reason" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                         </div>
                         <div id="timeline_time_input_container">
                             <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
@@ -454,23 +454,31 @@
     function toggleTimelineReason() {
         const display = document.getElementById('timeline_is_deductive_display');
         const hidden = document.getElementById('timeline_is_deductive');
-        const container = document.getElementById('timeline_reason_container');
         const input = document.getElementById('timeline_reason');
+        const star = document.getElementById('timeline_reason_required_star');
         if (!display || !hidden) return;
-        const isChecked = display.checked;
-        hidden.value = isChecked ? "true" : "false";
-        if (isChecked) {
-            container.classList.add('hidden');
-            input.required = false;
+        
+        const isOfficialLeave = display.checked;
+        hidden.value = isOfficialLeave ? "false" : "true";
+        
+        if (!isOfficialLeave) {
+            if (input) {
+                input.required = false;
+                input.placeholder = "예: 개인 사정, 휴식 등 (선택 사항)";
+            }
+            if (star) star.classList.add('hidden');
         } else {
-            container.classList.remove('hidden');
-            input.required = true;
+            if (input) {
+                input.required = true;
+                input.placeholder = "예: 예비군 훈련, 외부 세미나 참석 등 (필수 입력)";
+            }
+            if (star) star.classList.remove('hidden');
         }
     }
 
     function openTimelineApplyModal(dateStr) {
         document.getElementById('timeline_date_str').value = dateStr;
-        document.getElementById('timeline_is_deductive_display').checked = true;
+        document.getElementById('timeline_is_deductive_display').checked = false;
         toggleTimelineReason();
         document.getElementById('timeline_reason').value = '';
         document.getElementById('timeline_start_time').value = '09:00';
@@ -534,7 +542,7 @@
         }
 
         const dateStr = document.getElementById('timeline_date_str').value;
-        const isDeductive = document.getElementById('timeline_is_deductive_display').checked;
+        const isDeductive = !document.getElementById('timeline_is_deductive_display').checked;
         const startTime = document.getElementById('timeline_start_time').value;
         const endTime = document.getElementById('timeline_end_time').value;
         const reason = document.getElementById('timeline_reason').value;
