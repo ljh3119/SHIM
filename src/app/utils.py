@@ -143,10 +143,6 @@ def search_users_stateless(users_list: list, query_str: str) -> list:
 # 향후 타 국가로 기본 시간대를 영구 이전하고자 할 때는 이 두 영역의 기본값을 모두 갱신해야 합니다.
 # ==============================================================================
 
-def get_app_timezone() -> str:
-    import os
-    return os.getenv("APP_TIMEZONE") or "Asia/Seoul"
-
 
 @lru_cache(maxsize=1)
 def get_timezone_offset_hours() -> float:
