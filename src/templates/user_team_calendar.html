@@ -6,9 +6,37 @@
 
 <style>
     .cal-table {
-        border-collapse: collapse;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
         width: 100%;
         table-layout: fixed;
+    }
+    
+    .timeline-selected-start {
+        background-color: #dbeafe !important;
+        border-top: 2px solid #175cd3 !important;
+        border-bottom: 2px solid #175cd3 !important;
+        border-left: 2px solid #175cd3 !important;
+        border-top-left-radius: 6px !important;
+        border-bottom-left-radius: 6px !important;
+    }
+    .timeline-selected-mid {
+        background-color: #dbeafe !important;
+        border-top: 2px solid #175cd3 !important;
+        border-bottom: 2px solid #175cd3 !important;
+    }
+    .timeline-selected-end {
+        background-color: #dbeafe !important;
+        border-top: 2px solid #175cd3 !important;
+        border-bottom: 2px solid #175cd3 !important;
+        border-right: 2px solid #175cd3 !important;
+        border-top-right-radius: 6px !important;
+        border-bottom-right-radius: 6px !important;
+    }
+    .timeline-selected-single {
+        background-color: #dbeafe !important;
+        border: 2px solid #175cd3 !important;
+        border-radius: 6px !important;
     }
 
     .cal-table th,
@@ -234,6 +262,12 @@
                     </div>
 
                     <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 mr-2">
+                            <span class="text-xs font-bold text-dense-muted">기간 선택</span>
+                            <button type="button" id="multiSelectToggleBtn" onclick="toggleMultiSelectMode()" class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent bg-dense-line-strong transition-colors duration-200 ease-in-out focus:outline-none">
+                                <span id="multiSelectToggleCircle" class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+                            </button>
+                        </div>
 
                         <form action="/user/team-calendar" method="GET" class="flex items-center gap-2">
                             <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
@@ -334,7 +368,8 @@
                                 {% set is_weekend = d in team_cal_weekend_days %}
                                 {% set is_holiday = d in team_cal_holiday_map %}
                                 {% set is_blocked = is_weekend or is_holiday %}
-                                <td class="{% if is_blocked %}bg-dense-gray-soft/40{% endif %} 
+                                <td id="timeline-cell-{{ m.user_id }}-{{ team_cal_year }}-{{ '%02d'|format(team_cal_month) }}-{{ '%02d'|format(d) }}"
+                                    class="{% if is_blocked %}bg-dense-gray-soft/40{% endif %} 
                                            {% if is_me and not is_blocked and not cell_leaves %}clickable-cell{% endif %} 
                                            {% if cell_leaves %}has-leave-cell{% endif %}"
                                     data-cell-date="{{ team_cal_year }}-{{ '%02d'|format(team_cal_month) }}-{{ '%02d'|format(d) }}"
@@ -584,34 +619,620 @@
 
 
 
-    function handleTimelineCellClick(td) {
-        const hasLeave = td.getAttribute('data-has-leave') === 'true';
-        const userId = td.getAttribute('data-user-id');
-        const cellDate = td.getAttribute('data-cell-date');
+    // Inject holidays for JS checks in team calendar
+    window.holidayMapDates = [
+        {% for (m, d), name in holiday_map.items() %}
+        "{{ team_cal_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(d) }}",
+        {% endfor %}
+    ];
 
-        if (hasLeave) {
-            const leaveId = td.getAttribute('data-leave-id');
-            const userName = td.getAttribute('data-user-name');
-            const userTeam = td.getAttribute('data-user-team');
-            const userCompany = td.getAttribute('data-user-company');
-            const slot = td.getAttribute('data-leave-slot');
-            const hours = td.getAttribute('data-leave-hours');
-            const isDeductive = td.getAttribute('data-leave-deductive') === 'true';
-            const status = td.getAttribute('data-leave-status');
-            const reason = td.getAttribute('data-leave-reason');
-            const rejectionReason = td.getAttribute('data-leave-rejection-reason');
+    let isMultiSelectMode = false;
+    let selectedDates = [];
+    let rangeStartDate = null;
+    let rangeEndDate = null;
+    let isSyncing = false;
+    let inputFilledByCalendar = false;
 
-            openTimelineActionModal(leaveId, userName, userTeam, userCompany, cellDate, `${slot} (${hours})`, isDeductive, status, reason, rejectionReason, userId);
+    let timelineBlinkTimeoutId = null;
+    let timelineBlinkCell = null;
+
+    window.parseLocalDate = function(dateStr) {
+        if (!dateStr) return null;
+        const parts = dateStr.split('-');
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    };
+
+    function isBusinessDay(dateStr) {
+        const d = window.parseLocalDate(dateStr);
+        if (!d || isNaN(d.getTime())) return false;
+        const day = d.getDay();
+        if (day === 0 || day === 6) return false;
+        if (window.holidayMapDates && window.holidayMapDates.includes(dateStr)) return false;
+        return true;
+    }
+
+    function getDatesInRange(startStr, endStr) {
+        const dates = [];
+        const start = window.parseLocalDate(startStr);
+        const end = window.parseLocalDate(endStr);
+        if (!start || !end || start > end) return dates;
+        
+        let curr = new Date(start);
+        while (curr <= end) {
+            const yyyy = curr.getFullYear();
+            const mm = String(curr.getMonth() + 1).padStart(2, '0');
+            const dd = String(curr.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            if (isBusinessDay(dateStr)) {
+                dates.push(dateStr);
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
+        return dates;
+    }
+
+    function clearCellHighlight(dateStr) {
+        const userId = "{{ user.user_id }}";
+        const btn = document.getElementById(`timeline-cell-${userId}-${dateStr}`);
+        if (!btn) return;
+        
+        btn.classList.remove('timeline-selected-start', 'timeline-selected-mid', 'timeline-selected-end', 'timeline-selected-single');
+        
+        // Restore blocked class if not business day
+        const isBiz = isBusinessDay(dateStr);
+        if (!isBiz) {
+            btn.classList.add('bg-dense-gray-soft/40');
+        }
+    }
+
+    function highlightSelectedDates() {
+        if (!rangeStartDate) return;
+        
+        const start = window.parseLocalDate(rangeStartDate);
+        const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
+        if (!start || !end) return;
+        
+        const userId = "{{ user.user_id }}";
+        
+        // Clear highlights first
+        document.querySelectorAll(`td[id^="timeline-cell-${userId}-"]`).forEach(btn => {
+            const idParts = btn.id.split('-');
+            const dateStr = idParts.slice(2).join('-');
+            clearCellHighlight(dateStr);
+        });
+        
+        // Add highlights
+        document.querySelectorAll(`td[id^="timeline-cell-${userId}-"]`).forEach(btn => {
+            const idParts = btn.id.split('-');
+            const dateStr = idParts.slice(2).join('-');
+            const btnDate = window.parseLocalDate(dateStr);
+            
+            if (btnDate && btnDate >= start && btnDate <= end) {
+                const isBiz = isBusinessDay(dateStr);
+                const isStart = (dateStr === rangeStartDate);
+                const isEnd = (dateStr === (rangeEndDate || rangeStartDate));
+                
+                // Clear original classes
+                btn.classList.remove('bg-dense-gray-soft/40');
+                
+                if (isStart && isEnd) {
+                    btn.classList.add('timeline-selected-single');
+                } else if (isStart) {
+                    btn.classList.add('timeline-selected-start');
+                } else if (isEnd) {
+                    btn.classList.add('timeline-selected-end');
+                } else {
+                    if (isBiz) {
+                        btn.classList.add('timeline-selected-mid');
+                    } else {
+                        btn.classList.add('timeline-selected-mid', 'opacity-65');
+                    }
+                }
+            }
+        });
+    }
+
+    function toggleMultiSelectMode() {
+        isMultiSelectMode = !isMultiSelectMode;
+        const btn = document.getElementById('multiSelectToggleBtn');
+        const circle = document.getElementById('multiSelectToggleCircle');
+        
+        if (isMultiSelectMode) {
+            btn.classList.remove('bg-dense-line-strong');
+            btn.classList.add('bg-dense-blue');
+            circle.classList.remove('translate-x-0');
+            circle.classList.add('translate-x-4');
         } else {
-            const currentUserId = "{{ user.user_id }}";
-            if (userId === currentUserId) {
-                openTimelineApplyModal(cellDate);
+            btn.classList.remove('bg-dense-blue');
+            btn.classList.add('bg-dense-line-strong');
+            circle.classList.remove('translate-x-4');
+            circle.classList.add('translate-x-0');
+            cancelMultiSelect();
+        }
+    }
+
+    function triggerTimelineBlink(cell) {
+        if (timelineBlinkTimeoutId) {
+            clearTimeout(timelineBlinkTimeoutId);
+            if (timelineBlinkCell) {
+                timelineBlinkCell.classList.remove('bg-dense-danger-soft', 'animate-pulse');
+            }
+        }
+        timelineBlinkCell = cell;
+        timelineBlinkCell.classList.add('bg-dense-danger-soft', 'animate-pulse');
+        timelineBlinkTimeoutId = setTimeout(() => {
+            if (timelineBlinkCell) {
+                timelineBlinkCell.classList.remove('bg-dense-danger-soft', 'animate-pulse');
+            }
+            timelineBlinkTimeoutId = null;
+            timelineBlinkCell = null;
+        }, 500);
+    }
+
+    function toggleReason(prefix) {
+        const isDeductiveDisplay = document.getElementById(`${prefix}_is_deductive_display`);
+        const isDeductiveHidden = document.getElementById(`${prefix}_is_deductive`);
+        const reasonInput = document.getElementById(`${prefix}_reason`);
+        const requiredStar = document.getElementById(`${prefix}_reason_required_star`);
+        if (isDeductiveDisplay && isDeductiveHidden && reasonInput) {
+            const isOfficialLeave = isDeductiveDisplay.checked;
+            isDeductiveHidden.value = isOfficialLeave ? "false" : "true";
+            if (!isOfficialLeave) {
+                reasonInput.required = false;
+                reasonInput.placeholder = "예: 개인 사정, 휴식 등 (선택 사항)";
+                if (requiredStar) requiredStar.classList.add('hidden');
+            } else {
+                reasonInput.required = true;
+                reasonInput.placeholder = "예: 예비군 훈련, 외부 세미나 참석 등 (필수 입력)";
+                if (requiredStar) requiredStar.classList.remove('hidden');
             }
         }
     }
 
+    function syncCalendarToInputs() {
+        if (isSyncing) return;
+        isSyncing = true;
+        try {
+            const start = rangeStartDate || '';
+            const end = rangeEndDate || rangeStartDate || '';
+            
+            const dStart = document.getElementById('easy-start-date-g_desktop');
+            const dEnd = document.getElementById('easy-end-date-g_desktop');
+            const mStart = document.getElementById('easy-start-date-g_mobile');
+            const mEnd = document.getElementById('easy-end-date-g_mobile');
+            
+            if (dStart) dStart.value = start;
+            if (dEnd) dEnd.value = end;
+            if (mStart) mStart.value = start;
+            if (mEnd) mEnd.value = end;
+            
+            inputFilledByCalendar = true;
+            
+            if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                updateTimeSelectorAvailabilityG('desktop');
+                updateTimeSelectorAvailabilityG('mobile');
+            }
+            
+            // Save state to sessionStorage
+            sessionStorage.setItem('shim_timeline_start_date', start);
+            sessionStorage.setItem('shim_timeline_end_date', end);
+        } finally {
+            isSyncing = false;
+        }
+    }
+
+    let syncInputsDebounceTimer = null;
+    window.syncInputsToCalendar = function(prefix) {
+        if (syncInputsDebounceTimer) clearTimeout(syncInputsDebounceTimer);
+        syncInputsDebounceTimer = setTimeout(() => {
+            window.syncInputsToCalendarImmediate(prefix);
+        }, 150);
+    };
+
+    window.syncInputsToCalendarImmediate = function(prefix) {
+        if (isSyncing) return;
+        
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        if (!startInput) return;
+        
+        const startVal = startInput.value;
+        const endVal = endInput ? endInput.value : '';
+        
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (startVal && !dateRegex.test(startVal)) return;
+        if (endVal && !dateRegex.test(endVal)) return;
+        
+        // 2. Collision Check during Input sync
+        if (startVal && endVal && startVal <= endVal) {
+            const dates = getDatesInRange(startVal, endVal);
+            const userId = "{{ user.user_id }}";
+            let collisionCell = null;
+            
+            for (const d of dates) {
+                const cell = document.getElementById(`timeline-cell-${userId}-${d}`);
+                if (cell && cell.getAttribute('data-has-leave') === 'true') {
+                    collisionCell = cell;
+                    break;
+                }
+            }
+            
+            if (collisionCell) {
+                triggerTimelineBlink(collisionCell);
+                setTimeout(() => {
+                    alert('선택한 기간 내에 이미 등록된 연차가 존재합니다. 다른 기간을 선택해 주세요.');
+                }, 50);
+                cancelMultiSelect();
+                return;
+            }
+        }
+        
+        isSyncing = true;
+        try {
+            const otherPrefix = prefix === 'desktop' ? 'mobile' : 'desktop';
+            const otherStart = document.getElementById(`easy-start-date-g_${otherPrefix}`);
+            const otherEnd = document.getElementById(`easy-end-date-g_${otherPrefix}`);
+            if (otherStart) otherStart.value = startVal;
+            if (otherEnd) otherEnd.value = endVal;
+            
+            inputFilledByCalendar = false;
+            
+            if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                updateTimeSelectorAvailabilityG('desktop');
+                updateTimeSelectorAvailabilityG('mobile');
+            }
+            
+            if (!startVal) {
+                cancelMultiSelect();
+                return;
+            }
+            
+            if (!isMultiSelectMode) {
+                toggleMultiSelectMode();
+            }
+            
+            rangeStartDate = startVal;
+            if (endVal && endVal >= startVal) {
+                rangeEndDate = endVal;
+                selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+            } else {
+                rangeEndDate = null;
+                selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+            }
+            
+            highlightSelectedDates();
+            updateFloatingBar();
+            
+            sessionStorage.setItem('shim_timeline_start_date', startVal);
+            sessionStorage.setItem('shim_timeline_end_date', endVal);
+        } finally {
+            isSyncing = false;
+        }
+    };
+
+    function cancelMultiSelect() {
+        const userId = "{{ user.user_id }}";
+        if (rangeStartDate) {
+            const start = window.parseLocalDate(rangeStartDate);
+            const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
+            if (start && end) {
+                let curr = new Date(start);
+                while (curr <= end) {
+                    const yyyy = curr.getFullYear();
+                    const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                    const dd = String(curr.getDate()).padStart(2, '0');
+                    const dateStr = `${yyyy}-${mm}-${dd}`;
+                    clearCellHighlight(dateStr);
+                    curr.setDate(curr.getDate() + 1);
+                }
+            }
+        }
+        
+        selectedDates = [];
+        rangeStartDate = null;
+        rangeEndDate = null;
+        updateFloatingBar();
+        
+        if (inputFilledByCalendar) {
+            const dStart = document.getElementById('easy-start-date-g_desktop');
+            const dEnd = document.getElementById('easy-end-date-g_desktop');
+            const mStart = document.getElementById('easy-start-date-g_mobile');
+            const mEnd = document.getElementById('easy-end-date-g_mobile');
+            if (dStart) dStart.value = '';
+            if (dEnd) dEnd.value = '';
+            if (mStart) mStart.value = '';
+            if (mEnd) mEnd.value = '';
+            
+            if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                updateTimeSelectorAvailabilityG('desktop');
+                updateTimeSelectorAvailabilityG('mobile');
+            }
+        }
+        inputFilledByCalendar = false;
+        
+        sessionStorage.removeItem('shim_timeline_start_date');
+        sessionStorage.removeItem('shim_timeline_end_date');
+    }
+
+    function openCalendarApplyModal(dateStr) {
+        // Dummy function to align with standard inputs sync
+    }
+
+    function openMultiSelectApplyModal() {
+        if (rangeStartDate && !rangeEndDate) {
+            rangeEndDate = rangeStartDate;
+            selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+            highlightSelectedDates();
+        }
+
+        if (selectedDates.length === 0) {
+            alert('영업일을 선택해 주세요. (주말 및 공휴일은 신청 목록에서 제외됩니다.)');
+            return;
+        }
+        
+        selectedDates.sort();
+        
+        const dateInput = document.getElementById('calendar_date_str');
+        dateInput.style.display = 'none';
+        dateInput.required = false;
+        
+        const multiContainer = document.getElementById('calendar_multi_date_container');
+        const chipsDiv = document.getElementById('calendar_multi_date_chips');
+        chipsDiv.innerHTML = '';
+        
+        selectedDates.forEach(dateStr => {
+            const chip = document.createElement('span');
+            chip.className = 'inline-flex items-center gap-1 rounded-md bg-dense-blue-soft px-2 py-0.5 text-xs font-bold text-dense-blue border border-dense-line-strong';
+            chip.textContent = dateStr;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'text-dense-blue hover:text-dense-danger focus:outline-none font-bold text-xs ml-1';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                const idx = selectedDates.indexOf(dateStr);
+                if (idx !== -1) {
+                    selectedDates.splice(idx, 1);
+                    clearCellHighlight(dateStr);
+                    chip.remove();
+                    updateFloatingBar();
+                    if (selectedDates.length === 0) {
+                        closeCalendarApplyModal();
+                    }
+                }
+            };
+            chip.appendChild(removeBtn);
+            chipsDiv.appendChild(chip);
+        });
+        
+        multiContainer.classList.remove('hidden');
+        document.getElementById('calendar_time_input_container').classList.add('hidden');
+        const timeHint = document.getElementById('calendar_time_hint_wrapper');
+        timeHint.classList.remove('hidden');
+        timeHint.classList.add('block');
+        
+        document.getElementById('calendar_start_time').value = '';
+        document.getElementById('calendar_end_time').value = '';
+        document.getElementById('calendar_start_time').required = false;
+        document.getElementById('calendar_end_time').required = false;
+        
+        document.getElementById('calendar_is_deductive_display').checked = false;
+        document.getElementById('calendar_is_deductive').value = "true";
+        document.getElementById('calendar_reason').value = "";
+        toggleReason('calendar');
+        
+        window.shimModal.open('calendarApplyModal', 'calendar_start_time', document.activeElement);
+    }
+
+    function closeCalendarApplyModal() {
+        window.shimModal.close('calendarApplyModal');
+    }
+
+    async function submitCalendarApply() {
+        const form = document.getElementById('calendarApplyForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const isDeductive = !document.getElementById('calendar_is_deductive_display').checked;
+        
+        if (selectedDates.length === 0) {
+            alert('신청 가능한 영업일이 없습니다.');
+            return;
+        }
+        
+        const dateStr = selectedDates.join(',');
+        const reason = document.getElementById('calendar_reason').value.trim();
+
+        if (!isDeductive && !reason) {
+            alert('공가/출장 신청 시 사유 입력은 필수입니다.');
+            return;
+        }
+
+        if (!await window.shimModal.confirm(`선택한 ${selectedDates.length}일에 대해 하루종일 [${isDeductive ? '연차' : '공가/출장'}] 일괄 신청을 진행하시겠습니까?`)) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('date_str', dateStr);
+        formData.append('start_time', '');
+        formData.append('end_time', '');
+        formData.append('is_deductive', isDeductive ? 'true' : 'false');
+        formData.append('reason', reason);
+
+        const btn = document.getElementById('calendar_submit_btn');
+        simulateButtonLoading(btn, async () => {
+            try {
+                const response = await fetch('/api/user/leave', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.removeItem('shim_timeline_start_date');
+                    sessionStorage.removeItem('shim_timeline_end_date');
+                    showToastAndReload(result.message || '신청되었습니다.', 'success');
+                } else {
+                    showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
+                }
+            } catch (err) {
+                showToast('네트워크 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+
+    function updateFloatingBar() {
+        const bar = document.getElementById('multiSelectFloatingBar');
+        const countSpan = document.getElementById('selectedCount');
+        
+        if (selectedDates.length > 0) {
+            countSpan.textContent = selectedDates.length;
+            bar.classList.remove('hidden');
+        } else {
+            bar.classList.add('hidden');
+        }
+    }
+
+    function handleTimelineCellClick(td) {
+        const hasLeave = td.getAttribute('data-has-leave') === 'true';
+        const userId = td.getAttribute('data-user-id');
+        const cellDate = td.getAttribute('data-cell-date');
+        const currentUserId = "{{ user.user_id }}";
+
+        // 3. 다른 동료의 행을 클릭하거나 본인의 기존 연차가 있는 셀을 클릭하면, 진행 중인 범위 취소 (Deselection)
+        if (userId !== currentUserId || hasLeave) {
+            if (isMultiSelectMode) {
+                cancelMultiSelect();
+            }
+            
+            if (hasLeave) {
+                const leaveId = td.getAttribute('data-leave-id');
+                const userName = td.getAttribute('data-user-name');
+                const userTeam = td.getAttribute('data-user-team');
+                const userCompany = td.getAttribute('data-user-company');
+                const slot = td.getAttribute('data-leave-slot');
+                const hours = td.getAttribute('data-leave-hours');
+                const isDeductive = td.getAttribute('data-leave-deductive') === 'true';
+                const status = td.getAttribute('data-leave-status');
+                const reason = td.getAttribute('data-leave-reason');
+                const rejectionReason = td.getAttribute('data-leave-rejection-reason');
+
+                openTimelineActionModal(leaveId, userName, userTeam, userCompany, cellDate, `${slot} (${hours})`, isDeductive, status, reason, rejectionReason, userId);
+            }
+            return;
+        }
+
+        if (!isMultiSelectMode) {
+            openTimelineApplyModal(cellDate);
+            return;
+        }
+        
+        // 4. 시작일 재클릭 시 선택 취소(Deselect) 토글
+        if (cellDate === rangeStartDate && !rangeEndDate) {
+            cancelMultiSelect();
+            return;
+        }
+
+        const clickedDate = window.parseLocalDate(cellDate);
+        if (!clickedDate || isNaN(clickedDate.getTime())) return;
+
+        if (!rangeStartDate || (rangeStartDate && rangeEndDate)) {
+            // 첫 번째 클릭
+            cancelMultiSelect();
+            rangeStartDate = cellDate;
+            rangeEndDate = null;
+            selectedDates = isBusinessDay(cellDate) ? [cellDate] : [];
+            highlightSelectedDates();
+        } else {
+            // 두 번째 클릭
+            const start = window.parseLocalDate(rangeStartDate);
+            if (clickedDate < start) {
+                cancelMultiSelect();
+                rangeStartDate = cellDate;
+                rangeEndDate = null;
+                selectedDates = isBusinessDay(cellDate) ? [cellDate] : [];
+                highlightSelectedDates();
+            } else {
+                // 2. Collision Check between rangeStartDate and cellDate
+                const dates = getDatesInRange(rangeStartDate, cellDate);
+                let collisionCell = null;
+                
+                for (const d of dates) {
+                    const cell = document.getElementById(`timeline-cell-${currentUserId}-${d}`);
+                    if (cell && cell.getAttribute('data-has-leave') === 'true') {
+                        collisionCell = cell;
+                        break;
+                    }
+                }
+                
+                if (collisionCell) {
+                    triggerTimelineBlink(collisionCell);
+                    setTimeout(() => {
+                        alert('선택한 기간 내에 이미 등록된 연차가 존재합니다. 다른 기간을 선택해 주세요.');
+                    }, 50);
+                    cancelMultiSelect();
+                    return;
+                }
+                
+                rangeEndDate = cellDate;
+                selectedDates = dates;
+                highlightSelectedDates();
+            }
+        }
+
+        updateFloatingBar();
+        syncCalendarToInputs();
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         renderMobileScheduleListG();
+        
+        // 1. document.referrer 빈 문자열 및 직접 진입/이동 시 상태 청소
+        const prevUrl = document.referrer;
+        if (!prevUrl || !prevUrl.includes('/user/team-calendar')) {
+            sessionStorage.removeItem('shim_timeline_start_date');
+            sessionStorage.removeItem('shim_timeline_end_date');
+        } else {
+            // Restore selection from sessionStorage if present
+            const savedStart = sessionStorage.getItem('shim_timeline_start_date');
+            const savedEnd = sessionStorage.getItem('shim_timeline_end_date');
+            if (savedStart) {
+                if (!isMultiSelectMode) {
+                    toggleMultiSelectMode();
+                }
+                rangeStartDate = savedStart;
+                if (savedEnd && savedEnd >= savedStart) {
+                    rangeEndDate = savedEnd;
+                    selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+                } else {
+                    rangeEndDate = null;
+                    selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+                }
+                highlightSelectedDates();
+                updateFloatingBar();
+                
+                isSyncing = true;
+                try {
+                    const dStart = document.getElementById('easy-start-date-g_desktop');
+                    const dEnd = document.getElementById('easy-end-date-g_desktop');
+                    const mStart = document.getElementById('easy-start-date-g_mobile');
+                    const mEnd = document.getElementById('easy-end-date-g_mobile');
+                    if (dStart) dStart.value = rangeStartDate;
+                    if (dEnd) dEnd.value = rangeEndDate || rangeStartDate;
+                    if (mStart) mStart.value = rangeStartDate;
+                    if (mEnd) mEnd.value = rangeEndDate || rangeStartDate;
+                    
+                    inputFilledByCalendar = true;
+                    if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                        updateTimeSelectorAvailabilityG('desktop');
+                        updateTimeSelectorAvailabilityG('mobile');
+                    }
+                } finally {
+                    isSyncing = false;
+                }
+            }
+        }
         
         // 키보드 숏컷 (ArrowLeft/ArrowRight)
         document.addEventListener('keydown', (e) => {
@@ -634,4 +1255,95 @@
         });
     });
 </script>
+
+<div id="multiSelectFloatingBar" class="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 transform rounded-2xl border border-dense-line bg-dense-surface p-3.5 shadow-2xl transition-all duration-300 md:min-w-[400px]">
+    <div class="flex items-center justify-between gap-6">
+        <div class="text-sm font-bold text-dense-text">
+            선택된 날짜: <span id="selectedCount" class="text-dense-blue">0</span>개
+        </div>
+        <div class="flex gap-2">
+            <button type="button" onclick="cancelMultiSelect()" class="rounded-xl border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-bold text-dense-muted hover:bg-dense-surface-soft focus:outline-none">
+                선택 취소
+            </button>
+            <button type="button" onclick="openMultiSelectApplyModal()" class="rounded-xl bg-dense-blue px-3.5 py-1.5 text-xs font-bold text-white hover:brightness-95 focus:outline-none">
+                일괄 신청하기
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Apply Modal for Bulk -->
+<div id="calendarApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="closeCalendarApplyModal()"></div>
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-2xl border border-dense-line bg-dense-surface text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 일괄 신청</h3>
+                <form id="calendarApplyForm" class="space-y-4" onsubmit="submitCalendarApply(); return false;">
+                    <div>
+                        <label for="calendar_date_str" class="block text-sm font-bold text-dense-nav-text">신청 날짜</label>
+                        <input type="text" id="calendar_date_str" name="date_str" required readonly placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:ring-dense-blue sm:text-sm">
+                        
+                        <div id="calendar_multi_date_container" class="mt-2 hidden">
+                            <span class="block text-[11px] font-bold text-dense-muted mb-1">선택된 개별 날짜 목록 (주말/공휴일 제외):</span>
+                            <div id="calendar_multi_date_chips" class="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto p-1.5 border rounded-lg bg-dense-surface-soft border-dense-line"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="calendar_is_deductive_display" onchange="toggleReason('calendar')" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
+                        <label for="calendar_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">공가/출장 신청 (체크 시 연차 미차감)</label>
+                        <input type="hidden" name="is_deductive" id="calendar_is_deductive" value="true">
+                    </div>
+
+                    <div id="calendar_reason_container">
+                        <label for="calendar_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span id="calendar_reason_required_star" class="text-dense-danger hidden">*</span></label>
+                        <textarea id="calendar_reason" name="reason" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:ring-dense-blue sm:text-sm" rows="2"></textarea>
+                    </div>
+
+                    <div id="calendar_time_input_container">
+                        <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
+                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <div>
+                                <label for="calendar_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
+                                <select id="calendar_start_time" name="start_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:ring-dense-blue sm:text-sm">
+                                    <option value="">선택</option>
+                                    {% if time_options %}
+                                    {% for t in time_options %}
+                                    <option value="{{ t }}">{{ t }}</option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="calendar_end_time" class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
+                                <select id="calendar_end_time" name="end_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:ring-dense-blue sm:text-sm">
+                                    <option value="">선택</option>
+                                    {% if time_options %}
+                                    {% for t in time_options %}
+                                    <option value="{{ t }}">{{ t }}</option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="calendar_time_hint_wrapper" class="hidden">
+                        <p class="text-[11px] font-semibold text-dense-muted">* 일괄 기간 신청은 하루 종일(Full-day) 단위로만 신청이 진행됩니다.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <button type="submit" form="calendarApplyForm" id="calendar_submit_btn" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    신청하기
+                </button>
+                <button type="button" onclick="closeCalendarApplyModal()" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
