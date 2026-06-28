@@ -500,10 +500,10 @@ def hard_delete_user(
     # Notifications 테이블 연관 데이터 CASCADE 수동 처리 (FK 위반 방지)
     db.query(models.Notifications).filter(models.Notifications.user_id == target_user_id).delete()
     db.query(models.Notifications).filter(models.Notifications.sender_id == target_user_id).update(
-        {models.Notifications.sender_id: None}, synchronize_session="fetch"
+        {models.Notifications.sender_id: None}, synchronize_session=False
     )
     db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == target_user_id).update(
-        {models.AuditLogs.actor_id: None}, synchronize_session="fetch"
+        {models.AuditLogs.actor_id: None}, synchronize_session=False
     )
     
     user_name = user.user_name
