@@ -12,5 +12,18 @@ services:
       # 타 국가 시간대로 기본값 일괄 이관 시 두 곳을 모두 수정해야 합니다.
       SHIM_TIMEZONE_OFFSET_HOURS: ${SHIM_TIMEZONE_OFFSET_HOURS:-9.0}
     volumes:
-      - ${SHIM_DATA_DIR:-../../var/data}:/app/var/data
+      # [볼륨 마운트 정책 가이드]
+      # 1) 일반 Linux / NAS 환경 (추천): 
+      #    - './data:/app/var/data' 와 같이 docker-compose.yml 파일 옆에 data 폴더를 생성하여 영구 바인드 마운트합니다.
+      #    - NAS UI(시놀로지 등)에서 컨테이너를 내렸다 올려도(Reset) 호스트 폴더에 보관되므로 데이터가 유실되지 않습니다.
+      # 2) Windows 환경 + 네트워크 드라이브(W: 등 SMB/UNC) 개발 환경:
+      #    - 네트워크 공유 폴더 바인딩 제약으로 인해 데이터 유실이 발생할 수 있습니다. 
+      #    - 이 경우 아래 설정을 주석처리하고 하단의 Named Volume(shim_data:/app/var/data) 주석을 해제하여 사용하십시오.
+      - ${SHIM_DATA_DIR:-./data}:/app/var/data
     restart: unless-stopped
+
+# Windows 네트워크 드라이브 환경에서 바인드 마운트가 작동하지 않는 경우에만 아래 volumes 주석을 해제하고,
+# 위 volumes 마운트를 '- shim_data:/app/var/data' 로 변경하여 사용하십시오.
+# volumes:
+#   shim_data:
+
