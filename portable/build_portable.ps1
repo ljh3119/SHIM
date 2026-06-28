@@ -36,7 +36,6 @@ pyinstaller `
   --exclude-module IPython `
   --add-data "src/templates;templates" `
   --add-data "src/static;static" `
-  --add-data "var/data;data" `
   portable/shim_portable.py
 
 Write-Host "[4/4] Copy runtime scripts and initial data to dist folder"
