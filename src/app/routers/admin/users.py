@@ -204,7 +204,7 @@ def reset_password(
         action="RESET_PASSWORD",
         target_info=f"User:{target_user_id}",
         old_data="*****",
-        new_data="0000"
+        new_data="*****"
     )
     db.add(audit)
     try:
@@ -497,8 +497,13 @@ def hard_delete_user(
     db.query(models.UserYearlyLeaveAllocations).filter(
         models.UserYearlyLeaveAllocations.user_id == target_user_id
     ).delete()
+    # Notifications 테이블 연관 데이터 CASCADE 수동 처리 (FK 위반 방지)
+    db.query(models.Notifications).filter(models.Notifications.user_id == target_user_id).delete()
+    db.query(models.Notifications).filter(models.Notifications.sender_id == target_user_id).update(
+        {models.Notifications.sender_id: None}, synchronize_session="fetch"
+    )
     db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == target_user_id).update(
-        {models.AuditLogs.actor_id: None}, synchronize_session=False
+        {models.AuditLogs.actor_id: None}, synchronize_session="fetch"
     )
     
     user_name = user.user_name

@@ -57,6 +57,18 @@ BRANDING_BADGE_MAX_LEN = 24
 
 
 
+def _safe_get(obj, key, default=""):
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        val = obj.get(key, default)
+        return default if val is None else val
+    try:
+        val = getattr(obj, key, default)
+        return default if val is None else val
+    except Exception:
+        return default
+
 def _normalize_branding_from_row(row: models.SystemSettings | None) -> dict[str, str | bool]:
     if row is None:
         display = DEFAULT_PRODUCT_DISPLAY_NAME
@@ -64,10 +76,10 @@ def _normalize_branding_from_row(row: models.SystemSettings | None) -> dict[str,
         nav_short = display
         badge = DEFAULT_BRAND_INITIAL
     else:
-        display = (getattr(row, "product_display_name", None) or "").strip() or DEFAULT_PRODUCT_DISPLAY_NAME
-        nav_raw_stored = (getattr(row, "product_nav_short", None) or "").strip()
+        display = _safe_get(row, "product_display_name", DEFAULT_PRODUCT_DISPLAY_NAME).strip() or DEFAULT_PRODUCT_DISPLAY_NAME
+        nav_raw_stored = _safe_get(row, "product_nav_short", "").strip()
         nav_short = nav_raw_stored if nav_raw_stored else display
-        raw_initial = (getattr(row, "brand_initial", None) or "").strip()
+        raw_initial = _safe_get(row, "brand_initial", "").strip()
         if raw_initial:
             badge = raw_initial[:BRANDING_BADGE_MAX_LEN]
         else:
@@ -298,6 +310,14 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
 
 
 def startup_event():
+    # 1. 분산 락 동기화가 장착된 데이터베이스 초기화 및 마이그레이션 실행
+    try:
+        from tools.scripts.db_init import init_db
+        init_db()
+    except Exception as init_err:
+        print(f"[SHIM CRITICAL ERROR] Database startup migration failed: {init_err}")
+        sys.exit(1)
+
     db = database.SessionLocal()
     try:
         try:

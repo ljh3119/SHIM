@@ -198,11 +198,11 @@ def cleanup_old_notifications():
     """30일이 경과한 알림을 청크(100건) 단위로 분할하여 삭제합니다."""
     from src.app.database import SessionLocal
     from src.app import models
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import time
     
     # UTC 시각 기준으로 30일 전
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
     total_deleted = 0
     
     while True:

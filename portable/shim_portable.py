@@ -398,7 +398,7 @@ def reset_admin_password_cmd():
             action="RESET_ADMIN_PASSWORD",
             target_info="Admin:admin",
             old_data="*****",
-            new_data="0000 (Emergency Reset)"
+            new_data="***** (Emergency Reset)"
         ))
         
         db.commit()
