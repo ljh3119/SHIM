@@ -206,6 +206,7 @@
 
                             <button type="button"
                                  id="day-btn-monthly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
+                                 {% if day_leaves_exist %}data-has-leave="true"{% endif %}
                                  class="h-32 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}border-dense-blue/20 bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60 opacity-60{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }}{% else %}클릭하여 연차 신청 (다중 선택 모드 시 선택){% endif %}"
                                  {% if not is_blocked_day %}
@@ -287,8 +288,10 @@
                             {% set weekday_idx = (month_meta.offset + day - 1) % 7 %}
                             {% set leaves_of_day = day_map.get(day, []) %}
                             {% set ns = namespace(total_h=0, has_non_deductive=false) %}
+                            {% set yearly_leaves_exist = false %}
                             {% for lv in leaves_of_day %}
                                 {% if lv.status not in ["CANCELED", "REJECTED"] %}
+                                    {% set yearly_leaves_exist = true %}
                                     {% if lv.is_deductive %}
                                         {% set ns.total_h = ns.total_h + lv.snapshot_deduction_hours %}
                                     {% else %}
@@ -300,6 +303,7 @@
                             {% set is_blocked_day = weekday_idx in [0, 6] or holiday_name %}
                             <button type="button"
                                  id="day-btn-yearly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
+                                 {% if yearly_leaves_exist %}data-has-leave="true"{% endif %}
                                  class="h-10 w-full rounded border p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}border-dense-line-strong bg-dense-blue-soft{% else %}border-dense-line bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed opacity-70{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
                                  {% if not is_blocked_day %}
@@ -685,6 +689,27 @@ let rangeEndDate = null;
 let isSyncing = false;
 let inputFilledByCalendar = false;
 
+let calendarBlinkTimeoutId = null;
+let calendarBlinkCell = null;
+
+function triggerCalendarBlink(cell) {
+    if (calendarBlinkTimeoutId) {
+        clearTimeout(calendarBlinkTimeoutId);
+        if (calendarBlinkCell) {
+            calendarBlinkCell.classList.remove('bg-dense-danger-soft', 'animate-pulse');
+        }
+    }
+    calendarBlinkCell = cell;
+    calendarBlinkCell.classList.add('bg-dense-danger-soft', 'animate-pulse');
+    calendarBlinkTimeoutId = setTimeout(() => {
+        if (calendarBlinkCell) {
+            calendarBlinkCell.classList.remove('bg-dense-danger-soft', 'animate-pulse');
+        }
+        calendarBlinkTimeoutId = null;
+        calendarBlinkCell = null;
+    }, 500);
+}
+
 window.parseLocalDate = function(dateStr) {
     if (!dateStr) return null;
     const parts = dateStr.split('-');
@@ -723,17 +748,23 @@ function getDatesInRange(startStr, endStr) {
 function clearCellHighlight(dateStr) {
     const mBtn = document.getElementById(`day-btn-monthly-${dateStr}`);
     const yBtn = document.getElementById(`day-btn-yearly-${dateStr}`);
-    const removeHighlight = (btn, isBlocked) => {
+    const removeHighlight = (btn, isBlocked, isYearly) => {
         if (!btn) return;
         btn.classList.remove('ring-2', 'ring-dense-blue', 'border-dense-blue', 'bg-dense-blue-soft/30', 'border-2', 'border-dashed', 'border-dense-blue/40', 'bg-dense-blue-soft/10');
+        btn.classList.remove('rounded-l-xl', 'rounded-r-none', 'rounded-r-xl', 'rounded-l-none', 'rounded-none', 'rounded-l-md', 'rounded-r-md');
+        if (isYearly) {
+            btn.classList.add('rounded');
+        } else {
+            btn.classList.add('rounded-xl');
+        }
         if (isBlocked) {
             btn.classList.add('opacity-60');
         }
     };
     
     const isBiz = isBusinessDay(dateStr);
-    removeHighlight(mBtn, !isBiz);
-    removeHighlight(yBtn, !isBiz);
+    removeHighlight(mBtn, !isBiz, false);
+    removeHighlight(yBtn, !isBiz, true);
 }
 
 function parseHHMMToMinutes(value) {
@@ -1003,8 +1034,30 @@ function handleDayClick(event, dateStr) {
             selectedDates = isBusinessDay(dateStr) ? [dateStr] : [];
             highlightSelectedDates();
         } else {
+            // Collision Check
+            const dates = getDatesInRange(rangeStartDate, dateStr);
+            let collisionCell = null;
+            for (const d of dates) {
+                const mBtn = document.getElementById("day-btn-monthly-" + d);
+                const yBtn = document.getElementById("day-btn-yearly-" + d);
+                if ((mBtn && mBtn.getAttribute('data-has-leave') === 'true') || 
+                    (yBtn && yBtn.getAttribute('data-has-leave') === 'true')) {
+                    collisionCell = mBtn || yBtn;
+                    break;
+                }
+            }
+            
+            if (collisionCell) {
+                triggerCalendarBlink(collisionCell);
+                setTimeout(() => {
+                    alert('선택한 기간 내에 이미 등록된 연차가 존재합니다. 다른 기간을 선택해 주세요.');
+                }, 50);
+                cancelMultiSelect();
+                return;
+            }
+
             rangeEndDate = dateStr;
-            selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+            selectedDates = dates;
             highlightSelectedDates();
         }
     }
@@ -1189,6 +1242,25 @@ function highlightSelectedDates() {
         
         if (btnDate && btnDate >= start && btnDate <= end) {
             const isBiz = isBusinessDay(dateStr);
+            const isMonthly = btn.id.includes('monthly');
+            const isStart = (dateStr === rangeStartDate);
+            const isEnd = (dateStr === (rangeEndDate || rangeStartDate));
+            
+            // Clear default roundings
+            btn.classList.remove('rounded-xl', 'rounded', 'rounded-l-xl', 'rounded-r-none', 'rounded-r-xl', 'rounded-l-none', 'rounded-none', 'rounded-l', 'rounded-r');
+            
+            if (isStart && isEnd) {
+                btn.classList.add(isMonthly ? 'rounded-xl' : 'rounded');
+            } else if (isStart) {
+                btn.classList.add(isMonthly ? 'rounded-l-xl' : 'rounded-l');
+                btn.classList.add('rounded-r-none');
+            } else if (isEnd) {
+                btn.classList.add(isMonthly ? 'rounded-r-xl' : 'rounded-r');
+                btn.classList.add('rounded-l-none');
+            } else {
+                btn.classList.add('rounded-none');
+            }
+
             if (isBiz) {
                 btn.classList.add('ring-2', 'ring-dense-blue', 'border-dense-blue', 'bg-dense-blue-soft/30');
             } else {
@@ -1250,6 +1322,30 @@ window.syncInputsToCalendarImmediate = function(prefix) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (startVal && !dateRegex.test(startVal)) return;
     if (endVal && !dateRegex.test(endVal)) return;
+    
+    // Collision Check
+    if (startVal && endVal && startVal <= endVal) {
+        const dates = getDatesInRange(startVal, endVal);
+        let collisionCell = null;
+        for (const d of dates) {
+            const mBtn = document.getElementById("day-btn-monthly-" + d);
+            const yBtn = document.getElementById("day-btn-yearly-" + d);
+            if ((mBtn && mBtn.getAttribute('data-has-leave') === 'true') || 
+                (yBtn && yBtn.getAttribute('data-has-leave') === 'true')) {
+                collisionCell = mBtn || yBtn;
+                break;
+            }
+        }
+        
+        if (collisionCell) {
+            triggerCalendarBlink(collisionCell);
+            setTimeout(() => {
+                alert('선택한 기간 내에 이미 등록된 연차가 존재합니다. 다른 기간을 선택해 주세요.');
+            }, 50);
+            cancelMultiSelect();
+            return;
+        }
+    }
     
     isSyncing = true;
     try {
