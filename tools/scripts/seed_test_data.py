@@ -15,34 +15,35 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.app import models, auth, database
 from src.app.database import SessionLocal, engine
 
+from sqlalchemy import text
+
 def seed_data(reset: bool = False):
     if reset:
         print("[SEED] Resetting database...")
-        # Close all existing connections in connection pool
-        engine.dispose()
-        
+        # 1. 켜져 있는 서버가 파일 핸들을 쥐고 있어도 파일 디스크립터가 깨지지 않도록
+        # 물리 파일을 지우지 않고 테이블 구조만 밀고 다시 생성합니다.
         try:
-            models.Base.metadata.drop_all(bind=engine)
-            print("[SEED] Dropped all tables from database")
+            with engine.connect() as conn:
+                conn.execute(text("PRAGMA foreign_keys=OFF;"))
+                models.Base.metadata.drop_all(bind=conn)
+                conn.execute(text("PRAGMA foreign_keys=ON;"))
+                conn.commit()
+            print("[SEED] Dropped all tables from database safely (FK disabled)")
         except Exception as e:
             print(f"[SEED WARNING] Failed to drop tables: {e}")
             
-        from src.app.database import DB_PATH
-        db_path = DB_PATH
-        wal_path = db_path.parent / (db_path.name + "-wal")
-        shm_path = db_path.parent / (db_path.name + "-shm")
-        
-        for path in [db_path, wal_path, shm_path]:
-            if path.exists():
-                try:
-                    os.remove(path)
-                    print(f"[SEED] Removed database file: {path}")
-                except Exception as e:
-                    print(f"[SEED WARNING] Failed to remove {path}: {e}")
-                    
         # Re-create all tables based on current models.py
         models.Base.metadata.create_all(bind=engine)
         print("[SEED] Re-created all database tables from metadata")
+
+        # 3. 빈 공간 조각 모음 및 파일 크기 축소
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("VACUUM;"))
+                conn.commit()
+            print("[SEED] Vacuumed database to release unused space")
+        except Exception as e:
+            print(f"[SEED WARNING] Failed to vacuum database: {e}")
 
     db = SessionLocal()
     try:
