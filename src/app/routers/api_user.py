@@ -114,8 +114,12 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
 
 
 @page_router.get("/dashboard")
-def redirect_old_dashboard():
-    return RedirectResponse(url="/user/calendar", status_code=status.HTTP_301_MOVED_PERMANENTLY)
+def redirect_old_dashboard(request: Request):
+    query_params = request.url.query
+    url = "/user/calendar"
+    if query_params:
+        url += f"?{query_params}"
+    return RedirectResponse(url=url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
 
 @page_router.get("/calendar", response_class=HTMLResponse)
 def user_calendar(
