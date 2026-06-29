@@ -27,6 +27,12 @@
         border-bottom: 2px solid #175cd3 !important;
         background-clip: padding-box !important;
     }
+    .timeline-selected-blocked-mid {
+        background-color: rgba(220, 234, 254, 0.4) !important;
+        border-top: 2px dashed rgba(23, 92, 211, 0.4) !important;
+        border-bottom: 2px dashed rgba(23, 92, 211, 0.4) !important;
+        background-clip: padding-box !important;
+    }
     .timeline-selected-end {
         background-color: #dbeafe !important;
         border-top: 2px solid #175cd3 !important;
@@ -223,7 +229,7 @@
         </div>
         <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
-                <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                <a href="/user/calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
                 {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">타임라인</a>
                 {% endif %}
@@ -373,11 +379,12 @@
                                 {% set is_holiday = d in team_cal_holiday_map %}
                                 {% set is_blocked = is_weekend or is_holiday %}
                                 <td id="timeline-cell-{{ m.user_id }}-{{ team_cal_year }}-{{ '%02d'|format(team_cal_month) }}-{{ '%02d'|format(d) }}"
-                                    class="{% if is_blocked %}bg-dense-gray-soft/40{% endif %} 
+                                    class="{% if is_blocked %}bg-[#fef3f2]{% endif %} 
                                            {% if is_me and not is_blocked and not cell_leaves %}clickable-cell{% endif %} 
                                            {% if cell_leaves %}has-leave-cell{% endif %}"
                                     data-cell-date="{{ team_cal_year }}-{{ '%02d'|format(team_cal_month) }}-{{ '%02d'|format(d) }}"
                                     data-user-id="{{ m.user_id }}"
+                                    data-is-me="{{ 'true' if is_me else 'false' }}"
                                     data-user-name="{{ m.user_name }}"
                                     data-user-team="{{ m.team or '' }}"
                                     data-user-company="{{ m.company or '' }}"
@@ -464,8 +471,8 @@
     <div class="block lg:hidden space-y-4">
         <!-- Mobile Team Schedule View (Absentees list with Date Slider) -->
         <div id="mobile-schedule-view-g" class="space-y-4">
-            <a href="/user/dashboard" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
-                <span>←</span> 대시보드 홈으로
+            <a href="/user/calendar" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
+                <span>←</span> 캘린더 홈으로
             </a>
             
             <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm">
@@ -680,12 +687,12 @@
         const btn = document.getElementById(`timeline-cell-${userId}-${dateStr}`);
         if (!btn) return;
         
-        btn.classList.remove('timeline-selected-start', 'timeline-selected-mid', 'timeline-selected-end', 'timeline-selected-single');
+        btn.classList.remove('timeline-selected-start', 'timeline-selected-mid', 'timeline-selected-end', 'timeline-selected-single', 'timeline-selected-blocked-mid');
         
         // Restore blocked class if not business day
         const isBiz = isBusinessDay(dateStr);
         if (!isBiz) {
-            btn.classList.add('bg-dense-gray-soft/40');
+            btn.classList.add('bg-[#fef3f2]');
         }
     }
 
@@ -715,7 +722,7 @@
                 const isEnd = (dateStr === (rangeEndDate || rangeStartDate));
                 
                 // Clear original classes
-                btn.classList.remove('bg-dense-gray-soft/40');
+                btn.classList.remove('bg-[#fef3f2]');
                 
                 if (isStart && isEnd) {
                     btn.classList.add('timeline-selected-single');
@@ -727,7 +734,7 @@
                     if (isBiz) {
                         btn.classList.add('timeline-selected-mid');
                     } else {
-                        btn.classList.add('timeline-selected-mid', 'opacity-65');
+                        btn.classList.add('timeline-selected-blocked-mid');
                     }
                 }
             }
@@ -1101,6 +1108,12 @@
         const userId = td.getAttribute('data-user-id');
         const cellDate = td.getAttribute('data-cell-date');
         const currentUserId = "{{ user.user_id }}";
+        const isMe = td.getAttribute('data-is-me') === 'true';
+
+        // 본인 행의 주말/공휴일 클릭 차단
+        if (isMe && !isBusinessDay(cellDate)) {
+            return;
+        }
 
         // 3. 다른 동료의 행을 클릭하거나 본인의 기존 연차가 있는 셀을 클릭하면, 진행 중인 범위 취소 (Deselection)
         if (userId !== currentUserId || hasLeave) {

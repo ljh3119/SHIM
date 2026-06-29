@@ -113,8 +113,12 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
 
 
 
-@page_router.get("/dashboard", response_class=HTMLResponse)
-def user_dashboard(
+@page_router.get("/dashboard")
+def redirect_old_dashboard():
+    return RedirectResponse(url="/user/calendar", status_code=status.HTTP_301_MOVED_PERMANENTLY)
+
+@page_router.get("/calendar", response_class=HTMLResponse)
+def user_calendar(
     request: Request,
     year: int = None,
     month: int = None,
@@ -267,7 +271,7 @@ def user_dashboard(
     ctx["pending_team_leaves"] = pending_team_leaves
 
     _add_user_layout_context(db, user, ctx)
-    return _templates(request).TemplateResponse(request=request, name="user_dashboard.html", context=ctx)
+    return _templates(request).TemplateResponse(request=request, name="user_calendar.html", context=ctx)
 
 @page_router.get("/team-calendar", response_class=HTMLResponse)
 def user_team_calendar(
@@ -287,7 +291,7 @@ def user_team_calendar(
     user_role = getattr(user, 'role', 'STAFF')
 
     if not team_calendar_visible and not company_calendar_visible and user_role not in ('PM', 'ADMIN'):
-        return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/user/calendar", status_code=status.HTTP_302_FOUND)
 
     now = utils.get_local_now()
     display_year = year if year else now.year
