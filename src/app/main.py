@@ -138,7 +138,12 @@ def branding_template_context(request: Request) -> dict:
 
     # 관리자 페이지(/admin/*) 요청일 경우 사이드바용 실시간 시스템 현황 주입
     if request.url.path.startswith("/admin"):
-        db = database.SessionLocal()
+        # Reuse existing DB session from request state if available to prevent connection leaks
+        db = getattr(request.state, "db", None)
+        db_created = False
+        if db is None:
+            db = database.SessionLocal()
+            db_created = True
         try:
             active_users_count = db.query(models.Users).filter(
                 models.Users.role != "ADMIN",
@@ -151,9 +156,11 @@ def branding_template_context(request: Request) -> dict:
             ctx["active_users_count"] = active_users_count
             ctx["pending_leaves_count"] = pending_leaves_count
         except Exception:
-            db.rollback()
+            if db_created:
+                db.rollback()
         finally:
-            db.close()
+            if db_created:
+                db.close()
 
     return ctx
 
@@ -433,7 +440,15 @@ def startup_event():
 
         db.commit()
         
-        # 5. 시스템 메트릭 초기화 (예외 안전망 캡슐화)
+        # 5. 브랜딩 및 시스템 설정 캐시 선제 로드 (Pre-populate settings cache)
+        try:
+            from .services.leave_policy import get_system_settings
+            get_system_settings(db, force_reload=True)
+            print("[SHIM] Successfully pre-populated system settings cache on startup.")
+        except Exception as cache_err:
+            print(f"[SHIM WARNING] Failed to pre-populate settings cache: {cache_err}")
+
+        # 6. 시스템 메트릭 초기화 (예외 안전망 캡슐화)
         try:
             update_system_metrics_in_db(db)
         except Exception as metrics_err:

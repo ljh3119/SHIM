@@ -70,7 +70,7 @@ def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
             try:
                 settings = db.query(models.SystemSettings).first()
                 if settings:
-                    settings.last_backup_time = get_local_now().replace(tzinfo=None)
+                    settings.last_backup_time = get_local_now()
                     settings.last_backup_count = len(backup_files)
                     size_bytes = os.path.getsize(db_path)
                     settings.last_db_size_kb = int(size_bytes // 1024)
@@ -202,7 +202,7 @@ def cleanup_old_notifications():
     import time
     
     # UTC 시각 기준으로 30일 전
-    thirty_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     total_deleted = 0
     
     while True:
@@ -243,7 +243,7 @@ def cleanup_old_notifications():
     try:
         settings = db.query(models.SystemSettings).first()
         if settings:
-            settings.last_cleanup_time = get_local_now().replace(tzinfo=None)
+            settings.last_cleanup_time = get_local_now()
             if DB_PATH.exists():
                 size_bytes = os.path.getsize(DB_PATH)
                 settings.last_db_size_kb = int(size_bytes // 1024)

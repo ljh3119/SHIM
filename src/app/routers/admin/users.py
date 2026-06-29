@@ -493,19 +493,6 @@ def hard_delete_user(
     if user.role == "ADMIN":
         return JSONResponse(status_code=400, content={"message": "관리자 계정은 삭제할 수 없습니다."})
         
-    db.query(models.Leaves).filter(models.Leaves.user_id == target_user_id).delete()
-    db.query(models.UserYearlyLeaveAllocations).filter(
-        models.UserYearlyLeaveAllocations.user_id == target_user_id
-    ).delete()
-    # Notifications 테이블 연관 데이터 CASCADE 수동 처리 (FK 위반 방지)
-    db.query(models.Notifications).filter(models.Notifications.user_id == target_user_id).delete()
-    db.query(models.Notifications).filter(models.Notifications.sender_id == target_user_id).update(
-        {models.Notifications.sender_id: None}, synchronize_session=False
-    )
-    db.query(models.AuditLogs).filter(models.AuditLogs.actor_id == target_user_id).update(
-        {models.AuditLogs.actor_id: None}, synchronize_session=False
-    )
-    
     user_name = user.user_name
     db.delete(user)
     

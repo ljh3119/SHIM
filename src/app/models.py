@@ -39,6 +39,22 @@ class EncryptedString(TypeDecorator):
                 return value
         return value
 
+class AwareDateTime(TypeDecorator):
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=datetime.timezone.utc)
+        return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return value.replace(tzinfo=datetime.timezone.utc)
+
 class Users(Base):
     __tablename__ = "users"
 
@@ -53,9 +69,9 @@ class Users(Base):
     position = Column(String(60), nullable=True)  # 표시용 직급명 (자유 입력)
     token_version = Column(Integer, default=0, nullable=False)
 
-    leaves = relationship("Leaves", back_populates="user")
-    audits = relationship("AuditLogs", back_populates="actor")
-    yearly_allocations = relationship("UserYearlyLeaveAllocations", back_populates="user")
+    leaves = relationship("Leaves", back_populates="user", passive_deletes=True)
+    audits = relationship("AuditLogs", back_populates="actor", passive_deletes=True)
+    yearly_allocations = relationship("UserYearlyLeaveAllocations", back_populates="user", passive_deletes=True)
 
 class Leaves(Base):
     __tablename__ = "leaves"
@@ -68,7 +84,7 @@ class Leaves(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.user_id"))
+    user_id = Column(String, ForeignKey("users.user_id", ondelete="CASCADE"))
     date = Column(Date, nullable=False)
     snapshot_slot_label = Column(String, nullable=False)
     snapshot_start_min = Column(Integer, nullable=False)
@@ -78,7 +94,7 @@ class Leaves(Base):
     rejection_reason = Column(EncryptedString(500))
     is_deductive = Column(Boolean, default=True, nullable=False) # 연차 차감 여부 (True: 연차, False: 공가/출장 등)
     reason = Column(EncryptedString(500)) # 신청 사유 (특히 비차감 건의 경우 필수 입력 권장)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     year = Column(Integer, nullable=False)
 
     user = relationship("Users", back_populates="leaves")
@@ -92,14 +108,14 @@ class AuditLogs(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    actor_id = Column(String, ForeignKey("users.user_id"))
+    actor_id = Column(String, ForeignKey("users.user_id", ondelete="SET NULL"))
     action = Column(String, nullable=False) # e.g., UPDATE_USER, DELETE_LEAVE
     target_info = Column(String, nullable=False)
     old_data = Column(String)
     new_data = Column(String)
     actor_name = Column(String, nullable=True)
     actor_department = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    timestamp = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     actor = relationship("Users", back_populates="audits")
 
@@ -109,7 +125,7 @@ class Holidays(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     date = Column(Date, nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 
 class UserYearlyLeaveAllocations(Base):
@@ -117,11 +133,11 @@ class UserYearlyLeaveAllocations(Base):
     __table_args__ = (UniqueConstraint("user_id", "year", name="uq_user_yearly_leave_allocation_user_year"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     year = Column(Integer, nullable=False, index=True)
     allocated_hours = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
-    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     user = relationship("Users", back_populates="yearly_allocations")
 
@@ -147,10 +163,10 @@ class SystemSettings(Base):
     # 전사 캘린더 공유 활성화 (일반 사용자도 전사 인원 휴가 조회 가능)
     company_calendar_visible = Column(Boolean, default=False, nullable=False)
     key_hash_snapshot = Column(String(64), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
-    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
-    last_backup_time = Column(DateTime, nullable=True)
-    last_cleanup_time = Column(DateTime, nullable=True)
+    created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    last_backup_time = Column(AwareDateTime, nullable=True)
+    last_cleanup_time = Column(AwareDateTime, nullable=True)
     last_backup_count = Column(Integer, nullable=True, default=0)
     last_db_size_kb = Column(Integer, nullable=True, default=0)
 
@@ -161,11 +177,11 @@ class Notifications(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
-    sender_id = Column(String, ForeignKey("users.user_id"), nullable=True)
+    user_id = Column(String, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_id = Column(String, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     message = Column(String(500), nullable=False)
     is_read = Column(Boolean, default=False, nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
+    created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 @event.listens_for(AuditLogs, 'before_insert')
 def receive_before_insert(mapper, connection, target):

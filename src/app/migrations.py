@@ -46,6 +46,17 @@ def run_all_migrations(engine):
                     raise e
 
 
+@migration("v1_8_0_remove_legacy_is_admin")
+def remove_legacy_is_admin(conn):
+    # Check if is_admin column exists to prevent crash on fresh installs
+    res = conn.execute(text("PRAGMA table_info(users)"))
+    columns = [row[1] for row in res.fetchall()]
+    if "is_admin" in columns:
+        print("[MIGRATION] 'is_admin' 레거시 컬럼이 감지되어 물리적 삭제를 진행합니다.")
+        conn.execute(text("ALTER TABLE users DROP COLUMN is_admin"))
+        print("[MIGRATION] 'is_admin' 컬럼 삭제 완료.")
+
+
 @migration("v1_8_5_system_metrics_columns")
 def add_system_metrics_columns(conn):
     # system_settings 테이블 정보 조회

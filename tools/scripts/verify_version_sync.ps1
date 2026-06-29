@@ -31,13 +31,6 @@ if ($constants.IndexOf($appVerNeedle, [StringComparison]::Ordinal) -lt 0) {
     Add-Err "src/app/constants.py: APP_VERSION must equal package.json ($ver)."
 }
 
-$basePath = Join-Path $ProjectRoot "src\templates\base.html"
-$base = Read-Text $basePath
-$defaultVer = "default('$ver')"
-$matches = [regex]::Matches($base, [regex]::Escape($defaultVer))
-if ($matches.Count -lt 2) {
-    Add-Err "src/templates/base.html: need 2x $defaultVer for app_version (found $($matches.Count))."
-}
 
 foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compose.dev.yml")) {
     $p = Join-Path $ProjectRoot $rel

@@ -48,7 +48,6 @@ $tailwind = Start-Process -FilePath "npx.cmd" `
     -NoNewWindow
 
 try {
-    python tools/scripts/db_init.py
     python -m uvicorn src.app.main:app --host 0.0.0.0 --port $TargetPort --reload --reload-dir src
 }
 finally {

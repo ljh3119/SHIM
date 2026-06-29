@@ -13,6 +13,16 @@
         </div>
     </div>
 
+    <!-- Error message alert banner -->
+    {% if error_msg %}
+    <div class="flex items-center gap-2 rounded-xl border border-dense-danger-soft bg-dense-danger-soft/20 px-4 py-3 text-xs font-bold text-dense-danger mb-4">
+        <svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span>{{ error_msg }}</span>
+    </div>
+    {% endif %}
+
     <!-- Audit Filters -->
     <form method="get" id="audit-filter-form" class="grid grid-cols-2 gap-3 sm:grid-cols-5 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold mb-4">
         <div>
@@ -141,4 +151,76 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const startDateInput = document.getElementById("audit-start-date");
+    const endDateInput = document.getElementById("audit-end-date");
+    const form = document.getElementById("audit-filter-form");
+
+    function updateDateConstraints() {
+        const startVal = startDateInput.value;
+        if (startVal) {
+            const startDate = new Date(startVal);
+            // 90 days after start date
+            const maxDate = new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+            const yyyy = maxDate.getFullYear();
+            const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(maxDate.getDate()).padStart(2, '0');
+            const maxDateStr = `${yyyy}-${mm}-${dd}`;
+            
+            endDateInput.min = startVal;
+            endDateInput.max = maxDateStr;
+        } else {
+            endDateInput.removeAttribute("min");
+            endDateInput.removeAttribute("max");
+        }
+    }
+
+    startDateInput.addEventListener("change", updateDateConstraints);
+    updateDateConstraints();
+
+    if (form) {
+        form.addEventListener("submit", function(e) {
+            const startVal = startDateInput.value;
+            const endVal = endDateInput.value;
+            if (startVal && endVal) {
+                const d1 = new Date(startVal);
+                const d2 = new Date(endVal);
+                
+                // 타임존/서머타임 시차 영향을 배제하도록 Date.UTC 기반으로 일수 차이 계산
+                const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+                const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+                const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+
+                if (diffDays < 0) {
+                    e.preventDefault();
+                    if (typeof showToast === 'function') {
+                        showToast("종료일은 시작일보다 빠를 수 없습니다.", "error");
+                    } else {
+                        alert("종료일은 시작일보다 빠를 수 없습니다.");
+                    }
+                    return;
+                } else if (diffDays > 90) {
+                    e.preventDefault();
+                    if (typeof showToast === 'function') {
+                        showToast("조회 기간은 최대 90일을 초과할 수 없습니다.", "error");
+                    } else {
+                        alert("조회 기간은 최대 90일을 초과할 수 없습니다.");
+                    }
+                    return;
+                }
+            }
+
+            // 다중 클릭 및 다중 제출 방지를 위해 제출 버튼 비활성화
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.innerHTML = `검색 중...`;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
