@@ -811,10 +811,14 @@ def main():
     r_dash_curr = staff_client_curr.get("/user/calendar")
     assert r_dash_curr.status_code == 200
     
-    # 301 Redirect check from old dashboard path
+    # 301 Redirect check from old dashboard path (including query parameter preservation)
     r_redir = staff_client_curr.get("/user/dashboard", follow_redirects=False)
     assert r_redir.status_code == 301
     assert r_redir.headers.get("location") == "/user/calendar"
+    
+    r_redir_q = staff_client_curr.get("/user/dashboard?year=2026&month=6", follow_redirects=False)
+    assert r_redir_q.status_code == 301
+    assert r_redir_q.headers.get("location") == "/user/calendar?year=2026&month=6"
     
     r_toggle = admin_client.post("/api/admin/user/toggle", data={"target_user_id": "u_staff"})
     assert r_toggle.status_code == 200
