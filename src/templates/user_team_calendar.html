@@ -700,15 +700,13 @@
         
         // Clear highlights first
         document.querySelectorAll(`td[id^="timeline-cell-${userId}-"]`).forEach(btn => {
-            const idParts = btn.id.split('-');
-            const dateStr = idParts.slice(2).join('-');
+            const dateStr = btn.getAttribute('data-cell-date');
             clearCellHighlight(dateStr);
         });
         
         // Add highlights
         document.querySelectorAll(`td[id^="timeline-cell-${userId}-"]`).forEach(btn => {
-            const idParts = btn.id.split('-');
-            const dateStr = idParts.slice(2).join('-');
+            const dateStr = btn.getAttribute('data-cell-date');
             const btnDate = window.parseLocalDate(dateStr);
             
             if (btnDate && btnDate >= start && btnDate <= end) {
