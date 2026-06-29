@@ -46,8 +46,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-def get_db():
+from fastapi import Request
+
+def get_db(request: Request = None):
     db = SessionLocal()
+    if request is not None:
+        request.state.db = db
     try:
         yield db
     finally:

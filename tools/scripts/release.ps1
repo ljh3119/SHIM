@@ -47,27 +47,23 @@ Replace-OrFail $packageJsonPath '"version"\s*:\s*"[0-9]+\.[0-9]+\.[0-9]+"' "`"ve
 # 2) src/app/constants.py application version
 Replace-OrFail (Join-Path $ProjectRoot "src\app\constants.py") 'APP_VERSION\s*=\s*"[0-9]+\.[0-9]+\.[0-9]+"' "APP_VERSION = `"$Version`""
 
-# 3) src/templates/base.html default version fallback
-Replace-OrFail (Join-Path $ProjectRoot "src\templates\base.html") "default\('[0-9]+\.[0-9]+\.[0-9]+'\)" "default('$Version')"
-Replace-OrFail (Join-Path $ProjectRoot "src\templates\base.html") "default\('[0-9]+\.[0-9]+\.[0-9]+'\)" "default('$Version')"
-
-# 4) compose default image tags
+# 3) compose default image tags
 Replace-OrFail (Join-Path $ProjectRoot "infra\docker\docker-compose.yml") 'image:\s*\$\{SHIM_IMAGE:-shim:[0-9]+\.[0-9]+\.[0-9]+\}' "image: `${SHIM_IMAGE:-shim:$Version}"
 Replace-OrFail (Join-Path $ProjectRoot "infra\docker\docker-compose.dev.yml") 'image:\s*\$\{SHIM_IMAGE:-shim:[0-9]+\.[0-9]+\.[0-9]+\}' "image: `${SHIM_IMAGE:-shim:$Version}"
 
-# 5) README.md release version line
+# 4) README.md release version line
 Replace-OrFail (Join-Path $ProjectRoot "README.md") '(\*\*[^*]+?\*\*\s*:?\s*)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
 
-# 6) portable/README_PORTABLE.md update date and version
+# 5) portable/README_PORTABLE.md update date and version
 $today = Get-Date -Format "yyyy-MM-dd"
 Replace-OrFail (Join-Path $ProjectRoot "portable\README_PORTABLE.md") '(\*\*[^*]+?\*\*\s*:\s*)\d{4}-\d{2}-\d{2}(\s*\(v)[0-9]+\.[0-9]+\.[0-9]+(\))' ('${1}' + $today + '${2}' + $Version + '${3}')
 
-# 7) docs/4-1_SHIM_프로젝트_설계서.md update version and date (using ASCII-safe filter)
+# 6) docs/4-1_SHIM_프로젝트_설계서.md update version and date (using ASCII-safe filter)
 $designDocPath = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "4-1_*.md" | Select-Object -First 1).FullName
 Replace-OrFail $designDocPath '(\*\*[^*]+?\*\*\s*:?\s*)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
 Replace-OrFail $designDocPath '(\*\*[^*]+?\*\*\s*:\s*)\d{4}-\d{2}-\d{2}' ('${1}' + $today)
 
-# 8) docs/1-2_백업_복구_유지보수_가이드.md update version examples and date (using ASCII-safe filter)
+# 7) docs/1-2_백업_복구_유지보수_가이드.md update version examples and date (using ASCII-safe filter)
 $maintenanceDocPath = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "1-2_*.md" | Select-Object -First 1).FullName
 Replace-OrFail $maintenanceDocPath '(\(예:\s*`)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
 Replace-OrFail $maintenanceDocPath '(-Version\s+)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)

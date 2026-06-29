@@ -100,9 +100,11 @@ def admin_leaves_timeline_partial(
         team=selected_team,
         leave_status=selected_leave_status,
     )
+    query = query.filter(extract("year", models.Leaves.date) == current_year)
 
     per_page = 50
     total_count = query.count()
+    is_capped = total_count >= 5000
     total_pages = (total_count + per_page - 1) // per_page
     if page > total_pages and total_pages > 0:
         page = total_pages
@@ -118,12 +120,26 @@ def admin_leaves_timeline_partial(
         "team": models.Users.team,
     }[sort_key]
 
-    if sort_dir_effective == "asc":
-        query = query.order_by(sort_col.asc().nulls_last(), models.Leaves.id.asc())
+    is_encrypted = auth.get_encryption_key() is not None
+    if is_encrypted and sort_key == "user_name":
+        # If encryption is active, DB-level sorting of user_name is meaningless (as it is encrypted).
+        # We query all rows, sort in memory by the decrypted user_name (using lower case), and then apply pagination.
+        all_leaves = query.limit(5000).all()
+        reverse_sort = (sort_dir_effective == "desc")
+        all_leaves.sort(
+            key=lambda x: (
+                (x.user.user_name or "").lower(),
+                x.id if not reverse_sort else -x.id
+            ),
+            reverse=reverse_sort
+        )
+        leaves = all_leaves[(page - 1) * per_page : page * per_page]
     else:
-        query = query.order_by(sort_col.desc().nulls_last(), models.Leaves.id.desc())
-
-    leaves = query.offset((page - 1) * per_page).limit(per_page).all()
+        if sort_dir_effective == "asc":
+            query = query.order_by(sort_col.asc().nulls_last(), models.Leaves.id.asc())
+        else:
+            query = query.order_by(sort_col.desc().nulls_last(), models.Leaves.id.desc())
+        leaves = query.offset((page - 1) * per_page).limit(per_page).all()
 
     all_users = (
         db.query(models.Users)
@@ -181,6 +197,7 @@ def admin_leaves_timeline_partial(
             "admin": admin,
             "leaves": leaves,
             "users": users,
+            "is_capped": is_capped,
             "company_options": company_options,
             "team_options": team_options,
             "selected_year": current_year,
@@ -332,7 +349,7 @@ def export_admin_leaves_timeline(
         allocated = alloc_map.get(u.user_id, u.total_leave_hours or 120)
         approved = leave_hours_map.get(u.user_id, {}).get("APPROVED", 0.0)
         pending = leave_hours_map.get(u.user_id, {}).get("PENDING", 0.0)
-        remaining = float(allocated) - approved
+        remaining = float(allocated) - approved - pending
         
         ws_summary.append([
             u.user_id,

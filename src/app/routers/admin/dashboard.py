@@ -62,17 +62,14 @@ def admin_dashboard(
     
     # 헬스 체크 임계치 및 지연 상태 판정 (26시간 임계치)
     is_healthy = True
-    now_naive = now.replace(tzinfo=None)
     
     if settings:
         if settings.last_backup_time is not None:
-            backup_time_naive = settings.last_backup_time.replace(tzinfo=None)
-            if (now_naive - backup_time_naive).total_seconds() > 26 * 3600:
+            if (now - settings.last_backup_time).total_seconds() > 26 * 3600:
                 is_healthy = False
                 
         if settings.last_cleanup_time is not None:
-            cleanup_time_naive = settings.last_cleanup_time.replace(tzinfo=None)
-            if (now_naive - cleanup_time_naive).total_seconds() > 26 * 3600:
+            if (now - settings.last_cleanup_time).total_seconds() > 26 * 3600:
                 is_healthy = False
                 
         db_size_kb = settings.last_db_size_kb or 0

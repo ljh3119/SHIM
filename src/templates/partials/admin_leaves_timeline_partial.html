@@ -1,6 +1,15 @@
 {% from "partials/macros.html" import fmt_hours %}
 
 <div class="fade-in space-y-4">
+    {% if is_capped %}
+    <div class="flex items-center gap-2 rounded-xl border border-dense-danger-soft bg-dense-danger-soft/20 px-4 py-3 text-xs font-bold text-dense-danger">
+        <svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span>조회된 데이터가 너무 많아 최신 5,000건만 표시됩니다. 기간을 더 좁혀주세요.</span>
+    </div>
+    {% endif %}
+
     <!-- Table Card Container -->
     <div class="overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
         <div class="flex flex-col gap-3 border-b border-dense-line px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">

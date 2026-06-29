@@ -121,13 +121,19 @@ def validate_and_apply_leave(
             lunch_minutes = lunch_end - lunch_start
         max_daily_hours = (work_end - work_start - lunch_minutes) / 60.0
 
-        # 개별 날짜별 중복 및 일일 한도 체크
+        # 개별 날짜별 중복 및 일일 한도 체크 (N+1 쿼리 방지 일괄 조회)
+        all_existing_leaves = db.query(models.Leaves).filter(
+            models.Leaves.user_id == user.user_id,
+            models.Leaves.date.in_(valid_dates),
+            models.Leaves.status.notin_(["CANCELED", "REJECTED"])
+        ).all()
+
+        existing_by_date = {}
+        for el in all_existing_leaves:
+            existing_by_date.setdefault(el.date, []).append(el)
+
         for req_date in valid_dates:
-            existing_leaves = db.query(models.Leaves).filter(
-                models.Leaves.user_id == user.user_id,
-                models.Leaves.date == req_date,
-                models.Leaves.status.notin_(["CANCELED", "REJECTED"])
-            ).all()
+            existing_leaves = existing_by_date.get(req_date, [])
 
             daily_total = snapshot.deduction_hours
             for el in existing_leaves:

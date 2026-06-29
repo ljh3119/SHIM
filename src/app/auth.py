@@ -62,6 +62,10 @@ def get_encryption_key() -> bytes | None:
     hashed = hashlib.sha256(key_source.encode('utf-8')).digest()
     return base64.urlsafe_b64encode(hashed)
 
+def clear_encryption_key_cache():
+    """Clear the encryption key lru_cache (useful for tests when env vars change)."""
+    get_encryption_key.cache_clear()
+
 SECRET_KEY = _resolve_secret_key()
 
 ALGORITHM = "HS256"

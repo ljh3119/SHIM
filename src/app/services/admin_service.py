@@ -6,7 +6,7 @@ from .. import models, utils
 def get_admin_dashboard_stats(db: Session):
     today = utils.get_local_now()
     day_start_local = datetime.combine(today.date(), datetime.min.time()).replace(tzinfo=today.tzinfo)
-    day_start = day_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    day_start = day_start_local.astimezone(timezone.utc)
     next_day_start = day_start + timedelta(days=1)
 
     

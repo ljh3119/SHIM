@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 import io
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from openpyxl import Workbook
@@ -125,6 +125,28 @@ def admin_audit_logs(
         except ValueError:
             pass
 
+    if s_date and e_date and (e_date - s_date).days > 90:
+        users = db.query(models.Users).filter(models.Users.is_active == True).order_by(models.Users.user_name).all()
+        return _templates(request).TemplateResponse(
+            request=request,
+            name="admin_audit.html",
+            context={
+                "admin": admin,
+                "logs": [],
+                "users": users,
+                "actor_id": actor_id,
+                "action": action,
+                "start_date": start_date,
+                "end_date": end_date,
+                "page": 1,
+                "total_pages": 0,
+                "total_count": 0,
+                "current_year": utils.get_local_now().year,
+                "export_query": "",
+                "error_msg": "조회 기간은 최대 90일을 초과할 수 없습니다.",
+            },
+        )
+
     query = admin_service.get_audit_logs_query(
         db=db,
         actor_id=actor_id.strip(),
@@ -202,6 +224,9 @@ def admin_audit_export(
         except ValueError:
             pass
 
+    if s_date and e_date and (e_date - s_date).days > 90:
+        raise HTTPException(status_code=400, detail="조회 기간은 최대 90일을 초과할 수 없습니다.")
+
     query = admin_service.get_audit_logs_query(
         db=db,
         actor_id=actor_id.strip(),
@@ -247,7 +272,10 @@ def admin_audit_export(
     wb.close()
     out.seek(0)
 
-    filename = f"audit_logs_{utils.get_local_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    if s_date and e_date:
+        filename = f"audit_{s_date.strftime('%Y%m%d')}_{e_date.strftime('%Y%m%d')}.xlsx"
+    else:
+        filename = f"audit_logs_{utils.get_local_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
