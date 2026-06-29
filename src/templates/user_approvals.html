@@ -15,7 +15,7 @@
         </div>
         <div class="mt-4 flex gap-2 md:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
-                <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
+                <a href="/user/calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
                 {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
                 {% endif %}
@@ -163,8 +163,8 @@
 
     <!-- 2. Mobile View (Narrow Screen) -->
     <div class="block md:hidden space-y-4">
-        <a href="/user/dashboard" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
-            <span>←</span> 대시보드 홈으로
+        <a href="/user/calendar" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
+            <span>←</span> 캘린더 홈으로
         </a>
 
         <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-3">

@@ -117,7 +117,7 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
             
         # [WARM-UP] 워밍업 요청을 수행하여 Jinja2 템플릿 컴파일 및 SQLAlchemy 쿼리 캐시를 미리 생성합니다.
         print("[STAGE 0] Warming up application caches...")
-        await client.get("/user/dashboard")
+        await client.get("/user/calendar")
         await client.get("/user/team-calendar")
         await client.post("/api/user/leave", data={
             "date_str": "2026-06-01",
@@ -134,7 +134,7 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         print(f"\n[STAGE 1] Running {iterations} API request cycles...")
         for i in range(1, iterations + 1):
             # 1) 개인 대시보드 조회
-            await client.get("/user/dashboard")
+            await client.get("/user/calendar")
             
             # 2) 팀원 캘린더 조회
             await client.get("/user/team-calendar")

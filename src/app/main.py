@@ -471,7 +471,7 @@ def read_root(request: Request, db: Session = Depends(get_db)):
                     user_role = getattr(user, "role", "STAFF")
                     if user_role == "ADMIN":
                         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
-                    return RedirectResponse(url="/user/dashboard", status_code=status.HTTP_302_FOUND)
+                    return RedirectResponse(url="/user/calendar", status_code=status.HTTP_302_FOUND)
     
     cookie_settings = auth.get_cookie_settings(request)
     response = templates.TemplateResponse(request=request, name="login.html")

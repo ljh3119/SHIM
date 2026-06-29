@@ -267,7 +267,7 @@ def main():
     db = SessionLocal()
     resp = user_team_calendar(request=req, db=db, user=staff_user)
     assert resp.status_code == 302
-    assert resp.headers.get("location") == "/user/dashboard"
+    assert resp.headers.get("location") == "/user/calendar"
     db.close()
     
     # 원래대로 복구
@@ -782,7 +782,7 @@ def main():
     staff_client_v0 = TestClient(app)
     staff_client_v0.cookies.set("access_token", f"Bearer {token_v0}")
     
-    r_dash = staff_client_v0.get("/user/dashboard")
+    r_dash = staff_client_v0.get("/user/calendar")
     assert r_dash.status_code == 200
     
     r_update = admin_client.post("/api/admin/user/update", data={
@@ -796,7 +796,7 @@ def main():
     })
     assert r_update.status_code == 200
     
-    r_dash_after = staff_client_v0.get("/user/dashboard", follow_redirects=False)
+    r_dash_after = staff_client_v0.get("/user/calendar", follow_redirects=False)
     assert r_dash_after.status_code in (302, 401)
     
     db = SessionLocal()
@@ -808,13 +808,18 @@ def main():
     staff_client_curr = TestClient(app)
     staff_client_curr.cookies.set("access_token", f"Bearer {token_v_curr}")
     
-    r_dash_curr = staff_client_curr.get("/user/dashboard")
+    r_dash_curr = staff_client_curr.get("/user/calendar")
     assert r_dash_curr.status_code == 200
+    
+    # 301 Redirect check from old dashboard path
+    r_redir = staff_client_curr.get("/user/dashboard", follow_redirects=False)
+    assert r_redir.status_code == 301
+    assert r_redir.headers.get("location") == "/user/calendar"
     
     r_toggle = admin_client.post("/api/admin/user/toggle", data={"target_user_id": "u_staff"})
     assert r_toggle.status_code == 200
     
-    r_dash_curr_after = staff_client_curr.get("/user/dashboard", follow_redirects=False)
+    r_dash_curr_after = staff_client_curr.get("/user/calendar", follow_redirects=False)
     assert r_dash_curr_after.status_code in (302, 401)
     
     db = SessionLocal()

@@ -6,9 +6,9 @@
   <!-- Navigation Card -->
   <div class="rounded-2xl border border-dense-line bg-dense-surface p-3 pr-4 shadow-sm flex flex-col gap-2">
     <nav id="shim-sidebar-user-nav" class="flex flex-col gap-1" aria-label="사용자 메뉴">
-      <a href="/user/dashboard" class="shim-side-link {% if path == '/user/dashboard' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">📊</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">대시보드</span>
+      <a href="/user/calendar" class="shim-side-link {% if path.startswith('/user/calendar') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm">🗓️</span>
+        <span class="shim-nav-label min-w-0 truncate font-semibold">개인 캘린더</span>
       </a>
       <a href="/user/history" class="shim-side-link {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
         <span class="shim-side-emoji text-sm">📋</span>

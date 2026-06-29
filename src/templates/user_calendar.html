@@ -112,7 +112,7 @@
         </div>
         <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
-                <a href="/user/dashboard" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">캘린더</a>
+                <a href="/user/calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-blue bg-dense-surface shadow-sm transition-all">캘린더</a>
                 {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">타임라인</a>
                 {% endif %}
@@ -149,7 +149,7 @@
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <form action="/user/dashboard" method="GET" class="flex items-center">
+                        <form action="/user/calendar" method="GET" class="flex items-center">
                             <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-xs font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line focus:border-dense-blue focus:ring-dense-blue">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>

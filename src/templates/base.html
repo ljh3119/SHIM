@@ -133,7 +133,7 @@
     <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
         <div class="mx-auto flex h-16 max-w-[92rem] items-center justify-between px-4 sm:px-6 lg:px-8">
             <div class="flex items-center min-w-0">
-                <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/dashboard{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
+                <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/calendar{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
                     <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
                         <span class="truncate text-center text-xs font-bold leading-tight text-white sm:text-sm">{{ brand_badge_display | default('S') }}</span>
                     </div>
@@ -172,7 +172,7 @@
                     <button type="button" onclick="window.shimModal.open('adminPwdModal', 'admin_current_password', this)" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
                 {% endif %}
                 {% if request.cookies.get('access_token') and not admin %}
-                    <button type="button" onclick="if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/dashboard'}" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
+                    <button type="button" onclick="if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/calendar'}" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
                 {% endif %}
                 {% if request.cookies.get('access_token') %}
                     <a href="/logout" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors">로그아웃</a>
