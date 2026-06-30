@@ -95,3 +95,9 @@ Maintaining the documentation structure is mandatory for project integrity:
   ```powershell
   .\tools\scripts\release.ps1 -Version X.Y.Z -BuildImage -RunChecks
   ```
+
+## 8. GitHub Release & Privacy Standards
+- **Author Email Privacy**: 깃허브 원격 저장소에 Push하기 전, 모든 커밋 작성자의 이메일이 개인 이메일(예: `aor3119@naver.com`)이 아닌 깃허브 비공개용 이메일(`ljh3119@users.noreply.github.com`)로 설정되었는지 필히 검증해야 합니다.
+- **Verification tool**: 보안 검증을 수행할 경우, [security_checker.py](file:///v:/M2SSD/Documents/Project/SHIM/scratch/security_checker.py)를 실행하여 개인정보 및 비밀키 유출을 사전에 예방합니다.
+- **Rebase Amend Rewrite**: 과거 로컬 커밋 이메일을 변경하려면 `git filter-branch -f --env-filter "export GIT_AUTHOR_NAME='ljh3119'; export GIT_AUTHOR_EMAIL='ljh3119@users.noreply.github.com'; export GIT_COMMITTER_NAME='ljh3119'; export GIT_COMMITTER_EMAIL='ljh3119@users.noreply.github.com';" --tag-name-filter cat -- refs/remotes/origin/main..HEAD` 명령을 이용하여 일괄 재작성합니다.
+
