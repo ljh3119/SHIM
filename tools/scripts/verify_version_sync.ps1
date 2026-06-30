@@ -23,6 +23,32 @@ function Add-Err([string]$Message) {
     [void]$errs.Add($Message)
 }
 
+function Verify-DocVersionPatterns([string]$RelPath, [string]$ExpectedVersion) {
+    $FullPath = Join-Path $ProjectRoot $RelPath
+    if (-not (Test-Path $FullPath)) {
+        return
+    }
+    $Content = Read-Text $FullPath
+    
+    # 1. shim:X.Y.Z 패턴 검사
+    $dockerMatches = [regex]::Matches($Content, 'shim:(\d+\.\d+\.\d+)')
+    foreach ($m in $dockerMatches) {
+        $foundVer = $m.Groups[1].Value
+        if ($foundVer -ne $ExpectedVersion) {
+            Add-Err "$RelPath : Found obsolete docker tag 'shim:$foundVer' (expected 'shim:$ExpectedVersion')"
+        }
+    }
+    
+    # 2. release.ps1 -Version X.Y.Z 패턴 검사
+    $releaseMatches = [regex]::Matches($Content, 'release\.ps1\s+-Version\s+(\d+\.\d+\.\d+)')
+    foreach ($m in $releaseMatches) {
+        $foundVer = $m.Groups[1].Value
+        if ($foundVer -ne $ExpectedVersion) {
+            Add-Err "$RelPath : Found obsolete release tool argument '-Version $foundVer' (expected '-Version $ExpectedVersion')"
+        }
+    }
+}
+
 # Code / config (must match release.ps1 targets)
 $constantsPath = Join-Path $ProjectRoot "src\app\constants.py"
 $constants = Read-Text $constantsPath
@@ -72,6 +98,11 @@ if ($maintenanceDoc -and (Test-Path $maintenanceDoc)) {
     }
 }
 
+# 가이드 문서들의 세부 버전 정합성 검사 (Docker 이미지 태그 및 release.ps1 매개변수)
+Verify-DocVersionPatterns "README.md" $ver
+Verify-DocVersionPatterns "docs\1-1_초심자_구동_가이드.md" $ver
+Verify-DocVersionPatterns "docs\1-2_백업_복구_유지보수_가이드.md" $ver
+Verify-DocVersionPatterns "portable\README_PORTABLE.md" $ver
 
 if ($errs.Count -gt 0) {
     Write-Host "verify_version_sync: expected version from package.json = $ver" -ForegroundColor Yellow
