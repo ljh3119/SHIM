@@ -648,11 +648,12 @@ def team_approve_leave(
     except LeaveStatusTransitionError as exc:
         return JSONResponse(status_code=400, content={"message": str(exc)})
 
+    target_user_masked = f"{utils.mask_name(leave.user.user_name)} / {leave.user_id}"
     db.add(
         models.AuditLogs(
             actor_id=approver.user_id,
             action="APPROVE_LEAVE",
-            target_info=f"Leave:{leave_id} ({leave.user.user_name}, {leave.date})",
+            target_info=f"Leave:{leave_id} ({target_user_masked}, {leave.date})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )
@@ -699,11 +700,12 @@ def team_reject_leave(
     except LeaveStatusTransitionError as exc:
         return JSONResponse(status_code=400, content={"message": str(exc)})
 
+    target_user_masked = f"{utils.mask_name(leave.user.user_name)} / {leave.user_id}"
     db.add(
         models.AuditLogs(
             actor_id=approver.user_id,
             action="REJECT_LEAVE",
-            target_info=f"Leave:{leave_id} ({leave.user.user_name}, {leave.date})",
+            target_info=f"Leave:{leave_id} ({target_user_masked}, {leave.date})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )
@@ -784,11 +786,12 @@ def user_cancel_leave(
     except LeaveStatusTransitionError as exc:
         return JSONResponse(status_code=400, content={"message": str(exc)})
 
+    target_user_masked = f"{utils.mask_name(user.user_name)} / {user.user_id}"
     db.add(
         models.AuditLogs(
             actor_id=user.user_id,
             action="CANCEL_LEAVE",
-            target_info=f"Leave:{leave_id} ({user.user_name}, {leave.date})",
+            target_info=f"Leave:{leave_id} ({target_user_masked}, {leave.date})",
             old_data=transition.audit_old_data,
             new_data=transition.audit_new_data,
         )

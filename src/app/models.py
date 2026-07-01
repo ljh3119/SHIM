@@ -72,6 +72,7 @@ class Users(Base):
     leaves = relationship("Leaves", back_populates="user", passive_deletes=True)
     audits = relationship("AuditLogs", back_populates="actor", passive_deletes=True)
     yearly_allocations = relationship("UserYearlyLeaveAllocations", back_populates="user", passive_deletes=True)
+    notifications_sent = relationship("Notifications", foreign_keys="[Notifications.sender_id]", back_populates="sender", passive_deletes=True)
 
 class Leaves(Base):
     __tablename__ = "leaves"
@@ -113,7 +114,7 @@ class AuditLogs(Base):
     target_info = Column(String, nullable=False)
     old_data = Column(String)
     new_data = Column(String)
-    actor_name = Column(String, nullable=True)
+    actor_name = Column(EncryptedString, nullable=True)
     actor_department = Column(String, nullable=True)
     timestamp = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
@@ -182,6 +183,8 @@ class Notifications(Base):
     message = Column(String(500), nullable=False)
     is_read = Column(Boolean, default=False, nullable=False, index=True)
     created_at = Column(AwareDateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    sender = relationship("Users", foreign_keys=[sender_id], back_populates="notifications_sent")
 
 @event.listens_for(AuditLogs, 'before_insert')
 def receive_before_insert(mapper, connection, target):

@@ -246,8 +246,9 @@ def update_user(
             status_code=400, content={"message": "관리자 역할은 직접 지정할 수 없습니다."}
         )
 
+    old_name_masked = f"{utils.mask_name(user.user_name)} / {user.user_id}"
     old_data = (
-        f"name={user.user_name};company={user.company};team={user.team};"
+        f"name={old_name_masked};company={user.company};team={user.team};"
         f"role={user.role};position={user.position};active={user.is_active}"
     )
 
@@ -274,15 +275,16 @@ def update_user(
         for leave in future_leaves:
             leave.status = "CANCELED"
 
+    new_name_masked = f"{utils.mask_name(user_name)} / {user.user_id}"
     new_data = (
-        f"name={user.user_name};company={user.company};team={user.team};"
+        f"name={new_name_masked};company={user.company};team={user.team};"
         f"role={user.role};position={user.position};active={user.is_active}"
     )
 
     audit = models.AuditLogs(
         actor_id=admin.user_id,
         action="UPDATE_USER_INFO",
-        target_info=f"User:{target_user_id}",
+        target_info=f"User:{target_user_id} ({new_name_masked})",
         old_data=old_data,
         new_data=new_data,
     )
@@ -347,12 +349,13 @@ def create_user(
         )
     )
     
+    created_name_masked = f"{utils.mask_name(user_name)} / {user_id}"
     audit = models.AuditLogs(
         actor_id=admin.user_id,
         action="CREATE_USER",
-        target_info=f"User:{user_id}",
+        target_info=f"User:{user_id} ({created_name_masked})",
         old_data="None",
-        new_data=f"{user_name};role={role_value}"
+        new_data=f"{created_name_masked};role={role_value}"
     )
     db.add(audit)
     try:
@@ -496,16 +499,18 @@ def hard_delete_user(
     user_name = user.user_name
     db.delete(user)
     
+    deleted_name_masked = f"{utils.mask_name(user_name)} / {target_user_id}"
     audit = models.AuditLogs(
         actor_id=admin.user_id,
         action="HARD_DELETE_USER",
-        target_info=f"User:{target_user_id} ({user_name})",
+        target_info=f"User:{target_user_id} ({deleted_name_masked})",
         old_data="EXISTS",
         new_data="DELETED"
     )
     db.add(audit)
     try:
         db.commit()
+        db.expire_all()
     except SQLAlchemyError as e:
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})

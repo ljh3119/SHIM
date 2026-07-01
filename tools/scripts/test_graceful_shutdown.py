@@ -18,16 +18,6 @@ except ImportError:
     print("Please install development dependencies using: pip install -r requirements-dev.txt")
     sys.exit(1)
 
-# 임시 DB 및 환경 설정
-os.environ["SHIM_PORT"] = "8099"
-os.environ["SHIM_SECRET_KEY"] = "shim_test_secret_key_graceful_shutdown_12345"
-os.environ["SHIM_DATA_DIR"] = os.path.abspath(os.path.join(project_root, "var/data_test_shutdown"))
-
-db_dir = os.environ["SHIM_DATA_DIR"]
-db_file = os.path.join(db_dir, "shim_internal.db")
-db_wal = db_file + "-wal"
-db_shm = db_file + "-shm"
-
 def is_port_in_use(port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(0.5)
@@ -36,6 +26,22 @@ def is_port_in_use(port: int) -> bool:
             return True
         except (OSError, ConnectionRefusedError):
             return False
+
+def find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+# 임시 DB 및 환경 설정
+TEST_PORT = find_free_port()
+os.environ["SHIM_PORT"] = str(TEST_PORT)
+os.environ["SHIM_SECRET_KEY"] = "shim_test_secret_key_graceful_shutdown_12345"
+os.environ["SHIM_DATA_DIR"] = os.path.abspath(os.path.join(project_root, "var/data_test_shutdown"))
+
+db_dir = os.environ["SHIM_DATA_DIR"]
+db_file = os.path.join(db_dir, "shim_internal.db")
+db_wal = db_file + "-wal"
+db_shm = db_file + "-shm"
 
 
 def clean_db_files():
@@ -51,7 +57,7 @@ def run_background_requests(stop_event):
     session = requests.Session()
     while not stop_event.is_set():
         try:
-            session.get("http://localhost:8099/", timeout=1)
+            session.get(f"http://localhost:{TEST_PORT}/", timeout=1)
         except requests.exceptions.RequestException:
             pass
         time.sleep(0.1)
@@ -65,9 +71,9 @@ def test_graceful_shutdown():
     clean_db_files()
 
     # 2. 서버 실행 명령 준비 (비대화형 테스트 환경 호환을 위해 --foreground 모드로 구동)
-    cmd = [sys.executable, "-u", "portable/shim_portable.py", "--foreground", "--port", "8099"]
+    cmd = [sys.executable, "-u", "portable/shim_portable.py", "--foreground", "--port", str(TEST_PORT)]
     
-    print("[STEP 1] Starting SHIM Server in foreground mode (Process Group)...")
+    print(f"[STEP 1] Starting SHIM Server in foreground mode (Process Group) on port {TEST_PORT}...")
     creation_flags = 0
     if sys.platform == "win32":
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
@@ -88,7 +94,7 @@ def test_graceful_shutdown():
 
 
     # 서버 부팅 대기 (최대 15초)
-    print("[STEP 2] Waiting for server to bind to port 8099...")
+    print(f"[STEP 2] Waiting for server to bind to port {TEST_PORT}...")
     server_ready = False
     start_time = time.time()
     
@@ -105,7 +111,7 @@ def test_graceful_shutdown():
     t_read.start()
 
     while time.time() - start_time < 45:
-        if is_port_in_use(8099):
+        if is_port_in_use(TEST_PORT):
             server_ready = True
             break
         time.sleep(0.2)

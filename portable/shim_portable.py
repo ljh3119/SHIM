@@ -5,149 +5,186 @@ import socket
 import subprocess
 import time
 import argparse
-import msvcrt
-import ctypes
-from ctypes import wintypes
 import threading
 import webbrowser
 
 import uvicorn
 
-# --- Native Windows System Tray Support via ctypes ---
-user32 = ctypes.windll.user32
-shell32 = ctypes.windll.shell32
-kernel32 = ctypes.windll.kernel32
+# --- Native Windows System Tray Support via ctypes (Conditional Load for Cross-Platform Safety) ---
+IS_WINDOWS = sys.platform == "win32"
 
-# Win32 Function Prototypes (Declaring argtypes/restype to prevent 64-bit integer overflow issues)
-LRESULT = ctypes.c_ssize_t
+if IS_WINDOWS:
+    import msvcrt
+    import ctypes
+    from ctypes import wintypes
 
-kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
-kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
+    user32 = ctypes.windll.user32
+    shell32 = ctypes.windll.shell32
+    kernel32 = ctypes.windll.kernel32
 
-# Mutex & Window Lookup APIs
-kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
-kernel32.CreateMutexW.restype = wintypes.HANDLE
-kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-kernel32.CloseHandle.restype = wintypes.BOOL
-kernel32.GetLastError.argtypes = []
-kernel32.GetLastError.restype = wintypes.DWORD
-user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
-user32.FindWindowW.restype = wintypes.HWND
+    # Win32 Function Prototypes (Declaring argtypes/restype to prevent 64-bit integer overflow issues)
+    LRESULT = ctypes.c_ssize_t
 
+    kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
+    kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
 
-user32.RegisterClassW.argtypes = [ctypes.c_void_p]
-user32.RegisterClassW.restype = wintypes.ATOM
+    # Mutex & Window Lookup APIs
+    kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel32.CreateMutexW.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    kernel32.GetLastError.argtypes = []
+    kernel32.GetLastError.restype = wintypes.DWORD
+    user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+    user32.FindWindowW.restype = wintypes.HWND
 
-user32.CreateWindowExW.argtypes = [
-    wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD,
-    ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
-    wintypes.HWND, wintypes.HMENU, wintypes.HINSTANCE, wintypes.LPVOID
-]
-user32.CreateWindowExW.restype = wintypes.HWND
+    user32.RegisterClassW.argtypes = [ctypes.c_void_p]
+    user32.RegisterClassW.restype = wintypes.ATOM
 
-user32.LoadIconW.argtypes = [wintypes.HINSTANCE, ctypes.c_void_p]
-user32.LoadIconW.restype = wintypes.HICON
-
-shell32.Shell_NotifyIconW.argtypes = [wintypes.DWORD, ctypes.c_void_p]
-shell32.Shell_NotifyIconW.restype = wintypes.BOOL
-
-user32.GetMessageW.argtypes = [ctypes.c_void_p, wintypes.HWND, wintypes.UINT, wintypes.UINT]
-user32.GetMessageW.restype = wintypes.BOOL
-
-user32.TranslateMessage.argtypes = [ctypes.c_void_p]
-user32.TranslateMessage.restype = wintypes.BOOL
-
-user32.DispatchMessageW.argtypes = [ctypes.c_void_p]
-user32.DispatchMessageW.restype = LRESULT
-
-user32.GetCursorPos.argtypes = [ctypes.c_void_p]
-user32.GetCursorPos.restype = wintypes.BOOL
-
-user32.CreatePopupMenu.argtypes = []
-user32.CreatePopupMenu.restype = wintypes.HMENU
-
-user32.AppendMenuW.argtypes = [wintypes.HMENU, wintypes.UINT, ctypes.c_void_p, ctypes.c_wchar_p]
-user32.AppendMenuW.restype = wintypes.BOOL
-
-user32.SetForegroundWindow.argtypes = [wintypes.HWND]
-user32.SetForegroundWindow.restype = wintypes.BOOL
-
-user32.TrackPopupMenu.argtypes = [
-    wintypes.HMENU, wintypes.UINT, ctypes.c_int, ctypes.c_int,
-    ctypes.c_int, wintypes.HWND, ctypes.c_void_p
-]
-user32.TrackPopupMenu.restype = ctypes.c_int
-
-user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
-user32.PostMessageW.restype = wintypes.BOOL
-
-user32.DestroyMenu.argtypes = [wintypes.HMENU]
-user32.DestroyMenu.restype = wintypes.BOOL
-
-user32.PostQuitMessage.argtypes = [ctypes.c_int]
-user32.PostQuitMessage.restype = None
-
-user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
-user32.DefWindowProcW.restype = LRESULT
-
-WM_USER = 1024
-WM_TRAYICON = WM_USER + 1
-WM_TRIGGER_BALLOON = WM_USER + 2
-WM_DESTROY = 2
-WM_COMMAND = 273
-WM_LBUTTONDBLCLK = 515
-WM_RBUTTONUP = 517
-
-ID_TRAY_OPEN = 1001
-ID_TRAY_EXIT = 1002
-ID_TRAY_TRIGGER_BALLOON = 1003
-
-
-NIM_ADD = 0
-NIM_MODIFY = 1
-NIM_DELETE = 2
-NIF_MESSAGE = 1
-NIF_ICON = 2
-NIF_TIP = 4
-NIF_INFO = 16
-
-class NOTIFYICONDATAW(ctypes.Structure):
-    _fields_ = [
-        ("cbSize", wintypes.DWORD),
-        ("hWnd", wintypes.HWND),
-        ("uID", wintypes.UINT),
-        ("uFlags", wintypes.UINT),
-        ("uCallbackMessage", wintypes.UINT),
-        ("hIcon", wintypes.HICON),
-        ("szTip", wintypes.WCHAR * 128),
-        ("dwState", wintypes.DWORD),
-        ("dwStateMask", wintypes.DWORD),
-        ("szInfo", wintypes.WCHAR * 256),
-        ("uTimeout", wintypes.UINT),
-        ("szInfoTitle", wintypes.WCHAR * 64),
-        ("dwInfoFlags", wintypes.DWORD),
-        ("guidItem", ctypes.c_byte * 16),
-        ("hBalloonIcon", wintypes.HICON),
+    user32.CreateWindowExW.argtypes = [
+        wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD,
+        ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        wintypes.HWND, wintypes.HMENU, wintypes.HINSTANCE, wintypes.LPVOID
     ]
+    user32.CreateWindowExW.restype = wintypes.HWND
 
-WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+    user32.LoadIconW.argtypes = [wintypes.HINSTANCE, ctypes.c_void_p]
+    user32.LoadIconW.restype = wintypes.HICON
 
-class WNDCLASSW(ctypes.Structure):
-    _fields_ = [
-        ("style", wintypes.UINT),
-        ("lpfnWndProc", WNDPROC),
-        ("cbClsExtra", ctypes.c_int),
-        ("cbWndExtra", ctypes.c_int),
-        ("hInstance", wintypes.HINSTANCE),
-        ("hIcon", wintypes.HICON),
-        ("hCursor", wintypes.HICON),
-        ("hbrBackground", wintypes.HBRUSH),
-        ("lpszMenuName", wintypes.LPCWSTR),
-        ("lpszClassName", wintypes.LPCWSTR),
+    shell32.Shell_NotifyIconW.argtypes = [wintypes.DWORD, ctypes.c_void_p]
+    shell32.Shell_NotifyIconW.restype = wintypes.BOOL
+
+    user32.GetMessageW.argtypes = [ctypes.c_void_p, wintypes.HWND, wintypes.UINT, wintypes.UINT]
+    user32.GetMessageW.restype = wintypes.BOOL
+
+    user32.TranslateMessage.argtypes = [ctypes.c_void_p]
+    user32.TranslateMessage.restype = wintypes.BOOL
+
+    user32.DispatchMessageW.argtypes = [ctypes.c_void_p]
+    user32.DispatchMessageW.restype = LRESULT
+
+    user32.GetCursorPos.argtypes = [ctypes.c_void_p]
+    user32.GetCursorPos.restype = wintypes.BOOL
+
+    user32.CreatePopupMenu.argtypes = []
+    user32.CreatePopupMenu.restype = wintypes.HMENU
+
+    user32.AppendMenuW.argtypes = [wintypes.HMENU, wintypes.UINT, ctypes.c_void_p, ctypes.c_wchar_p]
+    user32.AppendMenuW.restype = wintypes.BOOL
+
+    user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user32.SetForegroundWindow.restype = wintypes.BOOL
+
+    user32.TrackPopupMenu.argtypes = [
+        wintypes.HMENU, wintypes.UINT, ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, wintypes.HWND, ctypes.c_void_p
     ]
+    user32.TrackPopupMenu.restype = ctypes.c_int
 
-_current_port = 8000
-_nid = NOTIFYICONDATAW()
+    user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.PostMessageW.restype = wintypes.BOOL
+
+    user32.DestroyMenu.argtypes = [wintypes.HMENU]
+    user32.DestroyMenu.restype = wintypes.BOOL
+
+    user32.PostQuitMessage.argtypes = [ctypes.c_int]
+    user32.PostQuitMessage.restype = None
+
+    user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.DefWindowProcW.restype = LRESULT
+
+    WM_USER = 1024
+    WM_TRAYICON = WM_USER + 1
+    WM_TRIGGER_BALLOON = WM_USER + 2
+    WM_DESTROY = 2
+    WM_COMMAND = 273
+    WM_LBUTTONDBLCLK = 515
+    WM_RBUTTONUP = 517
+
+    ID_TRAY_OPEN = 1001
+    ID_TRAY_EXIT = 1002
+    ID_TRAY_TRIGGER_BALLOON = 1003
+
+    NIM_ADD = 0
+    NIM_MODIFY = 1
+    NIM_DELETE = 2
+    NIF_MESSAGE = 1
+    NIF_ICON = 2
+    NIF_TIP = 4
+    NIF_INFO = 16
+
+    class NOTIFYICONDATAW(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", wintypes.DWORD),
+            ("hWnd", wintypes.HWND),
+            ("uID", wintypes.UINT),
+            ("uFlags", wintypes.UINT),
+            ("uCallbackMessage", wintypes.UINT),
+            ("hIcon", wintypes.HICON),
+            ("szTip", wintypes.WCHAR * 128),
+            ("dwState", wintypes.DWORD),
+            ("dwStateMask", wintypes.DWORD),
+            ("szInfo", wintypes.WCHAR * 256),
+            ("uTimeout", wintypes.UINT),
+            ("szInfoTitle", wintypes.WCHAR * 64),
+            ("dwInfoFlags", wintypes.DWORD),
+            ("guidItem", ctypes.c_byte * 16),
+            ("hBalloonIcon", wintypes.HICON),
+        ]
+
+    WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+
+    class WNDCLASSW(ctypes.Structure):
+        _fields_ = [
+            ("style", wintypes.UINT),
+            ("lpfnWndProc", WNDPROC),
+            ("cbClsExtra", ctypes.c_int),
+            ("cbWndExtra", ctypes.c_int),
+            ("hInstance", wintypes.HINSTANCE),
+            ("hIcon", wintypes.HICON),
+            ("hCursor", wintypes.HICON),
+            ("hbrBackground", wintypes.HBRUSH),
+            ("lpszMenuName", wintypes.LPCWSTR),
+            ("lpszClassName", wintypes.LPCWSTR),
+        ]
+
+    _nid = NOTIFYICONDATAW()
+    _wndproc_delegate = WNDPROC(lambda h, m, w, l: user32.DefWindowProcW(h, m, w, l)) # Placeholder will be updated or overridden
+else:
+    msvcrt = None
+    ctypes = None
+    wintypes = None
+    user32 = None
+    shell32 = None
+    kernel32 = None
+    WM_USER = 1024
+    WM_TRAYICON = 0
+    WM_TRIGGER_BALLOON = 0
+    WM_DESTROY = 0
+    WM_COMMAND = 0
+    WM_LBUTTONDBLCLK = 0
+    WM_RBUTTONUP = 0
+    ID_TRAY_OPEN = 0
+    ID_TRAY_EXIT = 0
+    ID_TRAY_TRIGGER_BALLOON = 0
+    NIM_ADD = 0
+    NIM_MODIFY = 0
+    NIM_DELETE = 0
+    NIF_MESSAGE = 0
+    NIF_ICON = 0
+    NIF_TIP = 0
+    NIF_INFO = 0
+
+    class DummyStructure:
+        pass
+
+    NOTIFYICONDATAW = DummyStructure
+    WNDCLASSW = DummyStructure
+    WNDPROC = lambda x: x
+
+    _nid = None
+    _wndproc_delegate = None
+
 _hwnd = None
 _uvicorn_proc = None
 _shim_mutex = None
@@ -155,7 +192,7 @@ _shim_mutex = None
 
 def release_mutex():
     global _shim_mutex
-    if _shim_mutex:
+    if _shim_mutex and IS_WINDOWS:
         try:
             kernel32.CloseHandle(_shim_mutex)
         except Exception:

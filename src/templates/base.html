@@ -918,11 +918,19 @@
                 confirmBtn.textContent = confirmText;
                 cancelBtn.textContent = cancelText;
                 
-                const onSubmit = () => {
+                const onInput = () => {
+                    inputEl.setCustomValidity('');
+                };
+                inputEl.addEventListener('input', onInput);
+                
+                const onSubmit = (e) => {
+                    if (e) e.preventDefault();
                     if (required && !inputEl.value.trim()) {
+                        inputEl.setCustomValidity('공백만 입력할 수 없습니다. 사유를 입력해 주세요.');
                         inputEl.reportValidity();
                         return;
                     }
+                    inputEl.setCustomValidity('');
                     cleanup();
                     resolve(inputEl.value);
                 };
@@ -934,6 +942,7 @@
                 
                 const cleanup = () => {
                     formEl.removeEventListener('submit', onSubmit);
+                    inputEl.removeEventListener('input', onInput);
                     cancelBtn.removeEventListener('click', onCancel);
                     backdrop.removeEventListener('click', onCancel);
                     close('shim-prompt-modal');

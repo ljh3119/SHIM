@@ -317,5 +317,37 @@ def validate_password_strength(password: str) -> str | None:
     return None
 
 
+def mask_name(name: str) -> str:
+    """
+    이름 개인정보 마스킹 처리 헬퍼 함수:
+    - Null 또는 빈 문자열: "" 반환
+    - 1글자: 그대로 반환 (예: "A" -> "A")
+    - 2글자: 홍길 -> 홍*
+    - 3글자: 홍길동 -> 홍*동
+    - 4글자 이상 한글: 제임스허 -> 제**허
+    - 공백이 있는 이름(영문 등): 단어별로 나누어 각각 마스킹 후 재조립 (예: "John Doe" -> "J**n D*e")
+    """
+    if not name:
+        return ""
+    name_str = str(name).strip()
+    if not name_str:
+        return ""
+    
+    # 공백이 포함된 이름의 경우 (예: "John Doe", "Hong Gil Dong")
+    if " " in name_str:
+        parts = name_str.split(" ")
+        masked_parts = [mask_name(p) for p in parts if p]
+        return " ".join(masked_parts)
+        
+    length = len(name_str)
+    if length <= 1:
+        return name_str
+    if length == 2:
+        return name_str[0] + "*"
+    if length == 3:
+        return name_str[0] + "*" + name_str[2]
+    return name_str[0] + "*" * (length - 2) + name_str[-1]
+
+
 
 

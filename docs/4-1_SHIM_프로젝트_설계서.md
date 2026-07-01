@@ -1,7 +1,7 @@
-# SHIM 시스템 상세 설계서 (Technical Specification)
+# SHIM (Smart Holiday Information Management) 상세 설계서 (Technical Specification)
 
-**애플리케이션 버전**: 1.9.0  
-**최종 업데이트**: 2026-06-30  
+**애플리케이션 버전**: 1.9.1  
+**최종 업데이트**: 2026-07-01  
 **문서 성격**: 시스템 아키텍처, 데이터 모델 및 비즈니스 규칙에 대한 기술적 표준 정의
 
 ---
@@ -394,6 +394,17 @@ SHIM은 업무용 시스템 특유의 높은 정보 밀도를 수용하기 위�
 4. **지연/장애 자동 감지 임계치**:
    - 최종 백업 또는 최종 알림 정리 시각이 현재 시각 기준 26시간을 초과할 경우 시스템 상태를 위험(`is_healthy = False`)으로 판정하여, 관리자 화면에 적색 경보 뱃지(`🔴 동작 지연/점검필요`)가 활성화되도록 유기적으로 연동했습니다.
 
+### 6.28 데이터베이스 위임형 외래키 자동 처리 (Database-Delegated Foreign Key Teardown)
+1. **문제 정의**: 기존에는 사원을 영구 삭제(`hard-delete`)할 때 감사 로그(`AuditLogs`) 및 알림(`Notifications`) 테이블에 걸린 외래키로 인해 제약조건 오류(Foreign Key constraint failed)가 발생하여, 애플리케이션 수준에서 수동 `UPDATE` 쿼리로 연관 관계를 끊어주는 비효율이 있었습니다.
+2. **해결 방안 및 passive_deletes 설정**: `models.py`에서 `Users` 모델과 `Notifications` 모델 사이에 양방향 `relationship`을 새로 정의하고 `passive_deletes=True`를 설정했습니다. 이로써 SQLAlchemy는 부모 사원을 지울 때 관련된 자식 데이터를 직접 메모리에 로드해 수정하려는 오버헤드를 일으키지 않고, 전체 삭제 처리를 SQLite 엔진에 온전히 이관합니다.
+3. **SQLite 엔진 처리**: SQLite는 커넥션 맺을 때 활성화되는 `PRAGMA foreign_keys=ON;` 및 각 외래키 컬럼에 정의된 `ondelete="SET NULL"` 옵션에 의거하여, 사원 삭제와 동시에 `AuditLogs.actor_id` 및 `Notifications.sender_id` 값을 원자적이고 즉각적으로 `None` 처리함으로써 아키텍처 수준의 데이터 무결성을 보장합니다.
+4. **세션 캐시 만료 안전장치**: 삭제 완료 후 `db.commit()` 직후 `db.expire_all()`을 강제 트리거하여 세션 메모리에 남아있는 인메모리 객체 상태를 즉각 만료 처리하고, 이후 요청 시 무조건 물리 DB의 최신 NULL 갱신 데이터를 읽어오도록 캐시 불일치 리스크를 차단했습니다.
+
+### 6.29 관심사 분리(SoC)에 기반한 문자열/보안 유틸리티 독립 테스트 구축
+1. **설계 배경**: 시간대 변환 로직(`test_timezone_utils.py`)에 이름 마스킹(`mask_name`) 검증 코드를 병합할 경우, 도메인 영역이 혼재되어 장기적인 유지보수 효율이 급격히 저하됩니다.
+2. **독립된 유닛 테스트 구축**: 관심사 분리(Separation of Concerns)를 구현하기 위해 문자열 및 보안 관련 전용 테스트 스위트인 **`test_string_utils.py`**를 독자적으로 신규 생성하여 배치했습니다.
+3. **엣지 케이스 방어성 검증**: 해당 파일은 Null, 빈 문자열, 1글자 성명, 2글자 성명(Bo, Ed 등 첫 글자 노출형), 다수 단어 조합 영문 성명(John Doe) 등 7종 이상의 엣지 케이스들을 파이썬 표준 `unittest` 기반으로 순수하고 엄밀하게 단독 검증합니다.
+
 ---
 
 ## 7. 주요 코드 디렉토리 구조 및 역할 (Code Directory Structure)
@@ -428,6 +439,7 @@ pip install -r requirements-dev.txt
 |:--- |:--- |:--- |:--- |
 | **코드 정합성 검사** | 모듈 컴파일 오류 조기 감지 | `python -m compileall src/app tools/scripts` | 코드 수정 즉시 |
 | **비즈니스 로직 검증** | 권한(RBAC), 연차 신청/차감 등 무결성 테스트 (28종) | `python tools/scripts/run_remaining_tests.py` | 코드 수정 즉시 |
+| **마스킹 로직 검증** | 1글자, 공백 포함 영문명 등 마스킹 엣지 케이스 단위 테스트 | `python -m unittest tools/scripts/test_string_utils.py` | 코드 수정 즉시 |
 | **안정성/종료 검증** | Graceful Shutdown 및 DB Teardown/머지 상태 확인 | `python tools/scripts/test_graceful_shutdown.py` | 릴리즈/배포 전 필수 |
 | **중복 실행 방지 검증** | Mutex 기반 런처 다중 기동 차단 및 트레이 알림 연동 확인 | `python tools/scripts/test_duplicate_execution.py` | 릴리즈/배포 전 필수 |
 | **메모리 누수 검증** | 장기 가동 시 누적 메모리 및 엑셀 내보내기 성능 확인 | `python tools/scripts/test_memory_leak.py` | 릴리즈/배포 전 필수 |
