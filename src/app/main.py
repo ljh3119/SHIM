@@ -341,21 +341,6 @@ def startup_event():
         except Exception as check_err:
             print(f"[SHIM DATABASE CORRUPT WARNING] 자가 무결성 검사 중 에러 발생: {check_err}")
             
-        admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
-        if not admin:
-            hashed_pw = auth.get_password_hash("0000")
-            new_admin = models.Users(
-                user_id="admin",
-                user_name="시스템관리자",
-                password=hashed_pw,
-                role="ADMIN",
-            )
-            db.add(new_admin)
-            db.commit()
-            admin = new_admin
-        elif not admin.user_name or "?" in admin.user_name:
-            admin.user_name = "시스템관리자"
-
         if not db.query(models.SystemSettings).first():
             db.add(
                 models.SystemSettings(
@@ -384,8 +369,6 @@ def startup_event():
                 )
             )
 
-        seed_korean_holidays(db=db, actor_id=admin.user_id, start_year=2020, end_year=2050)
-
         # 4. 비밀키 일관성(Fail-Fast) 검증 추가
         import hashlib
         from .auth import get_encryption_key
@@ -411,32 +394,54 @@ def startup_event():
                 
                 if has_encrypted_data:
                     if current_key_hash == "PLAINTEXT_MODE":
-                        print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
-                        print("기존 데이터베이스는 PII 암호화가 적용되어 있으나, 현재 비밀키 설정이 제공되지 않았습니다.")
-                        print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 비밀키 설정을 복구해 주십시오.")
+                        print("[SHIM CRITICAL ERROR] Startup failed!")
+                        print("The database has PII encryption applied, but the secret key is currently missing.")
+                        print("Action: Please configure the environment variable SHIM_SECRET_KEY or restore secret.key.")
                         sys.exit(1)
                     else:
                         settings.key_hash_snapshot = current_key_hash
                 else:
                     has_plain_data = len(users_with_data) > 0
                     if has_plain_data and current_key_hash != "PLAINTEXT_MODE":
-                        print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
-                        print("기존 데이터베이스는 평문 모드로 운영 중이었으나, 현재 비밀키(암호화)가 지정되었습니다.")
-                        print("평문 DB에 임의로 암호키를 지정하면 검색 기능이 오작동합니다. 키 설정을 비워주십시오.")
+                        print("[SHIM CRITICAL ERROR] Startup failed!")
+                        print("The database is currently in PLAINTEXT mode, but an active encryption key was injected.")
+                        print("Action A (To keep data): Remove SHIM_SECRET_KEY env variable or restore '# AUTO-GENERATED' in secret.key.")
+                        print("Action B (To restart with encryption): Delete the database file (shim_internal.db) and restart.")
                         sys.exit(1)
                     else:
                         settings.key_hash_snapshot = current_key_hash
             else:
                 if settings.key_hash_snapshot != current_key_hash:
-                    print("[SHIM CRITICAL ERROR] 구동에 실패했습니다!")
+                    print("[SHIM CRITICAL ERROR] Startup failed!")
                     if settings.key_hash_snapshot == "PLAINTEXT_MODE":
-                        print("기존 데이터베이스는 평문 모드(PLAINTEXT_MODE)로 기동된 상태이나, 현재 암호키가 주입되었습니다.")
+                        print("The database is in PLAINTEXT mode, but an active encryption key was injected.")
+                        print("Action A (To keep data): Remove SHIM_SECRET_KEY env variable or restore '# AUTO-GENERATED' in secret.key.")
+                        print("Action B (To restart with encryption): Delete the database file (shim_internal.db) and restart.")
                     elif current_key_hash == "PLAINTEXT_MODE":
-                        print("기존 데이터베이스는 암호화 모드로 구축되었으나, 현재 비밀키 설정이 누락되었습니다.")
+                        print("The database has PII encryption applied, but the secret key is currently missing.")
+                        print("Action: Please configure the environment variable SHIM_SECRET_KEY or restore secret.key.")
                     else:
-                        print("현재 설정된 암호키가 기존 데이터베이스의 암호키와 일치하지 않습니다.")
-                    print("데이터 손실 방지를 위해 기동을 즉시 차단합니다. 설정을 확인해 주십시오.")
+                        print("The provided secret key does not match the key used to initialize the database.")
+                        print("Action: Please use the original secret key used for this database instance.")
                     sys.exit(1)
+
+        # 4.5. 어드민 계정 확인 및 시딩 (키 일관성 검증 후 안전하게 수행)
+        admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
+        if not admin:
+            hashed_pw = auth.get_password_hash("0000")
+            new_admin = models.Users(
+                user_id="admin",
+                user_name="시스템관리자",
+                password=hashed_pw,
+                role="ADMIN",
+            )
+            db.add(new_admin)
+            db.commit()
+            admin = new_admin
+        elif not admin.user_name or "?" in admin.user_name:
+            admin.user_name = "시스템관리자"
+
+        seed_korean_holidays(db=db, actor_id=admin.user_id, start_year=2020, end_year=2050)
 
         db.commit()
         
