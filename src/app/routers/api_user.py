@@ -741,6 +741,7 @@ def user_change_password(
         return JSONResponse(status_code=400, content={"message": validation_error})
 
     user.password = auth.get_password_hash(new_password)
+    # token_version 증가 트리거 1: 사용자 본인의 비밀번호 변경 시 기존 세션을 즉시 무효화
     user.token_version += 1
     audit = models.AuditLogs(
         actor_id=user.user_id,

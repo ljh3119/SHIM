@@ -18,6 +18,7 @@ def reset_admin_password():
         # 비밀번호를 '0000'으로 초기화 및 세션 즉시 만료 처리
         new_hash = auth.get_password_hash("0000")
         admin.password = new_hash
+        # token_version 증가 트리거 6: CLI 도구를 통한 어드민 긴급 비밀번호 초기화 시 기존 세션 즉시 만료
         admin.token_version = (admin.token_version or 0) + 1
         
         # 감사 로그 기록 (누가 했는지 알 수 없으므로 시스템 초기화 목적을 밝혀 'admin' 계정 ID로 기록)

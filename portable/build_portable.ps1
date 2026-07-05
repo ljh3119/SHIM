@@ -8,6 +8,15 @@ python -m pip install -r requirements.txt pyinstaller
 
 Write-Host "[2/4] Build Tailwind CSS output"
 npm run build:css
+$cssPath = "src\static\css\tailwind.css"
+if (-not (Test-Path $cssPath)) {
+    throw "Tailwind CSS output file does not exist: $cssPath"
+}
+$cssFile = Get-Item $cssPath
+if ($cssFile.Length -eq 0) {
+    throw "Tailwind CSS output file is 0 bytes: $cssPath"
+}
+Write-Host "Tailwind CSS output verified: $cssPath ($($cssFile.Length) bytes)"
 
 # package.json 버전과 main.py·base.html·compose 태그 불일치 방지(빌드 직전 동기화)
 $pkg = Get-Content .\package.json -Raw -Encoding UTF8 | ConvertFrom-Json

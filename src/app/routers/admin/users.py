@@ -34,6 +34,7 @@ def admin_change_password(
         return JSONResponse(status_code=400, content={"message": validation_error})
 
     admin.password = auth.get_password_hash(new_password)
+    # token_version 증가 트리거 2: 어드민 본인의 비밀번호 변경 시 기존 세션을 즉시 무효화
     admin.token_version += 1
     audit = models.AuditLogs(
         actor_id=admin.user_id,
@@ -153,6 +154,7 @@ def toggle_user_active(
         
     old_status = user.is_active
     user.is_active = not user.is_active
+    # token_version 증가 트리거 3: 사원 활성화/비활성화 토글 시 기존 세션을 즉시 무효화
     user.token_version += 1
     
     canceled_count = 0
@@ -197,6 +199,7 @@ def reset_password(
         return JSONResponse(status_code=404, content={"message": "User not found"})
         
     user.password = auth.get_password_hash("0000")
+    # token_version 증가 트리거 4: 어드민에 의한 사원 비밀번호 초기화(0000) 시 기존 세션을 즉시 무효화
     user.token_version += 1
     
     audit = models.AuditLogs(
@@ -260,6 +263,7 @@ def update_user(
     
     was_active = user.is_active
     user.is_active = is_active
+    # token_version 증가 트리거 5: 어드민에 의한 사원 정보(역할/활성 상태 등) 변경 시 기존 세션을 즉시 무효화
     user.token_version += 1
 
     canceled_count = 0

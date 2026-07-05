@@ -81,6 +81,15 @@ if ($RunChecks) {
     Write-Host "[release] Running checks: compile, CSS build, compose config, version/docs sync"
     python -m compileall src\app tools\scripts
     npm run build:css
+    $cssPath = "src\static\css\tailwind.css"
+    if (-not (Test-Path $cssPath)) {
+        throw "Tailwind CSS output file does not exist: $cssPath"
+    }
+    $cssFile = Get-Item $cssPath
+    if ($cssFile.Length -eq 0) {
+        throw "Tailwind CSS output file is 0 bytes: $cssPath"
+    }
+    Write-Host "[release] Tailwind CSS output verified: $cssPath ($($cssFile.Length) bytes)"
     docker compose -f infra/docker/docker-compose.yml config | Out-Null
     & "$PSScriptRoot\verify_version_sync.ps1"
     if ($LASTEXITCODE -ne 0) { throw "verify_version_sync.ps1 failed (see messages above)" }
