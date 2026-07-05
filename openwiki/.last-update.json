@@ -1,0 +1,6 @@
+{
+  "updatedAt": "2026-07-05T08:43:44.961Z",
+  "command": "init",
+  "gitHead": "df695361edb96f7d6f1e3fd43f9f029c5449de3a",
+  "model": "qwen/qwen3-coder:free"
+}
