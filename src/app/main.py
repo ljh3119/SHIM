@@ -458,6 +458,12 @@ def startup_event():
             update_system_metrics_in_db(db)
         except Exception as metrics_err:
             print(f"[SHIM WARNING] Failed to initialize system metrics on startup: {metrics_err}")
+
+        # 7. 기동 완료 확인 메시지 (ASCII-safe 정상 구동 성공 로그)
+        if current_key_hash == "PLAINTEXT_MODE":
+            print("[SHIM] System successfully started in PLAINTEXT mode (Zero-Configuration).", flush=True)
+        else:
+            print("[SHIM] System successfully started in SECURE ENCRYPTION mode (PII Protected).", flush=True)
     finally:
         db.close()
 
