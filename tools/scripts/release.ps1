@@ -4,7 +4,8 @@ param(
     [string]$Version,
 
     [switch]$BuildImage,
-    [switch]$RunChecks
+    [switch]$RunChecks,
+    [switch]$GitRelease
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,6 +95,29 @@ if ($RunChecks) {
     & "$PSScriptRoot\verify_version_sync.ps1"
     if ($LASTEXITCODE -ne 0) { throw "verify_version_sync.ps1 failed (see messages above)" }
     Write-Host "[release] Checks passed."
+}
+
+if ($GitRelease) {
+    Write-Host "[release] Running Git release automation..."
+    if (Test-Path "scratch\security_checker.py") {
+        Write-Host "[release] Running security checks..."
+        python scratch\security_checker.py
+        if ($LASTEXITCODE -ne 0) {
+            throw "Security check failed. Release aborted to prevent credential leak."
+        }
+    }
+    
+    Write-Host "[release] Git staging and committing version changes..."
+    git add .
+    git commit -m "release: v$Version"
+    
+    Write-Host "[release] Creating Git tag v$Version..."
+    git tag -f "v$Version" -m "Release v$Version"
+    
+    Write-Host "[release] Pushing main branch and tag v$Version to origin..."
+    git push origin main
+    git push origin "v$Version"
+    Write-Host "[release] Git release and tagging completed successfully."
 }
 
 Write-Host "[release] Done."
