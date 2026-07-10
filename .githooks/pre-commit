@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "=== SHIM pre-commit: verifying version sync ==="
+
+if command -v python >/dev/null 2>&1; then
+    python ./tools/scripts/verify_version_sync.py
+elif command -v py >/dev/null 2>&1; then
+    py -3 ./tools/scripts/verify_version_sync.py
+else
+    echo "Python is required to verify version sync."
+    exit 1
+fi

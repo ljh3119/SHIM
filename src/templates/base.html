@@ -1219,26 +1219,39 @@
                 badge.classList.add('flex');
                 if (readAllBtn) readAllBtn.classList.remove('pointer-events-none', 'opacity-30');
                 
-                listContainer.innerHTML = notifications.map(n => {
-                    const relativeTime = formatRelativeTime(n.created_at);
-                    return `
-                        <div class="px-3 py-2 hover:bg-dense-surface-soft transition-colors text-xs flex flex-col gap-1 relative group cursor-pointer" onclick="readNotification(${n.id}, event)">
-                            <div class="pr-5 text-dense-text leading-snug break-all font-medium">${n.message}</div>
-                            <div class="text-[10px] text-dense-muted font-semibold flex items-center justify-between">
-                                <span>${relativeTime}</span>
-                                <span class="opacity-0 group-hover:opacity-100 text-dense-blue text-[9px] transition-opacity font-bold">읽음 처리</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                listContainer.replaceChildren();
+                notifications.forEach(n => {
+                    const item = document.createElement('div');
+                    item.className = 'px-3 py-2 hover:bg-dense-surface-soft transition-colors text-xs flex flex-col gap-1 relative group cursor-pointer';
+                    item.addEventListener('click', event => readNotification(n.id, event));
+
+                    const message = document.createElement('div');
+                    message.className = 'pr-5 text-dense-text leading-snug break-all font-medium';
+                    message.textContent = String(n.message ?? '');
+
+                    const meta = document.createElement('div');
+                    meta.className = 'text-[10px] text-dense-muted font-semibold flex items-center justify-between';
+
+                    const relativeTime = document.createElement('span');
+                    relativeTime.textContent = formatRelativeTime(n.created_at);
+
+                    const readLabel = document.createElement('span');
+                    readLabel.className = 'opacity-0 group-hover:opacity-100 text-dense-blue text-[9px] transition-opacity font-bold';
+                    readLabel.textContent = '읽음 처리';
+
+                    meta.append(relativeTime, readLabel);
+                    item.append(message, meta);
+                    listContainer.append(item);
+                });
             } else {
                 badge.textContent = '0';
                 badge.classList.add('hidden');
                 badge.classList.remove('flex');
                 if (readAllBtn) readAllBtn.classList.add('pointer-events-none', 'opacity-30');
-                listContainer.innerHTML = `
-                    <div class="px-3 py-4 text-center text-xs text-dense-muted font-medium">읽지 않은 알림이 없습니다.</div>
-                `;
+                const empty = document.createElement('div');
+                empty.className = 'px-3 py-4 text-center text-xs text-dense-muted font-medium';
+                empty.textContent = '읽지 않은 알림이 없습니다.';
+                listContainer.replaceChildren(empty);
             }
         }
 

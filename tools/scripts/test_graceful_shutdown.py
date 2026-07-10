@@ -6,6 +6,7 @@ import signal
 import threading
 import socket
 
+import tempfile
 # 프로젝트 루트 경로 확보
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_root not in sys.path:
@@ -36,7 +37,8 @@ def find_free_port() -> int:
 TEST_PORT = find_free_port()
 os.environ["SHIM_PORT"] = str(TEST_PORT)
 os.environ["SHIM_SECRET_KEY"] = "shim_test_secret_key_graceful_shutdown_12345"
-os.environ["SHIM_DATA_DIR"] = os.path.abspath(os.path.join(project_root, "var/data_test_shutdown"))
+TEST_DATA_DIR = tempfile.TemporaryDirectory(prefix="shim_shutdown_test_")
+os.environ["SHIM_DATA_DIR"] = TEST_DATA_DIR.name
 
 db_dir = os.environ["SHIM_DATA_DIR"]
 db_file = os.path.join(db_dir, "shim_internal.db")
@@ -118,14 +120,14 @@ def test_graceful_shutdown():
 
 
     if not server_ready:
-        print("[ERROR] Server failed to start or bind to port 8099 in time.")
+        print(f"[ERROR] Server failed to start or bind to port {TEST_PORT} in time.")
         print("----- Server Console Output -----")
         print("".join(output_lines))
         print("---------------------------------")
         process.kill()
         sys.exit(1)
     
-    print("[SUCCESS] SHIM Server started and bound to port 8099.")
+    print(f"[SUCCESS] SHIM Server started and bound to port {TEST_PORT}.")
 
     # 3. 요청 스레드 가동
     print("[STEP 3] Launching background API requests during operation...")
@@ -146,7 +148,7 @@ def test_graceful_shutdown():
         process.send_signal(signal.SIGINT)
 
     # 5. 프로세스 종료 대기
-    print("[STEP 5] Waiting for process to terminate and port 8099 to release...")
+    print(f"[STEP 5] Waiting for process to terminate and port {TEST_PORT} to release...")
     try:
         process.wait(timeout=5)
         print(f"[SUCCESS] Server process terminated with exit code: {process.returncode}")
@@ -158,7 +160,7 @@ def test_graceful_shutdown():
     # 포트 해제 대기
     port_released = False
     for _ in range(25):
-        if not is_port_in_use(8099):
+        if not is_port_in_use(TEST_PORT):
             port_released = True
             break
         time.sleep(0.2)
@@ -181,11 +183,12 @@ def test_graceful_shutdown():
     print("GRACEFUL SHUTDOWN TEST REPORT")
     print("=" * 60)
     print(f"Lifespan Shutdown Log Detected: {log_check}")
-    print(f"Port 8099 Released: {port_released}")
+    print(f"Port {TEST_PORT} Released: {port_released}")
     print(f"WAL/SHM Files Cleanly Merged: {db_clean}")
     
     # 7. 사후 정리
     clean_db_files()
+    TEST_DATA_DIR.cleanup()
 
     if port_released and db_clean and log_check:
         print("[SUCCESS] Graceful shutdown test PASSED.")

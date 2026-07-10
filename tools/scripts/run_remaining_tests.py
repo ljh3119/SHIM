@@ -1,10 +1,11 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 import os
 from pathlib import Path
 import sys
 import tempfile
 import asyncio
 import io
+import shutil
 
 # 프로젝트 루트를 경로에 추가
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -12,14 +13,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # 테스트용 임시 디렉토리 설정 (기본 DB 보호)
-TEST_DATA_DIR = Path(
-    os.environ.setdefault("SHIM_DATA_DIR", tempfile.mkdtemp(prefix="shim_full_test_"))
-)
+TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="shim_full_test_"))
+os.environ["SHIM_DATA_DIR"] = str(TEST_DATA_DIR)
 
 from fastapi.testclient import TestClient
 from src.app.main import app, startup_event
 from src.app.database import SessionLocal
-from src.app import models, auth, utils
+from src.app import models, auth, utils, database
 
 def next_business_day(start, db):
     d = start
@@ -1275,13 +1275,13 @@ def main():
         user_id="u_staff",
         sender_id="u_pm",
         message="31일 전 오래된 알림",
-        created_at=datetime.utcnow() - timedelta(days=31)
+        created_at=datetime.now(timezone.utc) - timedelta(days=31)
     )
     new_noti = models.Notifications(
         user_id="u_staff",
         sender_id="u_pm",
         message="5일 전 최근 알림",
-        created_at=datetime.utcnow() - timedelta(days=5)
+        created_at=datetime.now(timezone.utc) - timedelta(days=5)
     )
     db.add(old_noti)
     db.add(new_noti)
@@ -1309,6 +1309,12 @@ def main():
     db.close()
     print("  -> PASS: Notification 30-day age cleanup verified.")
 
+    print("[CASE 29] Notification DOM XSS Guard")
+    base_template = (PROJECT_ROOT / "src" / "templates" / "base.html").read_text(encoding="utf-8")
+    assert "message.textContent = String(n.message ?? '')" in base_template
+    assert "${n.message}" not in base_template
+    print("  -> PASS: Notification messages are rendered as text, not HTML.")
+
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()
     db.close()
@@ -1321,4 +1327,6 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-(1)
+    finally:
+        database.engine.dispose()
+        shutil.rmtree(TEST_DATA_DIR, ignore_errors=True)
