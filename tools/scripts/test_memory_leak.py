@@ -4,6 +4,7 @@ import gc
 import time
 import tracemalloc
 import asyncio
+import tempfile
 try:
     import psutil
 except ImportError:
@@ -21,7 +22,8 @@ if project_root not in sys.path:
 # 환경 변수 설정 (테스트용 DB 생성 및 KST 타임존 지정)
 os.environ["SHIM_PORT"] = "8000"
 os.environ["SHIM_SECRET_KEY"] = "shim_test_secret_key_memory_leak_verification_12345"
-os.environ["SHIM_DATA_DIR"] = os.path.abspath(os.path.join(project_root, "var/data_test"))
+TEST_DATA_DIR = tempfile.TemporaryDirectory(prefix="shim_memory_test_")
+os.environ["SHIM_DATA_DIR"] = TEST_DATA_DIR.name
 
 # DB 및 모델 로드
 from src.app.database import SessionLocal, engine, Base
@@ -257,5 +259,8 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         return False
 
 if __name__ == "__main__":
-    success = asyncio.run(run_stability_and_memory_leak_test_async(iterations=1000))
+    try:
+        success = asyncio.run(run_stability_and_memory_leak_test_async(iterations=1000))
+    finally:
+        TEST_DATA_DIR.cleanup()
     sys.exit(0 if success else 1)

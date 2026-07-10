@@ -110,6 +110,24 @@ async def daily_backup_scheduler(db_path: Path):
         # Check every hour
         await asyncio.sleep(3600)
 
+def _is_sqlite_healthy(db_path: Path) -> bool:
+    conn = None
+    try:
+        uri = f"file:{db_path.resolve().as_posix()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=10.0)
+        result = conn.execute("PRAGMA quick_check;").fetchall()
+        return bool(result) and result[0][0] == "ok"
+    except (OSError, sqlite3.DatabaseError):
+        return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _is_corruption_error(error: sqlite3.OperationalError) -> bool:
+    message = str(error).lower()
+    return any(marker in message for marker in ("malformed", "not a database", "file is encrypted"))
+
 def verify_and_recover_db(db_path: Path):
     if not db_path.exists():
         return
@@ -138,17 +156,17 @@ def verify_and_recover_db(db_path: Path):
                     # 락 해제가 지연되는 경우 파일 격리(삭제)를 수행하지 않고 예외를 던져 안전하게 재기동되도록 조치
                     raise oe
                 continue
-            print(f"[SHIM DATABASE] OperationalError during quick_check: {oe}")
-            is_corrupt = True
-            break
+            if _is_corruption_error(oe):
+                print(f"[SHIM DATABASE CORRUPT] Corruption error during quick_check: {oe}")
+                is_corrupt = True
+                break
+            raise RuntimeError(f"Database access failed without confirmed corruption: {oe}") from oe
         except sqlite3.DatabaseError as de:
             print(f"[SHIM DATABASE CORRUPT] DatabaseError during quick_check (corruption suspected): {de}")
             is_corrupt = True
             break
         except Exception as e:
-            print(f"[SHIM DATABASE] Unexpected error during quick_check: {e}")
-            is_corrupt = True
-            break
+            raise RuntimeError(f"Database integrity check could not complete: {e}") from e
         finally:
             if conn:
                 conn.close()
@@ -156,6 +174,17 @@ def verify_and_recover_db(db_path: Path):
 
     if is_corrupt:
         print("[SHIM DATABASE CORRUPT] Database corruption detected!")
+        backup_dir = db_path.parent / "backup"
+        backup_files = sorted(
+            backup_dir.glob(f"{db_path.stem}_*.bak") if backup_dir.exists() else [],
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        latest_backup = next((path for path in backup_files if _is_sqlite_healthy(path)), None)
+        if latest_backup is None:
+            raise RuntimeError("Database corruption confirmed, but no valid backup is available. Original database was preserved.")
+        print(f"[SHIM DATABASE] Validated recovery backup: {latest_backup}")
+
         # 1. Isolate corrupted DB file
         stamp = get_local_now().strftime("%Y%m%d_%H%M%S")
         corrupted_path = db_path.parent / f"{db_path.name}_corrupted_{stamp}"
@@ -163,8 +192,7 @@ def verify_and_recover_db(db_path: Path):
             shutil.move(str(db_path), str(corrupted_path))
             print(f"[SHIM DATABASE] Isolated corrupted DB to {corrupted_path}")
         except Exception as move_err:
-            print(f"[SHIM DATABASE ERROR] Failed to isolate corrupted DB: {move_err}")
-            return
+            raise RuntimeError(f"Failed to isolate corrupted database: {move_err}") from move_err
 
         # Also rename WAL and SHM files if they exist, to prevent conflicts
         for suffix in ("-wal", "-shm"):
@@ -175,23 +203,21 @@ def verify_and_recover_db(db_path: Path):
                 except Exception as extra_err:
                     print(f"[SHIM DATABASE ERROR] Failed to move {suffix} file: {extra_err}")
 
-        # 2. Restore from the most recent backup
-        backup_dir = db_path.parent / "backup"
-        if backup_dir.exists():
-            backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
-            if backup_files:
-                backup_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-                latest_backup = backup_files[0]
-                print(f"[SHIM DATABASE] Restoring from latest backup: {latest_backup}")
-                try:
-                    shutil.copy(str(latest_backup), str(db_path))
-                    print("[SHIM DATABASE] Restore completed successfully. Server will proceed to boot.")
-                except Exception as restore_err:
-                    print(f"[SHIM DATABASE ERROR] Failed to copy backup: {restore_err}")
-            else:
-                print("[SHIM DATABASE WARNING] No backup files found in backup directory. Initializing empty database.")
-        else:
-            print("[SHIM DATABASE WARNING] Backup directory does not exist. Initializing empty database.")
+        # 2. Restore only from a validated backup, using an atomic replacement.
+        restore_tmp = db_path.parent / f".{db_path.name}.restore-{stamp}.tmp"
+        print(f"[SHIM DATABASE] Restoring from validated backup: {latest_backup}")
+        try:
+            shutil.copy2(latest_backup, restore_tmp)
+            if not _is_sqlite_healthy(restore_tmp):
+                raise RuntimeError("Copied backup failed its integrity check.")
+            os.replace(restore_tmp, db_path)
+            print("[SHIM DATABASE] Restore completed successfully. Server will proceed to boot.")
+        except Exception as restore_err:
+            if restore_tmp.exists():
+                restore_tmp.unlink()
+            if not db_path.exists() and corrupted_path.exists():
+                shutil.copy2(corrupted_path, db_path)
+            raise RuntimeError(f"Failed to restore validated backup: {restore_err}") from restore_err
 
 
 def cleanup_old_notifications():

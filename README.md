@@ -86,7 +86,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.9.0 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.9.2 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
@@ -128,8 +128,9 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.0` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.2` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
+| **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
 ### 주요 문서 및 산출물 목록

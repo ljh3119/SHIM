@@ -3,6 +3,15 @@
 # Exit 0 = OK, exit 1 = mismatch.
 
 $ErrorActionPreference = "Stop"
+$PythonVerifier = Join-Path $PSScriptRoot "verify_version_sync.py"
+$PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+if ($PythonCommand) {
+    & $PythonCommand.Source $PythonVerifier
+    exit $LASTEXITCODE
+}
+
+# Python is required by SHIM. Keep the legacy PowerShell checks only as a fallback.
+
 
 $ProjectRoot = (Get-Item "$PSScriptRoot\..\..").FullName
 Set-Location $ProjectRoot

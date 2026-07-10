@@ -10,14 +10,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # 테스트용 임시 디렉토리 설정 (기본 DB 보호)
-TEST_DATA_DIR = Path(
-    os.environ.setdefault("SHIM_DATA_DIR", tempfile.mkdtemp(prefix="shim_metrics_test_"))
-)
+TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="shim_metrics_test_"))
+os.environ["SHIM_DATA_DIR"] = str(TEST_DATA_DIR)
 
 from fastapi.testclient import TestClient
 from src.app.main import app, startup_event
 from src.app.database import SessionLocal, DB_PATH
-from src.app import models, utils
+from src.app import models, utils, database
 from src.app.services import ops
 
 def test_metrics():
@@ -91,7 +90,7 @@ def test_metrics():
         
         # 6. 임계치 초과 헬스체크(26시간 지연 경고) 시뮬레이션
         # 백업 시각을 30시간 전으로 강제 업데이트
-        past_time = utils.get_local_now().replace(tzinfo=None) - datetime.timedelta(hours=30)
+        past_time = utils.get_local_now() - datetime.timedelta(hours=30)
         settings_after_cleanup.last_backup_time = past_time
         db.commit()
         
@@ -103,6 +102,7 @@ def test_metrics():
     finally:
         db.close()
         # 임시 디렉토리 정리
+        database.engine.dispose()
         import shutil
         try:
             shutil.rmtree(TEST_DATA_DIR)
