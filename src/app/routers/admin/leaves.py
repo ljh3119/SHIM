@@ -75,7 +75,7 @@ def admin_leaves_timeline_partial(
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
-    current_year = year if year else utils.get_local_now().year
+    current_year = year if year else utils.get_business_now().year
     current_month = month
     selected_user_id = user_id.strip()
     selected_company = company.strip()
@@ -89,7 +89,7 @@ def admin_leaves_timeline_partial(
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = utils.build_year_options(utils.get_local_now().year, leave_years)
+    year_options = utils.build_year_options(utils.get_business_now().year, leave_years)
 
     query = admin_service.get_leaves_timeline_query(
         db=db,
@@ -232,7 +232,7 @@ def admin_leaves_timeline_partial(
             "timeline_chip_url_pending": timeline_chip_url_pending,
             "timeline_chip_url_approved": timeline_chip_url_approved,
             "timeline_chip_url_rejected": timeline_chip_url_rejected,
-            "current_year": utils.get_local_now().year,
+            "current_year": utils.get_business_now().year,
             "year_options": year_options,
         },
     )
@@ -252,7 +252,7 @@ def export_admin_leaves_timeline(
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
-    current_year = year if year else utils.get_local_now().year
+    current_year = year if year else utils.get_business_now().year
     selected_user_id = user_id.strip()
     selected_company = company.strip()
     selected_team = team.strip()
@@ -374,7 +374,7 @@ def export_admin_leaves_timeline(
     for leave in leaves:
         row = []
         if leave.created_at:
-            cell_created = WriteOnlyCell(ws_timeline, value=utils.to_kst_naive(leave.created_at))
+            cell_created = WriteOnlyCell(ws_timeline, value=utils.to_business_naive(leave.created_at))
             cell_created.number_format = 'yyyy-mm-dd hh:mm:ss'
             row.append(cell_created)
         else:
@@ -405,7 +405,7 @@ def export_admin_leaves_timeline(
     wb.save(output)
     wb.close()
     output.seek(0)
-    stamp = utils.get_local_now().strftime("%Y%m%d_%H%M%S")
+    stamp = utils.get_business_now().strftime("%Y%m%d_%H%M%S")
     filename = f"leave_summary_{current_year}_{stamp}.xlsx"
     return StreamingResponse(
         output,
@@ -429,8 +429,8 @@ def admin_leaves_calendar(
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
-    current_year = year if year else utils.get_local_now().year
-    current_month = month if month else utils.get_local_now().month
+    current_year = year if year else utils.get_business_now().year
+    current_month = month if month else utils.get_business_now().month
     if view not in ("month", "month_grid", "year"):
         view = "month"
     is_year_view = view == "year"
@@ -444,7 +444,7 @@ def admin_leaves_calendar(
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = utils.build_year_options(utils.get_local_now().year, leave_years)
+    year_options = utils.build_year_options(utils.get_business_now().year, leave_years)
 
     all_users = db.query(models.Users).filter(models.Users.role != "ADMIN").all()
     
@@ -683,7 +683,7 @@ def admin_leaves_calendar(
             "sort_key": sort_key_effective,
             "sort_dir": sort_dir_eff,
             "sort_urls": sort_urls,
-            "current_year": utils.get_local_now().year,
+            "current_year": utils.get_business_now().year,
             "year_options": year_options,
         },
     )
@@ -825,7 +825,7 @@ def admin_leaves_yearly_partial(
     db: Session = Depends(get_db),
     admin: models.Users = Depends(get_current_admin),
 ):
-    current_year = year if year else utils.get_local_now().year
+    current_year = year if year else utils.get_business_now().year
     selected_user_id = user_id.strip()
     selected_company = company.strip()
     selected_team = team.strip()
@@ -836,7 +836,7 @@ def admin_leaves_yearly_partial(
 
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
-    year_options = utils.build_year_options(utils.get_local_now().year, leave_years)
+    year_options = utils.build_year_options(utils.get_business_now().year, leave_years)
 
     all_users = db.query(models.Users).filter(models.Users.role != "ADMIN").all()
     
@@ -993,7 +993,7 @@ def admin_leaves_yearly_partial(
             "sort_key": sort_key_effective,
             "sort_dir": sort_dir_eff,
             "sort_urls": sort_urls,
-            "current_year": utils.get_local_now().year,
+            "current_year": utils.get_business_now().year,
             "year_options": year_options,
         },
     )

@@ -6,9 +6,9 @@ import shutil
 import sqlite3
 import asyncio
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, time as datetime_time, timedelta, timezone
 from pathlib import Path
-from src.app.utils import get_local_now
+from src.app.utils import get_business_now, get_business_timezone
 from src.app import models
 from src.app.database import DB_PATH
 
@@ -19,27 +19,33 @@ _backup_lock = threading.Lock()
 
 def create_sqlite_backup(db_path: Path, backup_dir: Path) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
-    # 동시성 백업 시 파일명 충돌을 원천 차단하기 위해 마이크로초(%f) 포맷을 추가합니다.
-    stamp = get_local_now().strftime("%Y%m%d_%H%M%S_%f")
+    stamp = get_business_now().strftime("%Y%m%d_%H%M%S_%f")
     backup_path = backup_dir / f"{db_path.stem}_{stamp}.bak"
-    
-    # timeout 지정을 통해 database is locked 회귀 예방
-    src_conn = sqlite3.connect(db_path, timeout=30.0)
-    dest_conn = sqlite3.connect(backup_path, timeout=30.0)
+    temporary_path = backup_dir / f".{backup_path.name}.tmp"
+    src_conn = None
+    dest_conn = None
+
     try:
-        # 1. 백업 복제 개시 전, 원본 DB의 WAL 변경 정보 본체 파일에 병합
-        src_conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
-        
-        # 2. 안전한 점진적 증분 백업 실행 (pages=50 단위로 백업하며 매 스텝 0.02초씩 sleep을 취해 타 쓰기 작업에 락 양보)
-        src_conn.backup(dest_conn, pages=50, sleep=0.02)
-    finally:
-        dest_conn.close()
-        src_conn.close()
-        
-    return backup_path
+        try:
+            src_conn = sqlite3.connect(db_path, timeout=30.0)
+            dest_conn = sqlite3.connect(temporary_path, timeout=30.0)
+            src_conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+            src_conn.backup(dest_conn, pages=50, sleep=0.02)
+        finally:
+            if dest_conn is not None:
+                dest_conn.close()
+            if src_conn is not None:
+                src_conn.close()
+
+        if not _is_sqlite_healthy(temporary_path):
+            raise RuntimeError("New SQLite backup failed integrity validation.")
+        os.replace(temporary_path, backup_path)
+        return backup_path
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
 
 def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
-    # 스레드 락을 사용해 백업 작업이 병렬로 실행되어 파일 쓰기 충돌이 일어나는 것을 방지합니다.
     with _backup_lock:
         backup_dir = db_path.parent / "backup"
         try:
@@ -48,54 +54,51 @@ def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
         except Exception as e:
             print(f"[SHIM BACKUP ERROR] Failed to create backup: {e}")
             return None
-            
+
+        backup_files = None
         try:
-            backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
-            # Sort by modification time (oldest first)
-            backup_files.sort(key=lambda p: p.stat().st_mtime)
-            
+            backup_files = _healthy_backup_files(db_path, isolate_invalid=True)
             while len(backup_files) > max_backups:
-                oldest = backup_files.pop(0)
+                oldest = backup_files[0]
                 try:
-                    os.remove(oldest)
+                    oldest.unlink()
+                    backup_files.pop(0)
                     print(f"[SHIM BACKUP ROTATION] Deleted oldest backup file: {oldest}")
                 except Exception as rm_err:
                     print(f"[SHIM BACKUP ROTATION ERROR] Failed to delete {oldest}: {rm_err}")
+                    break
+            backup_files = _healthy_backup_files(db_path)
         except Exception as rot_err:
             print(f"[SHIM BACKUP ROTATION ERROR] Error during rotation: {rot_err}")
-        
-        if backup_path:
-            from src.app.database import SessionLocal
-            db = SessionLocal()
-            try:
-                settings = db.query(models.SystemSettings).first()
-                if settings:
-                    settings.last_backup_time = get_local_now()
+
+        from src.app.database import SessionLocal
+        db = SessionLocal()
+        try:
+            settings = db.query(models.SystemSettings).first()
+            if settings:
+                settings.last_backup_time = get_business_now()
+                if backup_files is not None:
                     settings.last_backup_count = len(backup_files)
-                    size_bytes = os.path.getsize(db_path)
-                    settings.last_db_size_kb = int(size_bytes // 1024)
-                    db.commit()
-            except Exception as db_err:
-                db.rollback()
-                print(f"[SHIM BACKUP METRICS ERROR] Failed to update backup metrics: {db_err}")
-            finally:
-                db.close()
-            
+                settings.last_db_size_kb = int(os.path.getsize(db_path) // 1024)
+                db.commit()
+        except Exception as db_err:
+            db.rollback()
+            print(f"[SHIM BACKUP METRICS ERROR] Failed to update backup metrics: {db_err}")
+        finally:
+            db.close()
+
         return backup_path
 
 async def daily_backup_scheduler(db_path: Path):
     print("[SHIM BACKUP] Daily backup scheduler started.")
     while True:
         try:
-            backup_dir = db_path.parent / "backup"
-            has_recent_backup = False
-            if backup_dir.exists():
-                backup_files = list(backup_dir.glob(f"{db_path.stem}_*.bak"))
-                now_ts = datetime.now(timezone.utc).timestamp()
-                for bf in backup_files:
-                    if now_ts - bf.stat().st_mtime < 24 * 3600:
-                        has_recent_backup = True
-                        break
+            backup_files = _healthy_backup_files(db_path)
+            now_ts = datetime.now(timezone.utc).timestamp()
+            has_recent_backup = any(
+                now_ts - backup.stat().st_mtime < 24 * 3600
+                for backup in backup_files
+            )
             
             if not has_recent_backup:
                 print("[SHIM BACKUP] No recent backup found in last 24 hours. Running scheduled backup...")
@@ -113,8 +116,8 @@ async def daily_backup_scheduler(db_path: Path):
 def _is_sqlite_healthy(db_path: Path) -> bool:
     conn = None
     try:
-        uri = f"file:{db_path.resolve().as_posix()}?mode=ro"
-        conn = sqlite3.connect(uri, uri=True, timeout=10.0)
+        conn = sqlite3.connect(str(db_path.resolve()), timeout=10.0)
+        conn.execute("PRAGMA query_only = ON;")
         result = conn.execute("PRAGMA quick_check;").fetchall()
         return bool(result) and result[0][0] == "ok"
     except (OSError, sqlite3.DatabaseError):
@@ -122,6 +125,27 @@ def _is_sqlite_healthy(db_path: Path) -> bool:
     finally:
         if conn is not None:
             conn.close()
+
+
+def _healthy_backup_files(db_path: Path, *, isolate_invalid: bool = False) -> list[Path]:
+    backup_dir = db_path.parent / "backup"
+    if not backup_dir.exists():
+        return []
+
+    healthy = []
+    for backup_path in backup_dir.glob(f"{db_path.stem}_*.bak"):
+        if _is_sqlite_healthy(backup_path):
+            healthy.append(backup_path)
+        elif isolate_invalid:
+            invalid_path = backup_path.with_name(f"{backup_path.name}.invalid")
+            try:
+                backup_path.replace(invalid_path)
+                print(f"[SHIM BACKUP] Isolated invalid backup: {invalid_path}")
+            except Exception as invalid_err:
+                print(f"[SHIM BACKUP ERROR] Failed to isolate {backup_path}: {invalid_err}")
+
+    healthy.sort(key=lambda path: path.stat().st_mtime)
+    return healthy
 
 
 def _is_corruption_error(error: sqlite3.OperationalError) -> bool:
@@ -186,7 +210,7 @@ def verify_and_recover_db(db_path: Path):
         print(f"[SHIM DATABASE] Validated recovery backup: {latest_backup}")
 
         # 1. Isolate corrupted DB file
-        stamp = get_local_now().strftime("%Y%m%d_%H%M%S")
+        stamp = get_business_now().strftime("%Y%m%d_%H%M%S")
         corrupted_path = db_path.parent / f"{db_path.name}_corrupted_{stamp}"
         try:
             shutil.move(str(db_path), str(corrupted_path))
@@ -220,65 +244,82 @@ def verify_and_recover_db(db_path: Path):
             raise RuntimeError(f"Failed to restore validated backup: {restore_err}") from restore_err
 
 
-def cleanup_old_notifications():
-    """30일이 경과한 알림을 청크(100건) 단위로 분할하여 삭제합니다."""
+def cleanup_old_notifications() -> tuple[bool, int]:
+    """30일이 경과한 알림을 청크(100건) 단위로 삭제하고 성공 여부·삭제 건수를 반환합니다."""
     from src.app.database import SessionLocal
-    from src.app import models
-    from datetime import datetime, timedelta, timezone
-    import time
-    
-    # UTC 시각 기준으로 30일 전
+
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     total_deleted = 0
-    
+    cleanup_succeeded = True
+
     while True:
         db = SessionLocal()
         try:
-            # 100건씩 대상 ID 조회
             targets = db.query(models.Notifications.id).filter(
                 models.Notifications.created_at < thirty_days_ago
             ).limit(100).all()
-            
             if not targets:
                 break
-                
-            target_ids = [t[0] for t in targets]
-            
+
+            target_ids = [target[0] for target in targets]
             deleted_count = db.query(models.Notifications).filter(
                 models.Notifications.id.in_(target_ids)
             ).delete(synchronize_session=False)
-            
             db.commit()
             total_deleted += deleted_count
             print(f"[SHIM NOTIFICATION CLEANUP] Deleted {deleted_count} notifications chunk. Total: {total_deleted}")
-            
             if deleted_count < 100:
                 break
-        except Exception as e:
+        except Exception as error:
             db.rollback()
-            print(f"[SHIM NOTIFICATION CLEANUP ERROR] Failed to cleanup old notifications: {e}")
+            cleanup_succeeded = False
+            print(f"[SHIM NOTIFICATION CLEANUP ERROR] Failed after deleting {total_deleted}: {error}")
             break
         finally:
             db.close()
-        
-        # SQLite 락 경쟁 방지를 위해 청크 간 짧은 휴식 시간 제공
+
         time.sleep(0.1)
 
-    # 청소 완료 후 메트릭 업데이트
+    if not cleanup_succeeded:
+        return False, total_deleted
+
+    metrics_succeeded = True
     db = SessionLocal()
     try:
         settings = db.query(models.SystemSettings).first()
         if settings:
-            settings.last_cleanup_time = get_local_now()
+            settings.last_cleanup_time = get_business_now()
             if DB_PATH.exists():
-                size_bytes = os.path.getsize(DB_PATH)
-                settings.last_db_size_kb = int(size_bytes // 1024)
+                settings.last_db_size_kb = int(os.path.getsize(DB_PATH) // 1024)
             db.commit()
     except Exception as db_err:
         db.rollback()
-        print(f"[SHIM CLEANUP METRICS ERROR] Failed to update cleanup metrics: {db_err}")
+        metrics_succeeded = False
+        print(f"[SHIM CLEANUP METRICS ERROR] Cleanup succeeded but metrics failed: {db_err}")
     finally:
         db.close()
+
+    return metrics_succeeded, total_deleted
+
+
+def get_next_notification_cleanup_run(now_utc: datetime | None = None) -> datetime:
+    now_utc = now_utc or datetime.now(timezone.utc)
+    if now_utc.tzinfo is None or now_utc.utcoffset() is None:
+        raise ValueError("now_utc must be timezone-aware")
+
+    now_utc = now_utc.astimezone(timezone.utc)
+    business_tz = get_business_timezone()
+    target_date = now_utc.astimezone(business_tz).date()
+    while True:
+        # fold=0 selects the first occurrence when the wall time is duplicated.
+        target_local = datetime.combine(target_date, datetime_time(2), tzinfo=business_tz).replace(fold=0)
+        target_utc = target_local.astimezone(timezone.utc)
+        # A nonexistent 02:00 normalizes through UTC to the first valid local instant after the gap.
+        target_local = target_utc.astimezone(business_tz)
+        target_utc = target_local.astimezone(timezone.utc)
+        if target_utc > now_utc:
+            return target_utc
+        target_date += timedelta(days=1)
 
 
 async def notification_cleanup_scheduler():
@@ -286,25 +327,16 @@ async def notification_cleanup_scheduler():
     # 기동 시 즉시 1회 청소 수행하여 사각지대 해소
     from fastapi.concurrency import run_in_threadpool
     await run_in_threadpool(cleanup_old_notifications)
-    
+
     while True:
         try:
-            import datetime as datetime_mod
-            from src.app.utils import get_timezone_offset_hours
-            
-            offset = get_timezone_offset_hours()
-            local_tz = datetime_mod.timezone(datetime_mod.timedelta(hours=offset))
-            now_local = datetime_mod.datetime.now(local_tz)
-            
-            # KST 새벽 2시로 설정
-            target_local = now_local.replace(hour=2, minute=0, second=0, microsecond=0)
-            if now_local >= target_local:
-                target_local += datetime_mod.timedelta(days=1)
-                
-            sleep_seconds = (target_local - now_local).total_seconds()
+            now_utc = datetime.now(timezone.utc)
+            target_utc = get_next_notification_cleanup_run(now_utc)
+            sleep_seconds = (target_utc - now_utc).total_seconds()
+            target_local = target_utc.astimezone(get_business_timezone())
             print(f"[SHIM NOTIFICATION CLEANUP] Next cleanup scheduled at {target_local} (in {sleep_seconds:.1f}s)")
             await asyncio.sleep(sleep_seconds)
-            
+
             await run_in_threadpool(cleanup_old_notifications)
         except asyncio.CancelledError:
             print("[SHIM NOTIFICATION CLEANUP] Scheduler cancelled. Exiting cleanly.")
@@ -326,11 +358,8 @@ def update_system_metrics_in_db(db):
         size_bytes = os.path.getsize(DB_PATH)
         size_kb = int(size_bytes // 1024)
 
-        # 2. 백업 파일 개수 구하기
-        backup_dir = DB_PATH.parent / "backup"
-        backup_count = 0
-        if backup_dir.exists():
-            backup_count = len(list(backup_dir.glob("*.bak")))
+        # 정상 백업만 운영 메트릭에 포함합니다.
+        backup_count = len(_healthy_backup_files(DB_PATH))
 
         # 3. DB 업데이트
         settings = db.query(models.SystemSettings).first()

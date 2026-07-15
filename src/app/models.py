@@ -46,8 +46,8 @@ class AwareDateTime(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=datetime.timezone.utc)
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("AwareDateTime requires a timezone-aware datetime")
         return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
     def process_result_value(self, value, dialect):
@@ -151,8 +151,8 @@ class SystemSettings(Base):
     time_granularity_minutes = Column(Integer, default=60, nullable=False)
     work_start_minute = Column(Integer, default=9 * 60, nullable=False)
     work_end_minute = Column(Integer, default=18 * 60, nullable=False)
-    lunch_start_minute = Column(Integer)
-    lunch_end_minute = Column(Integer)
+    lunch_start_minute = Column(Integer, default=12 * 60)
+    lunch_end_minute = Column(Integer, default=13 * 60)
     # 화면 브랜딩 (마스터 관리에서 변경)
     product_display_name = Column(String(120), default="쉼(SHIM) 프로젝트 개발 운영", nullable=False)
     # 상단 바·관리자 사이드바 등에 쓰는 짧은 호칭(비우면 공식명과 동일하게 표시)

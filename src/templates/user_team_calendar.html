@@ -647,12 +647,6 @@
     let timelineBlinkTimeoutId = null;
     let timelineBlinkCell = null;
 
-    window.parseLocalDate = function(dateStr) {
-        if (!dateStr) return null;
-        const parts = dateStr.split('-');
-        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    };
-
     function isBusinessDay(dateStr) {
         const d = window.parseLocalDate(dateStr);
         if (!d || isNaN(d.getTime())) return false;

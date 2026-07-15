@@ -1,89 +1,135 @@
+import json
 import os
+import shutil
+import subprocess
+import sys
+import tempfile
 import unittest
-from unittest.mock import patch
-from datetime import datetime, timezone, timedelta
-from src.app.utils import get_timezone_offset_hours, clear_timezone_cache, local_to_utc_naive
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
-class TestTimezoneUtils(unittest.TestCase):
-    """utils.py에 신규 반영된 타임존 오프셋 캐싱 및 Naive UTC 변환 유틸리티를 검증하는 테스트 스위트"""
+from src.app.models import AwareDateTime
+from src.app.services.ops import get_next_notification_cleanup_run
+from src.app.utils import (
+    clear_timezone_cache,
+    get_business_date_bounds_utc,
+    get_business_timezone,
+    get_business_timezone_name,
+    to_business_time,
+)
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+class TestTimezoneContract(unittest.TestCase):
     def setUp(self):
-        # 각 테스트 실행 전 캐시를 강제로 비워 독립성 보장
+        self.original_timezone = os.environ.pop("SHIM_TIMEZONE", None)
         clear_timezone_cache()
-        # 환경변수 임시 백업 및 정리
-        self.orig_env = os.environ.get("SHIM_TIMEZONE_OFFSET_HOURS")
-        if "SHIM_TIMEZONE_OFFSET_HOURS" in os.environ:
-            del os.environ["SHIM_TIMEZONE_OFFSET_HOURS"]
 
     def tearDown(self):
-        # 환경변수 원래 상태로 복구
-        if self.orig_env is not None:
-            os.environ["SHIM_TIMEZONE_OFFSET_HOURS"] = self.orig_env
+        if self.original_timezone is None:
+            os.environ.pop("SHIM_TIMEZONE", None)
         else:
-            if "SHIM_TIMEZONE_OFFSET_HOURS" in os.environ:
-                del os.environ["SHIM_TIMEZONE_OFFSET_HOURS"]
+            os.environ["SHIM_TIMEZONE"] = self.original_timezone
         clear_timezone_cache()
 
-    @patch("os.getenv")
-    def test_timezone_offset_caching(self, mock_getenv):
-        """get_timezone_offset_hours 호출 시 LRU 캐시가 정상 동작하여 반복 조회를 방지하는지 검증"""
-        mock_getenv.return_value = "9.0"
-
-        # 1. 최초 호출 시: 환경 변수 조회가 실제로 1회 발생해야 함
-        offset1 = get_timezone_offset_hours()
-        self.assertEqual(offset1, 9.0)
-        self.assertEqual(mock_getenv.call_count, 1)
-
-        # 2. 반복 호출 시: 캐시에 적재된 값을 O(1)로 반환하므로 getenv 시스템 콜이 추가 발생하지 않음
-        offset2 = get_timezone_offset_hours()
-        self.assertEqual(offset2, 9.0)
-        self.assertEqual(mock_getenv.call_count, 1)
-
-    @patch("os.getenv")
-    def test_clear_timezone_cache(self, mock_getenv):
-        """clear_timezone_cache 호출 시 캐시가 비워지고 바뀐 환경 변수 값이 새롭게 반영되는지 검증"""
-        mock_getenv.return_value = "9.0"
-
-        # 최초 호출로 캐시 적재
-        get_timezone_offset_hours()
-        self.assertEqual(mock_getenv.call_count, 1)
-
-        # 캐시 비우기
+    def set_timezone(self, name: str):
+        os.environ["SHIM_TIMEZONE"] = name
         clear_timezone_cache()
 
-        # 환경 변수 반환값 동적 시뮬레이션 변경
-        mock_getenv.return_value = "10.0"
+    def test_default_timezone_is_cached_as_asia_seoul(self):
+        self.assertEqual(get_business_timezone_name(), "Asia/Seoul")
+        self.assertEqual(get_business_timezone().key, "Asia/Seoul")
+        os.environ["SHIM_TIMEZONE"] = "America/New_York"
+        self.assertEqual(get_business_timezone().key, "Asia/Seoul")
 
-        # 캐시가 비워졌으므로 함수가 새로 평가되어 갱신된 오프셋 반영 확인
-        offset = get_timezone_offset_hours()
-        self.assertEqual(offset, 10.0)
-        self.assertEqual(mock_getenv.call_count, 2)
+    def test_new_york_dst_offsets_are_zoneinfo_based(self):
+        self.set_timezone("America/New_York")
+        winter = to_business_time(datetime(2026, 1, 15, 17, tzinfo=timezone.utc))
+        summer = to_business_time(datetime(2026, 7, 15, 16, tzinfo=timezone.utc))
+        self.assertEqual(winter.hour, 12)
+        self.assertEqual(winter.utcoffset(), timedelta(hours=-5))
+        self.assertEqual(summer.hour, 12)
+        self.assertEqual(summer.utcoffset(), timedelta(hours=-4))
 
-    def test_local_to_utc_naive_with_aware_dt(self):
-        """Timezone-aware datetime 객체를 전달했을 때 타임존 정보를 버리고 순수 Naive UTC 시간으로 변환하는지 검증"""
-        local_tz = timezone(timedelta(hours=9)) # KST (+09:00) 기준
-        aware_dt = datetime(2026, 6, 4, 12, 0, 0, tzinfo=local_tz)
+    def test_invalid_iana_timezone_fails_app_startup(self):
+        env = os.environ.copy()
+        env["SHIM_TIMEZONE"] = "Not/A_Real_Zone"
+        env["SHIM_DATA_DIR"] = tempfile.mkdtemp(prefix="shim_invalid_tz_")
+        result = subprocess.run(
+            [sys.executable, "-c", "from src.app.main import app"],
+            cwd=PROJECT_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid SHIM_TIMEZONE: Not/A_Real_Zone", result.stderr + result.stdout)
 
-        # 12:00 KST -> 03:00 UTC
-        utc_naive = local_to_utc_naive(aware_dt)
-        self.assertIsNone(utc_naive.tzinfo) # Timezone-naive 형태 검증
-        self.assertEqual(utc_naive, datetime(2026, 6, 4, 3, 0, 0))
+    def test_aware_datetime_stores_utc_and_rejects_naive(self):
+        column_type = AwareDateTime()
+        new_york = datetime(2026, 7, 14, 9, 30, tzinfo=timezone(timedelta(hours=-4)))
+        stored = column_type.process_bind_param(new_york, None)
+        self.assertEqual(stored, datetime(2026, 7, 14, 13, 30))
+        self.assertIsNone(stored.tzinfo)
 
-    def test_local_to_utc_naive_with_naive_dt_and_leap_year(self):
-        """Naive datetime 객체 전달 시, 로컬 타임존 시차를 가정하여 정상적으로 UTC 역산(윤년 경계 포함)하는지 검증"""
-        # 타임존 오프셋 고정 (+09:00)
-        os.environ["SHIM_TIMEZONE_OFFSET_HOURS"] = "9.0"
-        clear_timezone_cache()
+        loaded = column_type.process_result_value(stored, None)
+        self.assertEqual(loaded, datetime(2026, 7, 14, 13, 30, tzinfo=timezone.utc))
+        with self.assertRaisesRegex(ValueError, "timezone-aware"):
+            column_type.process_bind_param(datetime(2026, 7, 14, 9, 30), None)
 
-        # 윤년 2024년 2월 29일 새벽 5시 KST (Naive)
-        # KST가 UTC보다 9시간 빠르므로 역산 시 2024년 2월 28일 20:00 UTC로 날짜가 바뀌어야 함
-        naive_dt = datetime(2024, 2, 29, 5, 0, 0)
-        
-        utc_naive = local_to_utc_naive(naive_dt)
-        self.assertIsNone(utc_naive.tzinfo)
-        self.assertEqual(utc_naive, datetime(2024, 2, 28, 20, 0, 0))
+    def test_business_date_bounds_cover_kst_and_dst_days(self):
+        self.set_timezone("Asia/Seoul")
+        start, end = get_business_date_bounds_utc(date(2026, 7, 14))
+        self.assertEqual(start, datetime(2026, 7, 13, 15, tzinfo=timezone.utc))
+        self.assertEqual(end, datetime(2026, 7, 14, 15, tzinfo=timezone.utc))
 
-    def test_local_to_utc_naive_none_input(self):
-        """None을 입력했을 때 에러를 유발하지 않고 안전하게 None을 리턴하는지 검증"""
-        self.assertIsNone(local_to_utc_naive(None))
+        self.set_timezone("America/New_York")
+        spring_start, spring_end = get_business_date_bounds_utc(date(2026, 3, 8))
+        fall_start, fall_end = get_business_date_bounds_utc(date(2026, 11, 1))
+        self.assertEqual(spring_end - spring_start, timedelta(hours=23))
+        self.assertEqual(fall_end - fall_start, timedelta(hours=25))
 
+    def test_cleanup_scheduler_handles_normal_gap_and_duplicate_wall_times(self):
+        self.set_timezone("Asia/Seoul")
+        normal = get_next_notification_cleanup_run(datetime(2026, 7, 13, 16, tzinfo=timezone.utc))
+        self.assertEqual(normal, datetime(2026, 7, 13, 17, tzinfo=timezone.utc))
+
+        self.set_timezone("America/New_York")
+        gap = get_next_notification_cleanup_run(datetime(2026, 3, 8, 5, tzinfo=timezone.utc))
+        self.assertEqual(gap.astimezone(get_business_timezone()).hour, 3)
+
+        self.set_timezone("Europe/Berlin")
+        duplicate = get_next_notification_cleanup_run(datetime(2026, 10, 24, 22, tzinfo=timezone.utc))
+        self.assertEqual(duplicate, datetime(2026, 10, 25, 0, tzinfo=timezone.utc))
+        self.assertEqual(duplicate.astimezone(get_business_timezone()).fold, 0)
+
+    def test_templates_do_not_append_z_or_convert_to_browser_timezone(self):
+        templates = PROJECT_ROOT / "src" / "templates"
+        html = "\n".join(path.read_text(encoding="utf-8") for path in templates.rglob("*.html"))
+        self.assertNotIn("isoString + 'Z'", html)
+        self.assertNotIn("isoformat() }}Z", html)
+        self.assertNotIn("convertAllUtcElements", html)
+        self.assertNotIn("data-utc=", html)
+        self.assertIn("Number.isNaN(date.getTime())", html)
+
+    def test_date_only_parser_keeps_western_browser_calendar_date(self):
+        node = shutil.which("node")
+        self.assertIsNotNone(node, "Node.js is required for the date-only browser regression test")
+        module_path = json.dumps(str(PROJECT_ROOT / "src" / "static" / "js" / "time.js"))
+        script = (
+            f"require({module_path});"
+            "const d=globalThis.shimTime.parseDateOnly('2026-07-14');"
+            "process.stdout.write(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));"
+        )
+        env = os.environ.copy()
+        env["TZ"] = "America/Los_Angeles"
+        result = subprocess.run([node, "-e", script], env=env, capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "2026-07-14")
+
+
+if __name__ == "__main__":
+    unittest.main()

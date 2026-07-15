@@ -28,6 +28,8 @@ def _ensure_system_setting(db: Session) -> models.SystemSettings:
             time_granularity_minutes=60,
             work_start_minute=9 * 60,
             work_end_minute=18 * 60,
+            lunch_start_minute=12 * 60,
+            lunch_end_minute=13 * 60,
             product_display_name="SHIM",
             product_nav_short="",
             brand_initial="S",
@@ -301,7 +303,7 @@ def admin_master(request: Request, db: Session = Depends(get_db), admin: models.
         name="admin_master.html",
         context={
             "admin": admin,
-            "current_year": utils.get_local_now().year,
+            "current_year": utils.get_business_now().year,
             "is_approval_required": is_approval_required,
             "time_granularity_minutes": int(getattr(setting, "time_granularity_minutes", 60) or 60),
             "work_start_minute": int(getattr(setting, "work_start_minute", 9 * 60) or (9 * 60)),

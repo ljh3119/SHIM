@@ -1,4 +1,7 @@
+import datetime
+import os
 from functools import lru_cache
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
 def format_db_error_message(exc: Exception) -> str:
@@ -36,15 +39,7 @@ def build_minute_options(start_minute: int, end_minute: int, step_minute: int) -
 
 
 def build_half_hour_options() -> list[tuple[int, str]]:
-    options: list[tuple[int, str]] = []
-    minute = 0
-    while minute <= 24 * 60:
-        hh = minute // 60
-        mm = minute % 60
-        label = f"{hh:02d}:{mm:02d}"
-        options.append((minute, label))
-        minute += 30
-    return options
+    return [(minute, f"{minute // 60:02d}:{minute % 60:02d}") for minute in range(0, 24 * 60 + 1, 30)]
 
 
 def hours_to_days_hours_label(total_hours: float, day_hours: int = 8) -> str:
@@ -68,29 +63,15 @@ def hours_to_days_hours_compact(total_hours: float, day_hours: int = 8) -> str:
     if abs(th) < 1e-9:
         return "-"
 
-    def _fmt(d: int, rem: float, neg: bool) -> str:
-        pre = "-" if neg else ""
-        if abs(rem - int(rem)) < 1e-9:
-            rem_val = int(rem)
-        else:
-            rem_val = round(rem, 1)
+    prefix = "-" if th < 0 else ""
+    value = abs(th)
+    days = int(value // day_hours)
+    remainder = round(value - days * day_hours, 1)
+    remainder = int(remainder) if abs(remainder - int(remainder)) < 1e-9 else remainder
 
-        if d > 0 and rem_val > 0:
-            return f"{pre}{d}일{rem_val}h"
-        if d > 0 and rem_val == 0:
-            return f"{pre}{d}일"
-        if d == 0 and rem_val > 0:
-            return f"{pre}{rem_val}h"
-        return "-"
-
-    if th < 0:
-        t = abs(th)
-        d = int(t // day_hours)
-        rem = round(t - d * day_hours, 1)
-        return _fmt(d, rem, True)
-    d = int(th // day_hours)
-    rem = round(th - d * day_hours, 1)
-    return _fmt(d, rem, False)
+    if days > 0:
+        return f"{prefix}{days}일" + (f"{remainder}h" if remainder > 0 else "")
+    return f"{prefix}{remainder}h" if remainder > 0 else "-"
 
 
 # 쌍자음(ㄲ, ㄷ, ㅃ, ㅆ, ㅉ)을 포함한 표준 초성 목록
@@ -134,73 +115,45 @@ def search_users_stateless(users_list: list, query_str: str) -> list:
     return results
 
 
-# ==============================================================================
-# [이중 폴백(Double Fallback) 설계 포인트]
-# 본 애플리케이션은 환경변수 누락 시에도 한국 표준시(KST) 기준 동작을 보장하기 위해
-# 1) Python 코드 레벨(아래 헬퍼 함수 기본값)과
-# 2) 인프라 설정 레벨(docker-compose.yml의 ${VAR:-default} 문법)
-# 양쪽에 모두 기본값(Asia/Seoul 및 9.0)을 이중 폴백으로 하드코딩하여 심층 방어하고 있습니다.
-# 향후 타 국가로 기본 시간대를 영구 이전하고자 할 때는 이 두 영역의 기본값을 모두 갱신해야 합니다.
-# ==============================================================================
+@lru_cache(maxsize=1)
+def get_business_timezone_name() -> str:
+    return os.getenv("SHIM_TIMEZONE", "Asia/Seoul").strip() or "Asia/Seoul"
 
 
 @lru_cache(maxsize=1)
-def get_timezone_offset_hours() -> float:
-    import os
-    env_val = os.getenv("SHIM_TIMEZONE_OFFSET_HOURS")
-    if env_val is not None:
-        try:
-            return float(env_val)
-        except ValueError:
-            pass
-    # 환경변수 누락 시 기본값으로 9.0 (KST) 고정 반환하여 시스템 안정성 보장
-    return 9.0
+def get_business_timezone() -> ZoneInfo:
+    name = get_business_timezone_name()
+    try:
+        return ZoneInfo(name)
+    except ZoneInfoNotFoundError as exc:
+        raise RuntimeError(f"Invalid SHIM_TIMEZONE: {name}") from exc
 
 
 def clear_timezone_cache():
-    """테스트 등 환경 변수 변경 시 타임존 오프셋 캐시를 무효화합니다."""
-    get_timezone_offset_hours.cache_clear()
+    get_business_timezone.cache_clear()
+    get_business_timezone_name.cache_clear()
 
 
-def local_to_utc_naive(dt):
-    """
-    Timezone-aware datetime 객체를 Naive UTC datetime 객체로 변환하여 반환합니다.
-    입력이 Naive인 경우, get_timezone_offset_hours()를 기준으로 로컬 타임존을 임베딩하여 UTC로 변환합니다.
-    None인 경우 None을 반환합니다.
-    """
+def to_business_time(dt):
     if dt is None:
         return None
-    import datetime
-    
-    if dt.tzinfo is None:
-        offset = get_timezone_offset_hours()
-        local_tz = datetime.timezone(datetime.timedelta(hours=offset))
-        dt = dt.replace(tzinfo=local_tz)
-        
-    return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-
-def to_kst(dt):
-    if dt is None:
-        return None
-    import datetime
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=datetime.timezone.utc)
-    offset = get_timezone_offset_hours()
-    local_tz = datetime.timezone(datetime.timedelta(hours=offset))
-    return dt.astimezone(local_tz)
+    return dt.astimezone(get_business_timezone())
 
-def to_kst_naive(dt):
-    kst_dt = to_kst(dt)
-    if kst_dt is None:
+
+def to_business_naive(dt):
+    business_dt = to_business_time(dt)
+    if business_dt is None:
         return None
-    return kst_dt.replace(tzinfo=None)
+    return business_dt.replace(tzinfo=None)
 
-def format_datetime_kst(dt, fmt='%Y-%m-%d %H:%M'):
-    kst_dt = to_kst(dt)
-    if kst_dt is None:
+
+def format_datetime_business(dt, fmt='%Y-%m-%d %H:%M'):
+    business_dt = to_business_time(dt)
+    if business_dt is None:
         return ""
-    return kst_dt.strftime(fmt)
-
+    return business_dt.strftime(fmt)
 
 # 회사 색상: 보조적이지만 서로 확실히 구분될 수 있도록 엄선된 8가지 웜톤/녹색계열 색상 목록 (0~140도 범위)
 # (hue, saturation, bg_lightness, text_lightness)
@@ -263,15 +216,18 @@ def string_to_badge_style(text: str, is_team: bool = False) -> str:
         return f"{fallback_bg} {fallback_color} {fallback_border} {oklch_bg} {oklch_color} {oklch_border}"
 
 
-def get_local_now():
-    import datetime
-    offset = get_timezone_offset_hours()
-    local_tz = datetime.timezone(datetime.timedelta(hours=offset))
-    return datetime.datetime.now(datetime.timezone.utc).astimezone(local_tz)
+def get_business_now():
+    return datetime.datetime.now(datetime.timezone.utc).astimezone(get_business_timezone())
 
 
-def get_local_today() -> str:
-    return get_local_now().strftime("%Y-%m-%d")
+def get_business_today() -> datetime.date:
+    return get_business_now().date()
+
+def get_business_date_bounds_utc(day: datetime.date) -> tuple[datetime.datetime, datetime.datetime]:
+    business_tz = get_business_timezone()
+    start = datetime.datetime.combine(day, datetime.time.min, tzinfo=business_tz)
+    end = datetime.datetime.combine(day + datetime.timedelta(days=1), datetime.time.min, tzinfo=business_tz)
+    return start.astimezone(datetime.timezone.utc), end.astimezone(datetime.timezone.utc)
 
 def create_notification(db, user_id: str, sender_id: str | None, message: str):
     from . import models
@@ -293,6 +249,10 @@ def validate_password_strength(password: str) -> str | None:
     3) 영문, 숫자, 특수문자 3종류 모두 조합 시 8자 이상
     4) 공백(space) 금지
     """
+    from .auth import BCRYPT_MAX_PASSWORD_BYTES
+    if len(password.encode("utf-8")) > BCRYPT_MAX_PASSWORD_BYTES:
+        return "비밀번호는 UTF-8 기준 72바이트 이하여야 합니다. 한글·이모지는 여러 바이트를 사용합니다."
+
     if " " in password:
         return "비밀번호에 공백을 포함할 수 없습니다."
     

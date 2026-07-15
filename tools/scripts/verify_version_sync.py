@@ -15,6 +15,12 @@ def main() -> int:
     version = str(json.loads(read_text("package.json"))["version"])
     errors: list[str] = []
 
+    package_lock = json.loads(read_text("package-lock.json"))
+    if str(package_lock.get("version")) != version:
+        errors.append(f"package-lock.json: root version must equal package.json ({version}).")
+    if str(package_lock.get("packages", {}).get("", {}).get("version")) != version:
+        errors.append(f"package-lock.json: root package version must equal package.json ({version}).")
+
     constants = read_text("src/app/constants.py")
     if f'APP_VERSION = "{version}"' not in constants:
         errors.append(f"src/app/constants.py: APP_VERSION must equal package.json ({version}).")
@@ -22,6 +28,7 @@ def main() -> int:
     for relative_path in (
         "infra/docker/docker-compose.yml",
         "infra/docker/docker-compose.dev.yml",
+        "infra/docker/docker-compose.test.yml",
     ):
         if f"shim:{version}" not in read_text(relative_path):
             errors.append(f"{relative_path}: default image must include shim:{version}")
@@ -40,6 +47,12 @@ def main() -> int:
         if not re.search(r"\*\*([^*]+)\*\*\s*:?\s*" + re.escape(version), design_text):
             errors.append(f"{design_docs[0].name}: version must equal package.json ({version}).")
 
+    release_docs = list((PROJECT_ROOT / "docs").glob("2-1_*.md"))
+    if release_docs:
+        release_text = release_docs[0].read_text(encoding="utf-8")
+        latest_release = re.search(r"^### v(\d+\.\d+\.\d+)", release_text, re.MULTILINE)
+        if not latest_release or latest_release.group(1) != version:
+            errors.append(f"{release_docs[0].name}: latest release heading must be v{version}.")
     maintenance_docs = list((PROJECT_ROOT / "docs").glob("1-2_*.md"))
     if maintenance_docs:
         maintenance_text = maintenance_docs[0].read_text(encoding="utf-8")

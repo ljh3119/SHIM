@@ -3,14 +3,15 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
-    image: ${SHIM_IMAGE:-shim:1.9.2}
+    image: ${SHIM_IMAGE:-shim:1.9.3}
     container_name: shim
     ports:
       - "8000:8000"
     environment:
       # Dev: optional `.env` with SHIM_SECRET_KEY
-      SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
-      TZ: ${TZ:-UTC} # 타임존 설정 (기본값: UTC, .env 파일에서 변경 가능)
+      SHIM_SECRET_KEY: "${SHIM_SECRET_KEY:-}"
+      TZ: "UTC"
+      SHIM_TIMEZONE: ${SHIM_TIMEZONE:-Asia/Seoul}
     volumes:
       # [볼륨 마운트 정책 가이드]
       # 1) 일반 Linux / NAS 환경 (추천): 

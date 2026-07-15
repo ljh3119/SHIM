@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!utcStr) return;
         
         try {
-            const date = new Date(utcStr + 'Z');
+            const date = window.shimTime.parseInstant(utcStr);
             const now = new Date();
             const diffMs = now - date;
             const diffSec = Math.floor(diffMs / 1000);
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 display = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' });
             }
             el.textContent = display;
-            el.setAttribute('title', date.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
+            el.setAttribute('title', date.toLocaleString('ko-KR', { timeZone: window.SHIM_TIMEZONE }));
         } catch (e) {
             console.error('Failed to parse date', e);
         }

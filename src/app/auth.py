@@ -10,10 +10,19 @@ from .database import _resolve_data_dir
 import secrets
 from functools import lru_cache
 
+INSECURE_DEFAULT_SECRET_KEY = "shim_change_this_secret_key_before_operation"
+BCRYPT_MAX_PASSWORD_BYTES = 72
+
+
 def _resolve_secret_key() -> str:
     # 1) OS environment variable has top priority
     env_key = os.getenv("SHIM_SECRET_KEY", "").strip()
     if env_key:
+        if env_key == INSECURE_DEFAULT_SECRET_KEY:
+            raise RuntimeError(
+                "SHIM_SECRET_KEY uses a known insecure default. "
+                "Set a unique secret or remove the variable to use data/secret.key."
+            )
         return env_key
 
     # 2) Read or create secret.key in the data directory
@@ -34,14 +43,16 @@ def _resolve_secret_key() -> str:
         print(f"[AUTH] Generated and saved a new random secret key to {secret_file}")
         return new_key
     except Exception as e:
-        print(f"[AUTH] Error resolving or writing secret.key: {e}")
-        return "shim_change_this_secret_key_before_operation"
+        raise RuntimeError(
+            "Unable to load or create the JWT secret key. Set SHIM_SECRET_KEY "
+            "or make the SHIM data directory writable."
+        ) from e
 
 @lru_cache(maxsize=1)
 def get_encryption_key() -> bytes | None:
     env_key = os.getenv("SHIM_SECRET_KEY", "").strip()
     key_source = None
-    if env_key and env_key != "shim_change_this_secret_key_before_operation":
+    if env_key and env_key != INSECURE_DEFAULT_SECRET_KEY:
         key_source = env_key
     else:
         try:
@@ -97,11 +108,20 @@ def get_cookie_settings(request: Request) -> dict:
     }
 
 def verify_password(plain_password, hashed_password):
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    password_bytes = plain_password.encode("utf-8")
+    if len(password_bytes) > BCRYPT_MAX_PASSWORD_BYTES:
+        return False
+    try:
+        return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
+    except ValueError:
+        return False
 
 def get_password_hash(password):
+    password_bytes = password.encode("utf-8")
+    if len(password_bytes) > BCRYPT_MAX_PASSWORD_BYTES:
+        raise ValueError("비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.")
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

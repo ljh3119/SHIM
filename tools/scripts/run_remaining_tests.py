@@ -516,12 +516,27 @@ def main():
     # --- 시나리오 10: 소수점 연차 잔여량 표기 및 유틸리티 정밀성 검증 ---
     print("[CASE 10] Decimal Precision Formatting (utils)")
     from src.app import utils as shim_utils
+    half_hour_options = shim_utils.build_half_hour_options()
+    assert len(half_hour_options) == 49
+    assert half_hour_options[0] == (0, "00:00")
+    assert half_hour_options[-1] == (1440, "24:00")
+    assert all(curr[0] - prev[0] == 30 for prev, curr in zip(half_hour_options, half_hour_options[1:]))
+    master_html = admin_client.get("/admin/master").text
+    assert 'value="1440"' not in master_html.split('id="policy_work_start"', 1)[1].split("</select>", 1)[0]
+    assert 'value="1440"' in master_html.split('id="policy_work_end"', 1)[1].split("</select>", 1)[0]
+    assert 'value="1440"' not in master_html.split('id="policy_lunch_start"', 1)[1].split("</select>", 1)[0]
+    assert 'value="1440"' not in master_html.split('id="policy_lunch_end"', 1)[1].split("</select>", 1)[0]
     # 0.5단위 소수점이 온전히 출력되는지 검증 (반올림으로 뭉개지지 않음)
+    assert shim_utils.hours_to_days_hours_compact(None) == "-"
+    assert shim_utils.hours_to_days_hours_compact(0) == "-"
+    assert shim_utils.hours_to_days_hours_compact(0.5) == "0.5h"
     assert shim_utils.hours_to_days_hours_compact(7.5) == "7.5h"
     assert shim_utils.hours_to_days_hours_compact(-4.5) == "-4.5h"
     assert shim_utils.hours_to_days_hours_compact(8.0) == "1일"
+    assert shim_utils.hours_to_days_hours_compact(-8.0) == "-1일"
     assert shim_utils.hours_to_days_hours_compact(12.0) == "1일4h"
     assert shim_utils.hours_to_days_hours_compact(12.5) == "1일4.5h"
+    assert shim_utils.hours_to_days_hours_compact(-12.5) == "-1일4.5h"
     print("  -> PASS: Decimal formatting precision verified.")
 
     # --- 시나리오 11: JWT 쿠키 보안 설정 및 HTTPS 프로토콜 분기 검증 ---

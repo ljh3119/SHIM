@@ -7,5 +7,5 @@ bcrypt==5.0.0
 cryptography==48.0.1
 python-multipart==0.0.32
 holidays==0.72
-httpx==0.26.0
 openpyxl==3.1.5
+tzdata==2026.2

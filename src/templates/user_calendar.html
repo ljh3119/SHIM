@@ -716,12 +716,6 @@ function triggerCalendarBlink(cell) {
     }, 500);
 }
 
-window.parseLocalDate = function(dateStr) {
-    if (!dateStr) return null;
-    const parts = dateStr.split('-');
-    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-};
-
 function isBusinessDay(dateStr) {
     const d = window.parseLocalDate(dateStr);
     if (!d || isNaN(d.getTime())) return false;
@@ -1480,8 +1474,8 @@ async function submitDirectApply() {
             alert('시작일과 종료일을 입력해 주세요.');
             return;
         }
-        const start = new Date(startStr);
-        const end = new Date(endStr);
+        const start = window.shimTime.parseDateOnly(startStr);
+        const end = window.shimTime.parseDateOnly(endStr);
         if (end < start) {
             alert('종료일은 시작일보다 빠를 수 없습니다.');
             return;

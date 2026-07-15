@@ -1,6 +1,6 @@
 from datetime import datetime, date as date_cls
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .. import models, utils
@@ -36,14 +36,20 @@ def validate_and_apply_leave(
     if not is_deductive and not (reason and reason.strip()):
         raise LeaveInputValidationError("연차 비차감 신청 시 사유를 입력해 주세요.")
 
+    start_time = (start_time or "").strip()
+    end_time = (end_time or "").strip()
+    if bool(start_time) != bool(end_time):
+        raise LeaveInputValidationError("시작 시간과 종료 시간을 함께 입력해 주세요.")
+
     # 날짜 목록 파싱
     raw_dates = [d.strip() for d in date_str.split(",") if d.strip()]
     if not raw_dates:
         raise LeaveInputValidationError("신청할 날짜를 입력해 주세요.")
 
-    is_multiple = len(raw_dates) > 1
 
     try:
+        # 동시 요청이 같은 검증 결과를 보지 않도록 SQLite 쓰기 예약 잠금을 먼저 획득합니다.
+        db.execute(text("BEGIN IMMEDIATE"))
         # 1. 정책 및 데이터 설정 로드
         (
             granularity,
@@ -60,6 +66,9 @@ def validate_and_apply_leave(
                 parsed_dates.append(datetime.strptime(d_str, "%Y-%m-%d").date())
             except ValueError:
                 raise LeaveInputValidationError(f"날짜 형식이 올바르지 않습니다: {d_str}")
+
+        parsed_dates = list(dict.fromkeys(parsed_dates))
+        is_multiple = len(parsed_dates) > 1
 
         # 공휴일 일괄 조회 (N+1 최적화)
         holidays = db.query(models.Holidays).filter(models.Holidays.date.in_(parsed_dates)).all()
@@ -87,7 +96,7 @@ def validate_and_apply_leave(
             raise LeaveInputValidationError("신청 가능한 영업일이 없습니다.")
 
         # 시간 지정이 누락되었거나 하루종일 신청 시 설정 기준 시간 자동 매핑
-        if not start_time or not end_time:
+        if not start_time:
             start_hour = work_start // 60
             start_min = work_start % 60
             end_hour = work_end // 60

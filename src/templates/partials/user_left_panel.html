@@ -98,7 +98,7 @@
 
     function getValidDaysCount(startDateStr, endDateStr) {
         if (!startDateStr || !endDateStr) return 0;
-        const parseDate = window.parseLocalDate || ((s) => new Date(s));
+        const parseDate = window.shimTime.parseDateOnly;
         const start = parseDate(startDateStr);
         const end = parseDate(endDateStr);
         if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
@@ -286,7 +286,7 @@
                 }
             });
         } else {
-            const parseDate = window.parseLocalDate || ((s) => new Date(s));
+            const parseDate = window.shimTime.parseDateOnly;
             const dates = [];
             let curr = parseDate(startDate);
             const end = parseDate(endDate);

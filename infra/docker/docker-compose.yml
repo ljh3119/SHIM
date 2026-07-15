@@ -1,16 +1,13 @@
 services:
   shim:
-    image: ${SHIM_IMAGE:-shim:1.9.2}
+    image: ${SHIM_IMAGE:-shim:1.9.3}
     container_name: shim
     ports:
       - "8000:8000"
     environment:
-      SHIM_SECRET_KEY: ${SHIM_SECRET_KEY:-shim_change_this_secret_key_before_operation}
-      TZ: ${TZ:-UTC} # 타임존 설정 (기본값: UTC, .env 파일에서 변경 가능)
-      # [이중 폴백(Double Fallback) 관리 포인트]:
-      # 환경변수 누락 시의 애플리케이션 KST 동작을 위해 이곳의 default와 src/app/utils.py에 기본값이 이중 선언되어 있습니다.
-      # 타 국가 시간대로 기본값 일괄 이관 시 두 곳을 모두 수정해야 합니다.
-      SHIM_TIMEZONE_OFFSET_HOURS: ${SHIM_TIMEZONE_OFFSET_HOURS:-9.0}
+      SHIM_SECRET_KEY: "${SHIM_SECRET_KEY:-}"
+      TZ: "UTC"
+      SHIM_TIMEZONE: ${SHIM_TIMEZONE:-Asia/Seoul}
     volumes:
       # [볼륨 마운트 정책 가이드]
       # 1) 일반 Linux / NAS 환경 (추천): 

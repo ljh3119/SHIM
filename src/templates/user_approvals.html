@@ -116,7 +116,7 @@
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-bold {% if pl.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">
                                     {% if pl.is_deductive %}-{{ fmt_hours(pl.snapshot_deduction_hours) }}h{% else %}0h{% endif %}
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.created_at | format_datetime_kst }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ pl.created_at | format_datetime_business }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-center">
                                     {% if pl.status == 'PENDING' %}
                                     <div class="flex items-center justify-center gap-2">
@@ -216,7 +216,7 @@
                         {% if pl.reason %}
                         <div class="text-[10px]">사유: <span class="text-dense-text">{{ pl.reason }}</span></div>
                         {% endif %}
-                        <div class="text-[9px] text-dense-muted">등록: {{ pl.created_at | format_datetime_kst }}</div>
+                        <div class="text-[9px] text-dense-muted">등록: {{ pl.created_at | format_datetime_business }}</div>
                     </div>
 
                     <div class="pt-2 border-t border-dense-line flex justify-end gap-1.5">

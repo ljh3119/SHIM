@@ -29,7 +29,7 @@ def _templates(request: Request):
 
 
 def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
-    now = utils.get_local_now()
+    now = utils.get_business_now()
     current_year = ctx.get("selected_year") or ctx.get("team_cal_year") or now.year
 
     year_start = date_cls(current_year, 1, 1)
@@ -133,7 +133,7 @@ def user_calendar(
     if getattr(user, "role", "") == "ADMIN":
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
     
-    now = utils.get_local_now()
+    now = utils.get_business_now()
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
@@ -297,7 +297,7 @@ def user_team_calendar(
     if not team_calendar_visible and not company_calendar_visible and user_role not in ('PM', 'ADMIN'):
         return RedirectResponse(url="/user/calendar", status_code=status.HTTP_302_FOUND)
 
-    now = utils.get_local_now()
+    now = utils.get_business_now()
     display_year = year if year else now.year
     display_month = month if month else now.month
     sort_key = sort if sort in ["name", "team", "remaining", "monthly_used"] else "name"
@@ -475,7 +475,7 @@ def user_history(
     user: models.Users = Depends(get_current_user),
 ):
 
-    now = utils.get_local_now()
+    now = utils.get_business_now()
     current_year = year if year else now.year
     leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]

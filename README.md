@@ -1,6 +1,6 @@
 # 쉼(休) SHIM (Smart Holiday Information Management) / 연차 관리 시스템
 
-**릴리스 버전:** 1.9.2
+**릴리스 버전:** 1.9.3
 
 폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
 
@@ -57,18 +57,18 @@
 설치는 인지적 흐름에 따라 **[환경 설정] -> [서버 실행] -> [시스템 접속]** 순으로 진행됩니다.
 
 ### Step 1. 환경 설정 및 보안 구성
-가장 먼저 시스템의 보안의 핵심인 JWT 서명키를 설정해야 합니다. 이는 로그인 토큰 위조를 방지하기 위한 필수 절차입니다.
+JWT 서명키와 인스턴스의 사업장 시간대를 설정합니다.
 
 1.  **설정 파일 준비**: `infra/docker/.env.example` 파일을 프로젝트 루트의 `.env` 파일로 복사합니다.
     ```powershell
     Copy-Item ./infra/docker/.env.example ./.env
     ```
-2.  **보안키 생성**: 아래 명령어를 통해 랜덤 서명키를 생성합니다.
+2.  **보안키 생성**: 아래 명령어로 랜덤 서명키를 생성합니다.
     ```powershell
-    # PowerShell 예시
     [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
     ```
-3.  **값 반영**: 생성된 문자열을 `.env` 파일의 `SHIM_SECRET_KEY=` 뒤에 붙여넣고 저장합니다.
+3.  **값 반영**: 생성된 문자열을 `.env`의 `SHIM_SECRET_KEY=` 뒤에 붙여넣습니다.
+4.  **사업장 시간대 확인**: `SHIM_TIMEZONE=Asia/Seoul`을 유지하거나 배포 사업장의 IANA 이름으로 변경합니다. 잘못된 이름이면 앱이 기동되지 않습니다. Docker OS 시간대 `TZ=UTC`는 변경하지 않습니다.
 
 ### Step 2. 서버 실행
 환경에 따라 두 가지 방식 중 하나를 선택하여 실행합니다.
@@ -86,7 +86,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.9.2 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.9.3 -t shim:latest .
 
 # 컨테이너 실행
 docker compose -f infra/docker/docker-compose.yml up -d
@@ -95,7 +95,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 #### 방식 C. 폐쇄망용 포터블 실행 (Portable)
 인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
 1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`
-2.  **배포**: 생성된 `dist/SHIM_Portable` 폴더를 대상 PC로 복사합니다.
+2.  **배포**: 생성된 `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`을 대상 PC로 복사한 뒤 전체 압축을 풉니다.
 3.  **실행**: 해당 폴더 내 `SHIM_Portable.exe`를 더블 클릭하여 실행합니다.
     - 안내창을 확인하고 아무 키나 눌러 창을 닫아도 백그라운드에서 서버가 유지되며, 시스템 트레이 아이콘을 통해 관리(브라우저 열기, 서비스 종료)할 수 있습니다.
     - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
@@ -128,9 +128,11 @@ docker compose -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.2` | 릴리즈 시 필수 실행 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.3` | 릴리즈 시 필수 실행 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
+| **빠른 회귀 검사** | `npm test` | 핵심 검사, 약 2분 |
+| **릴리스 전체 검사** | `npm run test:release` | 메모리 1,000회 포함, 약 6분 |
 | **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
 
 ### 주요 문서 및 산출물 목록

@@ -13,9 +13,9 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 try:
-    import requests
+    import httpx
 except ImportError:
-    print("[ERROR] 'requests' package is required to run this graceful shutdown test.")
+    print("[ERROR] 'httpx' package is required to run this graceful shutdown test.")
     print("Please install development dependencies using: pip install -r requirements-dev.txt")
     sys.exit(1)
 
@@ -56,13 +56,13 @@ def clean_db_files():
 
 def run_background_requests(stop_event):
     # 서버 기동 후 API 호출을 지속적으로 날려서 트랜잭션/세션 처리를 유도
-    session = requests.Session()
-    while not stop_event.is_set():
-        try:
-            session.get(f"http://localhost:{TEST_PORT}/", timeout=1)
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(0.1)
+    with httpx.Client(timeout=1) as client:
+        while not stop_event.is_set():
+            try:
+                client.get(f"http://localhost:{TEST_PORT}/")
+            except httpx.RequestError:
+                pass
+            time.sleep(0.1)
 
 def test_graceful_shutdown():
     print("=" * 60)
