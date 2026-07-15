@@ -98,7 +98,7 @@ class LeaveInputValidationError(ValueError):
 def resolve_time_policy_setting(db: Session) -> tuple[int, int | None, int | None, int, int]:
     setting = get_system_settings(db)
     if not setting:
-        return 60, None, None, 9 * 60, 18 * 60
+        return 60, 12 * 60, 13 * 60, 9 * 60, 18 * 60
     granularity = int(getattr(setting, "time_granularity_minutes", 60) or 60)
     lunch_start = getattr(setting, "lunch_start_minute", None)
     lunch_end = getattr(setting, "lunch_end_minute", None)

@@ -86,7 +86,7 @@
                         <label class="block text-[11px] text-dense-muted font-bold">2) 정규 업무 시간 범위</label>
                         <div class="flex items-center gap-2 max-w-[18rem]">
                             <select id="policy_work_start" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
-                                {% for m, label in half_hour_options %}
+                                {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if work_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
@@ -100,17 +100,18 @@
                     </div>
                     <div class="space-y-1.5 border-t pt-3">
                         <label class="block text-[11px] text-dense-muted font-bold">3) 점심 시간 범위 (차감 제외)</label>
+                        <p class="text-[10px] text-dense-muted">신규 기본값은 12:00~13:00입니다. 미사용하면 09:00~18:00 전일 신청은 9시간으로 계산됩니다.</p>
                         <div class="flex items-center gap-2 max-w-[18rem]">
                             <select id="policy_lunch_start" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 <option value="">미사용</option>
-                                {% for m, label in half_hour_options %}
+                                {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if lunch_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                             <span class="text-dense-muted font-bold text-xs shrink-0">~</span>
                             <select id="policy_lunch_end" class="border border-dense-line rounded-xl p-2 bg-dense-surface text-[11px] font-bold focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
                                 <option value="">미사용</option>
-                                {% for m, label in half_hour_options %}
+                                {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if lunch_end_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>

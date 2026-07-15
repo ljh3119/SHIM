@@ -126,6 +126,8 @@
         .shim-toast-error { border-left: 4px solid #dc2626; }
         .shim-sidebar.is-collapsed .system-stats-card { display: none !important; }
     </style>
+    <script>window.SHIM_TIMEZONE = {{ business_timezone | tojson }};</script>
+    <script src="/static/js/time.js?v={{ app_version }}"></script>
 </head>
 <body class="min-h-screen bg-dense-bg text-dense-text antialiased flex flex-col">
 
@@ -988,41 +990,15 @@
     })();
     </script>
     <script>
-    window.convertAllUtcElements = function(container = document) {
-        container.querySelectorAll("[data-utc]").forEach(function(el) {
-            const utcVal = el.getAttribute("data-utc");
-            if (utcVal) {
-                const dt = new Date(utcVal);
-                if (!isNaN(dt.getTime())) {
-                    const format = el.getAttribute("data-format") || "YYYY-MM-DD HH:mm";
-                    const yyyy = dt.getFullYear();
-                    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-                    const dd = String(dt.getDate()).padStart(2, '0');
-                    const hh = String(dt.getHours()).padStart(2, '0');
-                    const min = String(dt.getMinutes()).padStart(2, '0');
-                    const ss = String(dt.getSeconds()).padStart(2, '0');
-                    
-                    let res = format.replace("YYYY", yyyy).replace("MM", mm).replace("DD", dd).replace("HH", hh).replace("mm", min).replace("ss", ss);
-                    el.textContent = res;
-                }
-            }
-        });
-    };
-
     document.addEventListener("DOMContentLoaded", function() {
-        // Carry toast across page reloads
         const pendingToast = sessionStorage.getItem('pending_toast');
         if (pendingToast) {
             try {
                 const parsed = JSON.parse(pendingToast);
-                if (parsed && parsed.message) {
-                    window.showToast(parsed.message, parsed.type || 'success');
-                }
+                if (parsed && parsed.message) window.showToast(parsed.message, parsed.type || 'success');
             } catch (e) {}
             sessionStorage.removeItem('pending_toast');
         }
-
-        window.convertAllUtcElements();
     });
     </script>
 
@@ -1258,7 +1234,8 @@
         function formatRelativeTime(isoString) {
             if (!isoString) return '';
             try {
-                const date = new Date(isoString + 'Z');
+                const date = window.shimTime.parseInstant(isoString);
+                if (!date || Number.isNaN(date.getTime())) return '';
                 const now = new Date();
                 const diffMs = now - date;
                 const diffSec = Math.floor(diffMs / 1000);
@@ -1277,7 +1254,7 @@
                 } else if (diffDay < 30) {
                     return rtf.format(-diffDay, 'day');
                 } else {
-                    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                    return date.toLocaleDateString('ko-KR', { timeZone: window.SHIM_TIMEZONE, year: 'numeric', month: 'long', day: 'numeric' });
                 }
             } catch (e) {
                 return '';

@@ -4,7 +4,7 @@ import random
 import argparse
 import hashlib
 import holidays
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
 
 # Add project root to path
@@ -182,7 +182,7 @@ def seed_data(reset: bool = False):
                         target_info=f"HolidaySeed:{year}",
                         old_data="None",
                         new_data="KR holiday seed incl. May 1 Labor Day",
-                        timestamp=datetime.now()
+                        timestamp=datetime.now(timezone.utc)
                     )
                 )
         db.commit()
@@ -413,7 +413,7 @@ def seed_data(reset: bool = False):
                 target_info=f"Target: {target_user.user_id}",
                 old_data="{}",
                 new_data="{\"note\": \"Seed data\"}",
-                timestamp=datetime.now() - timedelta(days=random.randint(0, 10))
+                timestamp=datetime.now(timezone.utc) - timedelta(days=random.randint(0, 10))
             ))
         db.commit()
         print("[SEED] Created audit logs with actor snapshots")
@@ -429,6 +429,8 @@ def seed_data(reset: bool = False):
                 time_granularity_minutes=60,
                 work_start_minute=9 * 60,
                 work_end_minute=18 * 60,
+                lunch_start_minute=12 * 60,
+                lunch_end_minute=13 * 60,
                 product_display_name="쉼(SHIM) 프로젝트 개발 운영",
                 product_nav_short="",
                 brand_initial="S",

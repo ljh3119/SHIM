@@ -26,6 +26,7 @@ $packageJsonPath = Join-Path $ProjectRoot "package.json"
 $package = (Read-Text $packageJsonPath) | ConvertFrom-Json
 $ver = [string]$package.version
 
+$packageLockText = Read-Text (Join-Path $ProjectRoot "package-lock.json")
 $errs = [System.Collections.Generic.List[string]]::new()
 
 function Add-Err([string]$Message) {
@@ -58,6 +59,14 @@ function Verify-DocVersionPatterns([string]$RelPath, [string]$ExpectedVersion) {
     }
 }
 
+$lockVersion = [regex]::Match($packageLockText, '(?s)^\{\s*"name"\s*:\s*"shim"\s*,\s*"version"\s*:\s*"([0-9]+\.[0-9]+\.[0-9]+)"')
+$lockRootVersion = [regex]::Match($packageLockText, '(?s)"packages"\s*:\s*\{\s*""\s*:\s*\{\s*"name"\s*:\s*"shim"\s*,\s*"version"\s*:\s*"([0-9]+\.[0-9]+\.[0-9]+)"')
+if (-not $lockVersion.Success -or $lockVersion.Groups[1].Value -ne $ver) {
+    Add-Err "package-lock.json: root version must equal package.json ($ver)."
+}
+if (-not $lockRootVersion.Success -or $lockRootVersion.Groups[1].Value -ne $ver) {
+    Add-Err "package-lock.json: root package version must equal package.json ($ver)."
+}
 # Code / config (must match release.ps1 targets)
 $constantsPath = Join-Path $ProjectRoot "src\app\constants.py"
 $constants = Read-Text $constantsPath
@@ -67,7 +76,7 @@ if ($constants.IndexOf($appVerNeedle, [StringComparison]::Ordinal) -lt 0) {
 }
 
 
-foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compose.dev.yml")) {
+foreach ($rel in @("infra\docker\docker-compose.yml", "infra\docker\docker-compose.dev.yml", "infra\docker\docker-compose.test.yml")) {
     $p = Join-Path $ProjectRoot $rel
     $t = Read-Text $p
     if ($t -notmatch [regex]::Escape("shim:$ver")) {
@@ -99,6 +108,14 @@ if ($designDoc -and (Test-Path $designDoc)) {
     }
 }
 
+$releaseDoc = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "2-1_*.md" | Select-Object -First 1).FullName
+if ($releaseDoc -and (Test-Path $releaseDoc)) {
+    $releaseText = Read-Text $releaseDoc
+    $latestRelease = [regex]::Match($releaseText, '(?m)^### v([0-9]+\.[0-9]+\.[0-9]+)')
+    if (-not $latestRelease.Success -or $latestRelease.Groups[1].Value -ne $ver) {
+        Add-Err "docs/2-1_운영_릴리즈_통합_산출물.md: latest release heading must be v$ver."
+    }
+}
 $maintenanceDoc = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "1-2_*.md" | Select-Object -First 1).FullName
 if ($maintenanceDoc -and (Test-Path $maintenanceDoc)) {
     $mc = Read-Text $maintenanceDoc

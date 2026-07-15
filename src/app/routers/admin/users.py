@@ -78,7 +78,7 @@ def admin_users(
 
     sort_key_effective = sort_key if sort_key in {"user_name", "user_id", "company", "team", "leave_days", "role"} else "role"
     sort_dir_effective = "desc" if sort_dir == "desc" else "asc"
-    now_year = utils.get_local_now().year
+    now_year = utils.get_business_now().year
     selected_year = year if year else now_year
     leave_year_rows = db.query(models.Leaves.year).distinct().all()
     leave_years = [row[0] for row in leave_year_rows]
@@ -159,8 +159,7 @@ def toggle_user_active(
     
     canceled_count = 0
     if not user.is_active:
-        today_str = utils.get_local_today()
-        today = datetime.strptime(today_str, "%Y-%m-%d").date()
+        today = utils.get_business_today()
         future_leaves = db.query(models.Leaves).filter(
             models.Leaves.user_id == target_user_id,
             models.Leaves.date >= today,
@@ -268,8 +267,7 @@ def update_user(
 
     canceled_count = 0
     if was_active and not user.is_active:
-        today_str = utils.get_local_today()
-        today = datetime.strptime(today_str, "%Y-%m-%d").date()
+        today = utils.get_business_today()
         future_leaves = db.query(models.Leaves).filter(
             models.Leaves.user_id == target_user_id,
             models.Leaves.date >= today,
@@ -331,7 +329,7 @@ def create_user(
     if exist:
         return JSONResponse(status_code=400, content={"message": "이미 존재하는 ID입니다."})
         
-    target_year = year if year else utils.get_local_now().year
+    target_year = year if year else utils.get_business_now().year
     new_user = models.Users(
         user_id=user_id,
         user_name=user_name,
@@ -386,7 +384,7 @@ def update_user_leave_days(
     if not user:
         return JSONResponse(status_code=404, content={"message": "User not found"})
 
-    target_year = year if year else utils.get_local_now().year
+    target_year = year if year else utils.get_business_now().year
     old_hours = user.total_leave_hours
     new_hours = total_leave_days * 8
     allocation = db.query(models.UserYearlyLeaveAllocations).filter(
@@ -433,7 +431,7 @@ def bulk_update_user_leave_days(
     if total_leave_days < 0:
         return JSONResponse(status_code=400, content={"message": "연차일수는 0 이상이어야 합니다."})
 
-    target_year = year if year else utils.get_local_now().year
+    target_year = year if year else utils.get_business_now().year
     new_hours = total_leave_days * 8
 
     q = db.query(models.Users).filter(models.Users.role != "ADMIN")

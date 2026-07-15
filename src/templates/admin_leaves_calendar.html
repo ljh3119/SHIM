@@ -787,9 +787,6 @@ async function loadTimelineData(query = '') {
         content.innerHTML = html;
         tabCache.timeline = html;
         
-        if (window.convertAllUtcElements) {
-            window.convertAllUtcElements(content);
-        }
     } catch (err) {
         content.innerHTML = `<div class="p-8 text-center text-dense-danger font-bold">오류가 발생했습니다: ${err.message}</div>`;
     } finally {

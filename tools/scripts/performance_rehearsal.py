@@ -6,7 +6,7 @@ import statistics
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import httpx
@@ -113,7 +113,7 @@ def print_results(results: list[EndpointResult], threshold_sec: float, repeat: i
     all_passed = True
 
     print("SHIM performance rehearsal")
-    print(f"timestamp={datetime.now().isoformat(timespec='seconds')}")
+    print(f"timestamp={datetime.now(timezone.utc).isoformat(timespec='seconds')}")
     print(f"repeat={repeat} threshold_ms={threshold_ms:.0f}")
     print("")
     print("| endpoint | status | avg_ms | max_ms | result |")

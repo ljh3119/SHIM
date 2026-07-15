@@ -13,6 +13,7 @@ SHIM은 FastAPI, SQLAlchemy, SQLite, Jinja2, Tailwind CSS로 구성된 폐쇄망
 - [연차 관리 도메인](domain/leave-management.md)
 - [운영 및 유지보수](operations.md)
 - [테스트 및 검증](testing.md)
+- [포터블 실행 가이드](../portable/README_PORTABLE.md)
 
 ## 이 시스템이 하는 일
 - SQLite에서 연도별 할당 및 차감 규칙으로 연차를 관리합니다.

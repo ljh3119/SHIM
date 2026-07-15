@@ -32,6 +32,12 @@ function Replace-OrFail([string]$Path, [string]$Pattern, [string]$Replacement) {
     Write-Text $Path $updated
 }
 
+function Sync-DocVersionPatterns([string]$Path) {
+    $content = Read-Text $Path
+    $content = [regex]::Replace($content, 'shim:[0-9]+\.[0-9]+\.[0-9]+', "shim:$Version")
+    $content = [regex]::Replace($content, '(release\.ps1\s+-Version\s+)[0-9]+\.[0-9]+\.[0-9]+', ('${1}' + $Version))
+    Write-Text $Path $content
+}
 $packageJsonPath = Join-Path $ProjectRoot "package.json"
 $package = (Read-Text $packageJsonPath) | ConvertFrom-Json
 $currentVersion = [string]$package.version
@@ -45,12 +51,17 @@ if ($currentVersion -eq $Version) {
 # 1) package.json version
 Replace-OrFail $packageJsonPath '"version"\s*:\s*"[0-9]+\.[0-9]+\.[0-9]+"' "`"version`": `"$Version`""
 
+# 1-1) package-lock.json root package versions
+Replace-OrFail (Join-Path $ProjectRoot "package-lock.json") '(?s)^(\{\s*"name":\s*"shim",\s*"version":\s*")[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
+Replace-OrFail (Join-Path $ProjectRoot "package-lock.json") '(?s)("packages":\s*\{\s*"":\s*\{\s*"name":\s*"shim",\s*"version":\s*")[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
+
 # 2) src/app/constants.py application version
 Replace-OrFail (Join-Path $ProjectRoot "src\app\constants.py") 'APP_VERSION\s*=\s*"[0-9]+\.[0-9]+\.[0-9]+"' "APP_VERSION = `"$Version`""
 
 # 3) compose default image tags
 Replace-OrFail (Join-Path $ProjectRoot "infra\docker\docker-compose.yml") 'image:\s*\$\{SHIM_IMAGE:-shim:[0-9]+\.[0-9]+\.[0-9]+\}' "image: `${SHIM_IMAGE:-shim:$Version}"
 Replace-OrFail (Join-Path $ProjectRoot "infra\docker\docker-compose.dev.yml") 'image:\s*\$\{SHIM_IMAGE:-shim:[0-9]+\.[0-9]+\.[0-9]+\}' "image: `${SHIM_IMAGE:-shim:$Version}"
+Replace-OrFail (Join-Path $ProjectRoot "infra\docker\docker-compose.test.yml") 'image:\s*\$\{SHIM_IMAGE:-shim:[0-9]+\.[0-9]+\.[0-9]+\}' "image: `${SHIM_IMAGE:-shim:$Version}"
 
 # 4) README.md release version line
 Replace-OrFail (Join-Path $ProjectRoot "README.md") '(\*\*[^*]+?\*\*\s*:?\s*)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version)
@@ -71,6 +82,12 @@ Replace-OrFail $maintenanceDocPath '(-Version\s+)[0-9]+\.[0-9]+\.[0-9]+' ('${1}'
 Replace-OrFail $maintenanceDocPath '(shim_)[0-9]+\.[0-9]+\.[0-9]+(\.tar\s+shim:)[0-9]+\.[0-9]+\.[0-9]+' ('${1}' + $Version + '${2}' + $Version)
 Replace-OrFail $maintenanceDocPath '(\*\*[^*]+?\*\*\s*:\s*)\d{4}-\d{2}-\d{2}' ('${1}' + $today)
 
+# 8) current deployment guides: Docker tags and release command examples
+$quickStartDocPath = (Get-ChildItem (Join-Path $ProjectRoot "docs") -Filter "1-1_*.md" | Select-Object -First 1).FullName
+Sync-DocVersionPatterns (Join-Path $ProjectRoot "README.md")
+Sync-DocVersionPatterns $quickStartDocPath
+Sync-DocVersionPatterns $maintenanceDocPath
+Sync-DocVersionPatterns (Join-Path $ProjectRoot "portable\README_PORTABLE.md")
 Write-Host "[release] Version sync complete."
 
 if ($BuildImage) {
@@ -92,9 +109,13 @@ if ($RunChecks) {
     }
     Write-Host "[release] Tailwind CSS output verified: $cssPath ($($cssFile.Length) bytes)"
     docker compose -f infra/docker/docker-compose.yml config | Out-Null
+    docker compose -f infra/docker/docker-compose.dev.yml config | Out-Null
+    docker compose -f infra/docker/docker-compose.test.yml config | Out-Null
     & "$PSScriptRoot\verify_version_sync.ps1"
     if ($LASTEXITCODE -ne 0) { throw "verify_version_sync.ps1 failed (see messages above)" }
     Write-Host "[release] Checks passed."
+    python tools/scripts/run_tests.py release
+    if ($LASTEXITCODE -ne 0) { throw "release test suite failed (see messages above)" }
 }
 
 if ($GitRelease) {

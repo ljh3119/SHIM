@@ -1,13 +1,11 @@
-from datetime import datetime, date, timedelta, timezone
+from datetime import date, timedelta
 from sqlalchemy.orm import Session, contains_eager, joinedload
 from sqlalchemy import extract
 from .. import models, utils
 
 def get_admin_dashboard_stats(db: Session):
-    today = utils.get_local_now()
-    day_start_local = datetime.combine(today.date(), datetime.min.time()).replace(tzinfo=today.tzinfo)
-    day_start = day_start_local.astimezone(timezone.utc)
-    next_day_start = day_start + timedelta(days=1)
+    today = utils.get_business_now()
+    day_start, next_day_start = utils.get_business_date_bounds_utc(today.date())
 
     
     # KPIs
@@ -144,9 +142,11 @@ def get_audit_logs_query(
     if action:
         query = query.filter(models.AuditLogs.action.contains(action))
     if start_date:
-        query = query.filter(models.AuditLogs.timestamp >= datetime.combine(start_date, datetime.min.time()))
+        start, _ = utils.get_business_date_bounds_utc(start_date)
+        query = query.filter(models.AuditLogs.timestamp >= start)
     if end_date:
-        query = query.filter(models.AuditLogs.timestamp < datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
+        _, end = utils.get_business_date_bounds_utc(end_date)
+        query = query.filter(models.AuditLogs.timestamp < end)
     return query
 
 def get_admin_dashboard_charts_data(db: Session, year: int):

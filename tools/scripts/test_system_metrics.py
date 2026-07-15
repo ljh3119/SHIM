@@ -90,7 +90,7 @@ def test_metrics():
         
         # 6. 임계치 초과 헬스체크(26시간 지연 경고) 시뮬레이션
         # 백업 시각을 30시간 전으로 강제 업데이트
-        past_time = utils.get_local_now() - datetime.timedelta(hours=30)
+        past_time = utils.get_business_now() - datetime.timedelta(hours=30)
         settings_after_cleanup.last_backup_time = past_time
         db.commit()
         

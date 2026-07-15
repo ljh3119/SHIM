@@ -18,7 +18,7 @@ from .database import engine, get_db, DB_PATH
 from .services.ops import verify_and_recover_db, daily_backup_scheduler, notification_cleanup_scheduler, update_system_metrics_in_db
 from .constants import APP_VERSION, VALID_ROLES
 
-START_TIME = utils.get_local_now()
+START_TIME = utils.get_business_now()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -216,7 +216,8 @@ templates.env.globals["app_version"] = APP_VERSION
 templates.env.globals["min"] = min
 templates.env.globals["max"] = max
 templates.env.globals["string_to_badge_style"] = utils.string_to_badge_style
-templates.env.filters["format_datetime_kst"] = utils.format_datetime_kst
+templates.env.globals["business_timezone"] = utils.get_business_timezone_name()
+templates.env.filters["format_datetime_business"] = utils.format_datetime_business
 app.state.templates = templates
 
 from .routers import api_user
@@ -348,6 +349,8 @@ def startup_event():
                     time_granularity_minutes=60,
                     work_start_minute=9 * 60,
                     work_end_minute=18 * 60,
+                    lunch_start_minute=12 * 60,
+                    lunch_end_minute=13 * 60,
                     product_display_name=DEFAULT_PRODUCT_DISPLAY_NAME,
                     product_nav_short="",
                     brand_initial=DEFAULT_BRAND_INITIAL,

@@ -98,7 +98,7 @@
                                     <span class="inline-flex rounded-full border border-dense-line bg-dense-gray-soft px-2 py-0.5 text-xs font-extrabold text-dense-muted">{{ leave.status }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ leave.created_at | format_datetime_kst }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-muted">{{ leave.created_at | format_datetime_business }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-center text-sm">
                                     {% if leave.status == "PENDING" %}
                                     <button type="button" onclick="cancelLeave({{ leave.id }}, this)" class="inline-flex rounded-lg border border-dense-danger bg-dense-surface px-2.5 py-1 text-xs font-bold text-dense-danger hover:bg-dense-danger-soft transition-colors shadow-sm focus:outline-none">
@@ -189,7 +189,7 @@
                         {% if leave.rejection_reason and leave.status == "REJECTED" %}
                         <div class="text-[10px] text-dense-danger">반려 사유: <span>{{ leave.rejection_reason }}</span></div>
                         {% endif %}
-                        <div class="text-[9px] text-dense-muted">등록: {{ leave.created_at | format_datetime_kst }}</div>
+                        <div class="text-[9px] text-dense-muted">등록: {{ leave.created_at | format_datetime_business }}</div>
                     </div>
 
                     {% if leave.status == "PENDING" %}

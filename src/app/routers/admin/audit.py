@@ -141,7 +141,7 @@ def admin_audit_logs(
                 "page": 1,
                 "total_pages": 0,
                 "total_count": 0,
-                "current_year": utils.get_local_now().year,
+                "current_year": utils.get_business_now().year,
                 "export_query": "",
                 "error_msg": "조회 기간은 최대 90일을 초과할 수 없습니다.",
             },
@@ -196,7 +196,7 @@ def admin_audit_logs(
             "page": page,
             "total_pages": total_pages,
             "total_count": total_count,
-            "current_year": utils.get_local_now().year,
+            "current_year": utils.get_business_now().year,
             "export_query": urlencode({k: v for k, v in export_q.items() if v}),
         },
     )
@@ -255,7 +255,7 @@ def admin_audit_export(
 
         ws.append(
             [
-                utils.format_datetime_kst(log.timestamp, "%Y-%m-%d %H:%M:%S"),
+                utils.format_datetime_business(log.timestamp, "%Y-%m-%d %H:%M:%S"),
                 log.actor_id or "",
                 actor_name,
                 actor_dept,
@@ -275,7 +275,7 @@ def admin_audit_export(
     if s_date and e_date:
         filename = f"audit_{s_date.strftime('%Y%m%d')}_{e_date.strftime('%Y%m%d')}.xlsx"
     else:
-        filename = f"audit_logs_{utils.get_local_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filename = f"audit_logs_{utils.get_business_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

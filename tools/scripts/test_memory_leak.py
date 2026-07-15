@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import gc
@@ -12,7 +13,7 @@ except ImportError:
     print("Please install development dependencies using: pip install -r requirements-dev.txt")
     sys.exit(1)
 
-from httpx import AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 # 프로젝트 루트 경로를 Python path에 추가하여 src 패키지 로드 보장
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -110,7 +111,8 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     start_time = time.time()
     
     # 3. 비동기 클라이언트 구동
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # 로그인 및 쿠키 획득 (STAFF 권한)
         response = await client.post("/login", data={"user_id": "staff", "password": "staff123"}, follow_redirects=False)
         if response.status_code != 302:
@@ -130,8 +132,9 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         })
         # 워밍업 후 가비지 컬렉션 수행 및 스냅샷 확보
         gc.collect()
+        baseline_rss = process.memory_info().rss
         snapshot_start = tracemalloc.take_snapshot()
-        print(f"[STAGE 0] Warm-up complete. Baseline heap snapshotted.")
+        print(f"[STAGE 0] Warm-up complete. Baseline RSS: {baseline_rss / 1024 / 1024:.2f} MB")
         
         print(f"\n[STAGE 1] Running {iterations} API request cycles...")
         for i in range(1, iterations + 1):
@@ -162,6 +165,9 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
                 rate = i / elapsed
                 print(f"  - Request {i}/{iterations} done. Memory RSS: {current_rss / 1024 / 1024:.2f} MB ({rate:.1f} req/sec)")
 
+    gc.collect()
+    api_final_rss = process.memory_info().rss
+
     # 4. 시나리오 C: 대량 데이터 적재 및 엑셀 다운로드 피크 메모리 테스트
     print("\n[STAGE 2] Seeding 1,500 fake audit logs for export test...")
     db = SessionLocal()
@@ -182,15 +188,25 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         
     print("[STAGE 2] Simulating Admin Audit Export (Excel) multi-calls...")
     
-    async with AsyncClient(app=app, base_url="http://test") as admin_client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as admin_client:
         # ADMIN 계정으로 로그인 수행
         response = await admin_client.post("/login", data={"user_id": "admin", "password": "admin123"}, follow_redirects=False)
         if response.status_code != 302:
             print(f"[ERROR] Admin login failed! Status: {response.status_code}")
             return False
             
+        # 최초 Excel 생성·모듈 캐시 비용은 반복 누수 판정에서 제외합니다.
+        warmup_resp = await admin_client.get("/admin/audit/export")
+        if warmup_resp.status_code != 200:
+            print(f"[ERROR] Export warm-up failed! Status: {warmup_resp.status_code}")
+            return False
+        _ = warmup_resp.content
+        del warmup_resp
+        gc.collect()
+
         pre_export_rss = process.memory_info().rss
-        print(f"  - Pre-Export RSS: {pre_export_rss / 1024 / 1024:.2f} MB")
+        print(f"  - Post-Warm-up Export RSS: {pre_export_rss / 1024 / 1024:.2f} MB")
         
         # 엑셀 다운로드 API 5회 연속 호출
         for m in range(5):
@@ -225,12 +241,17 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     print("STABILITY & MEMORY LEAK REPORT (ASYNC)")
     print("=" * 60)
     print(f"Total Elapsed Time: {elapsed_total:.2f} seconds")
-    print(f"Initial Memory RSS: {init_rss / 1024 / 1024:.2f} MB")
-    print(f"Peak Export Memory: {post_export_rss / 1024 / 1024:.2f} MB")
-    print(f"Final Memory RSS  : {final_rss / 1024 / 1024:.2f} MB")
+    print(f"Process Start RSS : {init_rss / 1024 / 1024:.2f} MB")
+    print(f"Warm Baseline RSS: {baseline_rss / 1024 / 1024:.2f} MB")
+    print(f"API Final RSS    : {api_final_rss / 1024 / 1024:.2f} MB")
+    print(f"Export Baseline  : {pre_export_rss / 1024 / 1024:.2f} MB")
+    print(f"Peak Export RSS  : {post_export_rss / 1024 / 1024:.2f} MB")
+    print(f"Final Memory RSS : {final_rss / 1024 / 1024:.2f} MB")
     
-    diff_rss = final_rss - init_rss
-    print(f"Net Memory Increase (RSS): {diff_rss / 1024 / 1024:.2f} MB")
+    api_rss_growth_mb = (api_final_rss - baseline_rss) / 1024 / 1024
+    export_rss_growth_mb = (final_rss - pre_export_rss) / 1024 / 1024
+    print(f"API Loop RSS Increase: {api_rss_growth_mb:.2f} MB")
+    print(f"Repeated Export RSS Increase: {export_rss_growth_mb:.2f} MB")
     
     stats = snapshot_end.compare_to(snapshot_start, 'lineno')
     total_heap_diff = sum(stat.size_diff for stat in stats)
@@ -245,7 +266,7 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
     
     # 누출 판정
     heap_passed = total_heap_diff_mb < 1.0
-    rss_passed = (diff_rss / 1024 / 1024) < 30.0
+    rss_passed = max(api_rss_growth_mb, export_rss_growth_mb) < 30.0
     
     if heap_passed and rss_passed:
         print("[SUCCESS] Memory leak test PASSED. System returns to clean state.")
@@ -254,13 +275,19 @@ async def run_stability_and_memory_leak_test_async(iterations=1000):
         if not heap_passed:
             print("[WARNING] Significant Python heap memory growth detected (> 1.0 MB).")
         if not rss_passed:
-            print("[WARNING] Significant physical memory (RSS) growth detected (> 30.0 MB).")
+            print("[WARNING] API loop or repeated export RSS growth exceeded 30.0 MB.")
         print("[WARNING] Review database/session cleanup.")
         return False
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run SHIM memory stability checks.")
+    parser.add_argument("--iterations", type=int, default=1000)
+    args = parser.parse_args()
+    if args.iterations < 1:
+        parser.error("--iterations must be at least 1")
     try:
-        success = asyncio.run(run_stability_and_memory_leak_test_async(iterations=1000))
+        success = asyncio.run(run_stability_and_memory_leak_test_async(iterations=args.iterations))
     finally:
+        engine.dispose()
         TEST_DATA_DIR.cleanup()
     sys.exit(0 if success else 1)

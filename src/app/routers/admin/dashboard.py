@@ -27,7 +27,7 @@ def admin_dashboard(
     stats["total_used_hours"] = stats["total_approved_hours"]
     stats["exhaustion_rate"] = stats["total_exhaustion_rate"]
     
-    now = utils.get_local_now()
+    now = utils.get_business_now()
     show_setup_banner = now.month in (12, 1)
     next_year = now.year + 1 if now.month == 12 else now.year
     
@@ -79,8 +79,8 @@ def admin_dashboard(
             db_size_str = f"{db_size_kb} KB"
             
         last_backup_count = settings.last_backup_count or 0
-        last_backup_time_str = utils.format_datetime_kst(settings.last_backup_time) if settings.last_backup_time else "백업본 없음 (스케줄링 대기)"
-        last_cleanup_time_str = utils.format_datetime_kst(settings.last_cleanup_time) if settings.last_cleanup_time else "정리 이력 없음 (대기 중)"
+        last_backup_time_str = utils.format_datetime_business(settings.last_backup_time) if settings.last_backup_time else "백업본 없음 (스케줄링 대기)"
+        last_cleanup_time_str = utils.format_datetime_business(settings.last_cleanup_time) if settings.last_cleanup_time else "정리 이력 없음 (대기 중)"
     else:
         db_size_str = "0 KB"
         last_backup_count = 0

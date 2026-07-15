@@ -1,13 +1,14 @@
 {
   "name": "shim",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "쉼(休) SHIM (Smart Holiday Information Management) - 폐쇄망용 초경량 연차 관리 시스템",
   "main": "index.js",
   "scripts": {
     "build:css": "tailwindcss -i ./src/static/css/app.css -o ./src/static/css/tailwind.css --minify",
     "watch:css": "tailwindcss -i ./src/static/css/app.css -o ./src/static/css/tailwind.css --watch",
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\scripts\\dev.ps1",
-    "test": "python tools/scripts/run_tests.py"
+    "test": "python tools/scripts/run_tests.py smoke",
+    "test:release": "python tools/scripts/run_tests.py release"
   },
   "keywords": [],
   "author": "",

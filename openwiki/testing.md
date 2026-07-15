@@ -4,13 +4,25 @@
 
 ## 테스트 및 검증 스크립트
 `tools/scripts/` 아래에서 발견되는 파일:
+- `test_db_recovery.py` — 손상 감지와 백업 복구 경로 검증
 - `test_duplicate_execution.py` — 스케줄러/워커 중복 실행 패턴 방지
 - `test_graceful_shutdown.py` — 정상 종료와 시그널 처리 검증
 - `test_memory_leak.py` — 반복 작업 중 메모리 동작 점검
+- `test_secret_key_security.py` — 공개 JWT 키 거부와 Zero-Configuration 키 생성·재사용 검증
+- `test_leave_service_improvements.py` — 연차 중복·시간 입력·전일 차감·동시 요청 검증
+- `test_auth_password_limits.py` — bcrypt UTF-8 72바이트 경계 검증
+- `test_ops_safety.py` — 백업 원자성·무결성·회전과 알림 정리 실패 메트릭 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
-- `test_timezone_utils.py` — 타임존 헬퍼 동작 검증
+- `test_timezone_utils.py` — IANA 시간대, DST 경계, UTC 저장, 기동 실패, 화면 ISO 파싱, 서반구 날짜 보존 검증
 - `run_remaining_tests.py` — 남은 시나리오 커버리지 실행
+
+## 공통 실행 모드
+
+- `npm test` 또는 `python tools/scripts/run_tests.py smoke`: 개발 중 핵심 회귀 검사(약 2분)
+- `npm run test:release` 또는 `python tools/scripts/run_tests.py release`: smoke와 정상 종료·중복 실행·메모리 1,000회 검사(약 6분)
+- 각 하위 검사는 별도 임시 `SHIM_DATA_DIR`에서 실행되어 운영·개발 DB를 건드리지 않습니다.
+- ASGI 테스트는 개발 전용 `httpx2==2.7.0`의 명시적 transport를 사용합니다.
 
 ## 이런 테스트가 존재하는 이유
 최근 커밋 이력은 다음 영역의 하드닝에 집중되어 있습니다.
@@ -19,6 +31,7 @@
 - 사용자/세션 무효화 동작
 - 문자열 마스킹 및 유틸리티 엣지 케이스
 - graceful process shutdown
+- DB 복구 및 검증 스크립트 정합성
 
 즉, 이 테스트들은 단순한 단위 테스트가 아니라 저장소의 운영 가정을 지키는 회귀 방지 장치입니다.
 
