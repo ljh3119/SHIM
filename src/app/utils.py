@@ -4,6 +4,29 @@ from functools import lru_cache
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
+
+def add_constitution_day_holidays(holiday_map, year: int) -> None:
+    """Backfill Constitution Day until python-holidays includes the 2026 change."""
+    constitution_day = datetime.date(year, 7, 17)
+    if year < 2026 or constitution_day in holiday_map:
+        return
+
+    holiday_map[constitution_day] = "제헌절"
+    if constitution_day.weekday() < 5:
+        return
+
+    substitute = constitution_day + datetime.timedelta(days=1)
+    while substitute.weekday() >= 5 or substitute in holiday_map:
+        substitute += datetime.timedelta(days=1)
+    holiday_map[substitute] = "제헌절 대체공휴일"
+
+
+def sanitize_excel_text(value) -> str:
+    """Prevent user-controlled text from being interpreted as an Excel formula."""
+    text = "" if value is None else str(value)
+    return f"'{text}" if text.startswith(("=", "+", "-", "@", "\t", "\r", "\n")) else text
+
+
 def format_db_error_message(exc: Exception) -> str:
     if isinstance(exc, IntegrityError):
         return "데이터베이스 정합성 제약 조건 위반이 발생했습니다. (중복 등록 또는 연관 데이터 오류)"

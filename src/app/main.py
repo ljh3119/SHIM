@@ -295,6 +295,7 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
             continue
 
         kr_holidays = holidays.country_holidays("KR", years=[year], language="ko")
+        utils.add_constitution_day_holidays(kr_holidays, year)
         for holiday_date, holiday_name in kr_holidays.items():
             normalized_name = _compact_kr_holiday_name(holiday_name)
             exists = db.query(models.Holidays).filter(models.Holidays.date == holiday_date).first()
@@ -312,7 +313,7 @@ def seed_korean_holidays(db: Session, actor_id: str, start_year: int = 2020, end
                 action=action_name,
                 target_info=f"HolidaySeed:{year}",
                 old_data="None",
-                new_data="KR holiday seed incl. May 1 Labor Day",
+                new_data="KR holiday seed incl. May 1 Labor Day and Constitution Day from 2026",
             )
         )
 

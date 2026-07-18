@@ -1,13 +1,13 @@
 services:
   shim:
-    image: ${SHIM_IMAGE:-shim:1.9.3}
+    image: ${SHIM_IMAGE:-shim:1.9.4}
     container_name: shim
     ports:
       - "8000:8000"
     environment:
       SHIM_SECRET_KEY: "${SHIM_SECRET_KEY:-}"
-      TZ: "UTC"
       SHIM_TIMEZONE: ${SHIM_TIMEZONE:-Asia/Seoul}
+      SHIM_SECURE_COOKIE: "${SHIM_SECURE_COOKIE:-false}"
     volumes:
       # [볼륨 마운트 정책 가이드]
       # 1) 일반 Linux / NAS 환경 (추천): 

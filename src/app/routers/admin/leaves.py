@@ -352,12 +352,12 @@ def export_admin_leaves_timeline(
         remaining = float(allocated) - approved - pending
         
         ws_summary.append([
-            u.user_id,
-            u.user_name,
-            u.company or "",
-            u.team or "",
-            u.position or "",
-            u.role or "",
+            utils.sanitize_excel_text(u.user_id),
+            utils.sanitize_excel_text(u.user_name),
+            utils.sanitize_excel_text(u.company),
+            utils.sanitize_excel_text(u.team),
+            utils.sanitize_excel_text(u.position),
+            utils.sanitize_excel_text(u.role),
             "활성" if u.is_active else "비활성",
             float(allocated),
             float(approved),
@@ -380,10 +380,10 @@ def export_admin_leaves_timeline(
         else:
             row.append("")
             
-        row.append(leave.user.user_name if leave.user else "")
-        row.append(leave.user.user_id if leave.user else "")
-        row.append((leave.user.company or "") if leave.user else "")
-        row.append((leave.user.team or "") if leave.user else "")
+        row.append(utils.sanitize_excel_text(leave.user.user_name if leave.user else ""))
+        row.append(utils.sanitize_excel_text(leave.user.user_id if leave.user else ""))
+        row.append(utils.sanitize_excel_text(leave.user.company if leave.user else ""))
+        row.append(utils.sanitize_excel_text(leave.user.team if leave.user else ""))
         
         if leave.date:
             cell_date = WriteOnlyCell(ws_timeline, value=leave.date)
@@ -396,8 +396,8 @@ def export_admin_leaves_timeline(
         row.append("차감" if leave.is_deductive else "비차감")
         row.append(float(leave.snapshot_deduction_hours or 0.0))
         row.append(leave.status or "")
-        row.append(leave.reason or "")
-        row.append(leave.rejection_reason or "")
+        row.append(utils.sanitize_excel_text(leave.reason))
+        row.append(utils.sanitize_excel_text(leave.rejection_reason))
         
         ws_timeline.append(row)
 

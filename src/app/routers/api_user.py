@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date as date_cls
 import calendar as cal_module
+import logging
 
 from .. import models, database, auth, utils
 from ..database import get_db, DB_PATH
@@ -19,6 +20,8 @@ from ..services.leave_policy import (
 )
 from ..dependencies import get_current_user
 from ..services.leave_service import resolve_user_yearly_allocated_hours
+logger = logging.getLogger("shim.api")
+
 
 page_router = APIRouter(prefix="/user", tags=["user_pages"])
 api_router = APIRouter(prefix="/api/user", tags=["user_api"])
@@ -540,8 +543,9 @@ def apply_leave(
         return JSONResponse(status_code=200, content={"message": msg})
     except LeaveInputValidationError as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"서버 오류: {str(e)}"})
+    except Exception:
+        logger.exception("연차 신청 처리 중 예상하지 못한 오류가 발생했습니다.")
+        return JSONResponse(status_code=500, content={"message": "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."})
 
 
 def get_current_approver(db: Session = Depends(get_db), user: models.Users = Depends(get_current_user)) -> models.Users:

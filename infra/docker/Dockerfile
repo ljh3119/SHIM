@@ -15,4 +15,4 @@ COPY . .
 # Tailwind CSS 로컬 빌드 결과물이나 SQLite는 빌드나 런타임에 맞춰 자동 동기화
 EXPOSE 8000
 
-CMD python tools/scripts/db_init.py && uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

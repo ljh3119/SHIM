@@ -32,6 +32,12 @@ function Replace-OrFail([string]$Path, [string]$Pattern, [string]$Replacement) {
     Write-Text $Path $updated
 }
 
+function Assert-LastExitCode([string]$CommandName) {
+    if ($LASTEXITCODE -ne 0) {
+        throw "$CommandName failed (exit code: $LASTEXITCODE)."
+    }
+}
+
 function Sync-DocVersionPatterns([string]$Path) {
     $content = Read-Text $Path
     $content = [regex]::Replace($content, 'shim:[0-9]+\.[0-9]+\.[0-9]+', "shim:$Version")
@@ -90,15 +96,10 @@ Sync-DocVersionPatterns $maintenanceDocPath
 Sync-DocVersionPatterns (Join-Path $ProjectRoot "portable\README_PORTABLE.md")
 Write-Host "[release] Version sync complete."
 
-if ($BuildImage) {
-    Write-Host "[release] Building docker image tags: shim:$Version, shim:latest"
-    docker build -f infra/docker/Dockerfile -t "shim:$Version" -t "shim:latest" .
-}
-
-if ($RunChecks) {
-    Write-Host "[release] Running checks: compile, CSS build, compose config, version/docs sync"
-    python -m compileall src\app tools\scripts
+if ($RunChecks -or $BuildImage) {
+    Write-Host "[release] Building Tailwind CSS before checks and packaging"
     npm run build:css
+    Assert-LastExitCode "npm run build:css"
     $cssPath = "src\static\css\tailwind.css"
     if (-not (Test-Path $cssPath)) {
         throw "Tailwind CSS output file does not exist: $cssPath"
@@ -108,14 +109,29 @@ if ($RunChecks) {
         throw "Tailwind CSS output file is 0 bytes: $cssPath"
     }
     Write-Host "[release] Tailwind CSS output verified: $cssPath ($($cssFile.Length) bytes)"
+}
+
+if ($RunChecks) {
+    Write-Host "[release] Running checks: compile, compose config, version/docs sync, release tests"
+    python -m compileall src\app tools\scripts
+    Assert-LastExitCode "python compileall"
     docker compose -f infra/docker/docker-compose.yml config | Out-Null
+    Assert-LastExitCode "docker compose production config"
     docker compose -f infra/docker/docker-compose.dev.yml config | Out-Null
+    Assert-LastExitCode "docker compose development config"
     docker compose -f infra/docker/docker-compose.test.yml config | Out-Null
+    Assert-LastExitCode "docker compose test config"
     & "$PSScriptRoot\verify_version_sync.ps1"
-    if ($LASTEXITCODE -ne 0) { throw "verify_version_sync.ps1 failed (see messages above)" }
-    Write-Host "[release] Checks passed."
+    Assert-LastExitCode "verify_version_sync.ps1"
     python tools/scripts/run_tests.py release
-    if ($LASTEXITCODE -ne 0) { throw "release test suite failed (see messages above)" }
+    Assert-LastExitCode "release test suite"
+    Write-Host "[release] Checks passed."
+}
+
+if ($BuildImage) {
+    Write-Host "[release] Building docker image tags: shim:$Version, shim:latest"
+    docker build -f infra/docker/Dockerfile -t "shim:$Version" -t "shim:latest" .
+    Assert-LastExitCode "docker build"
 }
 
 if ($GitRelease) {

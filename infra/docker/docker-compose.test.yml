@@ -1,12 +1,11 @@
 services:
   shim-test:
-    image: ${SHIM_IMAGE:-shim:1.9.3}
+    image: ${SHIM_IMAGE:-shim:1.9.4}
     container_name: shim-test
     ports:
       - "8000:8000"
     environment:
       # 컨테이너 OS는 UTC, 애플리케이션 업무 시간은 사업장 IANA 시간대를 사용합니다.
-      TZ: "UTC"
       SHIM_TIMEZONE: ${SHIM_TIMEZONE:-Asia/Seoul}
       
       # 3. 데이터베이스 및 보안 비밀키 설정

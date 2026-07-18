@@ -853,6 +853,31 @@ def main():
     # --- 시나리오 19: 엑셀 타임라인 파일 타입 포맷팅 정밀화 검증 ---
     print("[CASE 19] Excel Export Data Type Formatting Refinement")
     
+    db = SessionLocal()
+    formula_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").one()
+    formula_leave = db.query(models.Leaves).filter(
+        models.Leaves.user_id == "u_staff",
+        models.Leaves.year == d1.year,
+    ).first()
+    assert formula_leave is not None
+    original_formula_user_name = formula_user.user_name
+    original_formula_reason = formula_leave.reason
+    formula_user.user_name = "=HYPERLINK(\"https://example.invalid\",\"name\")"
+    formula_leave.reason = "@SUM(A1:A2)"
+    formula_audit = models.AuditLogs(
+        actor_id="admin",
+        action="TEST_FORMULA_EXPORT",
+        target_info="+SUM(A1:A2)",
+        old_data="-1",
+        new_data="@SUM(A1:A2)",
+    )
+    db.add(formula_audit)
+    db.commit()
+    db.refresh(formula_audit)
+    formula_audit_id = formula_audit.id
+    formula_leave_id = formula_leave.id
+    db.close()
+
     r_export = admin_client.get(f"/admin/leave/timeline/export?year={d1.year}")
     assert r_export.status_code == 200
     assert r_export.headers.get("content-type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -879,6 +904,43 @@ def main():
         
         assert ws_time.cell(row=2, column=1).number_format == 'yyyy-mm-dd hh:mm:ss'
         assert ws_time.cell(row=2, column=6).number_format == 'yyyy-mm-dd'
+
+    summary_name_cell = next(
+        row[1]
+        for row in ws_sum.iter_rows(min_row=2)
+        if row[0].value == "u_staff"
+    )
+    assert summary_name_cell.value.startswith("'=")
+    assert summary_name_cell.data_type == "s"
+    formula_reason_cell = next(
+        row[10]
+        for row in ws_time.iter_rows(min_row=2)
+        if row[10].value == "'@SUM(A1:A2)"
+    )
+    assert formula_reason_cell.data_type == "s"
+
+    r_audit_export = admin_client.get("/admin/audit/export")
+    assert r_audit_export.status_code == 200
+    audit_wb = load_workbook(io.BytesIO(r_audit_export.content))
+    audit_ws = audit_wb["Audit Logs"]
+    formula_audit_row = next(
+        row
+        for row in audit_ws.iter_rows(min_row=2)
+        if row[4].value == "TEST_FORMULA_EXPORT"
+    )
+    assert formula_audit_row[6].value == "'+SUM(A1:A2)"
+    assert formula_audit_row[7].value == "'-1"
+    assert formula_audit_row[8].value == "'@SUM(A1:A2)"
+    assert all(formula_audit_row[index].data_type == "s" for index in (6, 7, 8))
+
+    db = SessionLocal()
+    formula_user = db.query(models.Users).filter(models.Users.user_id == "u_staff").one()
+    formula_leave = db.query(models.Leaves).filter(models.Leaves.id == formula_leave_id).one()
+    formula_user.user_name = original_formula_user_name
+    formula_leave.reason = original_formula_reason
+    db.query(models.AuditLogs).filter(models.AuditLogs.id == formula_audit_id).delete()
+    db.commit()
+    db.close()
 
     print("  -> PASS: Excel data type and formatting verified successfully.")
 
@@ -1324,11 +1386,29 @@ def main():
     db.close()
     print("  -> PASS: Notification 30-day age cleanup verified.")
 
-    print("[CASE 29] Notification DOM XSS Guard")
+    print("[CASE 29] Notification and Toast DOM XSS Guard")
     base_template = (PROJECT_ROOT / "src" / "templates" / "base.html").read_text(encoding="utf-8")
     assert "message.textContent = String(n.message ?? '')" in base_template
     assert "${n.message}" not in base_template
-    print("  -> PASS: Notification messages are rendered as text, not HTML.")
+    assert "messageElement.textContent = String(message ?? '')" in base_template
+    assert "toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;" not in base_template
+    print("  -> PASS: Notification and toast messages are rendered as text, not HTML.")
+
+    print("[CASE 30] Leave API Internal Error Disclosure Guard")
+    from src.app.services import leave_service
+
+    original_leave_submit = leave_service.validate_and_apply_leave
+    leave_service.validate_and_apply_leave = lambda **_kwargs: (_ for _ in ()).throw(
+        RuntimeError("internal database path must stay private")
+    )
+    try:
+        internal_error_response = staff_client_v0.post("/api/user/leave", data={"date_str": d1.isoformat()})
+    finally:
+        leave_service.validate_and_apply_leave = original_leave_submit
+    assert internal_error_response.status_code == 500
+    assert internal_error_response.json()["message"] == "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+    assert "internal database path" not in internal_error_response.text
+    print("  -> PASS: Internal exception details are logged but not exposed.")
 
     print("\n[COMPLETE] All key features verified successfully.")
     db = SessionLocal()

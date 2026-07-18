@@ -256,14 +256,14 @@ def admin_audit_export(
         ws.append(
             [
                 utils.format_datetime_business(log.timestamp, "%Y-%m-%d %H:%M:%S"),
-                log.actor_id or "",
-                actor_name,
-                actor_dept,
-                log.action,
-                action_label,
-                target,
-                log.old_data,
-                log.new_data,
+                utils.sanitize_excel_text(log.actor_id),
+                utils.sanitize_excel_text(actor_name),
+                utils.sanitize_excel_text(actor_dept),
+                utils.sanitize_excel_text(log.action),
+                utils.sanitize_excel_text(action_label),
+                utils.sanitize_excel_text(target),
+                utils.sanitize_excel_text(log.old_data),
+                utils.sanitize_excel_text(log.new_data),
             ]
         )
 
