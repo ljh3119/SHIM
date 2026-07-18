@@ -16,12 +16,14 @@
 ## 백업과 복구
 `src/app/services/ops.py`가 운영 안전망을 담당합니다.
 - 백업 복사 전에 WAL checkpoint 수행
-- 같은 디렉터리의 임시 파일에 백업한 뒤 `PRAGMA quick_check;` 통과 시 `os.replace`로 최종 `.bak`를 원자적으로 생성
-- 손상 백업은 `.invalid`로 격리하고 건강한 백업만 회전·최근성 판단·`last_backup_count` 집계에 포함
-- 삭제 실패 파일은 목록에서 임의로 제외하지 않고 실제 건강한 백업 수를 다시 집계
+- 백업은 같은 디렉터리의 임시 `.tmp` 파일로 만든 뒤 `PRAGMA quick_check;`를 통과하면 `os.replace`로 최종 `.bak`를 원자적으로 교체합니다.
+- 손상 백업은 `.invalid`로 격리하고, 건강한 백업만 회전·최근성 판단·`last_backup_count` 집계에 포함합니다.
+- 삭제 실패 파일은 목록에서 임의로 제외하지 않고 실제 건강한 백업 수를 다시 집계합니다.
 - `PRAGMA quick_check;`를 통한 손상 탐지
 - 손상된 DB 및 관련 WAL/SHM 파일 격리
 - 손상이 감지되면 사용 가능한 최신 백업에서 복원
+
+최근 리팩터링은 백업 생성과 검증을 분리해, 실패한 백업이 최종 파일명으로 남지 않도록 했습니다.
 
 중요한 운영 소스:
 - `src/app/services/ops.py`

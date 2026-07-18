@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-07-15T13:51:12.635Z",
+  "updatedAt": "2026-07-18T11:58:20.523Z",
   "command": "update",
-  "gitHead": "d324add2641f5b3b72d9c20027314fc807b1ca08",
-  "model": "openai/gpt-5.4-mini"
+  "gitHead": "e802053dd9df456d8f40a2cbff508bee6f10949a",
+  "model": "qwen/qwen3-coder:free"
 }
