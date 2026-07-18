@@ -7,6 +7,7 @@ import sys
 import tempfile
 from datetime import date, timedelta
 from pathlib import Path
+from sqlalchemy.exc import SQLAlchemyError
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -81,6 +82,24 @@ def main() -> int:
             leave_policy.get_system_settings(db, force_reload=True)
 
             basic_user = users[0]
+            class BrokenAllocationDb:
+                rollback_called = False
+
+                def query(self, *_args, **_kwargs):
+                    raise SQLAlchemyError("allocation lookup failed")
+
+                def rollback(self):
+                    self.rollback_called = True
+
+            broken_db = BrokenAllocationDb()
+            try:
+                leave_service.resolve_user_yearly_allocated_hours(broken_db, basic_user, 2030)
+            except SQLAlchemyError:
+                pass
+            else:
+                raise AssertionError("연도별 배정 조회 오류를 기본값으로 숨기면 안 됩니다.")
+            assert not broken_db.rollback_called
+
             message = leave_service.validate_and_apply_leave(
                 db,
                 basic_user,
@@ -126,6 +145,25 @@ def main() -> int:
                 models.Leaves.date == date(2030, 2, 4),
             ).one()
             assert full_day.snapshot_deduction_hours == 8.0
+            leave_service.validate_and_apply_leave(
+                db, basic_user, "2030-02-06", "09:00", "10:00", True, "가" * 500
+            )
+            accepted_reason = db.query(models.Leaves).filter(
+                models.Leaves.user_id == basic_user.user_id,
+                models.Leaves.date == date(2030, 2, 6),
+            ).one()
+            assert len(accepted_reason.reason) == 500
+
+            _expect_validation_error(
+                lambda: leave_service.validate_and_apply_leave(
+                    db, basic_user, "2030-02-07", "09:00", "10:00", True, "가" * 501
+                )
+            )
+            assert db.query(models.Leaves).filter(
+                models.Leaves.user_id == basic_user.user_id,
+                models.Leaves.date == date(2030, 2, 7),
+            ).count() == 0
+
 
             setting.lunch_start_minute = None
             setting.lunch_end_minute = None
@@ -166,6 +204,31 @@ def main() -> int:
             )
 
             db.commit()
+            before_error_count = db.query(models.Leaves).filter(
+                models.Leaves.user_id == basic_user.user_id,
+            ).count()
+            original_allocation_resolver = leave_service.resolve_user_yearly_allocated_hours
+
+            def raise_allocation_error(*_args, **_kwargs):
+                raise SQLAlchemyError("internal allocation failure")
+
+            leave_service.resolve_user_yearly_allocated_hours = raise_allocation_error
+            try:
+                try:
+                    leave_service.validate_and_apply_leave(
+                        db, basic_user, "2030-04-02", "09:00", "10:00", True, ""
+                    )
+                except SQLAlchemyError:
+                    pass
+                else:
+                    raise AssertionError("배정 조회 오류가 신청 성공으로 처리되면 안 됩니다.")
+            finally:
+                leave_service.resolve_user_yearly_allocated_hours = original_allocation_resolver
+
+            assert db.query(models.Leaves).filter(
+                models.Leaves.user_id == basic_user.user_id,
+            ).count() == before_error_count
+
             race_barrier = Barrier(2)
 
             def submit_race_request() -> str:

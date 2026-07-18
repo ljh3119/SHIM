@@ -38,6 +38,15 @@ def main() -> int:
             assert generated_key != PUBLIC_FALLBACK_KEY
             assert secret_file.exists()
             assert auth._resolve_secret_key() == generated_key
+            assert auth.ALGORITHM == "HS256"
+            wrong_algorithm_token = auth.jwt.encode(
+                {"sub": "admin", "token_version": 0},
+                generated_key,
+                algorithm="HS384",
+            )
+            wrong_algorithm_request = SimpleNamespace(cookies={"access_token": wrong_algorithm_token})
+            assert auth.get_payload_from_token(wrong_algorithm_request) is None
+
 
             forged_token = auth.jwt.encode(
                 {"sub": "admin", "token_version": 0},

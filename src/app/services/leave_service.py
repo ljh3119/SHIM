@@ -1,10 +1,10 @@
 from datetime import datetime, date as date_cls
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
-from sqlalchemy.exc import SQLAlchemyError
 
 from .. import models, utils
 from .leave_policy import (
+    LEAVE_REASON_MAX_LENGTH,
     LeaveInputValidationError,
     build_snapshot_from_timerange,
     resolve_time_policy_setting,
@@ -12,15 +12,12 @@ from .leave_policy import (
 )
 
 def resolve_user_yearly_allocated_hours(db: Session, user: models.Users, year: int) -> int:
-    try:
-        allocation = db.query(models.UserYearlyLeaveAllocations).filter(
-            models.UserYearlyLeaveAllocations.user_id == user.user_id,
-            models.UserYearlyLeaveAllocations.year == year
-        ).first()
-        if allocation:
-            return int(allocation.allocated_hours)
-    except SQLAlchemyError:
-        db.rollback()
+    allocation = db.query(models.UserYearlyLeaveAllocations).filter(
+        models.UserYearlyLeaveAllocations.user_id == user.user_id,
+        models.UserYearlyLeaveAllocations.year == year
+    ).first()
+    if allocation:
+        return int(allocation.allocated_hours)
     return int(user.total_leave_hours or 0)
 
 def validate_and_apply_leave(
@@ -32,8 +29,12 @@ def validate_and_apply_leave(
     is_deductive: bool,
     reason: str,
 ) -> str:
+    reason = (reason or "").strip()
+    if len(reason) > LEAVE_REASON_MAX_LENGTH:
+        raise LeaveInputValidationError(f"신청 사유는 최대 {LEAVE_REASON_MAX_LENGTH}자까지 입력할 수 있습니다.")
+
     # 비차감 신청 시 사유 필수 체크
-    if not is_deductive and not (reason and reason.strip()):
+    if not is_deductive and not reason:
         raise LeaveInputValidationError("연차 비차감 신청 시 사유를 입력해 주세요.")
 
     start_time = (start_time or "").strip()
@@ -189,7 +190,7 @@ def validate_and_apply_leave(
                 status=initial_status,
                 year=req_date.year,
                 is_deductive=is_deductive,
-                reason=reason.strip() if reason else None
+                reason=reason or None
             )
             db.add(new_leave)
 
@@ -231,6 +232,6 @@ def validate_and_apply_leave(
     except LeaveInputValidationError:
         db.rollback()
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise RuntimeError(f"서버 오류: {str(e)}")
+        raise

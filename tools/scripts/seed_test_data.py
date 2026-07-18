@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.app import models, auth, database
+from src.app import models, auth, database, utils
 from src.app.database import SessionLocal, engine
 
 from sqlalchemy import text
@@ -164,6 +164,7 @@ def seed_data(reset: bool = False):
             exists_audit = db.query(models.AuditLogs).filter(models.AuditLogs.action == action_name).first()
             if not exists_audit:
                 kr_holidays = holidays.country_holidays("KR", years=[year], language="ko")
+                utils.add_constitution_day_holidays(kr_holidays, year)
                 for holiday_date, holiday_name in kr_holidays.items():
                     normalized_name = compact_kr_holiday_name(holiday_name)
                     exists_holiday = db.query(models.Holidays).filter(models.Holidays.date == holiday_date).first()
@@ -181,7 +182,7 @@ def seed_data(reset: bool = False):
                         action=action_name,
                         target_info=f"HolidaySeed:{year}",
                         old_data="None",
-                        new_data="KR holiday seed incl. May 1 Labor Day",
+                        new_data="KR holiday seed incl. May 1 Labor Day and Constitution Day from 2026",
                         timestamp=datetime.now(timezone.utc)
                     )
                 )

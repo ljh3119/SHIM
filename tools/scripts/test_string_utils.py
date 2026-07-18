@@ -7,7 +7,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.app.utils import mask_name
+from src.app.utils import mask_name, sanitize_excel_text
 
 class TestMaskName(unittest.TestCase):
     """utils.py의 mask_name 개인정보 마스킹 로직을 검증하는 단위 테스트 스위트"""
@@ -39,6 +39,20 @@ class TestMaskName(unittest.TestCase):
         self.assertEqual(mask_name("John Doe"), "J**n D*e")
         self.assertEqual(mask_name("Hong Gil Dong"), "H**g G*l D**g")
         self.assertEqual(mask_name("A B C"), "A B C")  # 외자 단어들의 연속 조합
+
+
+class TestSanitizeExcelText(unittest.TestCase):
+    def test_formula_prefixes_are_exported_as_text(self):
+        from openpyxl import Workbook
+
+        sheet = Workbook().active
+        for index, raw in enumerate(("=1+1", "+1", "-1", "@SUM(A1)", "\t=1", "\r=1", "\n=1"), 1):
+            cell = sheet.cell(row=index, column=1, value=sanitize_excel_text(raw))
+            self.assertEqual(cell.data_type, "s")
+            self.assertEqual(cell.value, f"'{raw}")
+
+        self.assertEqual(sanitize_excel_text("일반 사유"), "일반 사유")
+        self.assertEqual(sanitize_excel_text(None), "")
 
 if __name__ == "__main__":
     unittest.main()

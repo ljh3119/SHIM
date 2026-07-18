@@ -369,7 +369,7 @@
                         </div>
                         <div id="timeline_reason_container">
                             <label for="timeline_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span id="timeline_reason_required_star" class="text-dense-danger hidden">*</span></label>
-                            <textarea id="timeline_reason" name="reason" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
+                            <textarea id="timeline_reason" name="reason" maxlength="500" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                         </div>
                         <div id="timeline_time_input_container">
                             <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
@@ -1026,7 +1026,11 @@
         if (type === 'warning') icon = '⚠️';
         if (type === 'error') icon = '❌';
         
-        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+        const iconElement = document.createElement('span');
+        iconElement.textContent = icon;
+        const messageElement = document.createElement('span');
+        messageElement.textContent = String(message ?? '');
+        toast.append(iconElement, messageElement);
         container.appendChild(toast);
         
         setTimeout(() => {
