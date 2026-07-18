@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 
 from src.app import models, utils
 from src.app.database import get_db
@@ -234,11 +235,14 @@ def admin_audit_export(
         start_date=s_date,
         end_date=e_date,
     )
-    logs = query.order_by(models.AuditLogs.timestamp.desc()).all()
+    logs = (
+        query
+        .order_by(models.AuditLogs.timestamp.desc())
+        .yield_per(500)
+    )
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Audit Logs"
+    wb = Workbook(write_only=True)
+    ws = wb.create_sheet(title="Audit Logs")
     headers = ["시각", "수행자(ID)", "수행자(이름)", "수행자 소속", "액션(코드)", "액션(내용)", "대상 정보", "이전 데이터", "이후 데이터"]
     ws.append(headers)
 
@@ -253,19 +257,25 @@ def admin_audit_export(
         action_label = get_audit_action_label(log.action)
         target = get_audit_target_label(log.target_info) or (log.target_info or "")
 
-        ws.append(
-            [
-                utils.format_datetime_business(log.timestamp, "%Y-%m-%d %H:%M:%S"),
-                utils.sanitize_excel_text(log.actor_id),
-                utils.sanitize_excel_text(actor_name),
-                utils.sanitize_excel_text(actor_dept),
-                utils.sanitize_excel_text(log.action),
-                utils.sanitize_excel_text(action_label),
-                utils.sanitize_excel_text(target),
-                utils.sanitize_excel_text(log.old_data),
-                utils.sanitize_excel_text(log.new_data),
-            ]
-        )
+        row = []
+        if log.timestamp:
+            cell_timestamp = WriteOnlyCell(ws, value=utils.to_business_naive(log.timestamp))
+            cell_timestamp.number_format = 'yyyy-mm-dd hh:mm:ss'
+            row.append(cell_timestamp)
+        else:
+            row.append("")
+
+        row.extend([
+            utils.sanitize_excel_text(log.actor_id),
+            utils.sanitize_excel_text(actor_name),
+            utils.sanitize_excel_text(actor_dept),
+            utils.sanitize_excel_text(log.action),
+            utils.sanitize_excel_text(action_label),
+            utils.sanitize_excel_text(target),
+            utils.sanitize_excel_text(log.old_data),
+            utils.sanitize_excel_text(log.new_data),
+        ])
+        ws.append(row)
 
     out = io.BytesIO()
     wb.save(out)
