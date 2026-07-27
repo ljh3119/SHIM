@@ -1,6 +1,6 @@
 # 쉼(休) SHIM (Smart Holiday Information Management) / 연차 관리 시스템
 
-**릴리스 버전:** 1.9.4
+**릴리스 버전:** 1.9.5
 
 폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
 
@@ -105,7 +105,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.9.4 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.9.5 -t shim:latest .
 
 # 컨테이너 실행
 
@@ -158,8 +158,8 @@ docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | 로컬 기본 경로 `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.4` | 릴리즈 시 필수 실행 |
-| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.4 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.5` | 릴리즈 시 필수 실행 |
+| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.5 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
 | **빠른 회귀 검사** | `npm test` | 핵심 검사, 약 2분 |

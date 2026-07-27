@@ -1,6 +1,6 @@
 {
   "name": "shim",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "description": "쉼(休) SHIM (Smart Holiday Information Management) - 폐쇄망용 초경량 연차 관리 시스템",
   "main": "index.js",
   "scripts": {
