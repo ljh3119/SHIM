@@ -1,5 +1,5 @@
 {% set hide_base_sidebar = true %}
-{% extends "base.html" %}
+{% extends "partials/fragment_base.html" if desktop_partial|default(false) else "base.html" %}
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours %}
@@ -101,6 +101,7 @@
 </script>
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
+{% if desktop_partial|default(false) %}
     <!-- Header Greeting for PC only (hidden in mobile as we have greeting inside the mobile hub card) -->
     <div class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -134,7 +135,7 @@
 
             <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
                 <!-- Header Controls Inside Card -->
-                <div class="mb-4 flex items-center justify-between border-b pb-4">
+                <div class="mb-4 flex items-center justify-between border-b border-dense-line pb-4">
                     <div class="flex items-center gap-4">
                         <div id="monthNavWrapper" class="flex items-center gap-2">
                             <button type="button" onclick="prevMonth()" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
@@ -191,7 +192,7 @@
 
                         <div class="grid grid-cols-7 gap-1.5">
                             {% for _ in range(month_meta.offset) %}
-                            <div class="h-32 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
+                            <div class="h-32 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft"></div>
                             {% endfor %}
 
                             {% for day in range(1, month_meta.num_days + 1) %}
@@ -211,7 +212,7 @@
                             <button type="button"
                                  id="day-btn-monthly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                  {% if day_leaves_exist %}data-has-leave="true"{% endif %}
-                                 class="h-32 w-full rounded-xl border p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}border-dense-blue/20 bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}border-dense-line bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60 opacity-60{% endif %}"
+                                 class="h-32 w-full rounded-xl border border-dense-line p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }}{% else %}클릭하여 연차 신청 (다중 선택 모드 시 선택){% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
@@ -308,7 +309,7 @@
                             <button type="button"
                                  id="day-btn-yearly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                  {% if yearly_leaves_exist %}data-has-leave="true"{% endif %}
-                                 class="h-10 w-full rounded border p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}border-dense-line-strong bg-dense-blue-soft{% else %}border-dense-line bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed opacity-70{% endif %}"
+                                 class="h-10 w-full rounded border border-dense-line p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}bg-dense-blue-soft{% else %}bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
@@ -340,6 +341,11 @@
             </div>
         </div>
     </div>
+</div>
+{% else %}
+    <div id="calendar-desktop-container-g" class="hidden lg:block" aria-live="polite">
+        <div class="rounded-xl border border-dense-line bg-dense-surface p-8 text-center text-sm font-bold text-dense-muted">PC용 연간 캘린더를 불러오는 중입니다.</div>
+    </div>
 
     <!-- 2. Mobile View (Narrow Screen) -->
     <div class="block lg:hidden space-y-4">
@@ -353,19 +359,19 @@
             <!-- Stats Grid -->
             <div class="grid grid-cols-4 gap-2">
                 <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
-                    <span class="text-[9px] text-dense-muted font-bold">총 연차</span>
+                    <span class="text-xs text-dense-muted font-bold">총 연차</span>
                     <span class="text-xs font-extrabold">{{ fmt_hours(total_allocated_hours) }}h</span>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
-                    <span class="text-[9px] text-dense-muted font-bold">사용</span>
+                    <span class="text-xs text-dense-muted font-bold">사용</span>
                     <span class="text-xs font-extrabold text-dense-blue">{{ fmt_hours(used_hours) }}h</span>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
-                    <span class="text-[9px] text-dense-muted font-bold">잔여</span>
+                    <span class="text-xs text-dense-muted font-bold">잔여</span>
                     <span class="text-xs font-extrabold text-dense-green">{{ fmt_hours(remaining_hours) }}h</span>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
-                    <span class="text-[9px] text-dense-muted font-bold">대기</span>
+                    <span class="text-xs text-dense-muted font-bold">대기</span>
                     <span class="text-xs font-extrabold text-dense-amber">{{ pending_team_leaves|length }}건</span>
                 </div>
             </div>
@@ -374,20 +380,27 @@
             <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 shadow-sm">
                 <h3 class="text-xs font-extrabold mb-2 text-dense-text">⚡ 퀵 액션</h3>
                 {% set show_team_cal = team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
-                <div class="grid {% if show_team_cal %}grid-cols-3{% else %}grid-cols-2{% endif %} gap-2.5">
-                    <div class="quick-card rounded-xl border border-dense-blue/20 bg-gradient-to-br from-dense-blue-soft to-white p-2.5 text-center" onclick="toggleQuickApplyPanelG()">
-                        <h4 class="text-[11px] font-bold text-dense-blue">📅 연차 신청</h4>
-                        <p class="text-[8px] text-dense-muted mt-0.5">간편 연차 신청</p>
-                    </div>
+                {% set show_approvals = user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
+                <div class="grid {% if show_team_cal and show_approvals %}grid-cols-2{% elif show_team_cal or show_approvals %}grid-cols-3{% else %}grid-cols-2{% endif %} gap-2.5">
+                    <button type="button" class="quick-card flex min-h-[4.75rem] w-full flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface-soft/60 p-2.5 text-center transition-colors hover:border-dense-blue/40 hover:bg-dense-blue-soft/30 focus:outline-none focus:ring-2 focus:ring-dense-blue/20" onclick="toggleQuickApplyPanelG()">
+                        <h4 class="text-sm font-extrabold text-dense-nav-text">📅 연차 신청</h4>
+                        <p class="text-xs text-dense-muted mt-0.5">간편 연차 신청</p>
+                    </button>
                     {% if show_team_cal %}
-                    <a href="/user/team-calendar" class="quick-card rounded-xl border border-dense-green/20 bg-gradient-to-br from-dense-green-soft to-white p-2.5 text-center">
-                        <h4 class="text-[11px] font-bold text-dense-green">👥 팀 일정 조회</h4>
-                        <p class="text-[8px] text-dense-muted mt-0.5">일별 부재자 명단</p>
+                    <a href="/user/team-calendar" class="quick-card flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface-soft/60 p-2.5 text-center transition-colors hover:border-dense-blue/40 hover:bg-dense-blue-soft/30 focus:outline-none focus:ring-2 focus:ring-dense-blue/20">
+                        <h4 class="text-sm font-extrabold text-dense-nav-text">👥 팀 일정 조회</h4>
+                        <p class="text-xs text-dense-muted mt-0.5">일별 부재자 명단</p>
                     </a>
                     {% endif %}
-                    <a href="/user/history" class="quick-card rounded-xl border bg-gradient-to-br from-dense-surface-soft to-white p-2.5 text-center">
-                        <h4 class="text-[11px] font-bold text-dense-muted">📋 전체 내역</h4>
-                        <p class="text-[8px] text-dense-muted mt-0.5">연차 내역 상세</p>
+                    {% if show_approvals %}
+                    <a href="/user/approvals" class="quick-card flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface-soft/60 p-2.5 text-center transition-colors hover:border-dense-blue/40 hover:bg-dense-blue-soft/30 focus:outline-none focus:ring-2 focus:ring-dense-blue/20">
+                        <h4 class="text-sm font-extrabold text-dense-nav-text">✅ 결재 관리</h4>
+                        <p class="text-xs text-dense-muted mt-0.5">신청 승인·반려</p>
+                    </a>
+                    {% endif %}
+                    <a href="/user/history" class="quick-card flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface-soft/60 p-2.5 text-center transition-colors hover:border-dense-blue/40 hover:bg-dense-blue-soft/30 focus:outline-none focus:ring-2 focus:ring-dense-blue/20">
+                        <h4 class="text-sm font-extrabold text-dense-nav-text">📋 전체 내역</h4>
+                        <p class="text-xs text-dense-muted mt-0.5">연차 내역 상세</p>
                     </a>
                 </div>
             </div>
@@ -398,26 +411,26 @@
                 <form id="easyApplyFormMobile" onsubmit="submitEasyApply('mobile'); return false;" class="space-y-2 text-xs font-bold">
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[10px]">시작일</label>
-                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
+                            <label class="text-xs">시작일</label>
+                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
                         </div>
                         <div>
-                            <label class="text-[10px]">종료일</label>
-                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="w-full border p-1 bg-dense-surface mt-1 rounded text-xs">
+                            <label class="text-xs">종료일</label>
+                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[9px]">시작</label>
-                            <select id="easy-start-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs" onchange="updateEstimatedTimeG('mobile')">
+                            <label class="text-xs">시작</label>
+                            <select id="easy-start-g_mobile" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
                                 {% for t in time_options %}
                                 <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px]">종료</label>
-                            <select id="easy-end-g_mobile" class="w-full border p-0.5 bg-dense-surface mt-1 rounded text-xs" onchange="updateEstimatedTimeG('mobile')">
+                            <label class="text-xs">종료</label>
+                            <select id="easy-end-g_mobile" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
                                 {% for t in time_options %}
                                 <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
                                 {% endfor %}
@@ -425,18 +438,42 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <input type="checkbox" id="easy-deductive-g_mobile" onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-3.5 w-3.5">
-                        <label for="easy-deductive-g_mobile" class="text-[10px] font-bold cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
+                        <input type="checkbox" id="easy-deductive-g_mobile" onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-5 w-5">
+                        <label for="easy-deductive-g_mobile" class="text-xs font-bold cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
                     </div>
                     <div id="easy-reason-container-g_mobile">
-                        <label class="text-[10px] font-bold">신청 사유 <span id="easy-reason-star-g_mobile" class="text-dense-danger hidden">*</span></label>
-                        <textarea id="easy-reason-g_mobile" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="w-full border rounded p-1 bg-dense-surface mt-1 text-xs h-12 resize-none"></textarea>
+                        <label class="text-xs font-bold">신청 사유 <span id="easy-reason-star-g_mobile" class="text-dense-danger hidden">*</span></label>
+                        <textarea id="easy-reason-g_mobile" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded border border-dense-line-strong bg-dense-surface p-1 text-xs"></textarea>
                     </div>
-                    <div id="easy-calc-g_mobile" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
-                    <button type="submit" id="easy-submit-btn-g_mobile" class="w-full bg-dense-blue py-1.5 rounded-lg text-white font-bold text-[11px] hover:bg-dense-blue/90 transition-colors">신청 완료</button>
+                    <div id="easy-calc-g_mobile" class="text-xs font-bold text-dense-blue">예상 차감 시간: 8시간</div>
+                    <button type="submit" id="easy-submit-btn-g_mobile" class="min-h-11 w-full bg-dense-blue py-2 rounded-lg text-white font-bold text-sm hover:bg-dense-blue/90 transition-colors">신청 완료</button>
                 </form>
             </div>
 
+            <!-- Compact Mobile Month Calendar -->
+            <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 shadow-sm">
+                <div class="mb-3 flex items-center justify-between">
+                    <h3 class="text-sm font-extrabold text-dense-text">📅 월간 캘린더</h3>
+                    <span class="text-xs font-bold text-dense-muted">날짜를 눌러 신청·상세 확인</span>
+                </div>
+                <div class="mb-3 grid grid-cols-[2.75rem_1fr_1fr_2.75rem] items-center gap-2">
+                    <button type="button" onclick="moveMobileCalendarMonthG(-1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold" aria-label="이전 달">‹</button>
+                    <select id="mobile-calendar-year-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-lg border border-dense-line bg-dense-surface px-2 text-sm font-bold">
+                        {% for y in year_options %}<option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>{% endfor %}
+                    </select>
+                    <select id="mobile-calendar-month-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-lg border border-dense-line bg-dense-surface px-2 text-sm font-bold">
+                        {% for m in range(1, 13) %}<option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>{% endfor %}
+                    </select>
+                    <button type="button" onclick="moveMobileCalendarMonthG(1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold" aria-label="다음 달">›</button>
+                </div>
+                <div class="mb-1 grid grid-cols-7 gap-1 text-center text-xs font-bold text-dense-muted">
+                    <span class="text-dense-danger">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="text-dense-danger">토</span>
+                </div>
+                <div id="mobile-calendar-grid-g" class="grid grid-cols-7 gap-1" aria-live="polite"></div>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-dense-muted">
+                    <span>승인</span><span>결재 대기</span><span>공가/출장</span><span>주말·공휴일 선택 불가</span>
+                </div>
+            </div>
             <!-- Lists Widget -->
             <div class="space-y-3.5">
                 <!-- Mobile Approvals -->
@@ -444,20 +481,20 @@
                 <div class="rounded-xl border border-dense-line bg-dense-surface p-3.5 shadow-sm">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-extrabold text-dense-text">👥 팀원 결재 대기 목록</h3>
-                        <span class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-[9px] font-extrabold">{{ pending_team_leaves|length }}</span>
+                        <span class="px-1.5 py-0.2 rounded-full bg-dense-blue text-white text-xs font-extrabold">{{ pending_team_leaves|length }}</span>
                     </div>
                     <div id="approvalListG_mobile" class="space-y-2 text-xs">
                         {% for leave in pending_team_leaves[:3] %}
                         <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
                             <div>
                                 <span class="font-bold text-dense-text">{{ leave.user.user_name }}</span>
-                                <span class="text-[10px] text-dense-muted ml-1">{{ leave.date }}</span>
-                                <p class="text-[10px] text-dense-muted mt-0.5">사유: {{ leave.reason or '—' }}</p>
+                                <span class="text-xs text-dense-muted ml-1">{{ leave.date }}</span>
+                                <p class="text-xs text-dense-muted mt-0.5">사유: {{ leave.reason or '—' }}</p>
                             </div>
-                            <a href="/user/approvals" class="text-[10px] text-dense-blue font-bold hover:underline">결재 →</a>
+                            <a href="/user/approvals" class="text-xs text-dense-blue font-bold hover:underline">결재 →</a>
                         </div>
                         {% else %}
-                        <p class="text-[10px] text-dense-muted text-center py-2">대기 중인 결재가 없습니다.</p>
+                        <p class="text-xs text-dense-muted text-center py-2">대기 중인 결재가 없습니다.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -474,7 +511,7 @@
                                     {% if not leave.is_deductive %}<span class="text-purple-600 mr-0.5">[공]</span>{% endif %}
                                     {{ leave.date }}
                                 </span>
-                                <span class="text-[10px] text-dense-muted ml-1">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
+                                <span class="text-xs text-dense-muted ml-1">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
                             </div>
                             <div>
                                 {% if leave.status == 'PENDING' %}
@@ -489,7 +526,7 @@
                             </div>
                         </div>
                         {% else %}
-                        <p class="text-[10px] text-dense-muted text-center py-2">신청 내역이 없습니다.</p>
+                        <p class="text-xs text-dense-muted text-center py-2">신청 내역이 없습니다.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -577,10 +614,10 @@
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                <button type="submit" form="calendarApplyForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="submit" form="calendarApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
                     신청하기
                 </button>
-                <button type="button" onclick="closeCalendarApplyModal()" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="button" onclick="closeCalendarApplyModal()" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto sm:text-sm">
                     취소
                 </button>
             </div>
@@ -589,6 +626,172 @@
 </div>
 
 <script>
+let mobileCalendarYearG = Number({{ selected_year }});
+let mobileCalendarMonthG = Number({{ selected_month }});
+let mobileCalendarDataG = null;
+let mobileCalendarLoadedG = false;
+let desktopCalendarLoadedG = false;
+const desktopCalendarMediaG = window.matchMedia('(min-width: 1024px)');
+
+function mobileCalendarMessageG(message, retry) {
+    const grid = document.getElementById('mobile-calendar-grid-g');
+    if (!grid) return;
+    const box = document.createElement('div');
+    box.className = 'col-span-7 rounded-lg border border-dense-line bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
+    const text = document.createElement('p');
+    text.textContent = message;
+    box.appendChild(text);
+    if (retry) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mt-3 min-h-11 rounded-lg bg-dense-blue px-4 text-sm font-bold text-white';
+        button.textContent = '다시 시도';
+        button.addEventListener('click', () => loadMobileCalendarG(mobileCalendarYearG, mobileCalendarMonthG));
+        box.appendChild(button);
+    }
+    grid.replaceChildren(box);
+}
+
+function mobileLeaveStatusLabelG(leave) {
+    if (!leave.is_deductive && !['CANCELED', 'REJECTED'].includes(leave.status)) return '공가';
+    if (leave.status === 'APPROVED') return '승인';
+    if (leave.status === 'PENDING') return '대기';
+    if (leave.status === 'REJECTED') return '반려';
+    return '취소';
+}
+
+function openMobileCalendarDayG(day, blocked) {
+    if (blocked || !mobileCalendarDataG) return;
+    const leaves = mobileCalendarDataG.days[String(day)] || [];
+    const dateStr = `${mobileCalendarYearG}-${String(mobileCalendarMonthG).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const leave = leaves.find(item => !['CANCELED', 'REJECTED'].includes(item.status)) || leaves[0];
+    if (!leave) {
+        openCalendarApplyModal(dateStr);
+        return;
+    }
+    openTimelineActionModal(
+        leave.id,
+        {{ user.user_name | tojson }},
+        {{ (user.team or '') | tojson }},
+        {{ (user.company or '') | tojson }},
+        dateStr,
+        `${leave.slot_label} (${leave.deduction_hours}h)`,
+        leave.is_deductive,
+        leave.status,
+        leave.reason,
+        leave.rejection_reason,
+        {{ user.user_id | tojson }}
+    );
+}
+
+function renderMobileCalendarG() {
+    const grid = document.getElementById('mobile-calendar-grid-g');
+    if (!grid || !mobileCalendarDataG) return;
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < mobileCalendarDataG.offset; i += 1) {
+        const spacer = document.createElement('span');
+        spacer.className = 'min-h-11 rounded-lg bg-dense-surface-soft/40';
+        fragment.appendChild(spacer);
+    }
+    for (let day = 1; day <= mobileCalendarDataG.days_in_month; day += 1) {
+        const weekday = (mobileCalendarDataG.offset + day - 1) % 7;
+        const holiday = mobileCalendarDataG.holidays[String(day)] || '';
+        const blocked = weekday === 0 || weekday === 6 || Boolean(holiday);
+        const leaves = mobileCalendarDataG.days[String(day)] || [];
+        const leave = leaves.find(item => !['CANCELED', 'REJECTED'].includes(item.status)) || leaves[0];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'min-h-11 min-w-0 rounded-lg border p-1 text-center text-xs font-bold transition-colors';
+        button.classList.add(blocked ? 'border-red-100' : 'border-dense-line');
+        button.classList.add(blocked ? 'bg-red-50' : 'bg-dense-surface');
+        if (blocked) button.classList.add('text-dense-danger', 'cursor-not-allowed');
+        if (leave) button.classList.add('ring-1', 'ring-dense-blue');
+        const dayText = document.createElement('span');
+        dayText.className = 'block text-sm';
+        dayText.textContent = String(day);
+        button.appendChild(dayText);
+        if (holiday) {
+            const holidayText = document.createElement('span');
+            holidayText.className = 'block truncate text-[10px]';
+            holidayText.textContent = holiday;
+            button.appendChild(holidayText);
+            button.title = holiday;
+        } else if (leave) {
+            const statusText = document.createElement('span');
+            statusText.className = 'block text-[10px] text-dense-blue';
+            statusText.textContent = mobileLeaveStatusLabelG(leave);
+            button.appendChild(statusText);
+        }
+        button.disabled = blocked;
+        button.addEventListener('click', () => openMobileCalendarDayG(day, blocked));
+        fragment.appendChild(button);
+    }
+    grid.replaceChildren(fragment);
+}
+
+async function loadMobileCalendarG(year, month) {
+    mobileCalendarYearG = Number(year);
+    mobileCalendarMonthG = Number(month);
+    mobileCalendarMessageG('월간 캘린더를 불러오는 중입니다.', false);
+    try {
+        const response = await fetch(`/api/user/calendar-month?year=${mobileCalendarYearG}&month=${mobileCalendarMonthG}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        mobileCalendarDataG = await response.json();
+        mobileCalendarLoadedG = true;
+        const yearSelect = document.getElementById('mobile-calendar-year-g');
+        const monthSelect = document.getElementById('mobile-calendar-month-g');
+        if (yearSelect) yearSelect.value = String(mobileCalendarYearG);
+        if (monthSelect) monthSelect.value = String(mobileCalendarMonthG);
+        const url = new URL(window.location.href);
+        url.searchParams.set('year', mobileCalendarYearG);
+        url.searchParams.set('month', mobileCalendarMonthG);
+        window.history.replaceState({}, '', url);
+        renderMobileCalendarG();
+    } catch (error) {
+        console.error('[SHIM personal mobile calendar load]', error);
+        mobileCalendarMessageG('월간 캘린더를 불러오지 못했습니다.', true);
+    }
+}
+
+function moveMobileCalendarMonthG(offset) {
+    let year = mobileCalendarYearG;
+    let month = mobileCalendarMonthG + offset;
+    if (month < 1) { month = 12; year -= 1; }
+    if (month > 12) { month = 1; year += 1; }
+    loadMobileCalendarG(year, month);
+}
+
+function changeMobileCalendarMonthG() {
+    const year = document.getElementById('mobile-calendar-year-g').value;
+    const month = document.getElementById('mobile-calendar-month-g').value;
+    loadMobileCalendarG(year, month);
+}
+
+async function loadCalendarDesktopG() {
+    if (desktopCalendarLoadedG) return;
+    const container = document.getElementById('calendar-desktop-container-g');
+    if (!container) return;
+    try {
+        const response = await fetch(`/user/calendar/desktop-partial?year={{ selected_year }}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        container.className = 'hidden lg:block';
+        container.innerHTML = await response.text();
+        desktopCalendarLoadedG = true;
+        showMonth(currentMonth);
+    } catch (error) {
+        console.error('[SHIM personal desktop calendar load]', error);
+        container.className = 'hidden lg:block rounded-xl border border-dense-line bg-dense-surface p-8 text-center text-sm font-bold text-dense-muted';
+        container.textContent = 'PC용 연간 캘린더를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+    }
+}
+
+function initializeCalendarResponsiveG() {
+    if (desktopCalendarMediaG.matches) loadCalendarDesktopG();
+    else if (!mobileCalendarLoadedG) loadMobileCalendarG(mobileCalendarYearG, mobileCalendarMonthG);
+}
+
+desktopCalendarMediaG.addEventListener('change', initializeCalendarResponsiveG);
+
 window.toggleQuickApplyPanelG = function() {
     const panel = document.getElementById('quickApplyPanelG');
     if (panel) {
@@ -596,12 +799,7 @@ window.toggleQuickApplyPanelG = function() {
     }
 };
 
-let currentMonth = new Date().getMonth() + 1;
-const systemYear = new Date().getFullYear();
-const selectedYearVal = Number({{ selected_year }});
-if (selectedYearVal !== systemYear) {
-    currentMonth = 1;
-}
+let currentMonth = Number({{ selected_month }});
 
 let currentDashboardLayout = 'monthly'; // default to monthly
 
@@ -646,7 +844,8 @@ function showMonth(m) {
     if (card) {
         card.classList.remove('hidden');
     }
-    document.getElementById('currentMonthLabel').textContent = `${selectedYearVal}년 ${m}월`;
+    const label = document.getElementById('currentMonthLabel');
+    if (label) label.textContent = `{{ selected_year }}년 ${m}월`;
     currentMonth = m;
 }
 
@@ -663,7 +862,7 @@ function nextMonth() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    showMonth(currentMonth);
+    initializeCalendarResponsiveG();
     
     // 키보드 숏컷 (ArrowLeft/ArrowRight)
     document.addEventListener('keydown', (e) => {
@@ -1616,5 +1815,5 @@ function handleTimelineCellClick(td) {
     }
 }
 </script>
+{% endif %}
 {% endblock %}
-}

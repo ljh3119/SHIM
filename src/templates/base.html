@@ -134,8 +134,8 @@
     {# Top bar only handles branding/account actions. #}
     <nav class="sticky top-0 z-50 border-b border-dense-line bg-dense-surface/95 backdrop-blur-sm shadow-sm">
         <div class="mx-auto flex h-16 max-w-[92rem] items-center justify-between px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center min-w-0">
-                <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/calendar{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
+            <div class="flex min-w-0 flex-1 items-center">
+                <a href="{% if admin %}/admin/dashboard{% elif request.cookies.get('access_token') %}/user/calendar{% else %}/{% endif %}" title="{{ product_display_name | default('SHIM') }}" class="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90 transition-opacity">
                     <div class="flex h-9 min-w-[2.25rem] max-w-[7rem] shrink-0 items-center justify-center rounded-lg bg-dense-blue px-1">
                         <span class="truncate text-center text-xs font-bold leading-tight text-white sm:text-sm">{{ brand_badge_display | default('S') }}</span>
                     </div>
@@ -147,11 +147,11 @@
                     </span>
                 </a>
             </div>
-            <div class="flex flex-shrink-0 items-center gap-3 sm:gap-4">
+            <div class="flex shrink-0 items-center gap-1 sm:gap-4">
                 {% if request.cookies.get('access_token') %}
                     <!-- Notification Bell -->
                     <div class="relative" id="shim-notification-bell-container">
-                        <button type="button" id="shim-notification-bell-btn" class="relative rounded-lg p-1.5 text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text transition-all focus:outline-none" onclick="toggleNotificationDropdown(event)">
+                        <button type="button" id="shim-notification-bell-btn" aria-label="알림" class="relative flex h-11 w-11 items-center justify-center rounded-lg p-1.5 text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text transition-all focus:outline-none" onclick="toggleNotificationDropdown(event)">
                             <svg class="h-5 w-5 stroke-current fill-none stroke-[2]" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -171,13 +171,20 @@
                     </div>
                 {% endif %}
                 {% if request.cookies.get('access_token') and admin %}
-                    <button type="button" onclick="window.shimModal.open('adminPwdModal', 'admin_current_password', this)" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
+                    <button type="button" onclick="window.shimModal.open('adminPwdModal', 'admin_current_password', this)" class="hidden text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap md:inline-flex">비밀번호 변경</button>
                 {% endif %}
                 {% if request.cookies.get('access_token') and not admin %}
-                    <button type="button" onclick="if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/calendar'}" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap">비밀번호 변경</button>
+                    <button type="button" onclick="if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/calendar'}" class="hidden text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors whitespace-nowrap md:inline-flex">비밀번호 변경</button>
                 {% endif %}
                 {% if request.cookies.get('access_token') %}
-                    <a href="/logout" class="text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors">로그아웃</a>
+                    <a href="/logout" class="hidden text-sm font-semibold text-dense-muted hover:text-dense-text transition-colors md:inline-flex">로그아웃</a>
+                    <div class="relative md:hidden" id="shim-account-menu-container">
+                        <button type="button" id="shim-account-menu-btn" class="flex h-11 w-11 items-center justify-center rounded-lg text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text" aria-label="계정 메뉴" aria-expanded="false" aria-controls="shim-account-menu" onclick="toggleShimAccountMenu(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-6 w-6" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></button>
+                        <div id="shim-account-menu" class="absolute right-0 z-50 mt-2 hidden w-48 max-w-[calc(100vw-2rem)] rounded-xl border border-dense-line bg-dense-surface p-2 shadow-lg" role="menu">
+                            <button type="button" role="menuitem" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/calendar'}{% endif %}; closeShimAccountMenu()" class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm font-bold text-dense-text hover:bg-dense-surface-soft">비밀번호 변경</button>
+                            <a href="/logout" role="menuitem" class="flex min-h-11 items-center rounded-lg px-3 text-sm font-bold text-dense-danger hover:bg-dense-danger-soft">로그아웃</a>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -193,12 +200,12 @@
 
 
             {% if is_default_password %}
-            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-center justify-between shadow-sm">
+            <div class="mb-4 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-base">⚠️</span>
                     <span><strong>보안 권고:</strong> 현재 기본 비밀번호(0000)를 사용 중입니다. 안전한 사용을 위해 비밀번호를 변경해 주세요.</span>
                 </div>
-                <button type="button" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}window.shimModal.open('pwdModal', 'current_password', this){% endif %}" class="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-amber-700 transition-colors shadow-sm whitespace-nowrap ml-2">비밀번호 변경</button>
+                <button type="button" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}window.shimModal.open('pwdModal', 'current_password', this){% endif %}" class="min-h-11 w-full shrink-0 rounded-lg bg-amber-600 px-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-amber-700 sm:ml-2 sm:w-auto">비밀번호 변경</button>
             </div>
             {% endif %}
             {% block content %}{% endblock %}
@@ -238,10 +245,10 @@
                     </form>
                 </div>
                 <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                    <button type="submit" form="adminPwdForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" form="adminPwdForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:w-auto sm:text-sm">
                         변경하기
                     </button>
-                    <button type="button" onclick="window.shimModal.close('adminPwdModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="button" onclick="window.shimModal.close('adminPwdModal')" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm">
                         취소
                     </button>
                 </div>
@@ -305,10 +312,10 @@
                     </form>
                 </div>
                 <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                    <button type="submit" form="userPwdForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" form="userPwdForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:w-auto sm:text-sm">
                         변경하기
                     </button>
-                    <button type="button" onclick="window.shimModal.close('pwdModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="button" onclick="window.shimModal.close('pwdModal')" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm">
                         취소
                     </button>
                 </div>
@@ -402,10 +409,10 @@
                     </form>
                 </div>
                 <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                    <button type="submit" form="timelineApplyForm" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" form="timelineApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
                         신청하기
                     </button>
-                    <button type="button" onclick="window.shimModal.close('timelineApplyModal')" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="button" onclick="window.shimModal.close('timelineApplyModal')" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto sm:text-sm">
                         취소
                     </button>
                 </div>
@@ -646,12 +653,12 @@
             if (status === 'PENDING') {
                 footer.innerHTML = `
                     <button type="button" id="actionCancelBtn" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">신청 취소</button>
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
                 `;
                 document.getElementById('actionCancelBtn').onclick = (e) => cancelTimelineLeave(leaveId, e.target);
             } else {
                 footer.innerHTML = `
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
                 `;
             }
         } else {
@@ -659,13 +666,13 @@
                 footer.innerHTML = `
                     <button type="button" id="actionApproveBtn" class="rounded-xl bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">승인하기</button>
                     <button type="button" id="actionRejectBtn" class="rounded-xl bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">반려하기</button>
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
                 `;
                 document.getElementById('actionApproveBtn').onclick = (e) => approveTimelineLeave(leaveId, e.target);
                 document.getElementById('actionRejectBtn').onclick = (e) => rejectTimelineLeave(leaveId, e.target);
             } else {
                 footer.innerHTML = `
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
                 `;
             }
         }
@@ -810,8 +817,8 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                                    <button type="button" id="shim-confirm-btn" class="inline-flex w-full justify-center rounded-xl px-4 py-2 text-base font-bold text-white shadow-sm sm:ml-3 sm:w-auto sm:text-sm"></button>
-                                    <button type="button" id="shim-confirm-cancel-btn" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                    <button type="button" id="shim-confirm-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2 text-base font-bold text-white shadow-sm sm:w-auto sm:text-sm"></button>
+                                    <button type="button" id="shim-confirm-cancel-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm"></button>
                                 </div>
                             </div>
                         </div>
@@ -831,9 +838,9 @@
                 cancelBtn.textContent = cancelText;
                 
                 if (destructive) {
-                    confirmBtn.className = 'inline-flex w-full justify-center rounded-xl bg-dense-danger px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-danger/90 sm:ml-3 sm:w-auto sm:text-sm';
+                    confirmBtn.className = 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-danger px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-danger/90 sm:w-auto sm:text-sm';
                 } else {
-                    confirmBtn.className = 'inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:ml-3 sm:w-auto sm:text-sm';
+                    confirmBtn.className = 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:w-auto sm:text-sm';
                 }
                 
                 const onConfirm = () => {
@@ -890,8 +897,8 @@
                                         </div>
                                     </div>
                                     <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                                        <button type="submit" id="shim-prompt-btn" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:ml-3 sm:w-auto sm:text-sm"></button>
-                                        <button type="button" id="shim-prompt-cancel-btn" class="mt-3 inline-flex w-full justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"></button>
+                                        <button type="submit" id="shim-prompt-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:w-auto sm:text-sm"></button>
+                                        <button type="button" id="shim-prompt-cancel-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm"></button>
                                     </div>
                                 </form>
                             </div>
@@ -1126,12 +1133,30 @@
     {% if request.cookies.get('access_token') %}
     <script>
     (function() {
+        window.closeShimAccountMenu = function() {
+            const menu = document.getElementById('shim-account-menu');
+            const button = document.getElementById('shim-account-menu-btn');
+            if (menu) menu.classList.add('hidden');
+            if (button) button.setAttribute('aria-expanded', 'false');
+        };
+        window.toggleShimAccountMenu = function(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('shim-account-menu');
+            const button = document.getElementById('shim-account-menu-btn');
+            if (!menu || !button) return;
+            const willOpen = menu.classList.contains('hidden');
+            const notification = document.getElementById('shim-notification-dropdown');
+            if (notification) notification.classList.add('hidden');
+            menu.classList.toggle('hidden', !willOpen);
+            button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        };
+
         let pollTimeoutId = null;
         let visibilityTimeoutId = null;
         let lastToggleTime = 0;
-        let currentDelay = 30000; // 기본 30초
+        let currentDelay = 30000;
         const minDelay = 30000;
-        const maxDelay = 300000; // 최대 5분
+        const maxDelay = 300000;
         let isFetching = false;
 
         window.toggleNotificationDropdown = function(event) {
@@ -1140,12 +1165,10 @@
             if (!dropdown) return;
             const isHidden = dropdown.classList.contains('hidden');
             if (isHidden) {
+                closeShimAccountMenu();
                 dropdown.classList.remove('hidden');
                 const now = Date.now();
-                if (now - lastToggleTime > 1000) {
-                    lastToggleTime = now;
-                    fetchNotifications(true);
-                }
+                if (now - lastToggleTime > 1000) { lastToggleTime = now; fetchNotifications(true); }
             } else {
                 dropdown.classList.add('hidden');
             }
@@ -1153,12 +1176,14 @@
 
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('shim-notification-dropdown');
-            const container = document.getElementById('shim-notification-bell-container');
-            if (dropdown && container && !container.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
+            const notificationContainer = document.getElementById('shim-notification-bell-container');
+            if (dropdown && notificationContainer && !notificationContainer.contains(e.target)) dropdown.classList.add('hidden');
+            const accountContainer = document.getElementById('shim-account-menu-container');
+            if (accountContainer && !accountContainer.contains(e.target)) closeShimAccountMenu();
         });
-
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeShimAccountMenu();
+        });
         async function fetchNotifications(force = false) {
             if (isFetching) return;
             if (!force && document.hidden) {

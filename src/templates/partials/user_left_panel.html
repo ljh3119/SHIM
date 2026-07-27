@@ -2,7 +2,7 @@
 <!-- Left Sidebar Panel (Option G Layout) -->
 <div class="w-full lg:w-[280px] shrink-0 space-y-4">
     <!-- Stats Summary Card -->
-    <div class="rounded-2xl border bg-dense-surface p-4 shadow-sm">
+    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
         <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
         <div class="space-y-1.5 text-xs font-bold">
             <div class="flex justify-between"><span>총 연차</span><span>{{ fmt_hours(total_allocated_hours) }}h</span></div>
@@ -15,23 +15,23 @@
     </div>
 
     <!-- Quick Apply Card -->
-    <div class="rounded-2xl border border-dense-blue/20 bg-dense-blue-soft/20 p-4 shadow-sm">
+    <div class="rounded-2xl border border-dense-line bg-dense-blue-soft/20 p-4 shadow-sm">
         <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
         <form id="easyApplyFormDesktop" onsubmit="submitEasyApply('desktop'); return false;" class="space-y-3">
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[10px] font-bold">시작일</label>
-                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('desktop') : updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('desktop') : updateTimeSelectorAvailabilityG('desktop')" class="w-full rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold">종료일</label>
-                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('desktop') : updateTimeSelectorAvailabilityG('desktop')" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold">
+                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('desktop') : updateTimeSelectorAvailabilityG('desktop')" class="w-full rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold">
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[9px] font-bold">시작</label>
-                    <select id="easy-start-g_desktop" name="start_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <select id="easy-start-g_desktop" name="start_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -39,7 +39,7 @@
                 </div>
                 <div>
                     <label class="text-[9px] font-bold">종료</label>
-                    <select id="easy-end-g_desktop" name="end_time" class="w-full border rounded p-1 bg-dense-surface text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <select id="easy-end-g_desktop" name="end_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -52,7 +52,7 @@
             </div>
             <div id="easy-reason-container-g_desktop">
                 <label class="text-[10px] font-bold">신청 사유 <span id="easy-reason-star-g_desktop" class="text-dense-danger hidden">*</span></label>
-                <textarea id="easy-reason-g_desktop" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="w-full border rounded-lg p-1.5 bg-dense-surface text-xs font-bold mt-1 h-12 resize-none"></textarea>
+                <textarea id="easy-reason-g_desktop" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold"></textarea>
             </div>
             <div id="easy-calc-g_desktop" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
             <button type="submit" id="easy-submit-btn-g_desktop" class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs hover:bg-dense-blue/90 transition-colors">신청하기</button>

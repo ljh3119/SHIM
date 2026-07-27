@@ -31,6 +31,12 @@ def _templates(request: Request):
     return request.app.state.templates
 
 
+def _validate_month(month: int | None) -> int | None:
+    if month is not None and not 1 <= month <= 12:
+        raise HTTPException(status_code=422, detail="month는 1~12만 허용합니다.")
+    return month
+
+
 def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
     now = utils.get_business_now()
     current_year = ctx.get("selected_year") or ctx.get("team_cal_year") or now.year
@@ -108,6 +114,7 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
             )
     ctx.update({
         "user_role": user_role,
+        "admin": user_role == "ADMIN",
         "is_approval_required": is_approval_required,
         "pending_team_leaves": pending_team_leaves,
         "team_calendar_visible": team_calendar_visible,
@@ -115,6 +122,27 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
     })
 
 
+
+
+def _get_visible_team_members(db: Session, user: models.Users, setting):
+    """팀 캘린더 HTML과 JSON에서 동일한 공개 범위를 사용합니다."""
+    user_role = getattr(user, "role", "STAFF") or "STAFF"
+    company_visible = bool(getattr(setting, "company_calendar_visible", False)) if setting else False
+    team_visible = bool(getattr(setting, "team_calendar_visible", True)) if setting else True
+
+    if user_role in ("PM", "ADMIN") or company_visible:
+        return db.query(models.Users).filter(
+            models.Users.is_active == True,
+            models.Users.role != "ADMIN",
+        ).all()
+    if team_visible and user.team:
+        return db.query(models.Users).filter(
+            models.Users.team == user.team,
+            models.Users.company == user.company,
+            models.Users.is_active == True,
+            models.Users.role != "ADMIN",
+        ).all()
+    return [user]
 
 @page_router.get("/dashboard")
 def redirect_old_dashboard(request: Request):
@@ -132,6 +160,33 @@ def user_calendar(
     db: Session = Depends(get_db),
     user: models.Users = Depends(get_current_user),
 ):
+    month = _validate_month(month)
+    if getattr(user, "role", "") == "ADMIN":
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
+
+    now = utils.get_business_now()
+    selected_year = year or now.year
+    leave_year_rows = db.query(models.Leaves.year).filter(models.Leaves.user_id == user.user_id).distinct().all()
+    ctx = {
+        "user": user,
+        "selected_year": selected_year,
+        "selected_month": month or now.month,
+        "current_year": now.year,
+        "year_options": utils.build_year_options(now.year, [row[0] for row in leave_year_rows]),
+        "desktop_partial": False,
+    }
+    _add_user_layout_context(db, user, ctx)
+    return _templates(request).TemplateResponse(request=request, name="user_calendar.html", context=ctx)
+
+@page_router.get("/calendar/desktop-partial", response_class=HTMLResponse)
+def user_calendar_desktop_partial(
+    request: Request,
+    year: int = None,
+    month: int = None,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
+    month = _validate_month(month)
     
     if getattr(user, "role", "") == "ADMIN":
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_302_FOUND)
@@ -278,19 +333,74 @@ def user_calendar(
     ctx["pending_team_leaves"] = pending_team_leaves
 
     _add_user_layout_context(db, user, ctx)
+    ctx["desktop_partial"] = True
     return _templates(request).TemplateResponse(request=request, name="user_calendar.html", context=ctx)
 
 @page_router.get("/team-calendar", response_class=HTMLResponse)
 def user_team_calendar(
+    request: Request,
+    year: int = None,
+    month: int = None,
+    sort: str = "name",
+    sort_dir: str = "asc",
+    layout: str = "timeline",
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
+    month = _validate_month(month)
+    setting = get_system_settings(db)
+    team_calendar_visible = bool(getattr(setting, "team_calendar_visible", True)) if setting else True
+    company_calendar_visible = bool(getattr(setting, "company_calendar_visible", False)) if setting else False
+    user_role = getattr(user, "role", "STAFF") or "STAFF"
+    if not team_calendar_visible and not company_calendar_visible and user_role not in ("PM", "ADMIN"):
+        return RedirectResponse(url="/user/calendar", status_code=status.HTTP_302_FOUND)
+
+    # 기존 내부 테스트·호출자는 완성된 PC 컨텍스트를 기대하므로 계약을 유지합니다.
+    if not isinstance(request, Request):
+        return user_team_calendar_desktop_partial(
+            request=request, year=year, month=month, sort=sort, sort_dir=sort_dir,
+            layout=layout, db=db, user=user,
+        )
+
+    now = utils.get_business_now()
+    display_year = year or now.year
+    display_month = month or now.month
+    leave_year_rows = db.query(models.Leaves.year).distinct().all()
+    ctx = {
+        "user": user,
+        "user_role": user_role,
+        "is_approval_required": bool(setting.is_approval_required) if setting else False,
+        "team_calendar_visible": team_calendar_visible,
+        "company_calendar_visible": company_calendar_visible,
+        "team_name": user.team if (user_role != "PM" and not company_calendar_visible) else "프로젝트",
+        "team_cal_year": display_year,
+        "team_cal_month": display_month,
+        "team_cal_num_days": cal_module.monthrange(display_year, display_month)[1],
+        "current_year": now.year,
+        "current_month": now.month,
+        "year_options": utils.build_year_options(now.year, [row[0] for row in leave_year_rows]),
+        "now": now,
+        "now_str": now.strftime("%Y-%m-%d %H:%M"),
+        "sort_key": sort,
+        "sort_dir": sort_dir,
+        "layout": layout,
+        "desktop_partial": False,
+    }
+    _add_user_layout_context(db, user, ctx)
+    return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
+
+@page_router.get("/team-calendar/desktop-partial", response_class=HTMLResponse)
+def user_team_calendar_desktop_partial(
     request: Request, 
     year: int = None, 
-    month: int = None, 
+    month: int = None,
     sort: str = "name",
     sort_dir: str = "asc",
     layout: str = "timeline",
     db: Session = Depends(get_db),
     user: models.Users = Depends(get_current_user)
 ):
+    month = _validate_month(month)
 
     setting = get_system_settings(db)
     team_calendar_visible = bool(getattr(setting, 'team_calendar_visible', True)) if setting else True
@@ -312,26 +422,7 @@ def user_team_calendar(
     month_start = date_cls(display_year, display_month, 1)
     month_end = date_cls(display_year, display_month, num_days)
 
-    team_members = []
-    
-    # 캘린더 공유 설정 적용
-    # 1) PM/ADMIN이거나 전사 캘린더 공유 활성화 시: 전사 데이터 조회
-    if user_role in ('PM', 'ADMIN') or company_calendar_visible:
-        team_members = db.query(models.Users).filter(
-            models.Users.is_active == True,
-            models.Users.role != "ADMIN",
-        ).all()
-    # 2) 팀 캘린더 공유 활성화 시: 본인 팀원만 조회 (회사와 팀이 모두 일치해야 함)
-    elif team_calendar_visible and user.team:
-        team_members = db.query(models.Users).filter(
-            models.Users.team == user.team,
-            models.Users.company == user.company,
-            models.Users.is_active == True,
-            models.Users.role != "ADMIN",
-        ).all()
-    # 3) 개인 전용 (scope == "none"): 본인만 보이도록 처리
-    else:
-        team_members = [user]
+    team_members = _get_visible_team_members(db, user, setting)
 
     team_leaves_map = {m.user_id: {} for m in team_members}
     member_stats = {}
@@ -468,7 +559,108 @@ def user_team_calendar(
         "sort_urls": sort_urls,
     }
     _add_user_layout_context(db, user, ctx)
+    ctx["desktop_partial"] = True
     return _templates(request).TemplateResponse(request=request, name="user_team_calendar.html", context=ctx)
+
+@api_router.get("/team-calendar")
+def user_team_calendar_data(
+    year: int = None,
+    month: int = None,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
+    month = _validate_month(month)
+    setting = get_system_settings(db)
+    team_visible = bool(getattr(setting, "team_calendar_visible", True)) if setting else True
+    company_visible = bool(getattr(setting, "company_calendar_visible", False)) if setting else False
+    user_role = getattr(user, "role", "STAFF") or "STAFF"
+    if not team_visible and not company_visible and user_role not in ("PM", "ADMIN"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="팀 일정 조회 권한이 없습니다.")
+
+    today = utils.get_business_today()
+    display_year = year or today.year
+    display_month = month or today.month
+    days_in_month = cal_module.monthrange(display_year, display_month)[1]
+    month_start = date_cls(display_year, display_month, 1)
+    month_end = date_cls(display_year, display_month, days_in_month)
+    members = _get_visible_team_members(db, user, setting)
+    member_map = {member.user_id: member for member in members}
+    days = {}
+    if member_map:
+        leaves = db.query(models.Leaves).filter(
+            models.Leaves.user_id.in_(list(member_map)),
+            models.Leaves.date >= month_start,
+            models.Leaves.date <= month_end,
+            models.Leaves.status.in_(["APPROVED", "PENDING"]),
+        ).order_by(models.Leaves.date.asc(), models.Leaves.user_id.asc()).all()
+        for leave in leaves:
+            member = member_map.get(leave.user_id)
+            if not member:
+                continue
+            days.setdefault(str(leave.date.day), []).append({
+                "user_name": member.user_name,
+                "team": member.team or "",
+                "company": member.company or "",
+                "status": leave.status,
+                "is_deductive": bool(leave.is_deductive),
+                "deduction_hours": float(leave.snapshot_deduction_hours or 0),
+                "slot_label": leave.snapshot_slot_label or "",
+                "reason": leave.reason or "",
+            })
+
+    return {
+        "year": display_year,
+        "month": display_month,
+        "days_in_month": days_in_month,
+        "business_today": today.isoformat(),
+        "days": days,
+    }
+
+
+@api_router.get("/calendar-month")
+def user_calendar_month_data(
+    year: int = None,
+    month: int = None,
+    db: Session = Depends(get_db),
+    user: models.Users = Depends(get_current_user),
+):
+    month = _validate_month(month)
+    today = utils.get_business_today()
+    display_year = year or today.year
+    display_month = month or today.month
+    first_weekday_monday0, days_in_month = cal_module.monthrange(display_year, display_month)
+    month_start = date_cls(display_year, display_month, 1)
+    month_end = date_cls(display_year, display_month, days_in_month)
+    holidays = db.query(models.Holidays).filter(
+        models.Holidays.date >= month_start,
+        models.Holidays.date <= month_end,
+    ).all()
+    leaves = db.query(models.Leaves).filter(
+        models.Leaves.user_id == user.user_id,
+        models.Leaves.date >= month_start,
+        models.Leaves.date <= month_end,
+    ).order_by(models.Leaves.date.asc(), models.Leaves.id.asc()).all()
+    days = {}
+    for leave in leaves:
+        days.setdefault(str(leave.date.day), []).append({
+            "id": leave.id,
+            "status": leave.status,
+            "is_deductive": bool(leave.is_deductive),
+            "deduction_hours": float(leave.snapshot_deduction_hours or 0),
+            "slot_label": leave.snapshot_slot_label or "",
+            "reason": leave.reason or "",
+            "rejection_reason": leave.rejection_reason or None,
+        })
+
+    return {
+        "year": display_year,
+        "month": display_month,
+        "days_in_month": days_in_month,
+        "offset": (first_weekday_monday0 + 1) % 7,
+        "business_today": today.isoformat(),
+        "holidays": {str(holiday.date.day): holiday.name for holiday in holidays},
+        "days": days,
+    }
 
 @page_router.get("/history", response_class=HTMLResponse)
 def user_history(
@@ -822,4 +1014,3 @@ def user_cancel_leave(
         db.rollback()
         return JSONResponse(status_code=500, content={"message": utils.format_db_error_message(e)})
     return JSONResponse(status_code=200, content={"message": "연차 신청이 취소되었습니다."})
-

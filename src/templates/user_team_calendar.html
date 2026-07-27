@@ -1,5 +1,5 @@
 {% set hide_base_sidebar = true %}
-{% extends "base.html" %}
+{% extends "partials/fragment_base.html" if desktop_partial|default(false) else "base.html" %}
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours %}
@@ -215,6 +215,7 @@
 </style>
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
+{% if desktop_partial|default(false) %}
     <!-- Header Greeting for PC only -->
     <div class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -466,169 +467,214 @@
             </div>
         </div>
     </div>
+</div>
+{% else %}
+    <div id="team-desktop-container-g" class="hidden lg:block rounded-xl border border-dense-line bg-dense-surface p-8 text-center text-sm font-bold text-dense-muted" aria-live="polite">
+        PC용 팀 캘린더를 불러오는 중입니다.
+    </div>
 
     <!-- 2. Mobile View (Narrow Screen) -->
     <div class="block lg:hidden space-y-4">
         <!-- Mobile Team Schedule View (Absentees list with Date Slider) -->
         <div id="mobile-schedule-view-g" class="space-y-4">
-            <a href="/user/calendar" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
-                <span>←</span> 캘린더 홈으로
+            <a href="/user/calendar" aria-label="캘린더 홈으로" class="flex min-h-11 w-fit items-center gap-2 rounded-lg px-1 text-sm font-extrabold text-dense-nav-text transition-colors hover:text-dense-blue focus:outline-none focus:ring-2 focus:ring-dense-blue/20">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-dense-blue"><path d="m12 4-6 6 6 6"/></svg>
+                <span>캘린더 홈으로</span>
             </a>
             
             <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm">
-                <div class="flex items-center justify-between mb-4 border-b pb-3">
+                <div class="mb-3 flex items-center justify-between border-b pb-3">
                     <h3 class="text-sm font-extrabold text-dense-text">👥 팀 일정 조회</h3>
-                    <button onclick="navigateMobileScheduleG(0)" class="text-[9px] px-2 py-0.5 border rounded-lg bg-dense-surface-soft font-bold hover:bg-dense-surface transition-colors">오늘로</button>
+                    <button type="button" onclick="goBusinessTodayG()" class="min-h-11 rounded-lg border border-dense-line bg-dense-surface-soft px-3 text-xs font-bold text-dense-text hover:bg-dense-surface transition-colors">오늘로</button>
                 </div>
-                
-                <!-- Date Slider Bar -->
-                <div class="flex items-center justify-between bg-dense-surface-soft p-2 rounded-xl border border-dense-line mb-3">
-                    <button onclick="navigateMobileScheduleG(-1)" class="w-8 h-8 rounded-lg border border-dense-line bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&lt;</button>
-                    <span id="mobile-schedule-date-label-g" class="text-xs font-extrabold text-dense-text"></span>
-                    <button onclick="navigateMobileScheduleG(1)" class="w-8 h-8 rounded-lg border border-dense-line bg-dense-surface flex items-center justify-center font-bold text-dense-text hover:bg-dense-surface-soft shadow-xs">&gt;</button>
+
+                <form id="mobile-team-month-form-g" action="/user/team-calendar" method="GET" class="mb-3 grid grid-cols-[2.75rem_1fr_1fr_2.75rem] items-center gap-2">
+                    <button type="button" onclick="navigateTeamMonthG(-1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="이전 달">‹</button>
+                    <select name="year" onchange="this.form.submit()" class="h-11 min-w-0 rounded-lg border border-dense-line bg-dense-surface px-2 text-sm font-bold">
+                        {% for y in year_options %}<option value="{{ y }}" {% if team_cal_year == y %}selected{% endif %}>{{ y }}년</option>{% endfor %}
+                    </select>
+                    <select name="month" onchange="this.form.submit()" class="h-11 min-w-0 rounded-lg border border-dense-line bg-dense-surface px-2 text-sm font-bold">
+                        {% for m in range(1, 13) %}<option value="{{ m }}" {% if team_cal_month == m %}selected{% endif %}>{{ m }}월</option>{% endfor %}
+                    </select>
+                    <button type="button" onclick="navigateTeamMonthG(1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="다음 달">›</button>
+                </form>
+
+                <div class="mb-3 flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface-soft p-2">
+                    <button type="button" onclick="navigateMobileScheduleG(-1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="이전 날짜">&lt;</button>
+                    <span id="mobile-schedule-date-label-g" class="min-w-0 px-2 text-center text-sm font-extrabold text-dense-text"></span>
+                    <button type="button" onclick="navigateMobileScheduleG(1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="다음 날짜">&gt;</button>
                 </div>
-                
-                <!-- Absent List -->
-                <div id="mobile-schedule-list-g" class="space-y-2"></div>
+
+                <div id="mobile-schedule-list-g" class="space-y-2" aria-live="polite"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const teamMembers = [
-        {% for m in team_members %}
-        {
-            user_id: "{{ m.user_id }}",
-            user_name: "{{ m.user_name }}",
-            team: "{{ m.team or '' }}",
-            company: "{{ m.company or '' }}"
-        },
-        {% endfor %}
-    ];
+    let teamScheduleDataG = null;
+    let selectedMobileDayG = 1;
+    let totalDaysInMonth = {{ team_cal_num_days }};
+    let currentYearG = {{ team_cal_year }};
+    let currentMonthG = {{ team_cal_month }};
+    let businessTodayG = "{{ now.strftime('%Y-%m-%d') }}";
+    let desktopTeamLoadedG = false;
+    let mobileTeamLoadedG = false;
+    const desktopTeamMediaG = window.matchMedia('(min-width: 1024px)');
 
-    const teamLeavesMap = {
-        {% for member_id, day_map in team_leaves_map.items() %}
-        "{{ member_id }}": {
-            {% for day, leaves in day_map.items() %}
-            "{{ day }}": [
-                {% for lv in leaves %}
-                {
-                    status: "{{ lv.status }}",
-                    is_deductive: {{ 'true' if lv.is_deductive else 'false' }},
-                    snapshot_deduction_hours: {{ lv.snapshot_deduction_hours or 0 }},
-                    snapshot_slot_label: "{{ lv.snapshot_slot_label or '' }}",
-                    reason: "{{ lv.reason or '' }}"
-                },
-                {% endfor %}
-            ],
-            {% endfor %}
-        },
-        {% endfor %}
-    };
-    
-    window.holidayMapDates = [
-        {% for (m, d), name in holiday_map.items() %}
-        "{{ team_cal_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(d) }}",
-        {% endfor %}
-    ];
+    function navigateTeamMonthG(offset) {
+        let year = currentYearG;
+        let month = currentMonthG + offset;
+        if (month < 1) { month = 12; year -= 1; }
+        if (month > 12) { month = 1; year += 1; }
+        window.location.href = `/user/team-calendar?year=${year}&month=${month}`;
+    }
 
-    let selectedMobileDayG = new Date().getDate();
-    const totalDaysInMonth = {{ team_cal_num_days }};
-    const currentYearG = {{ team_cal_year }};
-    const currentMonthG = {{ team_cal_month }};
+    function goBusinessTodayG() {
+        const today = businessTodayG.split('-');
+        window.location.href = `/user/team-calendar?year=${today[0]}&month=${Number(today[1])}`;
+    }
 
     function navigateMobileScheduleG(offset) {
-        if (offset === 0) {
-            selectedMobileDayG = new Date().getDate();
-        } else {
-            selectedMobileDayG += offset;
-            if (selectedMobileDayG < 1) selectedMobileDayG = 1;
-            if (selectedMobileDayG > totalDaysInMonth) selectedMobileDayG = totalDaysInMonth;
-        }
+        selectedMobileDayG = Math.max(1, Math.min(totalDaysInMonth, selectedMobileDayG + offset));
         renderMobileScheduleListG();
+    }
+
+    function renderTeamScheduleMessageG(message, retry) {
+        const container = document.getElementById('mobile-schedule-list-g');
+        if (!container) return;
+        const box = document.createElement('div');
+        box.className = 'rounded-xl border border-dense-line bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
+        const text = document.createElement('p');
+        text.textContent = message;
+        box.appendChild(text);
+        if (retry) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'mt-3 min-h-11 rounded-lg bg-dense-blue px-4 text-sm font-bold text-white';
+            button.textContent = '다시 시도';
+            button.addEventListener('click', loadTeamScheduleDataG);
+            box.appendChild(button);
+        }
+        container.replaceChildren(box);
+    }
+
+    function createTeamBadgeG(item) {
+        const badge = document.createElement('span');
+        badge.className = 'shrink-0 rounded px-2 py-1 text-xs font-bold';
+        if (item.status === 'PENDING') {
+            badge.classList.add('bg-gray-100', 'text-gray-600');
+            badge.textContent = '결재 대기';
+        } else if (!item.is_deductive) {
+            badge.classList.add('bg-purple-600', 'text-white');
+            badge.textContent = '공가/출장';
+        } else if (item.deduction_hours >= 8) {
+            badge.classList.add('bg-blue-700', 'text-white');
+            badge.textContent = '전일';
+        } else if (item.deduction_hours >= 4) {
+            badge.classList.add('bg-blue-300', 'text-blue-900');
+            badge.textContent = '반일';
+        } else {
+            badge.classList.add('bg-blue-50', 'text-blue-700');
+            badge.textContent = `${item.deduction_hours}h`;
+        }
+        return badge;
     }
 
     function renderMobileScheduleListG() {
         const label = document.getElementById('mobile-schedule-date-label-g');
-        const listContainer = document.getElementById('mobile-schedule-list-g');
-        if (!label || !listContainer) return;
-
-        const dateStr = `${currentYearG}-${String(currentMonthG).padStart(2, '0')}-${String(selectedMobileDayG).padStart(2, '0')}`;
-        const dateObj = new Date(currentYearG, currentMonthG - 1, selectedMobileDayG);
+        const container = document.getElementById('mobile-schedule-list-g');
+        if (!label || !container || !teamScheduleDataG) return;
+        const date = new Date(currentYearG, currentMonthG - 1, selectedMobileDayG);
         const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-        const dayOfWeek = weekdays[dateObj.getDay()];
-
-        label.textContent = `${currentYearG}년 ${currentMonthG}월 ${selectedMobileDayG}일 (${dayOfWeek})`;
-
-        listContainer.innerHTML = '';
-
-        const absentees = [];
-        teamMembers.forEach(member => {
-            const memberLeaves = teamLeavesMap[member.user_id] || {};
-            const leavesOnDay = memberLeaves[selectedMobileDayG] || [];
-            
-            leavesOnDay.forEach(leave => {
-                if (leave.status === 'APPROVED' || leave.status === 'PENDING') {
-                    absentees.push({
-                        name: member.user_name,
-                        team: member.team,
-                        leave: leave
-                    });
-                }
-            });
-        });
-
-        if (absentees.length === 0) {
-            listContainer.innerHTML = `
-                <div class="text-center py-6 text-dense-muted text-xs font-bold">
-                    부재자가 없습니다.
-                </div>
-            `;
+        label.textContent = `${currentYearG}년 ${currentMonthG}월 ${selectedMobileDayG}일 (${weekdays[date.getDay()]})`;
+        const items = teamScheduleDataG.days[String(selectedMobileDayG)] || [];
+        if (!items.length) {
+            renderTeamScheduleMessageG('부재자가 없습니다.', false);
             return;
         }
 
-        absentees.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-3 rounded-xl border border-dense-line bg-dense-surface shadow-xs';
-            
-            const isDeduct = item.leave.is_deductive;
-            const totalH = item.leave.snapshot_deduction_hours;
-            const isPending = item.leave.status === 'PENDING';
-            
-            let typeBadge = '';
-            if (isPending) {
-                typeBadge = `<span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded border-0">결재 대기</span>`;
-            } else if (!isDeduct) {
-                typeBadge = `<span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded border-0">공가/출장</span>`;
-            } else if (totalH >= 8) {
-                typeBadge = `<span class="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 rounded border-0">전일</span>`;
-            } else if (totalH >= 4) {
-                typeBadge = `<span class="bg-blue-300 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded border-0">반일</span>`;
-            } else {
-                typeBadge = `<span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border-0">${totalH}h</span>`;
+        const fragment = document.createDocumentFragment();
+        items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'flex min-w-0 items-start justify-between gap-3 rounded-xl border border-dense-line bg-dense-surface p-3 shadow-xs';
+            const info = document.createElement('div');
+            info.className = 'min-w-0 flex-1';
+            const heading = document.createElement('div');
+            heading.className = 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1';
+            const name = document.createElement('span');
+            name.className = 'break-words text-sm font-bold text-dense-text';
+            name.textContent = item.user_name;
+            const team = document.createElement('span');
+            team.className = 'break-words text-xs font-bold text-dense-muted';
+            team.textContent = item.team || item.company || '';
+            heading.append(name, team);
+            const detail = document.createElement('p');
+            detail.className = 'mt-1 break-words text-xs font-semibold text-dense-muted';
+            const fullReason = item.reason || '';
+            const summaryReason = fullReason.length > 60 ? `${fullReason.slice(0, 60)}…` : fullReason;
+            detail.textContent = fullReason ? `${item.slot_label} · 사유: ${summaryReason}` : item.slot_label;
+            info.append(heading, detail);
+            if (fullReason.length > 60) {
+                const fullButton = document.createElement('button');
+                fullButton.type = 'button';
+                fullButton.className = 'mt-1 min-h-11 text-xs font-bold text-dense-blue underline';
+                fullButton.textContent = '전체 보기';
+                let expanded = false;
+                fullButton.addEventListener('click', () => {
+                    expanded = !expanded;
+                    detail.textContent = `${item.slot_label} · 사유: ${expanded ? fullReason : summaryReason}`;
+                    fullButton.textContent = expanded ? '접기' : '전체 보기';
+                });
+                info.appendChild(fullButton);
             }
-            
-            const pendingBadge = '';
-
-            div.innerHTML = `
-                <div class="flex flex-col gap-0.5">
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-xs font-bold text-dense-text">${item.name}</span>
-                        <span class="text-[10px] text-dense-muted font-bold">${item.team || ''}</span>
-                    </div>
-                    <span class="text-[10px] text-dense-muted mt-0.5">${item.leave.snapshot_slot_label}${item.leave.reason ? ` (사유: ${item.leave.reason})` : ''}</span>
-                </div>
-                <div class="flex items-center">
-                    ${typeBadge}
-                    ${pendingBadge}
-                </div>
-            `;
-            listContainer.appendChild(div);
+            row.append(info, createTeamBadgeG(item));
+            fragment.appendChild(row);
         });
+        container.replaceChildren(fragment);
     }
 
+    async function loadTeamScheduleDataG() {
+        renderTeamScheduleMessageG('팀 일정을 불러오는 중입니다.', false);
+        try {
+            const response = await fetch(`/api/user/team-calendar?year=${currentYearG}&month=${currentMonthG}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            teamScheduleDataG = await response.json();
+            totalDaysInMonth = teamScheduleDataG.days_in_month;
+            businessTodayG = teamScheduleDataG.business_today;
+            const today = businessTodayG.split('-').map(Number);
+            selectedMobileDayG = today[0] === currentYearG && today[1] === currentMonthG ? today[2] : 1;
+            selectedMobileDayG = Math.max(1, Math.min(totalDaysInMonth, selectedMobileDayG));
+            mobileTeamLoadedG = true;
+            renderMobileScheduleListG();
+        } catch (error) {
+            console.error('[SHIM team calendar mobile load]', error);
+            renderTeamScheduleMessageG('팀 일정을 불러오지 못했습니다.', true);
+        }
+    }
 
+    async function loadTeamDesktopG() {
+        if (desktopTeamLoadedG) return;
+        const container = document.getElementById('team-desktop-container-g');
+        if (!container) return;
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const response = await fetch(`/user/team-calendar/desktop-partial?${params.toString()}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            container.innerHTML = await response.text();
+            desktopTeamLoadedG = true;
+        } catch (error) {
+            console.error('[SHIM team calendar desktop load]', error);
+            container.textContent = 'PC용 팀 캘린더를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+        }
+    }
+
+    function initializeTeamResponsiveG() {
+        if (desktopTeamMediaG.matches) loadTeamDesktopG();
+        else if (!mobileTeamLoadedG) loadTeamScheduleDataG();
+    }
+
+    desktopTeamMediaG.addEventListener('change', initializeTeamResponsiveG);
 
     // Inject holidays for JS checks in team calendar
     window.holidayMapDates = [
@@ -1195,7 +1241,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        renderMobileScheduleListG();
+        initializeTeamResponsiveG();
         
         // 1. sessionStorage last page 및 document.referrer를 복합 검사하여 외부/타메뉴 진입 상태를 감지
         const prevUrl = document.referrer;
@@ -1370,4 +1416,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -6,14 +6,14 @@
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section -->
-    <div class="hidden md:flex flex-col md:flex-row md:items-center md:justify-between">
+    <div class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">결재 관리</h2>
             <p class="mt-1 text-sm font-semibold text-dense-muted">
                 {% if user_role == 'TEAM_LEAD' %}팀장{% elif user_role == 'PM' %}PM{% endif %} 권한으로 팀원들의 연차 신청을 검토하고 승인/반려합니다.
             </p>
         </div>
-        <div class="mt-4 flex gap-2 md:mt-0">
+        <div class="mt-4 flex gap-2 lg:mt-0">
             <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line shadow-xs">
                 <a href="/user/calendar" class="rounded-lg px-3.5 py-1.5 text-xs font-bold text-dense-muted hover:text-dense-text transition-all">캘린더</a>
                 {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
@@ -27,8 +27,8 @@
         </div>
     </div>
 
-    <!-- 1. PC & Tablet View (Wide Screen) -->
-    <div class="hidden md:flex flex-col md:flex-row gap-5">
+    <!-- 1. PC View (Wide Screen) -->
+    <div class="hidden lg:flex flex-col lg:flex-row gap-5">
         <!-- Left Sidebar Panel -->
         {% include "partials/user_left_panel.html" %}
 
@@ -162,19 +162,20 @@
     </div>
 
     <!-- 2. Mobile View (Narrow Screen) -->
-    <div class="block md:hidden space-y-4">
-        <a href="/user/calendar" class="text-xs font-bold text-dense-blue flex items-center gap-1 hover:underline">
-            <span>←</span> 캘린더 홈으로
+    <div class="block lg:hidden space-y-4">
+        <a href="/user/calendar" aria-label="캘린더 홈으로" class="flex min-h-11 w-fit items-center gap-2 rounded-lg px-1 text-sm font-extrabold text-dense-nav-text transition-colors hover:text-dense-blue focus:outline-none focus:ring-2 focus:ring-dense-blue/20">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-dense-blue"><path d="m12 4-6 6 6 6"/></svg>
+            <span>캘린더 홈으로</span>
         </a>
 
         <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-3">
-            <div class="flex items-center justify-between border-b pb-2">
+            <div class="flex items-center justify-between border-b border-dense-line pb-2">
                 <h3 class="text-sm font-extrabold text-dense-text">👥 결재 관리</h3>
                 <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-dense-amber px-1.5 text-[10px] font-extrabold text-white">{{ pending_leaves|length }}</span>
             </div>
 
             <!-- Mobile Filter Tabs -->
-            <div class="flex flex-wrap gap-1.5 border-b pb-2.5">
+            <div class="flex flex-wrap gap-1.5 border-b border-dense-line pb-2.5">
                 <a href="/user/approvals?status=PENDING" class="inline-flex rounded-full border {% if selected_status == 'PENDING' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[10px] font-extrabold transition-all">대기</a>
                 <a href="/user/approvals?status=APPROVED" class="inline-flex rounded-full border {% if selected_status == 'APPROVED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[10px] font-extrabold transition-all">승인</a>
                 <a href="/user/approvals?status=REJECTED" class="inline-flex rounded-full border {% if selected_status == 'REJECTED' %}border-dense-line-strong bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[10px] font-extrabold transition-all">반려</a>

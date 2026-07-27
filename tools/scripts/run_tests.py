@@ -9,6 +9,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SMOKE_SCRIPTS = (
     ("run_remaining_tests.py",),
+    ("test_mobile_ui.py",),
     ("test_string_utils.py",),
     ("test_timezone_utils.py",),
     ("test_system_metrics.py",),
