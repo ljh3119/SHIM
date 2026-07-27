@@ -35,9 +35,9 @@
         <!-- Right Content Panel -->
         <div class="min-w-0 flex-1 space-y-4">
 
-            <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+            <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
                 <!-- Header Title Inside Card -->
-                <div class="mb-4 flex items-center justify-between border-b pb-4">
+                <div class="mb-4 flex items-center justify-between border-b border-dense-grid pb-4">
                     <h3 class="text-base font-extrabold tracking-tight text-dense-text">신청 내역 전체</h3>
                     <form action="/user/history" method="GET" class="flex items-center">
                         <select name="year" onchange="this.form.submit()" class="block w-[5.5rem] rounded-xl border-0 bg-dense-surface py-1.5 px-2 text-xs font-bold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line focus:border-dense-blue focus:ring-dense-blue">
@@ -49,7 +49,7 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-dense-line">
+                    <table class="min-w-full divide-y divide-dense-grid">
                         <thead class="bg-dense-surface-soft">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">신청일</th>
@@ -60,7 +60,7 @@
                                 <th class="px-4 py-3 text-center text-xs font-extrabold uppercase tracking-wide text-dense-muted">관리</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-dense-line bg-dense-surface">
+                        <tbody class="divide-y divide-dense-grid bg-dense-surface">
                             {% for leave in leaves %}
                             <tr class="transition-colors hover:bg-dense-surface-soft">
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
@@ -135,7 +135,7 @@
         </a>
 
         <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-3">
-            <div class="space-y-3 border-b pb-3">
+            <div class="space-y-3 border-b border-dense-grid pb-3">
                 <div class="flex items-center justify-between gap-3">
                     <h3 class="text-sm font-extrabold text-dense-text">📋 {{ selected_year }}년 나의 신청 내역</h3>
                     <span class="shrink-0 text-xs font-bold text-dense-muted">총 {{ leaves|length }}건</span>
@@ -150,15 +150,15 @@
 
             <!-- Stats Grid for Mobile -->
             <div class="grid grid-cols-3 gap-2 py-1">
-                <div class="flex flex-col items-center justify-center rounded-lg border bg-dense-surface-soft py-2">
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dense-grid bg-dense-surface-soft py-2">
                     <span class="text-xs text-dense-muted font-bold">총 연차</span>
                     <span class="text-xs font-extrabold">{{ fmt_hours(total_allocated_hours) }}h</span>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-lg border bg-dense-surface-soft py-2">
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dense-grid bg-dense-surface-soft py-2">
                     <span class="text-xs text-dense-muted font-bold">사용</span>
                     <span class="text-xs font-extrabold text-dense-blue">{{ fmt_hours(used_hours) }}h</span>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-lg border bg-dense-surface-soft py-2">
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dense-grid bg-dense-surface-soft py-2">
                     <span class="text-xs text-dense-muted font-bold">잔여</span>
                     <span class="text-xs font-extrabold text-dense-green">{{ fmt_hours(remaining_hours) }}h</span>
                 </div>
@@ -167,7 +167,7 @@
             <!-- Mobile History List of Cards -->
             <div class="space-y-2.5">
                 {% for leave in leaves %}
-                <div class="p-3.5 rounded-xl border border-dense-line bg-dense-surface shadow-xs space-y-2">
+                <div class="p-3.5 rounded-xl border border-dense-grid bg-dense-surface-soft space-y-2">
                     <div class="flex min-w-0 items-start justify-between gap-3">
                         <div>
                             <span class="text-xs font-bold text-dense-text">
@@ -202,7 +202,7 @@
                     </div>
 
                     {% if leave.status == "PENDING" %}
-                    <div class="pt-1.5 border-t border-dense-line flex justify-end">
+                    <div class="pt-1.5 border-t border-dense-grid flex justify-end">
                         <button type="button" onclick="cancelLeave({{ leave.id }}, this)" class="min-h-11 rounded-lg border border-dense-danger bg-dense-surface px-4 text-sm font-bold text-dense-danger hover:bg-dense-danger-soft transition-colors focus:outline-none">
                             취소하기
                         </button>
@@ -210,7 +210,7 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="text-center py-12 text-dense-muted font-semibold">
+                <div class="rounded-xl border border-dense-grid bg-dense-surface-soft py-12 text-center text-dense-muted font-semibold">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <span class="text-3xl">📋</span>
                         <p class="text-xs font-bold text-dense-text">연차 신청 내역이 없습니다.</p>

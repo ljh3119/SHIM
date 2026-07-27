@@ -6,7 +6,7 @@
 
 <style>
     .cal-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-    .cal-table th, .cal-table td { border: 1px solid #d0d5dd; text-align: center; vertical-align: middle; }
+    .cal-table th, .cal-table td { border: 1px solid var(--color-dense-grid); text-align: center; vertical-align: middle; }
     .cal-table thead th { background: #f9fafb; font-size: 10px; font-weight: 600; color: #475467; padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
     .cal-table tbody td { padding: 3px 1px; font-size: 10px; }
     .cal-table .sticky-col { position: sticky; left: 0; z-index: 10; background: #ffffff; }
@@ -133,9 +133,9 @@
         <!-- Right Content Panel -->
         <div class="min-w-0 flex-1 space-y-4">
 
-            <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+            <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
                 <!-- Header Controls Inside Card -->
-                <div class="mb-4 flex items-center justify-between border-b border-dense-line pb-4">
+                <div class="mb-4 flex items-center justify-between border-b border-dense-grid pb-4">
                     <div class="flex items-center gap-4">
                         <div id="monthNavWrapper" class="flex items-center gap-2">
                             <button type="button" onclick="prevMonth()" class="rounded-lg border border-dense-line bg-dense-surface p-1.5 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
@@ -184,7 +184,7 @@
                     <div id="month-card-{{ m }}" class="month-card hidden">
                         <div class="mb-2 grid grid-cols-7 gap-1.5">
                             {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
-                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-line/40 {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
+                            <div class="text-center text-xs font-extrabold py-1.5 rounded bg-dense-surface-soft border border-dense-grid {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
                                 {{ wd }}
                             </div>
                             {% endfor %}
@@ -192,7 +192,7 @@
 
                         <div class="grid grid-cols-7 gap-1.5">
                             {% for _ in range(month_meta.offset) %}
-                            <div class="h-32 rounded-xl border border-dashed border-dense-line bg-dense-surface-soft"></div>
+                            <div class="h-32 rounded-xl border border-dashed border-dense-grid bg-dense-surface-soft"></div>
                             {% endfor %}
 
                             {% for day in range(1, month_meta.num_days + 1) %}
@@ -212,7 +212,7 @@
                             <button type="button"
                                  id="day-btn-monthly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                  {% if day_leaves_exist %}data-has-leave="true"{% endif %}
-                                 class="h-32 w-full rounded-xl border border-dense-line p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
+                                 class="h-32 w-full rounded-xl border border-dense-grid p-2 text-left flex flex-col justify-between transition-all {% if day_leaves_exist %}bg-dense-blue-soft/5 hover:bg-dense-blue-soft/10{% else %}bg-dense-surface hover:bg-dense-surface-soft{% endif %} {% if not is_blocked_day %}hover:border-dense-blue hover:shadow-sm{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }}{% else %}클릭하여 연차 신청 (다중 선택 모드 시 선택){% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
@@ -274,7 +274,7 @@
                     {% for m in range(1, 13) %}
                     {% set month_meta = month_calendar_meta[m] %}
                     {% set day_map = yearly_day_leaves_map[m] %}
-                    <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3">
+                    <div class="rounded-xl border border-dense-grid bg-dense-surface-soft p-3">
                         <div class="mb-2 text-sm font-extrabold text-dense-text">{{ m }}월</div>
                         <div class="mb-1 grid grid-cols-7 gap-1">
                             {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
@@ -309,7 +309,7 @@
                             <button type="button"
                                  id="day-btn-yearly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                  {% if yearly_leaves_exist %}data-has-leave="true"{% endif %}
-                                 class="h-10 w-full rounded border border-dense-line p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}bg-dense-blue-soft{% else %}bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
+                                 class="h-10 w-full rounded border border-dense-grid p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}bg-dense-blue-soft{% else %}bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
                                  title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
@@ -358,19 +358,19 @@
             
             <!-- Stats Grid -->
             <div class="grid grid-cols-4 gap-2">
-                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-grid bg-dense-surface-soft py-2.5">
                     <span class="text-xs text-dense-muted font-bold">총 연차</span>
                     <span class="text-xs font-extrabold">{{ fmt_hours(total_allocated_hours) }}h</span>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-grid bg-dense-surface-soft py-2.5">
                     <span class="text-xs text-dense-muted font-bold">사용</span>
                     <span class="text-xs font-extrabold text-dense-blue">{{ fmt_hours(used_hours) }}h</span>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-grid bg-dense-surface-soft py-2.5">
                     <span class="text-xs text-dense-muted font-bold">잔여</span>
                     <span class="text-xs font-extrabold text-dense-green">{{ fmt_hours(remaining_hours) }}h</span>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-line bg-dense-surface py-2.5">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-dense-grid bg-dense-surface-soft py-2.5">
                     <span class="text-xs text-dense-muted font-bold">대기</span>
                     <span class="text-xs font-extrabold text-dense-amber">{{ pending_team_leaves|length }}건</span>
                 </div>
@@ -485,7 +485,7 @@
                     </div>
                     <div id="approvalListG_mobile" class="space-y-2 text-xs">
                         {% for leave in pending_team_leaves[:3] %}
-                        <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
+                        <div class="flex items-center justify-between border-b border-dense-grid pb-1.5">
                             <div>
                                 <span class="font-bold text-dense-text">{{ leave.user.user_name }}</span>
                                 <span class="text-xs text-dense-muted ml-1">{{ leave.date }}</span>
@@ -505,7 +505,7 @@
                     <h3 class="text-xs font-extrabold text-dense-text mb-2">📋 나의 신청 현황</h3>
                     <div id="myRequestsListG_mobile" class="space-y-2 text-xs">
                         {% for leave in leaves[:3] %}
-                        <div class="flex items-center justify-between border-b border-dense-gray-soft pb-1.5">
+                        <div class="flex items-center justify-between border-b border-dense-grid pb-1.5">
                             <div>
                                 <span class="font-bold text-dense-text">
                                     {% if not leave.is_deductive %}<span class="text-purple-600 mr-0.5">[공]</span>{% endif %}
@@ -567,7 +567,7 @@
                     <div>
                         <label for="calendar_date_str" class="block text-sm font-bold text-dense-nav-text">날짜</label>
                         <input type="date" id="calendar_date_str" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
-                        <div id="calendar_multi_date_container" class="hidden mt-1 p-2 border border-dense-line rounded-xl bg-dense-surface-soft max-h-[80px] overflow-y-auto">
+                        <div id="calendar_multi_date_container" class="hidden mt-1 p-2 border border-dense-grid rounded-xl bg-dense-surface-soft max-h-[80px] overflow-y-auto">
                             <div id="calendar_multi_date_chips" class="flex flex-wrap gap-1"></div>
                         </div>
                     </div>
@@ -613,7 +613,7 @@
                     </div>
                 </form>
             </div>
-            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                 <button type="submit" form="calendarApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
                     신청하기
                 </button>
@@ -637,7 +637,7 @@ function mobileCalendarMessageG(message, retry) {
     const grid = document.getElementById('mobile-calendar-grid-g');
     if (!grid) return;
     const box = document.createElement('div');
-    box.className = 'col-span-7 rounded-lg border border-dense-line bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
+    box.className = 'col-span-7 rounded-lg border border-dense-grid bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
     const text = document.createElement('p');
     text.textContent = message;
     box.appendChild(text);
@@ -702,7 +702,7 @@ function renderMobileCalendarG() {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'min-h-11 min-w-0 rounded-lg border p-1 text-center text-xs font-bold transition-colors';
-        button.classList.add(blocked ? 'border-red-100' : 'border-dense-line');
+        button.classList.add(blocked ? 'border-red-100' : 'border-dense-grid');
         button.classList.add(blocked ? 'bg-red-50' : 'bg-dense-surface');
         if (blocked) button.classList.add('text-dense-danger', 'cursor-not-allowed');
         if (leave) button.classList.add('ring-1', 'ring-dense-blue');

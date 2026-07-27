@@ -57,6 +57,7 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 - **회사/팀 배지 색상 격리**: 회사명과 팀명을 고대비 HSL 색상으로 표현하는 로직(`string_to_badge_style`)이 내장되어 있습니다. 회사는 0~140도(웜톤/녹색계열), 팀은 180~340도(쿨톤 계열)로 분리하여 캘린더와 타임라인의 시각적 구분을 보조합니다.
 - **반응형 패키징 계약**: 모바일과 PC는 같은 템플릿·정적 자산을 사용하며 1024px을 기준으로 필요한 월 JSON 또는 PC 부분 HTML을 한 번만 지연 조회합니다. 사용자 에이전트 분기, 서비스 워커, 외부 UI 프레임워크는 추가하지 않습니다.
 - **모바일 UI 빌드 게이트**: 템플릿 또는 Tailwind 클래스 변경 후 `npm run build:css`와 `python tools/scripts/test_mobile_ui.py`를 실행한 다음 포터블 패키지를 생성합니다. `src/templates/partials`와 생성된 `src/static/css/tailwind.css`가 `_internal`에 포함되는지 확인합니다.
+- **패널 계층 계약**: 주요 외곽 패널은 `dense-line`, 표·차트·달력 셀·내부 목록은 `dense-grid`를 사용합니다. 포터블 빌드 전 `python tools/scripts/test_ui_style.py`로 토큰·산출물·상태 의미색 보존을 확인합니다.
 - **운영 범위**: `STAFF`, `TEAM_LEAD`, `PM`의 신청·조회·취소와 권한별 팀 일정·결재 흐름은 모바일을 지원합니다. `ADMIN` 모바일은 조회 수준만 보장하고 등록·수정·삭제는 PC에서 처리합니다.
 - **실기기 확인 기준**: 세로 `320×568`, `360×800`, `390×844`, `412×915`, `425px` 폭과 가로 화면에서 가로 넘침, 44×44px 터치 영역, 긴 문자열 줄바꿈, 모달 버튼 높이와 역할별 메뉴 노출을 확인합니다.
 

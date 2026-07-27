@@ -51,7 +51,7 @@
 
     .cal-table th,
     .cal-table td {
-        border: 1px solid #d0d5dd;
+        border: 1px solid var(--color-dense-grid);
         text-align: center;
         vertical-align: middle;
     }
@@ -250,9 +250,9 @@
         <!-- Right Content Panel -->
         <div class="min-w-0 flex-1 space-y-4">
 
-            <div class="rounded-[18px] border border-dense-line bg-dense-surface p-5 shadow-sm">
+            <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
                 <!-- Header Controls Inside Card -->
-                <div class="mb-4 flex items-center justify-between border-b pb-4">
+                <div class="mb-4 flex items-center justify-between border-b border-dense-grid pb-4">
                     <div class="flex items-center gap-4">
                         {% set prev_year = team_cal_year - 1 if team_cal_month == 1 else team_cal_year %}
                         {% set prev_month = 12 if team_cal_month == 1 else team_cal_month - 1 %}
@@ -295,7 +295,7 @@
                     </div>
                 </div>
 
-                <div class="mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-line">
+                <div class="mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-bold text-dense-muted bg-dense-surface-soft p-3 rounded-xl border border-dense-grid">
                     <div class="flex items-center">
                         <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#eff8ff] text-[#175cd3] text-center text-[8px] font-extrabold shadow-sm"></span>
                         <span>반일 이하 (4h 미만)</span>
@@ -312,7 +312,7 @@
                         <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#7e22ce] text-white text-center text-[8px] font-extrabold shadow-sm"></span>
                         <span>공가/출장 (미차감)</span>
                     </div>
-                    <div class="flex items-center border-l border-dense-line pl-6">
+                    <div class="flex items-center border-l border-dense-grid pl-6">
                         <span class="mr-2 inline-block h-3.5 w-3.5 rounded bg-[#f2f4f7] text-[#475467] text-center text-[8px] font-extrabold shadow-sm"></span>
                         <span class="text-dense-text font-extrabold">결재 대기 (미결재)</span>
                     </div>
@@ -322,7 +322,7 @@
                 </div>
 
                 <!-- Timeline Table View Container -->
-                <div id="team-timeline-view-container" class="overflow-x-auto rounded-xl border border-dense-line">
+                <div id="team-timeline-view-container" class="overflow-x-auto rounded-xl border border-dense-grid">
                     <table class="cal-table" style="min-width: 1000px;">
                         <thead>
                             <tr>
@@ -353,7 +353,7 @@
                                 {% endfor %}
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-dense-line">
+                        <tbody class="divide-y divide-dense-grid">
                             {% for m in team_members %}
                             {% set is_me = (m.user_id == user.user_id) %}
                             <tr class="transition-colors group {% if is_me %}my-row bg-dense-blue-soft hover:bg-[#dbeafe]{% else %}hover:bg-dense-surface-soft{% endif %}">
@@ -483,7 +483,7 @@
             </a>
             
             <div class="rounded-xl border border-dense-line bg-dense-surface p-4 shadow-sm">
-                <div class="mb-3 flex items-center justify-between border-b pb-3">
+                <div class="mb-3 flex items-center justify-between border-b border-dense-grid pb-3">
                     <h3 class="text-sm font-extrabold text-dense-text">👥 팀 일정 조회</h3>
                     <button type="button" onclick="goBusinessTodayG()" class="min-h-11 rounded-lg border border-dense-line bg-dense-surface-soft px-3 text-xs font-bold text-dense-text hover:bg-dense-surface transition-colors">오늘로</button>
                 </div>
@@ -499,7 +499,7 @@
                     <button type="button" onclick="navigateTeamMonthG(1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="다음 달">›</button>
                 </form>
 
-                <div class="mb-3 flex items-center justify-between rounded-xl border border-dense-line bg-dense-surface-soft p-2">
+                <div class="mb-3 flex items-center justify-between rounded-xl border border-dense-grid bg-dense-surface-soft p-2">
                     <button type="button" onclick="navigateMobileScheduleG(-1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="이전 날짜">&lt;</button>
                     <span id="mobile-schedule-date-label-g" class="min-w-0 px-2 text-center text-sm font-extrabold text-dense-text"></span>
                     <button type="button" onclick="navigateMobileScheduleG(1)" class="h-11 w-11 rounded-lg border border-dense-line bg-dense-surface font-bold text-dense-text" aria-label="다음 날짜">&gt;</button>
@@ -544,7 +544,7 @@
         const container = document.getElementById('mobile-schedule-list-g');
         if (!container) return;
         const box = document.createElement('div');
-        box.className = 'rounded-xl border border-dense-line bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
+        box.className = 'rounded-xl border border-dense-grid bg-dense-surface-soft p-5 text-center text-sm font-bold text-dense-muted';
         const text = document.createElement('p');
         text.textContent = message;
         box.appendChild(text);
@@ -597,7 +597,7 @@
         const fragment = document.createDocumentFragment();
         items.forEach(item => {
             const row = document.createElement('div');
-            row.className = 'flex min-w-0 items-start justify-between gap-3 rounded-xl border border-dense-line bg-dense-surface p-3 shadow-xs';
+            row.className = 'flex min-w-0 items-start justify-between gap-3 rounded-xl border border-dense-grid bg-dense-surface-soft p-3';
             const info = document.createElement('div');
             info.className = 'min-w-0 flex-1';
             const heading = document.createElement('div');
@@ -1357,7 +1357,7 @@
                         
                         <div id="calendar_multi_date_container" class="mt-2 hidden">
                             <span class="block text-[11px] font-bold text-dense-muted mb-1">선택된 개별 날짜 목록 (주말/공휴일 제외):</span>
-                            <div id="calendar_multi_date_chips" class="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto p-1.5 border rounded-lg bg-dense-surface-soft border-dense-line"></div>
+                            <div id="calendar_multi_date_chips" class="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto p-1.5 border rounded-lg bg-dense-surface-soft border-dense-grid"></div>
                         </div>
                     </div>
 
@@ -1405,7 +1405,7 @@
                     </div>
                 </form>
             </div>
-            <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+            <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                 <button type="submit" form="calendarApplyForm" id="calendar_submit_btn" class="inline-flex w-full justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
                     신청하기
                 </button>

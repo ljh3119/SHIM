@@ -83,10 +83,10 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- 오늘 휴가자 -->
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider border-b border-dense-line pb-2 flex items-center gap-1.5">
+            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider border-b border-dense-grid pb-2 flex items-center gap-1.5">
                 🌴 오늘 휴가/공가/출장자
             </h3>
-            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-line pr-1">
+            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-grid pr-1">
                 {% for leave in today_leaves %}
                 <div class="py-2.5 flex items-center justify-between text-xs first:pt-0 last:pb-0">
                     <div class="space-y-1">
@@ -116,13 +116,13 @@
 
         <!-- 최근 주요 활동 로그 -->
         <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
-            <div class="flex items-center justify-between border-b border-dense-line pb-2">
+            <div class="flex items-center justify-between border-b border-dense-grid pb-2">
                 <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
                     🔍 최근 주요 활동 로그
                 </h3>
                 <a href="/admin/audit" class="text-[10px] text-dense-blue font-bold hover:underline">전체 보기 →</a>
             </div>
-            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-line pr-1">
+            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-grid pr-1">
                 {% for log in recent_audits %}
                 <div class="py-2.5 text-xs first:pt-0 last:pb-0">
                     <div class="flex items-center justify-between">
@@ -152,7 +152,7 @@
 
     <!-- 시스템 운영 현황 (제일 밑에 가로 1단으로 배치) -->
     <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-dense-line pb-3">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-dense-grid pb-3">
             <div class="flex items-center gap-2">
                 <span class="text-sm">⚙️</span>
                 <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">시스템 운영 현황</h3>
@@ -209,6 +209,9 @@
 <script src="/static/js/chart.umd.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const denseGridColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-dense-grid').trim()
+      || 'rgb(208 213 221 / 0.55)';
     const chartData = {{ chart_data | tojson | safe }};
     
     // 1. 팀별 차트
@@ -254,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     y: {
                         stacked: true,
-                        grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                        grid: { color: denseGridColor },
                         ticks: { font: { size: 9, weight: 'bold' } }
                     }
                 }
@@ -300,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ticks: { font: { size: 9, weight: 'bold' } }
                     },
                     y: {
-                        grid: { color: 'rgba(208, 213, 221, 0.3)' },
+                        grid: { color: denseGridColor },
                         ticks: { font: { size: 9, weight: 'bold' } }
                     }
                 }

@@ -10,7 +10,7 @@
         </div>
         <div class="flex items-center gap-2 shrink-0">
             <form action="/admin/holidays" method="GET" class="flex items-center gap-2">
-                <select name="year" onchange="this.form.submit()" class="w-24 border rounded-xl px-2.5 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
+                <select name="year" onchange="this.form.submit()" class="w-24 rounded-xl border border-dense-line px-2.5 py-1.5 text-xs bg-dense-surface font-semibold focus:ring-1 focus:ring-dense-blue">
                     {% for y in year_options %}
                     <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                     {% endfor %}
@@ -22,7 +22,7 @@
     <!-- 2컬럼 레이아웃 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <!-- 공휴일 추가 폼 -->
-        <div class="rounded-xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold self-start shadow-xs">
+        <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold self-start shadow-sm">
             <p class="text-xs font-extrabold text-dense-text">📅 신규 공휴일 등록</p>
             <form id="holidayCreateForm" class="space-y-2.5">
                 <div>
@@ -46,11 +46,11 @@
         </div>
 
         <!-- 공휴일 목록 -->
-        <div class="lg:col-span-2 rounded-xl border border-dense-line bg-dense-surface-soft p-4 space-y-3 text-xs font-semibold">
+        <div class="lg:col-span-2 rounded-2xl border border-dense-line bg-dense-surface p-4 space-y-3 text-xs font-semibold shadow-sm">
             <p class="text-xs font-extrabold text-dense-text">📋 현재 등록된 공휴일 목록 ({{ selected_year }}년 전체)</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {% for h in holidays %}
-                <div class="flex flex-col sm:flex-row gap-2 items-center bg-dense-surface p-2 border border-dense-line rounded-xl shadow-xs text-xs">
+                <div class="flex flex-col sm:flex-row gap-2 items-center rounded-xl border border-dense-grid bg-dense-surface-soft p-2 text-xs">
                     <input type="date" id="date-{{ h.id }}" value="{{ h.date.strftime('%Y-%m-%d') }}"
                            class="border border-dense-line rounded-xl px-2 py-1 w-full sm:w-28 font-bold bg-dense-surface focus:ring-1 focus:ring-dense-blue text-dense-text">
                     <input type="text" id="name-{{ h.id }}" value="{{ h.name }}" maxlength="50"
@@ -67,7 +67,7 @@
                     </div>
                 </div>
                 {% else %}
-                <div class="col-span-2 flex flex-col items-center justify-center py-12 text-center gap-2 bg-dense-surface border border-dense-line rounded-xl p-4">
+                <div class="col-span-2 flex flex-col items-center justify-center gap-2 rounded-xl border border-dense-grid bg-dense-surface-soft p-4 py-12 text-center">
                     <span class="text-3xl">📅</span>
                     <p class="text-xs font-bold text-dense-text">등록된 공휴일이 없습니다.</p>
                     <p class="text-[10px] text-dense-muted">새로운 공휴일을 등록하여 연차 신청 제한 일정을 관리해 보세요.</p>

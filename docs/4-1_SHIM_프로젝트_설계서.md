@@ -176,6 +176,7 @@ SHIM은 폐쇄망 환경의 제약 조건을 극복하면서도 사용자에게 
 SHIM은 업무용 시스템 특유의 높은 정보 밀도를 수용하기 위해 **Dense UI** 디자인 시스템을 채택했습니다.
 
 - **디자인 토큰**: `src/static/css/app.css` 내에 정의된 색상 및 간격 변수를 사용합니다.
+- **테두리 계층**: 주요 외곽 패널은 `dense-line`, 표·차트·캘린더 셀·내부 목록은 반투명 `dense-grid`를 사용합니다. PC 주요 패널은 `rounded-2xl border border-dense-line bg-dense-surface shadow-sm`, 모바일 주요 카드는 `rounded-xl border border-dense-line bg-dense-surface shadow-sm`을 기준으로 하며 상태·선택·위험·포커스 테두리는 의미 색상을 유지합니다.
 - **레이아웃**: `base.html`을 기반으로 사이드바와 메인 컨텐츠 영역이 고정된 Shell 구조를 가집니다.
 - **가독성**: 좁은 간격에서도 텍스트 가시성을 확보하기 위해 전용 음영(Muted) 및 대비(Border) 토큰을 적용했습니다.
 - **컴포넌트 통합**: 팀 캘린더와 같은 복합 화면은 필터와 본문을 단일 패널로 통합하여 시각적 인지 부하를 줄였습니다.

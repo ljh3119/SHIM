@@ -11,10 +11,10 @@
     </button>
     
     <!-- Accordion Content -->
-    <div id="timeline-accordion-content" class="border-t border-dense-line/50 p-4 space-y-4 max-h-[300px] overflow-y-auto">
+    <div id="timeline-accordion-content" class="border-t border-dense-grid p-4 space-y-4 max-h-[300px] overflow-y-auto">
         {% set recent_leaves = leaves[:5] %}
         {% if recent_leaves %}
-            <div class="relative pl-4 border-l border-dense-line space-y-4 py-1 text-xs">
+            <div class="relative pl-4 border-l border-dense-grid space-y-4 py-1 text-xs">
                 {% for leave in recent_leaves %}
                     <div class="relative group">
                         <!-- Dot Indicator -->

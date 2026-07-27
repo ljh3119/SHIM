@@ -12,7 +12,7 @@
         /* Dense layout shared style block */
         .glass-panel {
             background: #ffffff;
-            border: 1px solid #d0d5dd;
+            border: 1px solid var(--color-dense-line);
             border-radius: 1rem;
             box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
         }
@@ -244,7 +244,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                     <button type="submit" form="adminPwdForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:w-auto sm:text-sm">
                         변경하기
                     </button>
@@ -311,7 +311,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                     <button type="submit" form="userPwdForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 sm:w-auto sm:text-sm">
                         변경하기
                     </button>
@@ -408,7 +408,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                     <button type="submit" form="timelineApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
                         신청하기
                     </button>
@@ -433,7 +433,7 @@
                         <!-- Dynamic content will be injected by JavaScript -->
                     </div>
                 </div>
-                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6" id="actionModalFooter">
+                <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6" id="actionModalFooter">
                     <!-- Action buttons will be injected by JavaScript -->
                 </div>
             </div>
@@ -621,27 +621,27 @@
         }
 
         content.innerHTML = `
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청인</span>
                 <span class="col-span-2 font-bold">${userName}</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">팀</span>
                 <span>${userTeam || '—'}</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청 일자</span>
                 <span class="col-span-2 font-bold">${dateStr}</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">연차 구분</span>
                 <span class="col-span-2 font-bold">${duration}${deductiveLabel}</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청 사유</span>
                 <span class="col-span-2 font-semibold text-dense-text">${reasonContent}</span>
             </div>
-            <div class="grid grid-cols-3 gap-2 border-b pb-2">
+            <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">결재 상태</span>
                 <span class="col-span-2">${statusLabel}</span>
             </div>
@@ -816,7 +816,7 @@
                                         <p id="shim-confirm-message" class="text-sm font-semibold text-dense-muted whitespace-pre-line"></p>
                                     </div>
                                 </div>
-                                <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                                <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                                     <button type="button" id="shim-confirm-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2 text-base font-bold text-white shadow-sm sm:w-auto sm:text-sm"></button>
                                     <button type="button" id="shim-confirm-cancel-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm"></button>
                                 </div>
@@ -896,7 +896,7 @@
                                             <input type="text" id="shim-prompt-input" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                         </div>
                                     </div>
-                                    <div class="flex flex-row-reverse gap-3 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
+                                    <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
                                         <button type="submit" id="shim-prompt-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dense-blue px-4 py-2 text-base font-bold text-white shadow-sm hover:bg-dense-blue/90 sm:w-auto sm:text-sm"></button>
                                         <button type="button" id="shim-prompt-cancel-btn" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft sm:w-auto sm:text-sm"></button>
                                     </div>
