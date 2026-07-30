@@ -1,6 +1,6 @@
 # 쉼(休) SHIM (Smart Holiday Information Management) / 연차 관리 시스템
 
-**릴리스 버전:** 1.9.5
+**릴리스 버전:** 1.9.6
 
 폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
 
@@ -16,7 +16,7 @@
 ### 핵심 기능
 - **정밀한 연차 신청**: 시작/종료 시각 입력 기반 차감 및 정책 단위(30/60/120분) 검증, 그리고 에어비앤비 스타일의 시작일~종료일 **기간 범위 선택(Range Selection)** 및 좌측 간편 신청 입력창과의 실시간 양방향 동기화(개인 달력 및 팀 타임라인 테이블 동시 지원, 150ms 디바운싱 탑재) 지원
 - **조직 관리**: 회사/팀별로 구분이 명확한 동적 HSL 및 엄선된 웜톤/녹색계열 고대비 HSL 색상 배지가 적용된 전사 캘린더, 타임라인, 사원 관리 뷰 (팀 색상 간섭 배제)
-- **결재 워크플로우**: 단선 결재(팀장·PM·관리자의 단일 승인/반려) 지원
+- **결재 워크플로우**: 단선 결재(팀장·PM·관리자의 단일 승인/반려)와 관리자의 승인 취소(기록 보존·차감 연차 복구) 지원
 - **모바일 사용자 업무**: 1024px 미만 화면에서 월간 캘린더, 연차 신청·조회·취소, 팀 일정과 권한별 결재 관리를 터치 중심 UI로 제공하며 필요한 월 데이터만 지연 조회
 - **일관된 화면 계층**: 관리자·사용자 PC 주요 패널과 모바일 카드의 외곽선·라운딩·그림자를 통일하고, 표·차트·달력·내부 목록은 공통 저강도 그리드로 구분
 - **브랜딩 및 커스터마이징**: 조직의 명칭, 로고 배지, 업무 시간 정책(점심시간 등) 설정
@@ -106,7 +106,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.9.5 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.9.6 -t shim:latest .
 
 # 컨테이너 실행
 
@@ -159,8 +159,8 @@ docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | 로컬 기본 경로 `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.5` | 릴리즈 시 필수 실행 |
-| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.5 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.6` | 릴리즈 시 필수 실행 |
+| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.6 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
 | **빠른 회귀 검사** | `npm test` | 핵심 검사, 약 2분 |

@@ -1,6 +1,6 @@
 services:
   shim:
-    image: ${SHIM_IMAGE:-shim:1.9.5}
+    image: ${SHIM_IMAGE:-shim:1.9.6}
     container_name: shim
     ports:
       - "8000:8000"

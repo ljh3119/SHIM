@@ -118,6 +118,22 @@ def main() -> int:
     require(team_calendar, "border-bottom: 2px solid #175cd3", "팀 일정 선택선")
     require(approvals, "border-dense-amber/20", "결재 선택 상태")
     require(history, "border border-[#abefc6]", "승인 상태")
+    require(
+        admin_timeline,
+        "changeStatus({{ leave.id }}, this, 'CANCELED')",
+        "관리자 승인 취소 버튼",
+    )
+    require(admin_timeline, "min-w-[11rem]", "관리자 타임라인 관리 열")
+    require(admin_timeline, "grid-cols-3", "관리자 작업 버튼 고정 열")
+    require(admin_timeline, 'aria-hidden="true"', "관리자 취소 버튼 빈 열")
+    require(admin_timeline, "취소</button>", "관리자 승인 취소 라벨")
+    require(admin_timeline, "삭제</button>", "관리자 삭제 라벨")
+    require(
+        admin_calendar,
+        "previousStatus === 'APPROVED' && newStatus === 'CANCELED'",
+        "관리자 승인 취소 확인",
+    )
+
 
     for label, template in (
         ("관리자 캘린더", admin_calendar),

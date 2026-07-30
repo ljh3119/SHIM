@@ -919,10 +919,17 @@ async function deleteLeave(id, btn) {
     });
 }
 
-async function changeStatus(leaveId, selectEl) {
-    const newStatus = selectEl.value;
+async function changeStatus(leaveId, selectEl, targetStatus = '') {
+    const newStatus = targetStatus || selectEl.value;
     const previousStatus = selectEl.dataset.currentStatus || '';
     let rejectionReason = '';
+
+    if(previousStatus === 'APPROVED' && newStatus === 'CANCELED') {
+        const confirmed = await shimModal.confirm(
+            '승인된 신청을 취소하시겠습니까?\n차감 대상 연차는 잔여 연차가 복구되며, 신청 기록은 취소 상태로 보존됩니다.'
+        );
+        if(!confirmed) return;
+    }
 
     if(newStatus === 'REJECTED') {
         const reasonPrompt = await shimModal.prompt('반려 사유를 입력해 주세요. (최대 500자)', { required: true });
