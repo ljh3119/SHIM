@@ -241,6 +241,10 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: true
+                },
                 plugins: {
                     legend: {
                         labels: {
@@ -282,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fill: true,
                         tension: 0.3,
                         borderWidth: 2,
+                        pointHitRadius: 12,
                         pointBackgroundColor: 'rgb(6, 118, 71)'
                     }
                 ]
