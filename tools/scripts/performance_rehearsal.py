@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
-import httpx
+import httpx2 as httpx
 
 
 DEFAULT_ENDPOINTS = (

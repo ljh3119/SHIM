@@ -13,9 +13,9 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 try:
-    import httpx
+    import httpx2 as httpx
 except ImportError:
-    print("[ERROR] 'httpx' package is required to run this graceful shutdown test.")
+    print("[ERROR] 'httpx2' package is required to run this graceful shutdown test.")
     print("Please install development dependencies using: pip install -r requirements-dev.txt")
     sys.exit(1)
 
