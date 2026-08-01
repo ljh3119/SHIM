@@ -1,7 +1,9 @@
 FROM python:3.12-slim
 
-# 타임존 설정 (기본값: UTC)
-ENV TZ=UTC
+# 타임존 설정 (기본값: UTC) 및 런타임 캐시·출력 정책
+ENV TZ=UTC \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -10,7 +12,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# 실행에 필요한 애플리케이션과 DB 초기화 코드만 포함
+COPY src ./src
+COPY tools/scripts/db_init.py ./tools/scripts/db_init.py
+COPY LICENSE ./LICENSE
 
 # Tailwind CSS 로컬 빌드 결과물이나 SQLite는 빌드나 런타임에 맞춰 자동 동기화
 EXPOSE 8000
