@@ -1,23 +1,32 @@
 # 아키텍처와 런타임
 
-SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAPI 애플리케이션입니다. 폐쇄망, 일반 Windows PC, Docker, 포터블 실행 파일 환경에서 모두 동작할 수 있도록 구조를 최대한 단순하게 유지합니다.
+SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAPI 애플리케이션입니다. 폐쇄망, 일반 Windows PC, Docker, 포터블 실행 파일 환경에서 모두 동작할 수 있도록 구조를 단순하게 유지합니다.
 
 ## 런타임 형태
 - **웹 프레임워크:** `src/app/main.py`에서 생성하는 FastAPI 애플리케이션
 - **템플릿:** 런타임 `templates/` 디렉터리에서 로드하는 Jinja2 템플릿
-- **정적 자산:** 런타임 `static/` 디렉터리에서 제공되는 Tailwind 빌드 CSS 및 정적 파일
+- **정적 자산:** 런타임 `static/` 디렉터리에서 제공되는 Tailwind CSS 빌드 결과와 기타 정적 파일
 - **데이터베이스:** 기본 경로는 `var/data/shim_internal.db`, 필요 시 `SHIM_DATA_DIR`로 대체 가능
 - **인증:** HttpOnly 쿠키에 저장되는 JWT
 - **백그라운드 작업:** 앱 lifespan에서 시작하는 일일 백업과 알림 정리 작업
 
+## 요청 경로와 화면 조합
+서버는 HTML 렌더링을 기본으로 하지만, 일부 화면은 부분 렌더링 partial을 같이 사용합니다.
+- `src/app/routers/api_user.py`의 사용자 달력과 팀 달력은 전체 페이지와 `/calendar/desktop-partial` 계열 partial 응답을 둘 다 제공합니다.
+- `src/templates/user_calendar.html`과 `src/templates/user_team_calendar.html`은 `desktop_partial` 플래그에 따라 `base.html` 또는 `partials/fragment_base.html`을 상속합니다.
+- 관리자 화면도 대시보드, 캘린더, 타임라인, 감사 같은 영역별 템플릿으로 분리되어 있습니다.
+
+이 구조는 모바일과 데스크톱, 전체 페이지와 fragment 로드를 함께 지원하려는 최근 UI 변경과도 맞닿아 있습니다.
+
 ## 시간대 불변식
 - 배포 환경의 `SHIM_TIMEZONE` 하나를 사업장 시간대로 사용하며 기본값은 `Asia/Seoul`입니다.
-- SQLite에는 Naive UTC를 저장하고 Python에서는 UTC-aware datetime만 사용합니다.
+- SQLite에는 naive UTC를 저장하고 Python에서는 timezone-aware datetime만 사용합니다.
 - 화면, 감사, 엑셀, 날짜 경계, 알림 정리 02:00은 모두 사업장 시간대로 계산합니다.
-- Docker OS 시간대는 UTC이며 브라우저·사용자별 현지 변환은 하지 않습니다.
+- Docker OS 시간대는 UTC이며 브라우저/사용자별 현지 변환은 하지 않습니다.
+
 ## 시작과 종료
 `src/app/main.py`가 애플리케이션 lifespan을 연결합니다. 시작 시에는 다음을 수행합니다.
-- 시작 점검 / 복구 실행
+- 시작 점검과 DB 복구 실행
 - 일일 백업 스케줄러 시작
 - 알림 정리 스케줄러 시작
 - 소스 실행, Docker 실행, 포터블 실행에 맞는 런타임 리소스 기준 경로 해석
@@ -35,8 +44,6 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 - `SessionLocal`을 요청 범위 세션으로 사용합니다.
 - 데이터 디렉터리는 `SHIM_DATA_DIR`, 포터블 EXE 폴더, `var/data/` 순으로 해석합니다.
 - `src/app/services/ops.py`의 복구 로직은 손상된 DB를 격리하고 최신 백업에서 복원할 수 있습니다.
-
-이 구조는 저장소가 계속 강조해 온 낮은 배포 비용과 폐쇄망 운영 방향과 맞닿아 있습니다.
 
 ## 보안 및 세션 모델
 인증은 의도적으로 가볍게 유지됩니다.
