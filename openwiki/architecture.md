@@ -59,6 +59,10 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 
 민감한 텍스트 필드는 사용 가능한 암호화 키가 있을 때 `src/app/models.py`의 `EncryptedString` SQLAlchemy 타입을 사용합니다. 키가 없을 때는 오프라인/개발 워크플로우를 유지하기 위해 평문으로 저장하는데, 이는 이 저장소에서 의도된 절충입니다.
 
+모든 HTTP 응답에는 CSP, `nosniff`, 프레임 차단, 리퍼러 차단과 카메라·마이크·위치 권한 제한 헤더를 적용합니다. 현재 템플릿 호환을 위해 CSP의 인라인 스크립트·스타일은 허용하지만 일반 화면에서 외부 출처는 허용하지 않습니다. 기본 HTTP 배포가 있으므로 HSTS는 강제하지 않습니다.
+
+OpenAPI 경로는 기본 비활성화되며 `SHIM_ENABLE_OPENAPI=true`인 개발 환경에서만 `/docs`, `/redoc`, `/openapi.json`을 제공합니다. 이때 문서 화면에 한해서만 FastAPI 기본 CDN과 폰트 출처를 CSP에 추가합니다.
+
 ## 스케줄링과 운영 상태
 `src/app/services/ops.py`에는 두 개의 장기 유지보수 루프가 있습니다.
 - **일일 백업 스케줄러**: SQLite 백업을 생성하고 오래된 백업 파일을 회전 삭제합니다.
@@ -72,6 +76,8 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 
 ### Docker
 `infra/docker/docker-compose.yml`과 `infra/docker/docker-compose.dev.yml`이 컨테이너 실행을 정의합니다. SQLite 볼륨 경로, 환경 기본값, 호스트/네트워크 차이가 이 파일들에 들어 있습니다.
+
+이미지의 healthcheck는 Python 표준 라이브러리로 `/health`를 호출합니다. 이 경로는 브랜딩 DB 조회를 건너뛰고 표준 `sqlite3` 읽기 전용 연결로 DB와 필수 테이블만 확인하므로 누락된 DB 파일을 만들거나 내부 오류를 공개하지 않습니다.
 
 ### 포터블 실행 파일
 `portable/shim_portable.py`와 `portable/build_portable.ps1`는 오프라인 환경용 Windows 번들 실행을 지원합니다. PyInstaller로 고정된 상태에서는 템플릿/정적 경로를 다른 방식으로 해석합니다.

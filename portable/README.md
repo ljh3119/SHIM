@@ -43,7 +43,7 @@ $version = (Get-Content .\package.json -Raw | ConvertFrom-Json).version
 powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 ```
 
-포터블 빌드 스크립트는 CSS 생성, 버전 재확인, PyInstaller 패키징과 ZIP 검증을 수행합니다. 최종 배포 전에는 생성된 EXE의 실기동과 버전 표시도 확인하십시오.
+포터블 빌드 스크립트는 CSS 생성, 버전 재확인, PyInstaller 패키징과 ZIP 검증을 수행합니다. 최종 배포 전에는 생성된 EXE를 실제 기동하여 `/health`의 HTTP 200, 기본 OpenAPI 세 경로의 HTTP 404, 주요 화면의 보안 헤더와 정상 종료를 확인하고 버전 표시도 확인하십시오.
 - **결과물**: `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`이 생성됩니다. 기존 산출물은 삭제하거나 덮어쓰지 않습니다.
 ### 4. 배포 주의사항
 

@@ -11,6 +11,7 @@ services:
       # Dev: optional `.env` with SHIM_SECRET_KEY
       SHIM_SECRET_KEY: "${SHIM_SECRET_KEY:-}"
       SHIM_TIMEZONE: ${SHIM_TIMEZONE:-Asia/Seoul}
+      SHIM_ENABLE_OPENAPI: "${SHIM_ENABLE_OPENAPI:-false}"
     volumes:
       # [볼륨 마운트 정책 가이드]
       # 1) 일반 Linux / NAS 환경 (추천): 
@@ -25,4 +26,3 @@ services:
 # 위 volumes 마운트를 '- shim_data:/app/var/data' 로 변경하여 사용하십시오.
 # volumes:
 #   shim_data:
-

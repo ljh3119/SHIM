@@ -1,7 +1,7 @@
 # SHIM (Smart Holiday Information Management) 상세 설계서 (Technical Specification)
 
 **애플리케이션 버전**: 1.9.6
-**최종 업데이트**: 2026-07-31
+**최종 업데이트**: 2026-08-13
 **문서 성격**: 시스템 아키텍처, 데이터 모델 및 비즈니스 규칙에 대한 기술적 표준 정의
 
 ---
@@ -201,6 +201,7 @@ SHIM은 업무용 시스템 특유의 높은 정보 밀도를 수용하기 위�
 - `infra/docker/Dockerfile`: Python Slim 이미지를 기반으로 멀티스테이지 빌드는 아니지만 최적화된 레이어를 구성합니다.
 - 컨테이너는 Uvicorn을 exec 형식으로 직접 실행합니다. DB 초기화는 FastAPI lifespan에서 한 번만 수행하며 종료 신호가 Uvicorn에 직접 전달되어 백그라운드 작업과 SQLAlchemy 엔진을 정상 정리합니다.
 - 운영 설정은 `.env`로 주입합니다. 컨테이너 OS 시간대는 Docker 이미지의 `ENV TZ=UTC`로 고정하고 Compose에서는 중복 지정하지 않습니다. 업무 날짜·화면·감사·엑셀은 `SHIM_TIMEZONE`(기본 `Asia/Seoul`)을 사용하며, `SHIM_SECRET_KEY`는 운영 전용 값으로 설정합니다.
+- 이미지 healthcheck는 외부 도구 없이 Python 표준 라이브러리로 `/health`를 호출하며 30초 시작 유예, 30초 간격, 5초 제한, 3회 재시도를 사용합니다. `unhealthy`는 장애 탐지 상태이며 restart 정책만으로 자동 복구를 보장하지 않습니다.
 
 ### 5.2 포터블(Portable) 운영
 - PyInstaller `onedir` 방식으로 Python 런타임과 의존성을 포함한 폴더형 패키지를 생성합니다. 실행 파일만 분리하지 않고 `_internal`을 포함한 전체 폴더를 배포합니다.
@@ -428,6 +429,13 @@ SHIM은 업무용 시스템 특유의 높은 정보 밀도를 수용하기 위�
 4. **안전한 출력과 실패 처리**: 모바일 JSON의 사용자 입력은 DOM 노드와 `textContent`로 출력합니다. 로딩·빈 결과·실패 상태를 구분하고 실패 시 44px 이상의 재시도 버튼을 제공합니다.
 5. **상태 및 데이터 계약**: DB 스키마와 기존 신청·취소 API는 변경하지 않습니다. 화면별 최초 로드 성공 여부만 메모리에 보관하며 뷰포트 전환 시 이미 받은 표현을 중복 조회하지 않습니다.
 6. **역할 및 표현 계약**: `STAFF`는 신청·조회·취소, `TEAM_LEAD`와 `PM`은 공유 범위의 팀 일정과 설정에 따른 결재 관리를 모바일에서 제공합니다. `ADMIN` 모바일은 조회 수준으로 제한하며 관리 데이터 변경은 PC 화면을 기준으로 합니다. 신청 내역과 결재 관리를 포함한 사용자 화면의 PC 전환점은 모두 1024px입니다.
+
+### 6.30 최소 상태 점검, OpenAPI 노출과 HTTP 보안 헤더
+
+1. **상태 점검 계약**: 인증 없는 `GET /health`는 Python `sqlite3` 읽기 전용 URI(`mode=ro`)로 `SELECT 1`, `system_settings`, `schema_versions` 조회 가능성을 확인합니다. SQLAlchemy 세션을 사용하지 않고 DB 누락·연결·스키마 오류는 경로와 예외 원문 없이 HTTP 503으로 정규화합니다.
+2. **장애 경로 분리**: 브랜딩 미들웨어는 `/health`를 사전 DB 조회에서 제외하여 상태 응답을 엔드포인트가 통제합니다. 정상은 `{"status":"ok"}`, 비정상은 `{"status":"unavailable"}`만 반환합니다.
+3. **OpenAPI 기본 비공개**: `SHIM_ENABLE_OPENAPI`가 대소문자를 무시한 `true`일 때만 `/docs`, `/redoc`, `/openapi.json`을 등록합니다. 운영 기본값은 비활성화이며 인증·접근 통제의 대체 수단으로 사용하지 않습니다.
+4. **공통 브라우저 방어선**: 모든 처리된 응답에 CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`를 적용합니다. 일반 화면은 외부 출처를 허용하지 않고, 개발 문서 화면만 FastAPI 기본 CDN·폰트 출처를 허용합니다. 인라인 템플릿 호환을 유지하며 HTTP 배포 때문에 HSTS는 강제하지 않습니다.
 
 ## 7. 주요 코드 디렉토리 구조 및 역할 (Code Directory Structure)
 

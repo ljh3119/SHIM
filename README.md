@@ -36,8 +36,10 @@
 ### 2. 보안적 제약
 - **통신 보안**: 기본 HTTP로 동작합니다. 공개망 운영 시 반드시 Nginx/NPMPlus 등을 통해 HTTPS(SSL/TLS)를 적용하고 `SHIM_SECURE_COOKIE=true`를 설정하십시오.
 - **데이터 보호**: `SHIM_SECRET_KEY`를 설정하면 사원명과 휴가 사유 등 민감정보가 암호화됩니다. DB와 키를 모두 안전하게 백업하고, 운영 중 키를 변경하거나 분실하지 마십시오.
+- **키 사고 대응**: 키 유출·분실이 의심되면 서비스를 중지하고 DB, 현재 키와 설정 파일을 한 세트로 보존하십시오. 검증된 로테이션 도구가 제공되기 전에는 운영 키를 수동 변경하거나 재생성하지 마십시오.
 - **파일 권한**: DB, `.env`, `secret.key`에 대한 OS 접근 권한과 물리적 보안을 제한해야 합니다.
 - **인증 보안**: 무차별 대입 공격 방지(계정 잠금)나 2차 인증(MFA) 기능은 현재 포함되어 있지 않습니다.
+- **HTTP 방어선**: 모든 응답에 기본 CSP, MIME 추론·프레임·리퍼러·브라우저 권한 제한 헤더를 적용합니다. 기본 HTTP 배포 호환성을 위해 HSTS는 강제하지 않습니다.
 
 ---
 
@@ -112,6 +114,9 @@ docker build -f infra/docker/Dockerfile -t shim:1.9.6 -t shim:latest .
 
 docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
 ```
+
+기동 후 `http://localhost:8000/health`가 `{"status":"ok"}`를 반환하는지 확인합니다. `/docs`, `/redoc`, `/openapi.json`은 기본적으로 비공개이며, 개발 환경에서만 `SHIM_ENABLE_OPENAPI=true`로 활성화합니다. 모든 HTTP 응답에는 CSP, MIME 스니핑·프레임·리퍼러 차단과 브라우저 권한 제한 헤더가 적용되며 HTTP 배포 호환을 위해 HSTS는 강제하지 않습니다.
+
 #### 방식 C. 폐쇄망용 포터블 실행 (Portable)
 인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
 1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`

@@ -5,6 +5,17 @@
 ## 사업장 시간대
 `SHIM_TIMEZONE`에 IANA 이름을 지정합니다. 미설정 시 `Asia/Seoul`이며 잘못된 이름은 기동 실패로 처리됩니다. Docker OS 시간대는 이미지에서 UTC로 고정되며 Compose에서 중복 지정하지 않습니다. 설정 변경은 재기동 후 적용됩니다.
 
+## 서비스 상태 점검
+- 인증 없이 `GET /health`를 호출합니다. 정상 응답은 HTTP 200과 `{"status":"ok"}`입니다.
+- DB 파일이 없거나 열 수 없고 필수 테이블을 조회할 수 없으면 세부 원인을 숨긴 HTTP 503과 `{"status":"unavailable"}`을 반환합니다.
+- Docker 이미지의 healthcheck는 30초 시작 유예 후 30초 간격, 5초 제한, 3회 재시도로 이 경로를 확인합니다.
+- `unhealthy`는 탐지 결과이며 `restart: unless-stopped`만으로 자동 재시작을 보장하지 않습니다. `docker logs shim`과 `/health`를 함께 확인해 수동 복구 여부를 판단합니다.
+
+OpenAPI 문서는 운영에서 기본 비공개입니다. 개발 목적으로만 `SHIM_ENABLE_OPENAPI=true`를 설정하며, 상태 확인에는 `/docs` 대신 `/health`를 사용합니다.
+
+## 비밀키 사고 대응
+키 유출·분실이 의심되면 서비스를 중지하고 DB, 현재 키와 설정 파일을 한 세트로 보존합니다. 검증된 로테이션 도구가 제공되기 전에는 운영 키를 변경·재생성하거나 평문·암호화 모드를 전환하지 않습니다.
+
 ## 데이터베이스 초기화와 시딩
 `tools/scripts/` 아래의 유용한 스크립트는 다음과 같습니다.
 - `db_init.py` — 데이터베이스 구조 생성 또는 초기화
@@ -60,6 +71,8 @@ Docker 지원은 `infra/docker/` 아래에 있습니다.
 - `docker-compose.dev.yml`
 - `docker-compose.test.yml`
 - `.env.example`
+
+Compose는 `SHIM_ENABLE_OPENAPI`를 기본 `false`로 전달합니다. 개발 문서를 활성화해도 OpenAPI 비공개를 인증이나 네트워크 접근 통제의 대체 수단으로 사용하지 않습니다.
 
 Compose 파일에는 SQLite 볼륨 경로, 환경 기본값, 호스트별 마운트 동작이 들어 있습니다.
 

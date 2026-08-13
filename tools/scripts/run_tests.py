@@ -19,6 +19,7 @@ SMOKE_SCRIPTS = (
     ("test_leave_service_improvements.py",),
     ("test_auth_password_limits.py",),
     ("test_ops_safety.py",),
+    ("test_http_security.py",),
 )
 RELEASE_ONLY_SCRIPTS = (
     ("test_graceful_shutdown.py",),
@@ -56,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     scripts = SMOKE_SCRIPTS + (RELEASE_ONLY_SCRIPTS if args.mode == "release" else ())
     base_env = os.environ.copy()
     base_env.pop("SHIM_SECRET_KEY", None)
+    base_env.pop("SHIM_ENABLE_OPENAPI", None)
     base_env["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(PROJECT_ROOT), base_env.get("PYTHONPATH")))
     )

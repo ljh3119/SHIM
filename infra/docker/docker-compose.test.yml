@@ -10,6 +10,7 @@ services:
       
       # 3. 데이터베이스 및 보안 비밀키 설정
       SHIM_SECRET_KEY: "${SHIM_SECRET_KEY:-}"
+      SHIM_ENABLE_OPENAPI: "${SHIM_ENABLE_OPENAPI:-false}"
     volumes:
       - ${SHIM_DATA_DIR:-../../var/data}:/app/var/data
     restart: unless-stopped

@@ -12,6 +12,7 @@
 - `test_leave_service_improvements.py` — 연차 중복·시간 입력·전일 차감·동시 요청 검증
 - `test_auth_password_limits.py` — bcrypt UTF-8 72바이트 경계 검증
 - `test_ops_safety.py` — 백업 원자성·무결성·회전과 알림 정리 실패 메트릭 검증
+- `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
 - `test_timezone_utils.py` — IANA 시간대, DST 경계, UTC 저장, 기동 실패, 화면 ISO 파싱, 서반구 날짜 보존 검증
@@ -58,6 +59,8 @@
 - SQLite PRAGMA
 - 정리 스케줄러
 - 포터블 런타임 시작 경로
+- `/health`, Docker healthcheck 또는 OpenAPI 노출 설정
+- CSP와 공통 HTTP 보안 헤더
 
 ## Docker 테스트 설정
 `infra/docker/docker-compose.test.yml`은 컨테이너 기반 테스트 환경을 위한 파일입니다. 실제 배포와 더 가까운 구성으로 앱을 검증하고 싶을 때 사용합니다.

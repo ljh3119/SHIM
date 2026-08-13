@@ -13,6 +13,7 @@ import holidays
 from contextlib import asynccontextmanager
 
 import asyncio
+import sqlite3
 from . import models, database, auth, utils
 from .database import engine, get_db, DB_PATH
 from .services.ops import verify_and_recover_db, daily_backup_scheduler, notification_cleanup_scheduler, update_system_metrics_in_db
@@ -38,7 +39,16 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
-app = FastAPI(title="SHIM", version=APP_VERSION, lifespan=lifespan)
+ENABLE_OPENAPI = os.getenv("SHIM_ENABLE_OPENAPI", "").strip().lower() == "true"
+
+app = FastAPI(
+    title="SHIM",
+    version=APP_VERSION,
+    lifespan=lifespan,
+    docs_url="/docs" if ENABLE_OPENAPI else None,
+    redoc_url="/redoc" if ENABLE_OPENAPI else None,
+    openapi_url="/openapi.json" if ENABLE_OPENAPI else None,
+)
 
 from .middlewares.cors import ClosedNetworkCORSMiddleware
 
@@ -264,10 +274,48 @@ app.include_router(api_notifications.router)
 @app.middleware("http")
 async def branding_middleware(request: Request, call_next):
     p = request.url.path
-    if p.startswith("/static") or p == "/favicon.ico":
+    if p.startswith("/static") or p in ("/favicon.ico", "/health"):
         return await call_next(request)
     await run_in_threadpool(_load_branding_into_request, request)
     return await call_next(request)
+
+
+DEFAULT_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+OPENAPI_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+    "img-src 'self' data: https://fastapi.tiangolo.com; "
+    "font-src 'self' data: https://fonts.gstatic.com; "
+    "connect-src 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        OPENAPI_CSP if ENABLE_OPENAPI and request.url.path in ("/docs", "/redoc") else DEFAULT_CSP
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
 
 
 def _compact_kr_holiday_name(name: str) -> str:
@@ -472,6 +520,25 @@ def startup_event():
         db.close()
 
 
+def _database_is_healthy(db_path: Path) -> bool:
+    try:
+        uri = f"{db_path.resolve().as_uri()}?mode=ro"
+        with sqlite3.connect(uri, uri=True, timeout=1.0) as connection:
+            connection.execute("SELECT 1").fetchone()
+            connection.execute("SELECT 1 FROM system_settings LIMIT 1").fetchone()
+            connection.execute("SELECT 1 FROM schema_versions LIMIT 1").fetchone()
+        return True
+    except Exception:
+        return False
+
+
+@app.get("/health", include_in_schema=False)
+def health():
+    if _database_is_healthy(DB_PATH):
+        return {"status": "ok"}
+    return JSONResponse(status_code=503, content={"status": "unavailable"})
+
+
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
     payload = auth.get_payload_from_token(request)
@@ -550,7 +617,5 @@ def logout(request: Request):
     return response
 
 # Reload trigger comment to refresh template cache: v3.
-
-
 
 
