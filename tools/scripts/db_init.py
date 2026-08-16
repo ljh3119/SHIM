@@ -12,6 +12,7 @@ from src.app.database import engine, DB_PATH
 from src.app import models
 from src.app.services.ops import verify_and_recover_db
 from src.app.migrations import run_all_migrations
+from src.app.key_material import resolve_key_fingerprint
 
 class DBInitLock:
     """원자적 디렉터리 생성을 활용한 파일 시스템 기반 분산 락"""
@@ -71,7 +72,8 @@ def init_db():
     lock_path = DB_PATH.parent / "migration.lock"
     with DBInitLock(lock_path):
         print("[DB_INIT] Verifying and recovering SQLite database if needed...")
-        verify_and_recover_db(DB_PATH)
+        current_key_fingerprint = resolve_key_fingerprint(DB_PATH.parent)
+        verify_and_recover_db(DB_PATH, current_key_fingerprint)
         
         print("[DB_INIT] Creating database tables...")
         models.Base.metadata.create_all(bind=engine)

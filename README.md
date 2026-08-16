@@ -1,6 +1,6 @@
 # 쉼(休) SHIM (Smart Holiday Information Management) / 연차 관리 시스템
 
-**릴리스 버전:** 1.9.7
+**릴리스 버전:** 1.9.8
 
 폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
 
@@ -22,6 +22,8 @@
 - **브랜딩 및 커스터마이징**: 조직의 명칭, 로고 배지, 업무 시간 정책(점심시간 등) 설정
 - **운영 편의성**: 2020~2050년 한국 공휴일 자동 시딩(2026년 이후 제헌절 및 대체공휴일 포함), 퇴사자 비활성화, 연도별 연차 할당 관리
 - **시스템 운영 모니터링**: 데이터베이스 용량, Uptime(가동 시간), PII 보안 상태, 백그라운드 스케줄러(회전식 백업 및 30일 경과 알림 정리) 최종 실행 일시의 영속적 메트릭 관리자 실시간 대시보드 모니터링 (26시간 초과 시 지연/점검 경고 자동 표출)
+- **포터블 장애 진단**: 백그라운드 실행은 `data/log/shim-master.log`와 `shim-app.log`를 UTF-8 순환 로그(파일당 2MiB, 백업 3개)로 보존하며, 자식 프로세스 조기 종료를 런처가 즉시 감지합니다.
+- **보수적 자동복구**: 손상 DB 자동복구는 현재 애플리케이션이 요구하는 스키마 완료 상태, 마이그레이션 집합과 현재 키 지문이 모두 일치하는 백업만 사용합니다. 호환 백업이 없으면 원본을 보존하고 기동을 중단합니다.
 
 ## 2. ⚠️ 한계 및 주의사항 (Limitations)
 
@@ -108,7 +110,7 @@ npm run dev
 #### 방식 B. Docker 컨테이너로 실행 (Production)
 ```powershell
 # 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.9.7 -t shim:latest .
+docker build -f infra/docker/Dockerfile -t shim:1.9.8 -t shim:latest .
 
 # 컨테이너 실행
 
@@ -123,6 +125,7 @@ docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
 2.  **배포**: 생성된 `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`을 대상 PC로 복사한 뒤 전체 압축을 풉니다.
 3.  **실행**: 해당 폴더 내 `SHIM_Portable.exe`를 더블 클릭하여 실행합니다.
     - 안내창을 확인하고 아무 키나 눌러 창을 닫아도 백그라운드에서 서버가 유지되며, 시스템 트레이 아이콘을 통해 관리(브라우저 열기, 서비스 종료)할 수 있습니다.
+    - 백그라운드 장애는 실행 파일 옆 `data/log/shim-master.log`와 `data/log/shim-app.log`에서 확인합니다. 포그라운드 실행은 기존처럼 콘솔에 출력합니다.
     - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
 ### Step 3. 시스템 최초 접속 및 초기 설정
 서버가 정상적으로 기동되었다면 브라우저를 통해 접속합니다.
@@ -164,8 +167,8 @@ docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
 |:--- |:--- |:--- |
 | **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
 | **DB 백업** | `.\tools\scripts\backup_db.ps1` | 로컬 기본 경로 `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.7` | 릴리즈 시 필수 실행 |
-| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.7 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
+| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.9.8` | 릴리즈 시 필수 실행 |
+| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.9.8 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
 | **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
 | **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
 | **빠른 회귀 검사** | `npm test` | 핵심 검사, 약 2분 |

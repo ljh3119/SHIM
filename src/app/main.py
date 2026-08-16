@@ -35,8 +35,15 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     
-    # Shutdown: 커넥션 풀 해제 (SQLite가 커넥션 종료 시 자동으로 WAL 병합 및 정리 수행)
+    # Shutdown: 연결 풀을 먼저 닫고 WAL을 명시적으로 병합해 포터블 종료 후 보조 파일을 남기지 않습니다.
     database.engine.dispose()
+    try:
+        with sqlite3.connect(DB_PATH, timeout=5.0) as connection:
+            checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE);").fetchone()
+        if checkpoint and checkpoint[0] != 0:
+            print(f"[SHIM WARNING] Database shutdown wal_checkpoint was busy: {checkpoint}")
+    except Exception as checkpoint_error:
+        print(f"[SHIM WARNING] Database shutdown wal_checkpoint failed: {checkpoint_error}")
     print("[SHIM] Lifespan shutdown: Database connection pool disposed successfully.")
 
 ENABLE_OPENAPI = os.getenv("SHIM_ENABLE_OPENAPI", "").strip().lower() == "true"
@@ -422,11 +429,9 @@ def startup_event():
             )
 
         # 4. 비밀키 일관성(Fail-Fast) 검증 추가
-        import hashlib
-        from .auth import get_encryption_key
-        
-        current_key = get_encryption_key()
-        current_key_hash = hashlib.sha256(current_key).hexdigest() if current_key else "PLAINTEXT_MODE"
+        from .key_material import resolve_key_fingerprint
+
+        current_key_hash = resolve_key_fingerprint(DB_PATH.parent)
         
         settings = db.query(models.SystemSettings).first()
         if settings:
@@ -580,7 +585,8 @@ def login(
 ):
     user_id = user_id.strip()
     user = db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    if not user or not auth.verify_password(password, user.password):
+    stored_password_hash = user.password if user else None
+    if not auth.verify_login_password(password, stored_password_hash):
         return templates.TemplateResponse(request=request, name="login.html", context={"error": "\uc544\uc774\ub514 \ub610\ub294 \ube44\ubc00\ubc88\ud638\uac00 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4."})
     if not user.is_active:
         return templates.TemplateResponse(request=request, name="login.html", context={"error": "\ube44\ud65c\uc131\ud654\ub41c \uacc4\uc815\uc785\ub2c8\ub2e4."})
@@ -617,5 +623,3 @@ def logout(request: Request):
     return response
 
 # Reload trigger comment to refresh template cache: v3.
-
-

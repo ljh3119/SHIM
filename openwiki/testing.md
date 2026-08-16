@@ -4,13 +4,15 @@
 
 ## 테스트 및 검증 스크립트
 `tools/scripts/` 아래에서 발견되는 파일:
-- `test_db_recovery.py` — 손상 감지와 백업 복구 경로 검증
+- `test_db_recovery.py` — 키·현재 스키마 호환 백업 선택과 격리·설치·최종 검증 실패 원복 경로 검증
 - `test_duplicate_execution.py` — 스케줄러/워커 중복 실행 패턴 방지
 - `test_graceful_shutdown.py` — 정상 종료와 시그널 처리 검증
 - `test_memory_leak.py` — 반복 작업 중 메모리 동작 점검
 - `test_secret_key_security.py` — 공개 JWT 키 거부와 Zero-Configuration 키 생성·재사용 검증
 - `test_leave_service_improvements.py` — 연차 중복·시간 입력·전일 차감·동시 요청 검증
 - `test_auth_password_limits.py` — bcrypt UTF-8 72바이트 경계 검증
+- `test_login_security.py` — 존재·미존재 계정의 실제 HTTP 및 bcrypt 호출 구조, ASCII·다중바이트 72/73바이트, 빈·손상 해시, 비활성 계정과 HS256 고정 검증
+- `test_portable_logging.py` — 항상 격리된 임시 데이터 폴더에서 포터블 단일 파일 writer, 한글 UTF-8 순환, 백업·DB 초기화 오류, handler 오류 재귀 방지, 로그 초기화 실패·자식 조기 종료·worker 실패 코드 보존·트레이 등록 실패 중단을 검증하고 Windows에서는 실제 master·worker·트레이 종료 event, lifespan·Uvicorn 종료와 WAL/SHM 정리까지 확인
 - `test_ops_safety.py` — 백업 원자성·무결성·회전과 알림 정리 실패 메트릭 검증
 - `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
@@ -59,6 +61,7 @@
 - SQLite PRAGMA
 - 정리 스케줄러
 - 포터블 런타임 시작 경로
+- 포터블 트레이·master·worker 종료 전달과 WAL/SHM 정리
 - `/health`, Docker healthcheck 또는 OpenAPI 노출 설정
 - CSP와 공통 HTTP 보안 헤더
 

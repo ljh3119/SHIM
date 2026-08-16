@@ -18,6 +18,8 @@ SMOKE_SCRIPTS = (
     ("test_secret_key_security.py",),
     ("test_leave_service_improvements.py",),
     ("test_auth_password_limits.py",),
+    ("test_login_security.py",),
+    ("test_portable_logging.py",),
     ("test_ops_safety.py",),
     ("test_http_security.py",),
 )

@@ -45,6 +45,7 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 
 포터블 빌드 스크립트는 CSS 생성, 버전 재확인, PyInstaller 패키징과 ZIP 검증을 수행합니다. 최종 배포 전에는 생성된 EXE를 실제 기동하여 `/health`의 HTTP 200, 기본 OpenAPI 세 경로의 HTTP 404, 주요 화면의 보안 헤더와 정상 종료를 확인하고 버전 표시도 확인하십시오.
 - **결과물**: `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`이 생성됩니다. 기존 산출물은 삭제하거나 덮어쓰지 않습니다.
+- **로그·종료 회귀**: `test_portable_logging.py`는 운영 데이터와 분리된 임시 폴더에서 한글 UTF-8·순환·백업 및 DB 초기화 오류·handler 오류 재귀 방지·자식 조기 종료를 확인합니다. Windows에서는 실제 master → worker를 기동하고 트레이 종료 명령을 보내 정상 종료 event 수신, lifespan·Uvicorn 종료, 강제 종료 미사용과 WAL/SHM 정리까지 검증합니다. 실제 ZIP에서도 같은 경로와 손상 DB 실패 경로를 확인합니다.
 ### 4. 배포 주의사항
 
 - 최종 사용자에게는 최신 버전별 ZIP 한 파일을 전달하고, 대상 PC에서 전체 압축을 풀도록 안내합니다.

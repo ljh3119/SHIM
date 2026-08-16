@@ -3,15 +3,18 @@ from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
 import os
-import hashlib
-import base64
 from fastapi import Request, HTTPException, status
 from .database import _resolve_data_dir
+from .key_material import (
+    INSECURE_DEFAULT_SECRET_KEY,
+    read_secret_file,
+    resolve_encryption_key,
+)
 import secrets
 from functools import lru_cache
 
-INSECURE_DEFAULT_SECRET_KEY = "shim_change_this_secret_key_before_operation"
 BCRYPT_MAX_PASSWORD_BYTES = 72
+DUMMY_PASSWORD_HASH = "$2b$12$LQv3c1yqBWpY0wK7Hro4qee0kkcB0PJj8YwHbNiY0nAqdYz8lY4qK"
 
 
 def _resolve_secret_key() -> str:
@@ -31,11 +34,9 @@ def _resolve_secret_key() -> str:
         data_dir.mkdir(parents=True, exist_ok=True)
         secret_file = data_dir / "secret.key"
 
-        if secret_file.exists():
-            content = secret_file.read_text(encoding="utf-8")
-            actual_keys = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
-            if actual_keys:
-                return actual_keys[0]
+        existing_key, _ = read_secret_file(secret_file)
+        if existing_key:
+            return existing_key
 
         # Generate a new random secret key (64 characters)
         new_key = secrets.token_urlsafe(48)
@@ -50,28 +51,7 @@ def _resolve_secret_key() -> str:
 
 @lru_cache(maxsize=1)
 def get_encryption_key() -> bytes | None:
-    env_key = os.getenv("SHIM_SECRET_KEY", "").strip()
-    key_source = None
-    if env_key and env_key != INSECURE_DEFAULT_SECRET_KEY:
-        key_source = env_key
-    else:
-        try:
-            data_dir = _resolve_data_dir()
-            secret_file = data_dir / "secret.key"
-            if secret_file.exists():
-                content = secret_file.read_text(encoding="utf-8")
-                if not content.startswith("# AUTO-GENERATED"):
-                    actual_keys = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
-                    if actual_keys:
-                        key_source = actual_keys[0]
-        except Exception as e:
-            print(f"[AUTH] Error reading secret.key for encryption: {e}")
-
-    if not key_source:
-        return None
-
-    hashed = hashlib.sha256(key_source.encode('utf-8')).digest()
-    return base64.urlsafe_b64encode(hashed)
+    return resolve_encryption_key(_resolve_data_dir())
 
 def clear_encryption_key_cache():
     """Clear the encryption key lru_cache (useful for tests when env vars change)."""
@@ -115,6 +95,20 @@ def verify_password(plain_password, hashed_password):
         return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
     except ValueError:
         return False
+
+
+def verify_login_password(plain_password: str, stored_password_hash: str | None) -> bool:
+    """로그인용 검증: 존재하지 않는 계정도 같은 bcrypt 비용을 지불합니다."""
+    password_bytes = plain_password.encode("utf-8")
+    if len(password_bytes) > BCRYPT_MAX_PASSWORD_BYTES:
+        return False
+
+    candidate_hash = stored_password_hash or DUMMY_PASSWORD_HASH
+    try:
+        verified = bcrypt.checkpw(password_bytes, candidate_hash.encode("utf-8"))
+    except ValueError:
+        return False
+    return bool(stored_password_hash) and verified
 
 def get_password_hash(password):
     password_bytes = password.encode("utf-8")

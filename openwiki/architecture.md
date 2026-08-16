@@ -36,6 +36,7 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 관련 소스:
 - `src/app/main.py`
 - `src/app/services/ops.py`
+- `src/app/key_material.py`
 - `src/app/database.py`
 
 ## SQLite 전략
@@ -43,12 +44,13 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 - 연결 시 `src/app/database.py`에서 WAL mode, foreign key, durability 관련 PRAGMA를 활성화합니다.
 - `SessionLocal`을 요청 범위 세션으로 사용합니다.
 - 데이터 디렉터리는 `SHIM_DATA_DIR`, 포터블 EXE 폴더, `var/data/` 순으로 해석합니다.
-- `src/app/services/ops.py`의 복구 로직은 손상된 DB를 격리하고 최신 백업에서 복원할 수 있습니다.
+- `src/app/services/ops.py`의 복구 로직은 손상된 DB를 격리하고, 현재 테이블·필수 컬럼·migration 집합·단일 설정 행·키 지문을 모두 만족하는 최신 호환 백업만 복원합니다. 백업 사전검증부터 설치 후 최종 재검증까지 실패하면 원본 DB·WAL·SHM을 역순 원복하며 파일을 삭제하지 않습니다.
 
 ## 보안 및 세션 모델
 인증은 의도적으로 가볍게 유지됩니다.
 - 자격 증명은 `src/app/auth.py`에서 bcrypt로 검증합니다.
-- bcrypt 비밀번호 입력은 UTF-8 72바이트를 상한으로 하며 초과 검증 입력은 인증 실패로 정규화합니다.
+- bcrypt 비밀번호 입력은 UTF-8 72바이트를 상한으로 하며 초과 입력은 계정 존재 여부와 무관하게 bcrypt 호출 없이 인증 실패로 정규화합니다. 유효 길이의 미존재 계정은 고정 cost 12 더미 해시를 사용해 실제 계정 실패와 같은 한 번의 검증 경로를 거칩니다. 저장 해시가 비어 있거나 손상됐으면 더미 검증 결과와 무관하게 인증에 실패합니다.
+- `src/app/key_material.py`는 환경변수와 기존 키 파일만 읽어 암호화 모드·Fernet 키·키 지문을 판정하며 DB, 디렉터리와 키 파일을 생성하지 않습니다. 존재하는 키 파일의 읽기 오류는 평문으로 폴백하지 않고 기동 실패로 처리합니다.
 - 공개된 예전 JWT 기본키는 거부하고, Zero-Configuration 키 파일을 만들거나 읽을 수 없으면 공개 폴백 없이 기동을 중단합니다.
 - JWT payload에는 subject와 token version이 포함됩니다.
 - `src/app/dependencies.py`는 토큰 버전이 사용자 행과 일치하지 않으면 요청을 거부합니다.
@@ -81,6 +83,8 @@ OpenAPI 경로는 기본 비활성화되며 `SHIM_ENABLE_OPENAPI=true`인 개발
 
 ### 포터블 실행 파일
 `portable/shim_portable.py`와 `portable/build_portable.ps1`는 오프라인 환경용 Windows 번들 실행을 지원합니다. PyInstaller로 고정된 상태에서는 템플릿/정적 경로를 다른 방식으로 해석합니다.
+
+백그라운드 실행은 launcher → master → Uvicorn worker 구조이며 master와 worker가 각각 `data/log/shim-master.log`, `shim-app.log`에 기록합니다. 프로세스마다 하나의 UTF-8 `RotatingFileHandler`만 사용하고 파일당 2MiB, 백업 3개를 유지합니다. 파일 기록·순환 중 handler 오류는 같은 stderr adapter로 재진입하지 않으며, 로그 파일을 처음 열 수 없는 경우에는 기동을 실패시킵니다. launcher는 포트 대기 중 master 조기 종료도 확인하며 worker의 종료 코드는 master와 launcher까지 전파됩니다. 트레이 스레드는 종료 event와 15초 안전망만 담당하고 master 메인 흐름이 실제 종료 코드와 자원 정리를 확정합니다. 트레이 창 클래스·창·아이콘 등록은 worker 생성 전에 확인하며 실패 시 로그와 종료 코드 1을 남기고 중단합니다. 포그라운드 실행은 콘솔 로그를 유지합니다.
 
 ## 주의할 점
 - UI, 템플릿 컨텍스트, 정책 헬퍼는 서로 강하게 연결되어 있으므로 한쪽만 바꾸면 안 됩니다.

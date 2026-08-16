@@ -7,6 +7,8 @@ import time
 import argparse
 import threading
 import webbrowser
+import logging
+from logging.handlers import RotatingFileHandler
 
 import uvicorn
 
@@ -31,6 +33,14 @@ if IS_WINDOWS:
     # Mutex & Window Lookup APIs
     kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
     kernel32.CreateMutexW.restype = wintypes.HANDLE
+    kernel32.CreateEventW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel32.CreateEventW.restype = wintypes.HANDLE
+    kernel32.OpenEventW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel32.OpenEventW.restype = wintypes.HANDLE
+    kernel32.SetEvent.argtypes = [wintypes.HANDLE]
+    kernel32.SetEvent.restype = wintypes.BOOL
+    kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.WaitForSingleObject.restype = wintypes.DWORD
     kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel32.CloseHandle.restype = wintypes.BOOL
     kernel32.GetLastError.argtypes = []
@@ -112,6 +122,9 @@ if IS_WINDOWS:
     NIF_ICON = 2
     NIF_TIP = 4
     NIF_INFO = 16
+    SYNCHRONIZE = 0x00100000
+    INFINITE = 0xFFFFFFFF
+    WAIT_OBJECT_0 = 0
 
     class NOTIFYICONDATAW(ctypes.Structure):
         _fields_ = [
@@ -174,6 +187,9 @@ else:
     NIF_ICON = 0
     NIF_TIP = 0
     NIF_INFO = 0
+    SYNCHRONIZE = 0
+    INFINITE = 0
+    WAIT_OBJECT_0 = 0
 
     class DummyStructure:
         pass
@@ -188,6 +204,88 @@ else:
 _hwnd = None
 _uvicorn_proc = None
 _shim_mutex = None
+_shutdown_event_handle = None
+
+LOG_MAX_BYTES = 2 * 1024 * 1024
+LOG_BACKUP_COUNT = 3
+
+
+class _PortableRotatingFileHandler(RotatingFileHandler):
+    def handleError(self, record):
+        # stderr도 이 handler로 연결되므로 표준 handleError의 stderr 출력은 재귀합니다.
+        # 시작 시 파일을 열지 못한 경우는 생성자에서 예외가 발생해 별도로 기동을 중단합니다.
+        return
+
+
+class _LoggerWriter:
+    """print/stdout 출력을 같은 프로세스의 단일 로그 handler로 전달합니다."""
+
+    def __init__(self, logger, level):
+        self.logger = logger
+        self.level = level
+        self._buffer = ""
+
+    def write(self, message):
+        self._buffer += str(message)
+        while "\n" in self._buffer:
+            line, self._buffer = self._buffer.split("\n", 1)
+            if line.rstrip("\r"):
+                self.logger.log(self.level, line.rstrip("\r"))
+        return len(message)
+
+    def flush(self):
+        if self._buffer:
+            self.logger.log(self.level, self._buffer.rstrip("\r"))
+            self._buffer = ""
+
+    def isatty(self):
+        return False
+
+
+def configure_background_logging(file_name: str, *, max_bytes: int = LOG_MAX_BYTES):
+    from src.app.database import _resolve_data_dir
+
+    log_dir = _resolve_data_dir() / "log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / file_name
+    handler = _PortableRotatingFileHandler(
+        log_path,
+        maxBytes=max_bytes,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+
+    root_logger = logging.getLogger()
+    for existing in list(root_logger.handlers):
+        root_logger.removeHandler(existing)
+        existing.close()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(handler)
+
+    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        logger = logging.getLogger(logger_name)
+        logger.handlers.clear()
+        logger.propagate = True
+        logger.setLevel(logging.INFO)
+
+    sys.stdout = _LoggerWriter(logging.getLogger("shim.stdout"), logging.INFO)
+    sys.stderr = _LoggerWriter(logging.getLogger("shim.stderr"), logging.ERROR)
+    logging.getLogger("shim.portable").info("Background logging initialized: %s", file_name)
+    return handler
+
+
+def _close_shutdown_event():
+    global _shutdown_event_handle
+    if _shutdown_event_handle and IS_WINDOWS:
+        kernel32.CloseHandle(_shutdown_event_handle)
+    _shutdown_event_handle = None
+
+
+def _wait_for_shutdown_event(event_handle, server):
+    if kernel32.WaitForSingleObject(event_handle, INFINITE) == WAIT_OBJECT_0:
+        logging.getLogger("shim.portable").info("Graceful shutdown event received.")
+        server.should_exit = True
 
 
 def release_mutex():
@@ -228,14 +326,17 @@ def graceful_exit(hwnd):
     print("\n[알림] 시스템을 안전하게 종료합니다...")
     time.sleep(1.5)
     
-    # 3. Uvicorn 자식 프로세스에게 CTRL_BREAK_EVENT 송신
+    # 3. 콘솔이 없는 Uvicorn worker에 named event로 정상 종료 요청
     global _uvicorn_proc
+    shutdown_requested = False
+    if _shutdown_event_handle:
+        shutdown_requested = bool(kernel32.SetEvent(_shutdown_event_handle))
+    if not shutdown_requested:
+        print("[오류] 자식 프로세스 정상 종료 이벤트 전송 실패")
     if _uvicorn_proc:
         try:
-            import signal
-            _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
             try:
-                _uvicorn_proc.wait(timeout=3.0)
+                _uvicorn_proc.wait(timeout=15.0)
             except subprocess.TimeoutExpired:
                 print("[알림] 자식 프로세스가 응답하지 않아 강제 종료합니다...")
                 _uvicorn_proc.kill()
@@ -243,10 +344,8 @@ def graceful_exit(hwnd):
         except Exception as e:
             print(f"[오류] 자식 프로세스 종료 시그널 전송 실패: {e}")
     
-    # 4. 트레이 자원 반환 및 메시지 루프 종료
-    cleanup_tray_icon(hwnd)
+    # 4. 메시지 루프만 종료합니다. worker 종료 코드와 자원 정리는 master가 담당합니다.
     user32.PostQuitMessage(0)
-    os._exit(0)
 
 def trigger_duplicate_warning_balloon(hwnd):
     nid = NOTIFYICONDATAW()
@@ -295,20 +394,34 @@ def wnd_proc(hwnd, msg, wparam, lparam):
 
 _wndproc_delegate = WNDPROC(wnd_proc)
 
-def run_tray_icon_thread(port):
+def run_tray_icon_thread(port, startup_event, startup_errors):
     global _current_port, _nid, _hwnd, _wndproc_delegate
     _current_port = port
+    logger = logging.getLogger("shim.portable")
+
+    def fail_startup(message):
+        logger.error(message)
+        startup_errors.append(message)
+        startup_event.set()
 
     wc = WNDCLASSW()
     wc.lpfnWndProc = _wndproc_delegate
     wc.hInstance = kernel32.GetModuleHandleW(None)
     wc.lpszClassName = "SHIMTrayClass"
-    user32.RegisterClassW(ctypes.byref(wc))
+    atom = user32.RegisterClassW(ctypes.byref(wc))
+    if not atom:
+        error_code = kernel32.GetLastError()
+        if error_code != 1410:  # ERROR_CLASS_ALREADY_EXISTS
+            fail_startup(f"Failed to register tray window class. WinError={error_code}")
+            return
     
     hwnd = user32.CreateWindowExW(
         0, wc.lpszClassName, "SHIM Tray Window",
         0, 0, 0, 0, 0, None, None, wc.hInstance, None
     )
+    if not hwnd:
+        fail_startup(f"Failed to create tray window. WinError={kernel32.GetLastError()}")
+        return
     _hwnd = hwnd
     
     _nid.cbSize = ctypes.sizeof(NOTIFYICONDATAW)
@@ -329,7 +442,10 @@ def run_tray_icon_thread(port):
     _nid.szInfo = f"http://localhost:{port} 로 접속하세요."
     _nid.dwInfoFlags = 1 # NIIF_INFO
     
-    shell32.Shell_NotifyIconW(NIM_ADD, ctypes.byref(_nid))
+    if not shell32.Shell_NotifyIconW(NIM_ADD, ctypes.byref(_nid)):
+        fail_startup(f"Failed to add tray icon. WinError={kernel32.GetLastError()}")
+        return
+    startup_event.set()
     
     msg = wintypes.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
@@ -355,6 +471,17 @@ def resolve_port(start_port=8000) -> int:
             return port
         port += 1
     return start_port
+
+
+def wait_for_background_start(proc, port: int, *, attempts: int = 20, delay: float = 0.5):
+    for _ in range(attempts):
+        time.sleep(delay)
+        exit_code = proc.poll()
+        if exit_code is not None:
+            return False, exit_code
+        if is_port_in_use(port):
+            return True, None
+    return False, None
 
 
 def input_with_timeout(prompt: str, timeout=5.0, default="") -> str:
@@ -453,6 +580,7 @@ def main():
     parser.add_argument("--port", type=int, help="Port to run the server on")
     parser.add_argument("--foreground", "-f", action="store_true", help="Run in foreground mode (do not fork)")
     parser.add_argument("--uvicorn-worker", action="store_true", help="Start actual Uvicorn worker process")
+    parser.add_argument("--shutdown-event", help=argparse.SUPPRESS)
     parser.add_argument("--reset-admin", action="store_true", help="Reset admin password to 0000")
     args = parser.parse_args()
 
@@ -495,59 +623,144 @@ def main():
         port = args.port if args.port else 8000
         os.environ["SHIM_PORT"] = str(port)
         try:
+            configure_background_logging("shim-app.log")
+        except Exception as e:
+            print(f"[LOG INIT ERROR] Failed to initialize app log: {e}")
+            sys.exit(1)
+        worker_shutdown_handle = None
+        try:
+            if args.shutdown_event:
+                if not IS_WINDOWS:
+                    raise RuntimeError("Portable shutdown events require Windows.")
+                worker_shutdown_handle = kernel32.OpenEventW(SYNCHRONIZE, False, args.shutdown_event)
+                if not worker_shutdown_handle:
+                    raise ctypes.WinError()
+        except Exception as e:
+            print(f"[SHUTDOWN INIT ERROR] Failed to open worker shutdown event: {e}")
+            sys.exit(1)
+
+        try:
             from tools.scripts.db_init import init_db
             init_db()
         except Exception as e:
             print(f"[DB INIT ERROR] Failed to initialize database: {e}")
             sys.exit(1)
+
         try:
             from src.app.main import app as fastapi_app
-            uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False)
+            if worker_shutdown_handle:
+                config = uvicorn.Config(
+                    fastapi_app,
+                    host="0.0.0.0",
+                    port=port,
+                    reload=False,
+                    log_config=None,
+                )
+                server = uvicorn.Server(config)
+                threading.Thread(
+                    target=_wait_for_shutdown_event,
+                    args=(worker_shutdown_handle, server),
+                    daemon=True,
+                ).start()
+                server.run()
+            else:
+                uvicorn.run(fastapi_app, host="0.0.0.0", port=port, reload=False, log_config=None)
         except KeyboardInterrupt:
             pass
+        except Exception as e:
+            print(f"[SERVER ERROR] Uvicorn worker failed: {e}")
+            sys.exit(1)
+        finally:
+            if worker_shutdown_handle:
+                kernel32.CloseHandle(worker_shutdown_handle)
         sys.exit(0)
 
     if args.server:
         # Background Server Instance (Master process managing tray icon and worker process)
         port = args.port if args.port else 8000
         os.environ["SHIM_PORT"] = str(port)
+        try:
+            configure_background_logging("shim-master.log")
+        except Exception as e:
+            print(f"[LOG INIT ERROR] Failed to initialize master log: {e}")
+            sys.exit(1)
 
-        # Start native system tray thread
-        t = threading.Thread(target=run_tray_icon_thread, args=(port,), daemon=True)
+        # Create the shutdown event before exposing the tray Exit action.
+        global _shutdown_event_handle
+        shutdown_event_name = f"Local\\SHIM_Portable_Shutdown_{os.getpid()}_{port}"
+        _shutdown_event_handle = kernel32.CreateEventW(None, False, False, shutdown_event_name)
+        if not _shutdown_event_handle:
+            print(f"[SHUTDOWN INIT ERROR] Failed to create worker shutdown event: {ctypes.WinError()}")
+            sys.exit(1)
+
+        # Start native system tray thread and fail before spawning the worker if it cannot initialize.
+        tray_startup_event = threading.Event()
+        tray_startup_errors = []
+        t = threading.Thread(
+            target=run_tray_icon_thread,
+            args=(port, tray_startup_event, tray_startup_errors),
+            daemon=True,
+        )
         t.start()
+        if not tray_startup_event.wait(timeout=5.0):
+            print("[TRAY INIT ERROR] Timed out while initializing the tray icon.")
+            _close_shutdown_event()
+            sys.exit(1)
+        if tray_startup_errors:
+            print(f"[TRAY INIT ERROR] {tray_startup_errors[0]}")
+            _close_shutdown_event()
+            sys.exit(1)
 
         # Spawn uvicorn worker process
         exe_path = sys.executable
         if getattr(sys, "frozen", False):
-            cmd = [exe_path, "--uvicorn-worker", "--port", str(port)]
+            cmd = [
+                exe_path,
+                "--uvicorn-worker",
+                "--port",
+                str(port),
+                "--shutdown-event",
+                shutdown_event_name,
+            ]
         else:
             script_path = str(Path(__file__).resolve())
-            cmd = [sys.executable, script_path, "--uvicorn-worker", "--port", str(port)]
+            cmd = [
+                sys.executable,
+                script_path,
+                "--uvicorn-worker",
+                "--port",
+                str(port),
+                "--shutdown-event",
+                shutdown_event_name,
+            ]
 
         # CREATE_NEW_PROCESS_GROUP = 0x00000200, CREATE_NO_WINDOW = 0x08000000
         flags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x08000000
         
         global _uvicorn_proc
+        worker_exit_code = 1
         try:
             _uvicorn_proc = subprocess.Popen(cmd, creationflags=flags)
-            _uvicorn_proc.wait()
+            worker_exit_code = _uvicorn_proc.wait()
         except KeyboardInterrupt:
-            # Handle SIGINT to shutdown graceful
+            # Console interruption uses the same graceful event as the tray action.
             if _uvicorn_proc:
                 try:
-                    import signal
-                    _uvicorn_proc.send_signal(signal.CTRL_BREAK_EVENT)
+                    kernel32.SetEvent(_shutdown_event_handle)
                     try:
-                        _uvicorn_proc.wait(timeout=3.0)
+                        worker_exit_code = _uvicorn_proc.wait(timeout=15.0)
                     except subprocess.TimeoutExpired:
                         _uvicorn_proc.kill()
-                        _uvicorn_proc.wait(timeout=1.0)
+                        worker_exit_code = _uvicorn_proc.wait(timeout=1.0)
                 except Exception:
                     pass
+            else:
+                worker_exit_code = 0
         finally:
+            _close_shutdown_event()
             if _hwnd:
                 cleanup_tray_icon(_hwnd)
-        sys.exit(0)
+        sys.exit(worker_exit_code)
 
     if args.foreground:
         # Foreground Interactive Instance
@@ -649,21 +862,18 @@ def main():
     CREATE_NO_WINDOW = 0x08000000
     try:
         release_mutex()
-        subprocess.Popen(cmd, creationflags=CREATE_NO_WINDOW)
+        background_proc = subprocess.Popen(cmd, creationflags=CREATE_NO_WINDOW)
     except Exception as e:
         print(f"[오류] 백그라운드 서버 실행 실패: {e}")
         time.sleep(3)
         sys.exit(1)
 
     # Wait and check if the port is now occupied by the server (poll for up to 10 seconds)
-    server_started = False
-    for _ in range(20): # 20 * 0.5s = 10s
-        time.sleep(0.5)
-        if is_port_in_use(port):
-            server_started = True
-            break
+    server_started, early_exit_code = wait_for_background_start(background_proc, port)
 
     if not server_started:
+        if early_exit_code is not None:
+            print(f"[오류] 백그라운드 서버가 조기 종료되었습니다. 종료 코드: {early_exit_code}")
         print("[오류] 서버 기동 실패. 백그라운드 프로세스가 정상 시작되지 않았습니다.")
         time.sleep(3)
         sys.exit(1)

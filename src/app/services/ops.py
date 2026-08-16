@@ -6,11 +6,13 @@ import shutil
 import sqlite3
 import asyncio
 import threading
+import uuid
 from datetime import datetime, time as datetime_time, timedelta, timezone
 from pathlib import Path
 from src.app.utils import get_business_now, get_business_timezone
 from src.app import models
 from src.app.database import DB_PATH
+from src.app.migrations import MIGRATIONS
 
 # 전역 백업 스레드 락 도입 (동시 백업 쓰기 방지 및 SQLite 락 충돌 우회)
 _backup_lock = threading.Lock()
@@ -116,7 +118,10 @@ async def daily_backup_scheduler(db_path: Path):
 def _is_sqlite_healthy(db_path: Path) -> bool:
     conn = None
     try:
-        conn = sqlite3.connect(str(db_path.resolve()), timeout=10.0)
+        if not db_path.is_file():
+            return False
+        uri = f"{db_path.resolve().as_uri()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=10.0)
         conn.execute("PRAGMA query_only = ON;")
         result = conn.execute("PRAGMA quick_check;").fetchall()
         return bool(result) and result[0][0] == "ok"
@@ -152,7 +157,96 @@ def _is_corruption_error(error: sqlite3.OperationalError) -> bool:
     message = str(error).lower()
     return any(marker in message for marker in ("malformed", "not a database", "file is encrypted"))
 
-def verify_and_recover_db(db_path: Path):
+
+def _validate_recovery_candidate(db_path: Path, current_key_fingerprint: str) -> tuple[bool, str]:
+    conn = None
+    try:
+        if not db_path.is_file():
+            return False, "file is missing"
+        uri = f"{db_path.resolve().as_uri()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=10.0)
+        conn.execute("PRAGMA query_only = ON;")
+
+        quick_check = conn.execute("PRAGMA quick_check;").fetchall()
+        if not quick_check or quick_check[0][0] != "ok":
+            return False, "quick_check failed"
+        if conn.execute("PRAGMA foreign_key_check;").fetchone() is not None:
+            return False, "foreign_key_check failed"
+
+        actual_tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+        }
+        expected_tables = {table.name for table in models.Base.metadata.sorted_tables}
+        required_tables = expected_tables | {"schema_versions"}
+        missing_tables = required_tables - actual_tables
+        if missing_tables:
+            return False, f"missing tables: {sorted(missing_tables)}"
+
+        for table in models.Base.metadata.sorted_tables:
+            actual_columns = {
+                row[1] for row in conn.execute(f'PRAGMA table_info("{table.name}")').fetchall()
+            }
+            expected_columns = {column.name for column in table.columns}
+            missing_columns = expected_columns - actual_columns
+            if missing_columns:
+                return False, f"missing columns in {table.name}: {sorted(missing_columns)}"
+
+        applied_migrations = {
+            row[0] for row in conn.execute("SELECT version FROM schema_versions").fetchall()
+        }
+        current_migrations = {version for version, _ in MIGRATIONS}
+        if applied_migrations != current_migrations:
+            missing = sorted(current_migrations - applied_migrations)
+            unknown = sorted(applied_migrations - current_migrations)
+            return False, f"migration mismatch: missing={missing}, unknown={unknown}"
+
+        settings_rows = conn.execute(
+            "SELECT key_hash_snapshot FROM system_settings"
+        ).fetchall()
+        if len(settings_rows) != 1:
+            return False, f"system_settings row count is {len(settings_rows)}"
+        snapshot = settings_rows[0][0]
+        if snapshot is None or not str(snapshot).strip():
+            return False, "key_hash_snapshot is empty"
+        if snapshot != current_key_fingerprint:
+            return False, "key fingerprint mismatch"
+        return True, "ok"
+    except (OSError, sqlite3.DatabaseError) as error:
+        return False, f"validation error: {type(error).__name__}"
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _recovery_suffix() -> str:
+    stamp = get_business_now().strftime("%Y%m%d_%H%M%S_%f")
+    return f"{stamp}_{uuid.uuid4().hex[:8]}"
+
+
+def _rollback_isolated_files(moved_files: list[tuple[Path, Path]]) -> None:
+    failures = []
+    for original, isolated in reversed(moved_files):
+        try:
+            if original.exists():
+                raise FileExistsError(f"rollback target is occupied: {original}")
+            os.replace(isolated, original)
+        except Exception as error:
+            failures.append(f"{isolated} -> {original}: {error}")
+    if failures:
+        locations = "; ".join(failures)
+        raise RuntimeError(f"Database rollback failed; preserved file locations: {locations}")
+
+
+def _preserve_failed_restore(db_path: Path, suffix: str) -> Path | None:
+    if not db_path.exists():
+        return None
+    failed_path = db_path.parent / f"{db_path.name}_failed_restore_{suffix}"
+    os.replace(db_path, failed_path)
+    return failed_path
+
+
+def verify_and_recover_db(db_path: Path, current_key_fingerprint: str):
     if not db_path.exists():
         return
 
@@ -204,44 +298,88 @@ def verify_and_recover_db(db_path: Path):
             key=lambda path: path.stat().st_mtime,
             reverse=True,
         )
-        latest_backup = next((path for path in backup_files if _is_sqlite_healthy(path)), None)
+        latest_backup = None
+        for candidate in backup_files:
+            compatible, reason = _validate_recovery_candidate(candidate, current_key_fingerprint)
+            if compatible:
+                latest_backup = candidate
+                break
+            print(f"[SHIM DATABASE] Skipping incompatible recovery backup {candidate}: {reason}")
         if latest_backup is None:
-            raise RuntimeError("Database corruption confirmed, but no valid backup is available. Original database was preserved.")
+            raise RuntimeError(
+                "Database corruption confirmed, but no compatible backup is available. "
+                "Original database was preserved."
+            )
         print(f"[SHIM DATABASE] Validated recovery backup: {latest_backup}")
 
-        # 1. Isolate corrupted DB file
-        stamp = get_business_now().strftime("%Y%m%d_%H%M%S")
-        corrupted_path = db_path.parent / f"{db_path.name}_corrupted_{stamp}"
-        try:
-            shutil.move(str(db_path), str(corrupted_path))
-            print(f"[SHIM DATABASE] Isolated corrupted DB to {corrupted_path}")
-        except Exception as move_err:
-            raise RuntimeError(f"Failed to isolate corrupted database: {move_err}") from move_err
+        suffix = _recovery_suffix()
+        restore_tmp = db_path.parent / f".{db_path.name}.restore_{suffix}.tmp"
+        failed_restore = None
+        moved_files: list[tuple[Path, Path]] = []
 
-        # Also rename WAL and SHM files if they exist, to prevent conflicts
-        for suffix in ("-wal", "-shm"):
-            extra_file = db_path.parent / f"{db_path.name}{suffix}"
-            if extra_file.exists():
-                try:
-                    shutil.move(str(extra_file), db_path.parent / f"{extra_file.name}_corrupted_{stamp}")
-                except Exception as extra_err:
-                    print(f"[SHIM DATABASE ERROR] Failed to move {suffix} file: {extra_err}")
-
-        # 2. Restore only from a validated backup, using an atomic replacement.
-        restore_tmp = db_path.parent / f".{db_path.name}.restore-{stamp}.tmp"
-        print(f"[SHIM DATABASE] Restoring from validated backup: {latest_backup}")
+        # 검증된 백업을 먼저 복사하고 복사본까지 재검증한 뒤 원본 격리를 시작합니다.
         try:
             shutil.copy2(latest_backup, restore_tmp)
-            if not _is_sqlite_healthy(restore_tmp):
-                raise RuntimeError("Copied backup failed its integrity check.")
+            compatible, reason = _validate_recovery_candidate(restore_tmp, current_key_fingerprint)
+            if not compatible:
+                raise RuntimeError(f"Copied backup validation failed: {reason}")
+        except Exception as copy_error:
+            raise RuntimeError(
+                f"Failed to prepare validated backup; original database was preserved. "
+                f"Temporary file: {restore_tmp}. Error: {copy_error}"
+            ) from copy_error
+
+        sources = [db_path, Path(f"{db_path}-wal"), Path(f"{db_path}-shm")]
+        try:
+            for source in sources:
+                if not source.exists():
+                    continue
+                isolated = source.parent / f"{source.name}_corrupted_{suffix}"
+                os.replace(source, isolated)
+                moved_files.append((source, isolated))
+                print(f"[SHIM DATABASE] Isolated database file to {isolated}")
+        except Exception as isolation_error:
+            rollback_error = None
+            try:
+                _rollback_isolated_files(moved_files)
+            except Exception as error:
+                rollback_error = error
+            detail = f"Failed to isolate database files; recovery stopped: {isolation_error}"
+            if rollback_error is not None:
+                detail += f"; {rollback_error}"
+            detail += f"; temporary restore preserved at {restore_tmp}"
+            raise RuntimeError(detail) from isolation_error
+
+        try:
+            print(f"[SHIM DATABASE] Restoring from validated backup: {latest_backup}")
             os.replace(restore_tmp, db_path)
+            compatible, reason = _validate_recovery_candidate(db_path, current_key_fingerprint)
+            if not compatible:
+                raise RuntimeError(f"Installed database validation failed: {reason}")
             print("[SHIM DATABASE] Restore completed successfully. Server will proceed to boot.")
-        except Exception as restore_err:
-            if restore_tmp.exists():
-                restore_tmp.unlink()
-            if not db_path.exists() and corrupted_path.exists():
-                shutil.copy2(corrupted_path, db_path)
-            raise RuntimeError(f"Failed to restore validated backup: {restore_err}") from restore_err
+        except Exception as restore_error:
+            preserve_error = None
+            try:
+                failed_restore = _preserve_failed_restore(db_path, suffix)
+            except Exception as error:
+                preserve_error = error
+
+            rollback_error = None
+            try:
+                _rollback_isolated_files(moved_files)
+            except Exception as error:
+                rollback_error = error
+
+            details = [f"restore error: {restore_error}"]
+            if failed_restore is not None:
+                details.append(f"failed restore preserved at {failed_restore}")
+            elif restore_tmp.exists():
+                details.append(f"temporary restore preserved at {restore_tmp}")
+            if preserve_error is not None:
+                details.append(f"failed restore preservation error: {preserve_error}")
+            if rollback_error is not None:
+                details.append(str(rollback_error))
+            raise RuntimeError("Failed to install validated backup; " + "; ".join(details)) from restore_error
 
 
 def cleanup_old_notifications() -> tuple[bool, int]:
@@ -375,5 +513,3 @@ def update_system_metrics_in_db(db):
             f"Failed to update system metrics in DB: {e}",
             exc_info=True
         )
-
-
