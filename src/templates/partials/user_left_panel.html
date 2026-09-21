@@ -28,7 +28,25 @@
                     <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('desktop') : updateTimeSelectorAvailabilityG('desktop')" class="w-full rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold">
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            <!-- 유형 퀵 선택 버튼 (전일 / 오전반차 / 오후반차 / 직접선택) -->
+            <div>
+                <label class="text-[9px] font-bold text-dense-muted block mb-1">신청 유형</label>
+                <div class="grid grid-cols-4 gap-1 p-0.5 bg-dense-surface border border-dense-line rounded-lg text-center" id="easy-preset-group_desktop">
+                    <button type="button" onclick="selectLeavePreset('desktop', 'full')" id="preset-full_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
+                    <button type="button" onclick="selectLeavePreset('desktop', 'morning')" id="preset-morning_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                    <button type="button" onclick="selectLeavePreset('desktop', 'afternoon')" id="preset-afternoon_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                    {% if time_granularity_minutes != 240 %}
+                    <button type="button" onclick="selectLeavePreset('desktop', 'custom')" id="preset-custom_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                    {% else %}
+                    <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
+            <div id="easy-preset-badge_desktop" class="py-1.5 px-2.5 rounded-lg bg-dense-surface border border-dense-line text-center text-xs font-extrabold text-dense-blue">
+                전일 신청
+            </div>
+            <div id="easy-time-row_desktop" class="hidden grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[9px] font-bold">시작</label>
                     <select id="easy-start-g_desktop" name="start_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
@@ -71,6 +89,96 @@
     const lunchStartMin = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
     const lunchEndMin = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
     const timeGranularity = {{ time_granularity_minutes | default(30) }};
+    const halfDaySlots = {{ half_day_slots | tojson | safe if half_day_slots else '{}' }};
+    const isHalfDayPolicy = {{ 'true' if time_granularity_minutes == 240 else 'false' }};
+
+    window.selectLeavePreset = function(prefix, type) {
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const timeRow = document.getElementById(`easy-time-row_${prefix}`);
+        const badge = document.getElementById(`easy-preset-badge_${prefix}`);
+
+        ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+            const btn = document.getElementById(`preset-${p}_${prefix}`);
+            if (btn) {
+                if (p === type) {
+                    btn.classList.add('bg-dense-blue', 'text-white');
+                    btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                } else {
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+                }
+            }
+        });
+
+        if (type === 'custom') {
+            if (timeRow) timeRow.classList.remove('hidden');
+            if (badge) badge.classList.add('hidden');
+        } else {
+            if (timeRow) timeRow.classList.add('hidden');
+            if (badge) {
+                badge.classList.remove('hidden');
+                if (type === 'full') badge.textContent = '전일 신청';
+                else if (type === 'morning') badge.textContent = '오전 반차 신청';
+                else if (type === 'afternoon') badge.textContent = '오후 반차 신청';
+            }
+        }
+
+        if (!timeStart || !timeEnd) return;
+
+        if (type === 'full') {
+            timeStart.value = '09:00';
+            timeEnd.value = '18:00';
+        } else if (type === 'morning') {
+            if (halfDaySlots && halfDaySlots.morning) {
+                timeStart.value = halfDaySlots.morning.start_time;
+                timeEnd.value = halfDaySlots.morning.end_time;
+            } else {
+                timeStart.value = '09:00';
+                timeEnd.value = '14:00';
+            }
+        } else if (type === 'afternoon') {
+            if (halfDaySlots && halfDaySlots.afternoon) {
+                timeStart.value = halfDaySlots.afternoon.start_time;
+                timeEnd.value = halfDaySlots.afternoon.end_time;
+            } else {
+                timeStart.value = '14:00';
+                timeEnd.value = '18:00';
+            }
+        }
+        updateEstimatedTimeG(prefix);
+    };
+
+    function updatePresetButtonActiveState(prefix) {
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        if (!timeStart || !timeEnd) return;
+
+        const s = timeStart.value;
+        const e = timeEnd.value;
+        const mStart = (halfDaySlots && halfDaySlots.morning) ? halfDaySlots.morning.start_time : '09:00';
+        const mEnd = (halfDaySlots && halfDaySlots.morning) ? halfDaySlots.morning.end_time : '14:00';
+        const aStart = (halfDaySlots && halfDaySlots.afternoon) ? halfDaySlots.afternoon.start_time : '14:00';
+        const aEnd = (halfDaySlots && halfDaySlots.afternoon) ? halfDaySlots.afternoon.end_time : '18:00';
+
+        let activeType = 'custom';
+        if (s === '09:00' && e === '18:00') activeType = 'full';
+        else if (s === mStart && e === mEnd) activeType = 'morning';
+        else if (s === aStart && e === aEnd) activeType = 'afternoon';
+
+        ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+            const btn = document.getElementById(`preset-${p}_${prefix}`);
+            if (btn) {
+                if (p === activeType) {
+                    btn.classList.add('bg-dense-blue', 'text-white');
+                    btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                } else {
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+                }
+            }
+        });
+    }
 
     function parseTimeStr(timeStr) {
         if (!timeStr) return null;
@@ -210,10 +318,20 @@
         if (startVal === endVal) {
             // Single day time deduction
             const hours = calculateDeductedHoursForRange(timeStart.value, timeEnd.value);
-            calcEl.textContent = `예상 ${typeStr} 시간: ${hours}시간`;
+            if (hours === 8) {
+                calcEl.textContent = `신청 단위: 전일 (1일 / 8시간)`;
+            } else if (hours === 4) {
+                const s = timeStart.value;
+                const isMorning = (halfDaySlots && halfDaySlots.morning) ? (s === halfDaySlots.morning.start_time) : (s < '12:00');
+                const halfName = isMorning ? '오전 반차' : '오후 반차';
+                calcEl.textContent = `신청 단위: ${halfName} (0.5일)`;
+            } else {
+                calcEl.textContent = `예상 ${typeStr} 시간: ${hours}시간`;
+            }
+            updatePresetButtonActiveState(prefix);
         } else {
             // Multi-day is always full day (8 hours per workday)
-            calcEl.textContent = `예상 ${typeStr} 시간: ${workdays * 8}시간 (영업일 ${workdays}일)`;
+            calcEl.textContent = `신청 단위: 전일 ${workdays}일 (영업일 기준)`;
         }
     };
 

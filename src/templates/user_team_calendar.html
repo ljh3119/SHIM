@@ -2,7 +2,7 @@
 {% extends "partials/fragment_base.html" if desktop_partial|default(false) else "base.html" %}
 
 {% block content %}
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label, fmt_slot_short %}
 
 <style>
     .cal-table {
@@ -428,14 +428,20 @@
                                         {% set reason_str = " (사유: " ~ lv.reason ~ ")" if lv.reason else "" %}
                                         {% if not lv.is_deductive and lv.status not in ["CANCELED", "REJECTED"] %}{% set ns_pub_h.h = ns_pub_h.h + lv.snapshot_deduction_hours %}{% endif %}
                                         {% if lv.status == "APPROVED" %}
-                                            {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (승인)") %}
+                                            {% set _unused = tooltip_parts.append(prefix ~ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) ~ reason_str ~ " (승인)") %}
                                         {% elif lv.status == "PENDING" %}
-                                            {% set _unused = tooltip_parts.append(prefix ~ lv.snapshot_slot_label ~ reason_str ~ " (대기)") %}
+                                            {% set _unused = tooltip_parts.append(prefix ~ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) ~ reason_str ~ " (대기)") %}
                                         {% endif %}
                                     {% endfor %}
                                     <div class="day-block {% if ns_t.ph > 0 or ns_t.has_non_deductive_pending %}pending{% elif (ns_t.has_non_deductive or ns_t.has_non_deductive_pending) and total_h == 0 %}public{% elif total_h >= 8 %}leave-dark{% elif total_h >= 4 %}leave-medium{% else %}leave-light{% endif %} transform transition-transform hover:scale-105" title="{{ tooltip_parts|join(', ') }}">
                                         {% if total_h > 0 %}
-                                            {{ fmt_hours(total_h) }}h
+                                            {% if total_h == 8.0 %}
+                                                전일
+                                            {% elif total_h == 4.0 and cell_leaves %}
+                                                {{ fmt_slot_short(cell_leaves[0].snapshot_slot_label, cell_leaves[0].snapshot_deduction_hours) }}
+                                            {% else %}
+                                                {{ fmt_hours(total_h) }}h
+                                            {% endif %}
                                         {% else %}
                                             {{ fmt_hours(ns_pub_h.h) }}h
                                         {% endif %}
@@ -573,7 +579,8 @@
             badge.textContent = '전일';
         } else if (item.deduction_hours >= 4) {
             badge.classList.add('bg-blue-300', 'text-blue-900');
-            badge.textContent = '반일';
+            const isAm = !item.slot_label || item.slot_label.startsWith('09:') || item.slot_label.includes('오전');
+            badge.textContent = isAm ? '오전' : '오후';
         } else {
             badge.classList.add('bg-blue-50', 'text-blue-700');
             badge.textContent = `${item.deduction_hours}h`;
@@ -609,11 +616,12 @@
             team.className = 'break-words text-xs font-bold text-dense-muted';
             team.textContent = item.team || item.company || '';
             heading.append(name, team);
+            const slotDisplay = (typeof formatSlotLabel === 'function') ? formatSlotLabel(item.slot_label, item.deduction_hours) : (item.slot_label || '');
             const detail = document.createElement('p');
             detail.className = 'mt-1 break-words text-xs font-semibold text-dense-muted';
             const fullReason = item.reason || '';
             const summaryReason = fullReason.length > 60 ? `${fullReason.slice(0, 60)}…` : fullReason;
-            detail.textContent = fullReason ? `${item.slot_label} · 사유: ${summaryReason}` : item.slot_label;
+            detail.textContent = fullReason ? `${slotDisplay} · 사유: ${summaryReason}` : slotDisplay;
             info.append(heading, detail);
             if (fullReason.length > 60) {
                 const fullButton = document.createElement('button');
@@ -623,7 +631,7 @@
                 let expanded = false;
                 fullButton.addEventListener('click', () => {
                     expanded = !expanded;
-                    detail.textContent = `${item.slot_label} · 사유: ${expanded ? fullReason : summaryReason}`;
+                    detail.textContent = `${slotDisplay} · 사유: ${expanded ? fullReason : summaryReason}`;
                     fullButton.textContent = expanded ? '접기' : '전체 보기';
                 });
                 info.appendChild(fullButton);

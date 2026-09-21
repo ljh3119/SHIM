@@ -74,11 +74,11 @@
                 <div class="space-y-2 text-xs font-semibold">
                     <label for="policy_granularity" class="block text-dense-text text-[11px] font-bold">1) 최소 시간 단위</label>
                     <select id="policy_granularity" class="w-full max-w-[14rem] border border-dense-line rounded-xl p-2 bg-dense-surface focus:ring-1 focus:ring-dense-blue font-bold text-dense-text">
-                        {% for unit in [30, 60, 120] %}
-                        <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ unit }}분 단위 차감</option>
+                        {% for unit, label in [(30, '30분 단위 차감'), (60, '60분(1시간) 단위 차감'), (120, '120분(2시간) 단위 차감'), (240, '240분(반일/4시간) 단위 차감')] %}
+                        <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-[10px] text-dense-muted font-medium">입력 제어용 최소 단위입니다. 실제 차감은 선택 구간에서 점심시간 제외 후 계산됩니다.</p>
+                    <p class="text-[10px] text-dense-muted font-medium">입력 제어용 최소 단위입니다. 240분(반일) 설정 시 전일 및 표준 오전/오후 반차(0.5일)로만 신청이 허용됩니다.</p>
                 </div>
 
                 <div class="space-y-3.5 border-t pt-3 text-xs font-semibold">

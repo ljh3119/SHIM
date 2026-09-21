@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
 <div class="overflow-hidden rounded-2xl border border-dense-line bg-dense-surface shadow-sm" id="shim-timeline-accordion">
     <!-- Accordion Header -->
     <button type="button" class="w-full flex items-center justify-between p-4 focus:outline-none select-none hover:bg-dense-surface-soft/50 transition-colors" onclick="toggleTimelineAccordion()">
@@ -43,7 +43,13 @@
                             <div class="text-[10px] text-dense-muted flex items-center justify-between font-semibold">
                                 <span>
                                     {% if not leave.is_deductive %}[공가/출장] {% endif %}
-                                    {{ leave.snapshot_slot_label }} ({{ fmt_hours(leave.snapshot_deduction_hours) }}h)
+                                    {% if leave.snapshot_deduction_hours == 4.0 or leave.snapshot_slot_label in ['09:00~14:00', '09:00~13:00', '14:00~18:00', '13:00~18:00'] %}
+                                        {{ fmt_slot_label(leave.snapshot_slot_label, leave.snapshot_deduction_hours) }}
+                                    {% elif leave.snapshot_deduction_hours == 8.0 or leave.snapshot_slot_label == '09:00~18:00' %}
+                                        전일 (8h)
+                                    {% else %}
+                                        {{ leave.snapshot_slot_label }} ({{ fmt_hours(leave.snapshot_deduction_hours) }}h)
+                                    {% endif %}
                                 </span>
                                 <span class="timeline-relative-time text-[9px]" data-utc-time="{{ leave.created_at.isoformat() if leave.created_at else '' }}">
                                 </span>

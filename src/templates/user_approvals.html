@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section -->
@@ -106,7 +106,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
-                                    {{ pl.snapshot_slot_label }}
+                                    {{ fmt_slot_label(pl.snapshot_slot_label, pl.snapshot_deduction_hours) }}
                                     {% if pl.reason %}
                                     <div class="max-w-[10rem] truncate text-[11px] font-medium text-dense-muted" title="{{ pl.reason }}">
                                         사유: {{ pl.reason }}
@@ -213,7 +213,7 @@
                     </div>
 
                     <div class="text-[11px] space-y-1 font-semibold text-dense-muted">
-                        <div>사용구간: <span class="text-dense-text">{{ pl.snapshot_slot_label }}</span> ({% if pl.is_deductive %}-{{ fmt_hours(pl.snapshot_deduction_hours) }}h{% else %}0h{% endif %})</div>
+                        <div>사용구간: <span class="text-dense-text">{{ fmt_slot_label(pl.snapshot_slot_label, pl.snapshot_deduction_hours) }}</span> ({% if pl.is_deductive %}-{{ fmt_hours(pl.snapshot_deduction_hours) }}h{% else %}0h{% endif %})</div>
                         {% if pl.reason %}
                         <div class="text-[10px]">사유: <span class="text-dense-text">{{ pl.reason }}</span></div>
                         {% endif %}

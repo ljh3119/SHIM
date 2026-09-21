@@ -225,7 +225,7 @@ def set_time_policy(
     admin: models.Users = Depends(get_current_admin),
 ):
     if time_granularity_minutes not in ALLOWED_TIME_GRANULARITIES:
-        return JSONResponse(status_code=400, content={"message": "시간 단위는 30/60/120분만 허용됩니다."})
+        return JSONResponse(status_code=400, content={"message": "시간 단위는 30/60/120/240(반일)분만 허용됩니다."})
     if work_start_minute < 0 or work_start_minute > 1439 or work_end_minute < 1 or work_end_minute > 1440:
         return JSONResponse(status_code=400, content={"message": "업무시간 값이 올바르지 않습니다."})
     if work_start_minute % 30 != 0 or work_end_minute % 30 != 0:

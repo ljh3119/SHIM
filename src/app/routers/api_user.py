@@ -17,6 +17,8 @@ from ..services.leave_policy import (
     get_default_leave_status,
     resolve_time_policy_setting,
     get_system_settings,
+    resolve_half_day_slots,
+    HALF_DAY_MINUTES,
 )
 from ..dependencies import get_current_user
 from ..services.leave_service import resolve_user_yearly_allocated_hours
@@ -70,7 +72,16 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
     })
 
     time_granularity_minutes, lunch_start_minute, lunch_end_minute, work_start_minute, work_end_minute = resolve_time_policy_setting(db)
-    time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
+    half_day_slots = resolve_half_day_slots(work_start_minute, work_end_minute, lunch_start_minute, lunch_end_minute)
+    if time_granularity_minutes == HALF_DAY_MINUTES:
+        time_options = sorted(list({
+            half_day_slots["morning"]["start_time"],
+            half_day_slots["morning"]["end_time"],
+            half_day_slots["afternoon"]["start_time"],
+            half_day_slots["afternoon"]["end_time"],
+        }))
+    else:
+        time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
 
     ctx.update({
         "time_granularity_minutes": time_granularity_minutes,
@@ -79,6 +90,7 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
         "work_start_minute": work_start_minute,
         "work_end_minute": work_end_minute,
         "time_options": time_options,
+        "half_day_slots": half_day_slots,
     })
 
     user_role = getattr(user, 'role', None) or 'STAFF'
@@ -204,7 +216,16 @@ def user_calendar_desktop_partial(
     ).order_by(models.Leaves.date.desc()).all()
     
     time_granularity_minutes, lunch_start_minute, lunch_end_minute, work_start_minute, work_end_minute = resolve_time_policy_setting(db)
-    time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
+    half_day_slots = resolve_half_day_slots(work_start_minute, work_end_minute, lunch_start_minute, lunch_end_minute)
+    if time_granularity_minutes == HALF_DAY_MINUTES:
+        time_options = sorted(list({
+            half_day_slots["morning"]["start_time"],
+            half_day_slots["morning"]["end_time"],
+            half_day_slots["afternoon"]["start_time"],
+            half_day_slots["afternoon"]["end_time"],
+        }))
+    else:
+        time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
     
     total_allocated_hours = resolve_user_yearly_allocated_hours(db, user, current_year)
     approved_hours = sum(float(leave.snapshot_deduction_hours or 0) for leave in yearly_leaves if leave.status == "APPROVED" and getattr(leave, "is_deductive", True))
@@ -255,6 +276,7 @@ def user_calendar_desktop_partial(
         "work_start_minute": work_start_minute,
         "work_end_minute": work_end_minute,
         "time_options": time_options,
+        "half_day_slots": half_day_slots,
     }
 
     # --- 역할 기반 추가 데이터 ---

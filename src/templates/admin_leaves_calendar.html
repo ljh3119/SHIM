@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label, fmt_slot_short %}
 
 {% block content %}
 <style>
@@ -432,14 +432,20 @@
                                         
                                         {% if ns.total_h > 0 or ns.has_pub %}
                                         <div class="day-block {% if ns.has_pending %}pending{% elif ns.has_pub and ns.total_h == 0 %}public{% elif ns.total_h >= 8 %}leave-dark{% elif ns.total_h >= 4 %}leave-medium{% else %}leave-light{% endif %}"
-                                             title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
+                                             title="{% for lv in dl %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h,{% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}"
                                              data-user-name="{{ stat.user_name }}"
                                              data-month="{{ selected_month }}"
                                              data-day="{{ day }}"
                                              data-slots="{% for lv in dl %}{{ lv.snapshot_slot_label }}{% if not loop.last %}|{% endif %}{% endfor %}"
                                              onclick="showLeaveTimeDetails(this)">
                                              {% if ns.total_h > 0 %}
-                                                 {{ fmt_hours(ns.total_h) }}h
+                                                 {% if ns.total_h == 8.0 %}
+                                                     전일
+                                                 {% elif ns.total_h == 4.0 and dl %}
+                                                     {{ fmt_slot_short(dl[0].snapshot_slot_label, dl[0].snapshot_deduction_hours) }}
+                                                 {% else %}
+                                                     {{ fmt_hours(ns.total_h) }}h
+                                                 {% endif %}
                                              {% else %}
                                                  {{ fmt_hours(ns.pub_h) }}h
                                              {% endif %}
@@ -507,7 +513,7 @@
                                                         {% elif total_h >= 4 %}bg-blue-300 text-blue-800
                                                         {% else %}bg-blue-50 text-blue-700
                                                         {% endif %}"
-                                                 title="{{ stat.user_name }} ({{ stat.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                                                 title="{{ stat.user_name }} ({{ stat.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
                                                  data-user-name="{{ stat.user_name }}"
                                                  data-month="{{ selected_month }}"
                                                  data-day="{{ day }}"
@@ -515,7 +521,7 @@
                                                  onclick="showLeaveTimeDetails(this)">
                                                 {{ stat.user_name }}
                                                 <span class="opacity-75 font-semibold text-[8px] ml-0.5">
-                                                    {{ fmt_hours(total_h) }}h{% if is_pending %}(대){% endif %}
+                                                    {% if total_h == 8.0 %}전일{% elif total_h == 4.0 %}{{ fmt_slot_short(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% else %}{{ fmt_hours(total_h) }}h{% endif %}{% if is_pending %}(대){% endif %}
                                                 </span>
                                             </div>
                                         {% endif %}
@@ -866,18 +872,23 @@ function refreshYearly() {
 }
 
 function slotLabelToTimeRange(label) {
-    const match = label.match(/\(([^)]+)\)/);
+    if (!label) return '시간대 정보 없음';
+    if (label === '오전 반차' || label.startsWith('09:00~14:00')) return '오전 반차 (0.5일)';
+    if (label === '오후 반차' || label.startsWith('14:00~18:00')) return '오후 반차 (0.5일)';
+    if (label === '전일' || label.startsWith('09:00~18:00')) return '전일 (1일)';
+    const match = label.match(/(\d{2}:\d{2}\s*~\s*\d{2}:\d{2})/);
     if (match) return match[1];
     const map = {
         '오전 1시간': '09:00 ~ 10:00',
         '오전 2시간': '09:00 ~ 11:00',
         '오후 1시간': '13:00 ~ 14:00',
         '오후 2시간': '13:00 ~ 15:00',
-        '오후 반차': '14:00 ~ 18:00',
-        '오후 4시간': '14:00 ~ 18:00',
-        '전일유급(8시간)': '09:00 ~ 18:00'
+        '오후 반차': '오후 반차 (0.5일)',
+        '오전 반차': '오전 반차 (0.5일)',
+        '오후 4시간': '오후 반차 (0.5일)',
+        '전일유급(8시간)': '전일 (1일)'
     };
-    return map[label] || '시간대 정보 없음';
+    return map[label] || label;
 }
 
 function showLeaveTimeDetails(el) {
@@ -887,13 +898,13 @@ function showLeaveTimeDetails(el) {
     const slots = (el.dataset.slots || '').split('|').filter(Boolean);
 
     if (!slots.length) {
-        showToast('상세 시간 정보가 없습니다.', 'warning');
+        showToast('상세 구분 정보가 없습니다.', 'warning');
         return;
     }
 
     const when = month ? `${month}월 ${day}일` : `${day}일`;
-    const details = slots.map((slot, idx) => `${idx + 1}. ${slot} -> ${slotLabelToTimeRange(slot)}`).join('\n');
-    window.shimModal.confirm(`${userName} / ${when} 연차 사용 시간\n\n${details}`, { okOnly: true });
+    const details = slots.map((slot, idx) => `${idx + 1}. ${slotLabelToTimeRange(slot)}`).join('\n');
+    window.shimModal.confirm(`${userName} / ${when} 연차 사용 구분\n\n${details}`, { okOnly: true });
 }
 
 // Global Timeline Action script functions (transferred from old timeline view)
@@ -1007,37 +1018,6 @@ async function changeType(leaveId, targetIsDeductive, btn) {
             showToast('네트워크 오류가 발생했습니다.', 'error');
         }
     });
-}
-
-function slotLabelToTimeRange(label) {
-    const match = label.match(/\(([^)]+)\)/);
-    if (match) return match[1];
-    const map = {
-        '오전 1시간': '09:00 ~ 10:00',
-        '오전 2시간': '09:00 ~ 11:00',
-        '오후 1시간': '13:00 ~ 14:00',
-        '오후 2시간': '13:00 ~ 15:00',
-        '오후 반차': '14:00 ~ 18:00',
-        '오후 4시간': '14:00 ~ 18:00',
-        '전일유급(8시간)': '09:00 ~ 18:00'
-    };
-    return map[label] || '시간대 정보 없음';
-}
-
-function showLeaveTimeDetails(el) {
-    const userName = el.dataset.userName || '사원';
-    const month = el.dataset.month || '';
-    const day = el.dataset.day || '';
-    const slots = (el.dataset.slots || '').split('|').filter(Boolean);
-
-    if (!slots.length) {
-        showToast('상세 시간 정보가 없습니다.', 'warning');
-        return;
-    }
-
-    const when = month ? `${month}월 ${day}일` : `${day}일`;
-    const details = slots.map((slot, idx) => `${idx + 1}. ${slot} -> ${slotLabelToTimeRange(slot)}`).join('\n');
-    showToast(`${userName} / ${when} 연차 사용 시간\n\n${details}`, 'info');
 }
 </script>
 {% endblock %}

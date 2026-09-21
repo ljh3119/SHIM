@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
 
 <div class="fade-in space-y-4">
     {% if is_capped %}
@@ -142,8 +142,8 @@
                         <td class="whitespace-nowrap px-2 py-2">
                             <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-[11px] font-bold text-dense-nav-text">{{ leave.date }}</span>
                         </td>
-                        <td class="min-w-0 max-w-[11rem] truncate px-2 py-2 text-[11px] font-semibold text-dense-nav-text" title="{{ leave.snapshot_slot_label }} ({% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
-                            {{ leave.snapshot_slot_label }} (<span class="{% if leave.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">{% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>)
+                        <td class="min-w-0 max-w-[11rem] truncate px-2 py-2 text-[11px] font-semibold text-dense-nav-text" title="{{ fmt_slot_label(leave.snapshot_slot_label, leave.snapshot_deduction_hours) }} ({% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h)">
+                            {{ fmt_slot_label(leave.snapshot_slot_label, leave.snapshot_deduction_hours) }} (<span class="{% if leave.is_deductive %}text-dense-blue{% else %}text-dense-muted{% endif %}">{% if leave.is_deductive %}-{% endif %}{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>)
                         </td>
                         <td class="max-w-[10rem] truncate px-2 py-2 text-[11px] font-semibold text-dense-nav-text">
                             <div class="flex flex-col gap-1">

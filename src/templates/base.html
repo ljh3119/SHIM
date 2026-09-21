@@ -43,55 +43,67 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .shim-sidebar.is-collapsed {
-            width: 76px !important;
-            padding-left: 0.625rem;
-            padding-right: 0.625rem;
-        }
-        /* Hide heading emoji when sidebar is expanded */
-        .shim-sidebar:not(.is-collapsed) .shim-sidebar-heading-emoji {
-            display: none;
-        }
-        .shim-sidebar.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
-            visibility: visible;
-            pointer-events: none;
-            user-select: none;
-            justify-content: center;
-        }
-        .shim-sidebar.is-collapsed .shim-sidebar-heading-stack {
-            display: none !important;
-        }
-        /* In collapsed mode, hide heading text and show only emoji */
-        .shim-sidebar.is-collapsed .shim-sidebar-heading-text {
-            display: none !important;
-        }
-        .shim-sidebar.is-collapsed .shim-sidebar-heading-sub {
-            display: none !important;
-        }
-        .shim-sidebar.is-collapsed .shim-sidebar-heading-emoji {
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            min-height: 1.75rem;
-            font-size: 1.125rem;
-            line-height: 1;
-        }
-        /* Keep admin sidebar icon color aligned with design tokens */
-        #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
-            color: #475467;
-        }
-        /* Adjust heading spacing in collapsed admin sidebar */
-        #shim-sidebar-admin.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
-            min-height: 2.75rem;
-            margin-bottom: 0.625rem;
-            align-items: center;
-            justify-content: center;
-        }
-        #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
-            min-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
+        @media (min-width: 768px) {
+            .shim-sidebar.is-collapsed {
+                width: 76px !important;
+                padding-left: 0.625rem;
+                padding-right: 0.625rem;
+            }
+            /* Hide heading emoji when sidebar is expanded */
+            .shim-sidebar:not(.is-collapsed) .shim-sidebar-heading-emoji {
+                display: none;
+            }
+            .shim-sidebar.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
+                visibility: visible;
+                pointer-events: none;
+                user-select: none;
+                justify-content: center;
+            }
+            .shim-sidebar.is-collapsed .shim-sidebar-heading-stack {
+                display: none !important;
+            }
+            /* In collapsed mode, hide heading text and show only emoji */
+            .shim-sidebar.is-collapsed .shim-sidebar-heading-text {
+                display: none !important;
+            }
+            .shim-sidebar.is-collapsed .shim-sidebar-heading-sub {
+                display: none !important;
+            }
+            .shim-sidebar.is-collapsed .shim-sidebar-heading-emoji {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                min-height: 1.75rem;
+                font-size: 1.125rem;
+                line-height: 1;
+            }
+            /* Keep admin sidebar icon color aligned with design tokens */
+            #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
+                color: #475467;
+            }
+            /* Adjust heading spacing in collapsed admin sidebar */
+            #shim-sidebar-admin.is-collapsed .shim-sidebar-title.shim-sidebar-heading-row {
+                min-height: 2.75rem;
+                margin-bottom: 0.625rem;
+                align-items: center;
+                justify-content: center;
+            }
+            #shim-sidebar-admin.is-collapsed .shim-sidebar-heading-emoji {
+                min-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            .shim-sidebar.is-collapsed .shim-nav-label {
+                display: none !important;
+            }
+            .shim-sidebar.is-collapsed .shim-side-link {
+                justify-content: center;
+                gap: 0;
+                min-height: 2.625rem;
+                padding: 0.5rem;
+            }
+            .shim-sidebar.is-collapsed .system-stats-card { display: none !important; }
         }
         .shim-sidebar-heading-icon-svg {
             width: 1.125rem;
@@ -103,15 +115,8 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .shim-sidebar.is-collapsed .shim-nav-label {
-            display: none !important;
-        }
-        .shim-sidebar.is-collapsed .shim-side-link {
-            justify-content: center;
-            gap: 0;
-            min-height: 2.625rem;
-            padding: 0.5rem;
-        }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         .shim-sidebar-toggle:focus-visible {
             outline: 2px solid #175cd3;
             outline-offset: 2px;
@@ -124,7 +129,6 @@
         .shim-toast-info { border-left: 4px solid #2563eb; }
         .shim-toast-warning { border-left: 4px solid #ea580c; }
         .shim-toast-error { border-left: 4px solid #dc2626; }
-        .shim-sidebar.is-collapsed .system-stats-card { display: none !important; }
     </style>
     <script>window.SHIM_TIMEZONE = {{ business_timezone | tojson }};</script>
     <script src="/static/js/time.js?v={{ app_version }}"></script>
@@ -379,8 +383,19 @@
                             <textarea id="timeline_reason" name="reason" maxlength="500" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                         </div>
                         <div id="timeline_time_input_container">
-                            <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
-                            <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <label class="mb-2 block text-sm font-bold text-dense-nav-text">신청 구분</label>
+                            <div class="grid grid-cols-4 gap-1 mb-2">
+                                <button type="button" id="tl-preset-full" onclick="selectTimelinePreset('full')" class="rounded border border-dense-line bg-dense-blue text-white px-2 py-1 text-xs font-bold transition-colors">전일</button>
+                                <button type="button" id="tl-preset-morning" onclick="selectTimelinePreset('morning')" class="rounded border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-bold transition-colors">오전 반차</button>
+                                <button type="button" id="tl-preset-afternoon" onclick="selectTimelinePreset('afternoon')" class="rounded border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-bold transition-colors">오후 반차</button>
+                                <button type="button" id="tl-preset-custom" onclick="selectTimelinePreset('custom')" class="rounded border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-bold transition-colors">직접지정</button>
+                            </div>
+                            <div id="tl-preset-badge" class="mb-2">
+                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-dense-blue-soft px-2.5 py-1 text-xs font-bold text-dense-blue border border-dense-line-strong">
+                                    <span id="tl-preset-badge-text">전일 신청</span>
+                                </span>
+                            </div>
+                            <div id="tl-time-row" class="grid grid-cols-1 gap-2 md:grid-cols-2 hidden">
                                 <div>
                                     <label for="timeline_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
                                     <select id="timeline_start_time" name="start_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
@@ -404,7 +419,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 {{ time_granularity_minutes | default(60) }}분 단위만 신청 가능하며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</p>
+                            <p class="mt-1 text-xs font-semibold text-dense-muted">* 반차(오전/오후)는 시간 선택 없이 0.5일 단위로 간편 신청됩니다.</p>
                         </div>
                     </form>
                 </div>
@@ -485,13 +500,108 @@
         }
     }
 
+    function selectTimelinePreset(type) {
+        const timeStart = document.getElementById('timeline_start_time');
+        const timeEnd = document.getElementById('timeline_end_time');
+        const timeRow = document.getElementById('tl-time-row');
+        const badge = document.getElementById('tl-preset-badge');
+        const badgeText = document.getElementById('tl-preset-badge-text');
+        const halfSlots = {{ half_day_slots | tojson | safe if half_day_slots else '{}' }};
+
+        ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+            const btn = document.getElementById(`tl-preset-${p}`);
+            if (btn) {
+                if (p === type) {
+                    btn.classList.add('bg-dense-blue', 'text-white');
+                    btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                } else {
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+                }
+            }
+        });
+
+        if (type === 'custom') {
+            if (timeRow) timeRow.classList.remove('hidden');
+            if (badge) badge.classList.add('hidden');
+        } else {
+            if (timeRow) timeRow.classList.add('hidden');
+            if (badge) {
+                badge.classList.remove('hidden');
+                if (type === 'full') badgeText.textContent = '전일 신청';
+                else if (type === 'morning') badgeText.textContent = '오전 반차 신청';
+                else if (type === 'afternoon') badgeText.textContent = '오후 반차 신청';
+            }
+        }
+
+        if (!timeStart || !timeEnd) return;
+
+        if (type === 'full') {
+            timeStart.value = '09:00';
+            timeEnd.value = '18:00';
+        } else if (type === 'morning') {
+            if (halfSlots && halfSlots.morning) {
+                timeStart.value = halfSlots.morning.start_time;
+                timeEnd.value = halfSlots.morning.end_time;
+            } else {
+                timeStart.value = '09:00';
+                timeEnd.value = '14:00';
+            }
+        } else if (type === 'afternoon') {
+            if (halfSlots && halfSlots.afternoon) {
+                timeStart.value = halfSlots.afternoon.start_time;
+                timeEnd.value = halfSlots.afternoon.end_time;
+            } else {
+                timeStart.value = '14:00';
+                timeEnd.value = '18:00';
+            }
+        }
+    }
+    window.selectTimelinePreset = selectTimelinePreset;
+
+    function formatSlotLabel(slot, hours) {
+        const h = parseFloat(hours) || 0;
+        const s = String(slot || '');
+        if (h === 4.0 || s === '09:00~14:00' || s === '14:00~18:00' || s.includes('오전 반차') || s.includes('오후 반차')) {
+            if (s === '09:00~14:00' || s.includes('오전') || (h === 4.0 && (!s || s.startsWith('09:00')))) {
+                return '오전 반차';
+            }
+            return '오후 반차';
+        }
+        if (h === 8.0 || s === '09:00~18:00' || s === '전일') {
+            return '전일';
+        }
+        return s;
+    }
+    window.formatSlotLabel = formatSlotLabel;
+
+    function formatSlotShort(slot, hours) {
+        const h = parseFloat(hours) || 0;
+        const s = String(slot || '');
+        if (h === 4.0 || s === '09:00~14:00' || s === '14:00~18:00' || s.includes('오전') || s.includes('오후')) {
+            if (s === '09:00~14:00' || s.includes('오전') || (h === 4.0 && (!s || s.startsWith('09:00')))) {
+                return '오전';
+            }
+            return '오후';
+        }
+        if (h === 8.0 || s === '09:00~18:00' || s === '전일') {
+            return '전일';
+        }
+        return s;
+    }
+    window.formatSlotShort = formatSlotShort;
+
     function openTimelineApplyModal(dateStr) {
         document.getElementById('timeline_date_str').value = dateStr;
         document.getElementById('timeline_is_deductive_display').checked = false;
         toggleTimelineReason();
         document.getElementById('timeline_reason').value = '';
-        document.getElementById('timeline_start_time').value = '09:00';
-        document.getElementById('timeline_end_time').value = '18:00';
+        if (typeof selectTimelinePreset === 'function') {
+            selectTimelinePreset('full');
+        } else {
+            document.getElementById('timeline_start_time').value = '09:00';
+            document.getElementById('timeline_end_time').value = '18:00';
+        }
         window.shimModal.open('timelineApplyModal', 'timeline_start_time');
     }
 
@@ -535,7 +645,16 @@
         
         const deductionHours = effectiveMinutes / 60;
         const typeStr = isDeductive ? '연차' : '공가/출장';
-        const hoursMsg = isDeductive ? ` (예상 차감: -${formatHoursForConfirm(deductionHours)}h)` : ` (${formatHoursForConfirm(deductionHours)}h 부재)`;
+        let hoursMsg = '';
+        if (deductionHours === 4) {
+            const isAm = (startMin < (lunchStartRaw >= 0 ? lunchStartRaw : 720));
+            const slotName = isAm ? '오전 반차' : '오후 반차';
+            hoursMsg = isDeductive ? ` (${slotName}, 예상 차감: 0.5일)` : ` (${slotName})`;
+        } else if (deductionHours === 8) {
+            hoursMsg = isDeductive ? ` (전일 연차, 예상 차감: 1일)` : ` (전일)`;
+        } else {
+            hoursMsg = isDeductive ? ` (예상 차감: -${formatHoursForConfirm(deductionHours)}h)` : ` (${formatHoursForConfirm(deductionHours)}h 부재)`;
+        }
         
         return {
             ok: true,
@@ -620,6 +739,20 @@
             statusLabel = '<span class="text-dense-muted font-extrabold bg-dense-gray-soft px-1.5 py-0.5 rounded">취소됨</span>';
         }
 
+        let displayDuration = duration;
+        if (typeof duration === 'string') {
+            const hasAm = duration.includes('09:00~14:00') || duration.includes('오전 반차') || (duration.includes('4') && duration.includes('09:00'));
+            const hasPm = duration.includes('14:00~18:00') || duration.includes('오후 반차') || (duration.includes('4') && (duration.includes('14:00') || duration.includes('13:00')));
+            const hasFull = duration.includes('09:00~18:00') || duration.includes('8.0h') || duration.includes('8h') || duration.includes('전일');
+            if (hasAm) {
+                displayDuration = '오전 반차 (0.5일)';
+            } else if (hasPm) {
+                displayDuration = '오후 반차 (0.5일)';
+            } else if (hasFull) {
+                displayDuration = '전일 (1일)';
+            }
+        }
+
         content.innerHTML = `
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청인</span>
@@ -635,7 +768,7 @@
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">연차 구분</span>
-                <span class="col-span-2 font-bold">${duration}${deductiveLabel}</span>
+                <span class="col-span-2 font-bold">${displayDuration}${deductiveLabel}</span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청 사유</span>

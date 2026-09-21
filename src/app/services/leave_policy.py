@@ -17,7 +17,8 @@ ALLOWED_LEAVE_STATUS_TRANSITIONS = frozenset(
 )
 REJECTION_REASON_MAX_LENGTH = 500
 LEAVE_REASON_MAX_LENGTH = 500
-ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120})
+ALLOWED_TIME_GRANULARITIES = frozenset({30, 60, 120, 240})
+HALF_DAY_MINUTES = 240
 
 @dataclass(frozen=True)
 class SystemSettingsSnapshot:
@@ -140,6 +141,65 @@ def _overlap_minutes(start_a: int, end_a: int, start_b: int, end_b: int) -> int:
     return max(0, min(end_a, end_b) - max(start_a, start_b))
 
 
+def resolve_half_day_slots(
+    work_start_minute: int,
+    work_end_minute: int,
+    lunch_start_minute: int | None,
+    lunch_end_minute: int | None,
+) -> dict[str, dict[str, int | str]]:
+    """근무시간 및 점심시간 정책을 기반으로 오전 반차와 오후 반차(실차감 4시간/240분 기준)의 표준 시간대 구간을 계산합니다."""
+    target_minutes = HALF_DAY_MINUTES
+
+    # 1) 오전 반차 (시작: work_start_minute)
+    m_start = work_start_minute
+    if lunch_start_minute is not None and lunch_end_minute is not None and lunch_end_minute > lunch_start_minute:
+        if m_start < lunch_start_minute:
+            morning_work = lunch_start_minute - m_start
+            if target_minutes <= morning_work:
+                m_end = min(work_end_minute, m_start + target_minutes)
+            else:
+                remaining = target_minutes - morning_work
+                m_end = min(work_end_minute, lunch_end_minute + remaining)
+        elif m_start < lunch_end_minute:
+            m_end = min(work_end_minute, lunch_end_minute + target_minutes)
+        else:
+            m_end = min(work_end_minute, m_start + target_minutes)
+    else:
+        m_end = min(work_end_minute, m_start + target_minutes)
+
+    # 2) 오후 반차 (종료: work_end_minute)
+    a_end = work_end_minute
+    if lunch_start_minute is not None and lunch_end_minute is not None and lunch_end_minute > lunch_start_minute:
+        if a_end > lunch_end_minute:
+            afternoon_work = a_end - lunch_end_minute
+            if target_minutes <= afternoon_work:
+                a_start = max(work_start_minute, a_end - target_minutes)
+            else:
+                remaining = target_minutes - afternoon_work
+                a_start = max(work_start_minute, lunch_start_minute - remaining)
+        elif a_end > lunch_start_minute:
+            a_start = max(work_start_minute, lunch_start_minute - target_minutes)
+        else:
+            a_start = max(work_start_minute, a_end - target_minutes)
+    else:
+        a_start = max(work_start_minute, a_end - target_minutes)
+
+    return {
+        "morning": {
+            "start_min": m_start,
+            "end_min": m_end,
+            "start_time": _format_minutes_to_hhmm(m_start),
+            "end_time": _format_minutes_to_hhmm(m_end),
+        },
+        "afternoon": {
+            "start_min": a_start,
+            "end_min": a_end,
+            "start_time": _format_minutes_to_hhmm(a_start),
+            "end_time": _format_minutes_to_hhmm(a_end),
+        },
+    }
+
+
 def build_snapshot_from_timerange(
     start_time: str,
     end_time: str,
@@ -156,17 +216,29 @@ def build_snapshot_from_timerange(
     end_min = _parse_hhmm_to_minutes(end_time, "종료 시간")
     if end_min <= start_min:
         raise LeaveInputValidationError("종료 시간은 시작 시간보다 늦어야 합니다.")
-    start_on_boundary = (start_min - work_start_minute) % granularity_minutes == 0
-    end_on_boundary = (end_min - work_start_minute) % granularity_minutes == 0
-    # 업무 종료 시각은 단위 경계와 정확히 맞지 않아도 선택 가능해야 하루 전체 신청이 가능하다.
-    end_on_allowed_edge = end_min == work_end_minute
-    if not start_on_boundary or (not end_on_boundary and not end_on_allowed_edge):
-        raise LeaveInputValidationError("입력 시각은 설정된 시간 단위 경계에 맞아야 합니다.")
+
+    half_slots = resolve_half_day_slots(work_start_minute, work_end_minute, lunch_start_minute, lunch_end_minute)
+    is_morning_half = (start_min == half_slots["morning"]["start_min"] and end_min == half_slots["morning"]["end_min"])
+    is_afternoon_half = (start_min == half_slots["afternoon"]["start_min"] and end_min == half_slots["afternoon"]["end_min"])
+    is_full_day = (start_min == work_start_minute and end_min == work_end_minute)
+    is_standard_preset = is_morning_half or is_afternoon_half or is_full_day
+
+    if granularity_minutes == HALF_DAY_MINUTES:
+        if not is_standard_preset:
+            raise LeaveInputValidationError("반일(240분) 단위 정책에서는 전일 또는 오전/오후 반차로만 신청할 수 있습니다.")
+    else:
+        start_on_boundary = (start_min - work_start_minute) % granularity_minutes == 0
+        end_on_boundary = (end_min - work_start_minute) % granularity_minutes == 0
+        # 업무 종료 시각은 단위 경계와 정확히 맞지 않아도 선택 가능해야 하루 전체 신청이 가능하다.
+        end_on_allowed_edge = end_min == work_end_minute
+        if not is_standard_preset and (not start_on_boundary or (not end_on_boundary and not end_on_allowed_edge)):
+            raise LeaveInputValidationError("입력 시각은 설정된 시간 단위 경계에 맞아야 합니다.")
+
     if start_min < work_start_minute or end_min > work_end_minute:
         raise LeaveInputValidationError("업무시간 범위를 벗어난 시간은 신청할 수 없습니다.")
 
     total_minutes = end_min - start_min
-    if total_minutes < granularity_minutes:
+    if not is_standard_preset and total_minutes < granularity_minutes:
         raise LeaveInputValidationError("선택 구간이 설정된 최소 시간 단위보다 짧습니다.")
     excluded_lunch_minutes = 0
     is_fully_in_lunch = False

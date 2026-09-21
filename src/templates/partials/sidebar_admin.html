@@ -1,44 +1,44 @@
 {# 관리자 공통 사이드바 — 메인 내비. 상단 바와 경로 중복 없음. #}
 {% set path = request.url.path %}
-<aside id="shim-sidebar-admin" data-shim-sidebar class="shim-sidebar relative flex w-full md:w-[220px] shrink-0 flex-col gap-3 self-start overflow-visible transition-[width] duration-200 ease-out min-h-0 md:min-h-[calc(100vh-6rem)]">
-  <button type="button" class="shim-sidebar-toggle absolute -right-3 top-2.5 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dense-line-strong bg-white text-dense-nav-text shadow-sm transition-colors hover:bg-dense-surface-soft" aria-label="사이드 패널 접기·펼치기" aria-expanded="true" aria-controls="shim-sidebar-admin-nav"></button>
+<aside id="shim-sidebar-admin" data-shim-sidebar class="shim-sidebar relative flex w-full md:w-[220px] shrink-0 flex-col gap-2 md:gap-3 self-start overflow-visible transition-[width] duration-200 ease-out min-h-0 md:min-h-[calc(100vh-6rem)]">
+  <button type="button" class="shim-sidebar-toggle hidden md:flex absolute -right-3 top-2.5 z-10 h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dense-line-strong bg-white text-dense-nav-text shadow-sm transition-colors hover:bg-dense-surface-soft" aria-label="사이드 패널 접기·펼치기" aria-expanded="true" aria-controls="shim-sidebar-admin-nav"></button>
   
   <!-- Navigation Card -->
-  <div class="rounded-2xl border border-dense-line bg-dense-surface p-3 pr-4 shadow-sm flex flex-col gap-2">
-    <nav id="shim-sidebar-admin-nav" class="flex flex-col gap-1" aria-label="관리자 메뉴">
-      <a href="/admin/dashboard" class="shim-side-link {% if path == '/admin/dashboard' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">📊</span>
+  <div class="rounded-xl md:rounded-2xl border border-dense-line bg-dense-surface p-1.5 md:p-3 md:pr-4 shadow-sm flex flex-col gap-1 md:gap-2">
+    <nav id="shim-sidebar-admin-nav" class="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-none pb-0.5 md:pb-0" aria-label="관리자 메뉴">
+      <a href="/admin/dashboard" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path == '/admin/dashboard' %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">📊</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">대시보드</span>
       </a>
-      <a href="/admin/leave/calendar" class="shim-side-link {% if path.startswith('/admin/leave/calendar') and request.query_params.get('tab') != 'timeline' %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">📅</span>
+      <a href="/admin/leave/calendar" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/leave/calendar') and request.query_params.get('tab') != 'timeline' %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">📅</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">연차 캘린더</span>
       </a>
-      <a href="/admin/leave/timeline" class="shim-side-link {% if path.startswith('/admin/leave/timeline') or (path.startswith('/admin/leave/calendar') and request.query_params.get('tab') == 'timeline') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">📜</span>
+      <a href="/admin/leave/timeline" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/leave/timeline') or (path.startswith('/admin/leave/calendar') and request.query_params.get('tab') == 'timeline') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">📜</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">신청 타임라인</span>
       </a>
-      <a href="/admin/holidays" class="shim-side-link {% if path.startswith('/admin/holidays') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">🏖️</span>
+      <a href="/admin/holidays" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/holidays') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">🏖️</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">공휴일 관리</span>
       </a>
-      <a href="/admin/master" class="shim-side-link {% if path.startswith('/admin/master') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">⚙️</span>
+      <a href="/admin/master" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/master') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">⚙️</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">마스터 관리</span>
       </a>
-      <a href="/admin/users" class="shim-side-link {% if path.startswith('/admin/users') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">👥</span>
+      <a href="/admin/users" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/users') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">👥</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">사용자 관리</span>
       </a>
-      <a href="/admin/audit" class="shim-side-link {% if path.startswith('/admin/audit') %}bg-dense-blue-soft text-dense-blue{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm">🔍</span>
+      <a href="/admin/audit" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/admin/audit') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji text-sm shrink-0">🔍</span>
         <span class="shim-nav-label min-w-0 truncate font-semibold">감사 로그</span>
       </a>
     </nav>
   </div>
 
-  <!-- System Stats Card -->
-  <div class="system-stats-card rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-2.5">
+  <!-- System Stats Card (Desktop only) -->
+  <div class="system-stats-card hidden md:block rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-2.5">
     <h4 class="text-[10px] font-extrabold text-dense-muted uppercase tracking-wider">시스템 현황</h4>
     <div class="space-y-1 text-xs">
       <div class="flex justify-between font-semibold">

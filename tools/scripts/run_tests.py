@@ -22,6 +22,7 @@ SMOKE_SCRIPTS = (
     ("test_portable_logging.py",),
     ("test_ops_safety.py",),
     ("test_http_security.py",),
+    ("test_half_day_policy.py",),
 )
 RELEASE_ONLY_SCRIPTS = (
     ("test_graceful_shutdown.py",),

@@ -2,7 +2,7 @@
 {% extends "partials/fragment_base.html" if desktop_partial|default(false) else "base.html" %}
 
 {% block content %}
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label, fmt_slot_short %}
 
 <style>
     .cal-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
@@ -239,7 +239,7 @@
                                                         {% elif total_h >= 4 %}bg-blue-300 text-blue-800
                                                         {% else %}bg-blue-50 text-blue-700
                                                         {% endif %}"
-                                                 title="[본인] {{ '[공가/출장] ' if not is_deduct }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
+                                                 title="[본인] {{ '[공가/출장] ' if not is_deduct }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
                                                  data-has-leave="true"
                                                  data-cell-date="{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                                  data-user-id="{{ user.user_id }}"
@@ -254,7 +254,7 @@
                                                  data-leave-reason="{{ lv.reason or '' }}"
                                                  data-leave-rejection-reason="{{ lv.rejection_reason or '' }}"
                                                  onclick="event.stopPropagation(); handleTimelineCellClick(this)">
-                                                {{ lv.snapshot_slot_label }}
+                                                {{ fmt_slot_short(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}
                                                 <span class="opacity-75 font-semibold text-[8px] sm:text-[8.5px] ml-0.5">
                                                     {% if is_pending %}(대기){% endif %}
                                                 </span>
@@ -310,7 +310,7 @@
                                  id="day-btn-yearly-{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}"
                                  {% if yearly_leaves_exist %}data-has-leave="true"{% endif %}
                                  class="h-10 w-full rounded border border-dense-grid p-1 text-left text-[10px] transition-colors {% if leaves_of_day %}bg-dense-blue-soft{% else %}bg-dense-surface{% endif %} {% if not is_blocked_day %}hover:border-dense-blue{% else %}cursor-not-allowed bg-dense-gray-soft/60{% endif %}"
-                                 title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ lv.snapshot_slot_label }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
+                                 title="{% if holiday_name %}[공휴일] {{ holiday_name }} {% endif %}{% if leaves_of_day %}{% for lv in leaves_of_day %}{{ '[공가/출장] ' if not lv.is_deductive }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %}({% if lv.is_deductive %}-{% endif %}{{ fmt_hours(lv.snapshot_deduction_hours) }}h, {% if lv.status == 'PENDING' %}결재 대기{% elif lv.status == 'APPROVED' %}승인됨{% elif lv.status == 'REJECTED' %}반려{% if lv.rejection_reason %}: {{ lv.rejection_reason }}{% endif %}{% elif lv.status == 'CANCELED' %}신청 취소{% else %}{{ lv.status }}{% endif %}) {% endfor %}{% endif %}"
                                  {% if not is_blocked_day %}
                                  onclick="handleDayClick(event, '{{ selected_year }}-{{ '%02d'|format(m) }}-{{ '%02d'|format(day) }}')"
                                  {% endif %}
@@ -419,7 +419,25 @@
                             <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <!-- 유형 퀵 선택 버튼 (전일 / 오전반차 / 오후반차 / 직접선택) -->
+                    <div>
+                        <label class="text-xs font-bold text-dense-muted block mb-1">신청 유형</label>
+                        <div class="grid grid-cols-4 gap-1 p-0.5 bg-dense-surface border border-dense-line rounded-lg text-center" id="easy-preset-group_mobile">
+                            <button type="button" onclick="selectLeavePreset('mobile', 'full')" id="preset-full_mobile" class="py-1.5 px-0.5 text-xs font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
+                            <button type="button" onclick="selectLeavePreset('mobile', 'morning')" id="preset-morning_mobile" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                            <button type="button" onclick="selectLeavePreset('mobile', 'afternoon')" id="preset-afternoon_mobile" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                            {% if time_granularity_minutes != 240 %}
+                            <button type="button" onclick="selectLeavePreset('mobile', 'custom')" id="preset-custom_mobile" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                            {% else %}
+                            <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
+                    <div id="easy-preset-badge_mobile" class="py-2 px-3 rounded-lg bg-dense-surface border border-dense-line text-center text-xs font-extrabold text-dense-blue">
+                        전일 신청
+                    </div>
+                    <div id="easy-time-row_mobile" class="hidden grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-xs">시작</label>
                             <select id="easy-start-g_mobile" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
@@ -581,28 +599,50 @@
                         <textarea id="calendar_reason" name="reason" maxlength="500" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                     </div>
                     <div id="calendar_time_input_container">
-                        <label class="mb-2 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
-                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <label class="mb-1 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
+                        <!-- 캘린더 모달 유형 퀵 선택 버튼 -->
+                        <div class="mb-2">
+                            <label class="mb-1 block text-xs font-bold text-dense-muted">신청 유형</label>
+                            <div class="grid grid-cols-4 gap-1 p-0.5 bg-dense-surface border border-dense-line rounded-lg text-center" id="calendar_preset_group">
+                                <button type="button" onclick="selectCalendarModalPreset('full')" id="cal-modal-preset-full" class="py-1.5 px-0.5 text-xs font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
+                                <button type="button" onclick="selectCalendarModalPreset('morning')" id="cal-modal-preset-morning" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                                <button type="button" onclick="selectCalendarModalPreset('afternoon')" id="cal-modal-preset-afternoon" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                                {% if time_granularity_minutes != 240 %}
+                                <button type="button" onclick="selectCalendarModalPreset('custom')" id="cal-modal-preset-custom" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                                {% else %}
+                                <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
+                        <div id="cal-modal-preset-badge" class="py-2 px-3 rounded-xl bg-dense-surface border border-dense-line text-center text-xs font-extrabold text-dense-blue">
+                            전일 신청
+                        </div>
+                        <div id="cal-modal-time-row" class="hidden grid grid-cols-1 gap-2 md:grid-cols-2">
                             <div>
                                 <label for="calendar_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
-                                <select id="calendar_start_time" name="start_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                <select id="calendar_start_time" name="start_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                     <option value="">선택</option>
                                     {% for t in time_options %}
-                                    <option value="{{ t }}">{{ t }}</option>
+                                    <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div>
                                 <label for="calendar_end_time" class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
-                                <select id="calendar_end_time" name="end_time" required class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                <select id="calendar_end_time" name="end_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-xl border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                     <option value="">선택</option>
                                     {% for t in time_options %}
-                                    <option value="{{ t }}">{{ t }}</option>
+                                    <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
+                        {% if time_granularity_minutes == 240 %}
+                        <p class="mt-1 text-xs font-semibold text-dense-muted">* 반일(240분) 단위 정책이 적용 중이며 전일(8시간) 또는 오전/오후 반차(4시간)로만 신청 가능합니다.</p>
+                        {% else %}
                         <p class="mt-1 text-xs font-semibold text-dense-muted">* 업무시간 범위 내 {{ time_granularity_minutes }}분 단위만 신청 가능하며, 실제 차감은 선택 구간에서 점심 제외 후 계산됩니다.</p>
+                        {% endif %}
                     </div>
                     <!-- 캘린더 다중 신청 시 노출할 힌트 레이어 -->
                     <div id="calendar_time_hint_wrapper" class="hidden">
@@ -1052,7 +1092,16 @@ function evaluateLeaveDraft(startTime, endTime, isDeductive) {
     
     const deductionHours = effectiveMinutes / 60;
     const typeStr = isDeductive ? '연차' : '공가/출장';
-    const hoursMsg = isDeductive ? ` (예상 차감: -${formatHoursForConfirm(deductionHours)}h)` : ` (${formatHoursForConfirm(deductionHours)}h 부재)`;
+    let hoursMsg = '';
+    if (deductionHours === 4) {
+        const isAm = (startMin < (lunchStartRaw >= 0 ? lunchStartRaw : 720));
+        const slotName = isAm ? '오전 반차' : '오후 반차';
+        hoursMsg = isDeductive ? ` (${slotName}, 예상 차감: 0.5일)` : ` (${slotName})`;
+    } else if (deductionHours === 8) {
+        hoursMsg = isDeductive ? ` (전일 연차, 예상 차감: 1일)` : ` (전일)`;
+    } else {
+        hoursMsg = isDeductive ? ` (예상 차감: -${formatHoursForConfirm(deductionHours)}h)` : ` (${formatHoursForConfirm(deductionHours)}h 부재)`;
+    }
     
     return {
         ok: true,
@@ -1330,8 +1379,12 @@ function openCalendarApplyModal(dateStr) {
     timeHint.classList.add('hidden');
     timeHint.classList.remove('block');
     
-    document.getElementById('calendar_start_time').value = '';
-    document.getElementById('calendar_end_time').value = '';
+    if (typeof selectCalendarModalPreset === 'function') {
+        selectCalendarModalPreset('full');
+    } else {
+        document.getElementById('calendar_start_time').value = '09:00';
+        document.getElementById('calendar_end_time').value = '18:00';
+    }
     document.getElementById('calendar_start_time').required = true;
     document.getElementById('calendar_end_time').required = true;
     
@@ -1814,6 +1867,95 @@ function handleTimelineCellClick(td) {
         }
     }
 }
+
+window.selectCalendarModalPreset = function(type) {
+    const timeStart = document.getElementById('calendar_start_time');
+    const timeEnd = document.getElementById('calendar_end_time');
+    const timeRow = document.getElementById('cal-modal-time-row');
+    const badge = document.getElementById('cal-modal-preset-badge');
+    const halfSlots = {{ half_day_slots | tojson | safe if half_day_slots else '{}' }};
+
+    ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+        const btn = document.getElementById(`cal-modal-preset-${p}`);
+        if (btn) {
+            if (p === type) {
+                btn.classList.add('bg-dense-blue', 'text-white');
+                btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+            } else {
+                btn.classList.remove('bg-dense-blue', 'text-white');
+                btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+            }
+        }
+    });
+
+    if (type === 'custom') {
+        if (timeRow) timeRow.classList.remove('hidden');
+        if (badge) badge.classList.add('hidden');
+    } else {
+        if (timeRow) timeRow.classList.add('hidden');
+        if (badge) {
+            badge.classList.remove('hidden');
+            if (type === 'full') badge.textContent = '전일 신청';
+            else if (type === 'morning') badge.textContent = '오전 반차 신청';
+            else if (type === 'afternoon') badge.textContent = '오후 반차 신청';
+        }
+    }
+
+    if (!timeStart || !timeEnd) return;
+
+    if (type === 'full') {
+        timeStart.value = '09:00';
+        timeEnd.value = '18:00';
+    } else if (type === 'morning') {
+        if (halfSlots && halfSlots.morning) {
+            timeStart.value = halfSlots.morning.start_time;
+            timeEnd.value = halfSlots.morning.end_time;
+        } else {
+            timeStart.value = '09:00';
+            timeEnd.value = '14:00';
+        }
+    } else if (type === 'afternoon') {
+        if (halfSlots && halfSlots.afternoon) {
+            timeStart.value = halfSlots.afternoon.start_time;
+            timeEnd.value = halfSlots.afternoon.end_time;
+        } else {
+            timeStart.value = '14:00';
+            timeEnd.value = '18:00';
+        }
+    }
+};
+
+window.onCalendarModalTimeChange = function() {
+    const timeStart = document.getElementById('calendar_start_time');
+    const timeEnd = document.getElementById('calendar_end_time');
+    if (!timeStart || !timeEnd) return;
+
+    const s = timeStart.value;
+    const e = timeEnd.value;
+    const halfSlots = {{ half_day_slots | tojson | safe if half_day_slots else '{}' }};
+    const mStart = (halfSlots && halfSlots.morning) ? halfSlots.morning.start_time : '09:00';
+    const mEnd = (halfSlots && halfSlots.morning) ? halfSlots.morning.end_time : '14:00';
+    const aStart = (halfSlots && halfSlots.afternoon) ? halfSlots.afternoon.start_time : '14:00';
+    const aEnd = (halfSlots && halfSlots.afternoon) ? halfSlots.afternoon.end_time : '18:00';
+
+    let activeType = 'custom';
+    if (s === '09:00' && e === '18:00') activeType = 'full';
+    else if (s === mStart && e === mEnd) activeType = 'morning';
+    else if (s === aStart && e === aEnd) activeType = 'afternoon';
+
+    ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+        const btn = document.getElementById(`cal-modal-preset-${p}`);
+        if (btn) {
+            if (p === activeType) {
+                btn.classList.add('bg-dense-blue', 'text-white');
+                btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+            } else {
+                btn.classList.remove('bg-dense-blue', 'text-white');
+                btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+            }
+        }
+    });
+};
 </script>
 {% endif %}
 {% endblock %}

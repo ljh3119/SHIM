@@ -2,3 +2,35 @@
 {%- set n = (v | default(0) | float) -%}
 {%- if n == (n | int) -%}{{ "{:,}".format(n | int) }}{%- else -%}{{ "{:,.1f}".format(n) }}{%- endif -%}
 {%- endmacro %}
+
+{% macro fmt_slot_label(slot, hours=None) -%}
+{%- set s = (slot | default('') | string).strip() -%}
+{%- set h = (hours | default(0) | float) -%}
+{%- if h == 4.0 or s in ['09:00~14:00', '09:00~13:00', '14:00~18:00', '13:00~18:00'] -%}
+    {%- if s.startswith('09:') or s.startswith('08:') or s.startswith('10:') -%}
+        오전 반차
+    {%- else -%}
+        오후 반차
+    {%- endif -%}
+{%- elif (h == 8.0 or h == 0) and s in ['09:00~18:00', '08:30~17:30', '09:30~18:30'] -%}
+    전일
+{%- else -%}
+    {{ s }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro fmt_slot_short(slot, hours=None) -%}
+{%- set s = (slot | default('') | string).strip() -%}
+{%- set h = (hours | default(0) | float) -%}
+{%- if h == 4.0 or s in ['09:00~14:00', '09:00~13:00', '14:00~18:00', '13:00~18:00'] -%}
+    {%- if s.startswith('09:') or s.startswith('08:') or s.startswith('10:') -%}
+        오전
+    {%- else -%}
+        오후
+    {%- endif -%}
+{%- elif (h == 8.0 or h == 0) and s in ['09:00~18:00', '08:30~17:30', '09:30~18:30'] -%}
+    전일
+{%- else -%}
+    {{ s }}
+{%- endif -%}
+{%- endmacro %}

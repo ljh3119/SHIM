@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% from "partials/macros.html" import fmt_hours %}
+{% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section for PC -->
@@ -70,7 +70,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-dense-nav-text">
-                                    {{ leave.snapshot_slot_label }}
+                                    {{ fmt_slot_label(leave.snapshot_slot_label, leave.snapshot_deduction_hours) }}
                                     {% if leave.reason %}
                                     <div class="max-w-[12rem] truncate text-[11px] font-medium text-dense-muted" title="{{ leave.reason }}">
                                         사유: {{ leave.reason }}
@@ -191,7 +191,7 @@
                     </div>
 
                     <div class="min-w-0 space-y-1 text-xs font-semibold text-dense-muted">
-                        <div>사용구간: <span class="text-dense-text">{{ leave.snapshot_slot_label }}</span> ({% if leave.is_deductive %}-{{ fmt_hours(leave.snapshot_deduction_hours) }}h{% else %}0h{% endif %})</div>
+                        <div>사용구간: <span class="text-dense-text">{{ fmt_slot_label(leave.snapshot_slot_label, leave.snapshot_deduction_hours) }}</span> ({% if leave.is_deductive %}-{{ fmt_hours(leave.snapshot_deduction_hours) }}h{% else %}0h{% endif %})</div>
                         {% if leave.reason %}
                         <div class="break-words text-xs">사유: <span class="text-dense-text">{{ leave.reason }}</span></div>
                         {% endif %}
