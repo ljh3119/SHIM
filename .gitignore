@@ -27,6 +27,7 @@ artifacts/
 dist/
 build/
 *.spec
+*.tar
 
 # IDE
 .idea/
