@@ -21,7 +21,7 @@ from ..services.leave_policy import (
     HALF_DAY_MINUTES,
 )
 from ..dependencies import get_current_user
-from ..services.leave_service import resolve_user_yearly_allocated_hours
+from ..services.leave_service import resolve_user_yearly_allocated_hours, allocated_hours_or_default
 logger = logging.getLogger("shim.api")
 
 
@@ -496,7 +496,7 @@ def user_team_calendar_desktop_partial(
         monthly_used_map = {r[0]: float(r[1]) for r in monthly_used_rows}
 
         for m in team_members:
-            total_alloc = alloc_map.get(m.user_id, int(m.total_leave_hours or 0))
+            total_alloc = allocated_hours_or_default(m, alloc_map.get(m.user_id))
             used_y = yearly_used_map.get(m.user_id, 0.0)
             used_m = monthly_used_map.get(m.user_id, 0.0)
             remaining = total_alloc - used_y

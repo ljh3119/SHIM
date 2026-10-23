@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session, contains_eager, joinedload
 from sqlalchemy import extract
 from .. import models, utils
+from .leave_service import allocated_hours_or_default
 
 def get_admin_dashboard_stats(db: Session):
     today = utils.get_business_now()
@@ -29,10 +30,8 @@ def get_admin_dashboard_stats(db: Session):
     today_used_hours = sum(float(l.snapshot_deduction_hours or 0) for l in leaves_used_today if l.status not in ("CANCELED", "REJECTED"))
     
     # 전사 총 배정 연차 (해당 연도)
-    yearly_allocations = db.query(models.UserYearlyLeaveAllocations).filter(
-        models.UserYearlyLeaveAllocations.year == today.year
-    ).all()
-    total_allocated_hours = sum(float(row.allocated_hours or 0) for row in yearly_allocations)
+    allocation_map = get_yearly_allocation_map(db, [u.user_id for u in users], today.year)
+    total_allocated_hours = sum(allocated_hours_or_default(u, allocation_map.get(u.user_id)) for u in users)
     
     # 전사 총 사용 완료 연차 (해당 연도, APPROVED이며 차감 대상)
     leaves_approved_year = db.query(models.Leaves).filter(
@@ -179,7 +178,7 @@ def get_admin_dashboard_charts_data(db: Session, year: int):
         if team_name not in team_data:
             team_data[team_name] = {"used": 0.0, "remaining": 0.0}
             
-        alloc_hours = float(alloc_map.get(user.user_id, 0))
+        alloc_hours = float(allocated_hours_or_default(user, alloc_map.get(user.user_id)))
         used_hours = user_used_map.get(user.user_id, 0.0)
         remaining_hours = max(0.0, alloc_hours - used_hours)
         

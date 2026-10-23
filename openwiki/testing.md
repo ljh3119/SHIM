@@ -17,6 +17,7 @@
 - `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
+- `test_review_regressions.py` — HTML 사유/따옴표 이름, 동시 승인·취소·반려 및 잔여량 경쟁, 관리자 보호, 연도별 할당 0/누락, 점심 겹침과 00:00/24:00, 중복 설정·호환 백업 보존 검증. 렌더링된 JavaScript 검증에 Node.js를 사용합니다.
 - `test_timezone_utils.py` — IANA 시간대, DST 경계, UTC 저장, 기동 실패, 화면 ISO 파싱, 서반구 날짜 보존 검증
 - `run_remaining_tests.py` — 남은 시나리오 커버리지 실행
 
@@ -24,6 +25,8 @@
 - `npm test` 또는 `python tools/scripts/run_tests.py smoke`: 개발 중 핵심 회귀 검사(약 2분)
 - `npm run test:release` 또는 `python tools/scripts/run_tests.py release`: smoke와 정상 종료·중복 실행·메모리 1,000회 검사(약 6분)
 - 각 하위 검사는 별도 임시 `SHIM_DATA_DIR`에서 실행되어 운영·개발 DB를 건드리지 않습니다.
+- `test_http_security.py`는 단독 실행 시에도 호출자의 `SHIM_DATA_DIR`와 키 환경을 사용하지 않고 별도 임시 폴더를 사용합니다. 공통 실행기는 자식 프로세스의 Python 입출력을 UTF-8로 고정합니다.
+- 의존성은 별도 가상환경에 `requirements-dev.txt`로 설치한 후 검사합니다. 전역 Python의 설치 버전만으로 프로젝트 의존성 충족을 판단하지 않습니다.
 - ASGI 테스트는 개발 전용 `httpx2==2.7.0`의 명시적 transport를 사용합니다.
 
 ## 이런 테스트가 존재하는 이유

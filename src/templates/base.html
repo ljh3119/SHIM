@@ -456,6 +456,10 @@
     </div>
 
     <script>
+    window.shimWorkHours = {
+        start: {{ ('%02d:%02d' | format((work_start_minute | default(540)) // 60, (work_start_minute | default(540)) % 60)) | tojson }},
+        end: {{ ('%02d:%02d' | format((work_end_minute | default(1080)) // 60, (work_end_minute | default(1080)) % 60)) | tojson }}
+    };
     function parseHHMMToMinutes(value) {
         if (!value) return null;
         const parts = String(value).split(':');
@@ -537,14 +541,14 @@
         if (!timeStart || !timeEnd) return;
 
         if (type === 'full') {
-            timeStart.value = '09:00';
-            timeEnd.value = '18:00';
+            timeStart.value = window.shimWorkHours.start;
+            timeEnd.value = window.shimWorkHours.end;
         } else if (type === 'morning') {
             if (halfSlots && halfSlots.morning) {
                 timeStart.value = halfSlots.morning.start_time;
                 timeEnd.value = halfSlots.morning.end_time;
             } else {
-                timeStart.value = '09:00';
+                timeStart.value = window.shimWorkHours.start;
                 timeEnd.value = '14:00';
             }
         } else if (type === 'afternoon') {
@@ -553,7 +557,7 @@
                 timeEnd.value = halfSlots.afternoon.end_time;
             } else {
                 timeStart.value = '14:00';
-                timeEnd.value = '18:00';
+                timeEnd.value = window.shimWorkHours.end;
             }
         }
     }
@@ -599,8 +603,8 @@
         if (typeof selectTimelinePreset === 'function') {
             selectTimelinePreset('full');
         } else {
-            document.getElementById('timeline_start_time').value = '09:00';
-            document.getElementById('timeline_end_time').value = '18:00';
+            document.getElementById('timeline_start_time').value = window.shimWorkHours.start;
+            document.getElementById('timeline_end_time').value = window.shimWorkHours.end;
         }
         window.shimModal.open('timelineApplyModal', 'timeline_start_time');
     }
@@ -717,16 +721,15 @@
         const content = document.getElementById('actionModalContent');
         const footer = document.getElementById('actionModalFooter');
         
-        const currentUserId = "{{ user.user_id if user else '' }}";
-        const currentUserRole = "{{ user_role if user_role else '' }}";
-        const currentUserTeam = "{{ user.team if user and user.team else '' }}";
-        const currentUserCompany = "{{ user.company if user and user.company else '' }}";
+        const currentUserId = {{ (user.user_id if user else '') | tojson }};
+        const currentUserRole = {{ (user_role if user_role else '') | tojson }};
+        const currentUserTeam = {{ (user.team if user and user.team else '') | tojson }};
+        const currentUserCompany = {{ (user.company if user and user.company else '') | tojson }};
         
         const isMe = (applicantId === currentUserId);
         title.textContent = isMe ? '나의 연차 신청 정보' : '팀원 연차 결재 승인';
         
         const deductiveLabel = !isDeductive ? '<span class="ml-1.5 inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold text-purple-700">공가/출장</span>' : '';
-        const reasonContent = reason ? reason : '—';
         
         let statusLabel = '';
         if (status === 'PENDING') {
@@ -734,7 +737,7 @@
         } else if (status === 'APPROVED') {
             statusLabel = '<span class="text-dense-green font-extrabold bg-dense-green-soft px-1.5 py-0.5 rounded">승인됨</span>';
         } else if (status === 'REJECTED') {
-            statusLabel = `<span class="text-dense-danger font-extrabold bg-dense-danger-soft px-1.5 py-0.5 rounded">반려됨 (${rejectionReason || '사유 없음'})</span>`;
+            statusLabel = '<span data-detail="rejection" class="text-dense-danger font-extrabold bg-dense-danger-soft px-1.5 py-0.5 rounded"></span>';
         } else {
             statusLabel = '<span class="text-dense-muted font-extrabold bg-dense-gray-soft px-1.5 py-0.5 rounded">취소됨</span>';
         }
@@ -756,29 +759,36 @@
         content.innerHTML = `
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청인</span>
-                <span class="col-span-2 font-bold">${userName}</span>
+                <span data-detail="name" class="col-span-2 font-bold"></span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">팀</span>
-                <span>${userTeam || '—'}</span>
+                <span data-detail="team"></span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청 일자</span>
-                <span class="col-span-2 font-bold">${dateStr}</span>
+                <span data-detail="date" class="col-span-2 font-bold"></span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">연차 구분</span>
-                <span class="col-span-2 font-bold">${displayDuration}${deductiveLabel}</span>
+                <span class="col-span-2 font-bold"><span data-detail="duration"></span>${deductiveLabel}</span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">신청 사유</span>
-                <span class="col-span-2 font-semibold text-dense-text">${reasonContent}</span>
+                <span data-detail="reason" class="col-span-2 font-semibold text-dense-text"></span>
             </div>
             <div class="grid grid-cols-3 gap-2 border-b border-dense-grid pb-2">
                 <span class="font-bold text-dense-muted">결재 상태</span>
                 <span class="col-span-2">${statusLabel}</span>
             </div>
         `;
+
+        for (const [field, value] of Object.entries({name: userName, team: userTeam || '—', date: dateStr, duration: displayDuration, reason: reason || '—'})) {
+            content.querySelector(`[data-detail="${field}"]`).textContent = value;
+        }
+        if (status === 'REJECTED') {
+            content.querySelector('[data-detail="rejection"]').textContent = `반려됨 (${rejectionReason || '사유 없음'})`;
+        }
         
         const canApprove = (currentUserRole === 'PM') || (currentUserRole === 'TEAM_LEAD' && userTeam === currentUserTeam && userCompany === currentUserCompany);
         

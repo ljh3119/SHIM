@@ -59,9 +59,7 @@ def test_metrics():
         assert settings_after_backup.last_backup_count > 0, "최종 백업 개수 업데이트 실패"
         print(f"  Backup metrics updated - Time: {settings_after_backup.last_backup_time}, Count: {settings_after_backup.last_backup_count}")
         
-        # 백업 정리
-        if backup_path.exists():
-            backup_path.unlink()
+        # 대시보드의 복구 가능 상태도 검사하므로 백업은 임시 폴더 정리 때 제거합니다.
             
         # 4. 알림 정리 스케줄러 메트릭 연동 테스트
         ops.cleanup_old_notifications()
@@ -80,6 +78,7 @@ def test_metrics():
         assert r.status_code == 200
         html_text = r.text
         assert "시스템 운영 현황" in html_text
+        assert "정상 작동 중" in html_text
         assert "활성 사원" in html_text
         assert "가동 시간" in html_text
         assert "DB 용량" in html_text

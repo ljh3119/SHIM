@@ -8,6 +8,8 @@ from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 EXPECTED_HEADERS = {
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
@@ -44,7 +46,7 @@ def check_openapi_enabled() -> None:
         assert_security_headers(schema)
 
 
-def main() -> None:
+def run_checks() -> None:
     if sys.argv[1:] == ["--openapi-enabled"]:
         check_openapi_enabled()
         return
@@ -115,6 +117,7 @@ def main() -> None:
         partial_db = original_db_path.parent / "partial-health.db"
         with sqlite3.connect(partial_db) as connection:
             connection.execute("CREATE TABLE system_settings (id INTEGER PRIMARY KEY)")
+        connection.close()
         app_main.DB_PATH = partial_db
         assert client.get("/health").status_code == 503
 
@@ -137,10 +140,24 @@ def main() -> None:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
     assert result.returncode == 0, result.stdout + result.stderr
     print("[PASS] OPS-003/SEC-002/SEC-003 health, OpenAPI, and security header checks completed.")
+
+
+def main() -> None:
+    # 단독 실행도 호출자의 개발 DB/키를 사용하지 않습니다.
+    with tempfile.TemporaryDirectory(prefix="shim_http_security_") as data_dir:
+        os.environ["SHIM_DATA_DIR"] = data_dir
+        os.environ.pop("SHIM_SECRET_KEY", None)
+        os.environ["PYTHONIOENCODING"] = "utf-8"
+        try:
+            run_checks()
+        finally:
+            from src.app.database import engine
+            engine.dispose()
 
 
 if __name__ == "__main__":

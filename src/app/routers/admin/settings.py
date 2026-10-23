@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, Request, Form, status
+from fastapi import APIRouter, Depends, Request, Form, status, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -12,7 +12,8 @@ from src.app.services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
     get_system_settings,
 )
-from src.app.services.ops import create_sqlite_backup
+from src.app.services.ops import create_sqlite_backup, _validate_recovery_candidate
+from src.app.key_material import resolve_key_fingerprint
 
 page_router = APIRouter()
 api_router = APIRouter()
@@ -21,9 +22,12 @@ def _templates(request: Request):
     return request.app.state.templates
 
 def _ensure_system_setting(db: Session) -> models.SystemSettings:
+    if db.query(models.SystemSettings).count() > 1:
+        raise HTTPException(status_code=409, detail="시스템 설정이 중복되어 있습니다. 설정을 비교·정리한 후 다시 시도해 주세요.")
     setting = db.query(models.SystemSettings).first()
     if not setting:
         setting = models.SystemSettings(
+            key_hash_snapshot=resolve_key_fingerprint(DB_PATH.parent),
             is_approval_required=False,
             time_granularity_minutes=60,
             work_start_minute=9 * 60,
@@ -39,7 +43,7 @@ def _ensure_system_setting(db: Session) -> models.SystemSettings:
         db.refresh(setting)
     if not getattr(setting, "time_granularity_minutes", None):
         setting.time_granularity_minutes = 60
-    if not getattr(setting, "work_start_minute", None):
+    if getattr(setting, "work_start_minute", None) is None:
         setting.work_start_minute = 9 * 60
     if not getattr(setting, "work_end_minute", None):
         setting.work_end_minute = 18 * 60
@@ -281,17 +285,21 @@ def set_time_policy(
 @api_router.post("/ops/backup")
 def run_backup(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
     backup_path = create_sqlite_backup(DB_PATH, DB_PATH.parent / "backup")
+    compatible, reason = _validate_recovery_candidate(backup_path, resolve_key_fingerprint(DB_PATH.parent))
     db.add(
         models.AuditLogs(
             actor_id=admin.user_id,
             action="MANUAL_DB_BACKUP",
             target_info="Database",
             old_data="",
-            new_data=str(backup_path.name),
+            new_data=f"{backup_path.name};recovery_compatible={compatible}",
         )
     )
     db.commit()
-    return JSONResponse(status_code=200, content={"message": f"백업이 생성되었습니다: {backup_path.name}"})
+    message = f"백업이 생성되었습니다: {backup_path.name}"
+    if not compatible:
+        message += " (주의: 현재 버전 자동 복구 검사에 실패했습니다. 관리자 대시보드에서 확인해 주세요.)"
+    return JSONResponse(status_code=200, content={"message": message, "recovery_compatible": compatible})
 
 
 @page_router.get("/master", response_class=HTMLResponse)
@@ -306,7 +314,7 @@ def admin_master(request: Request, db: Session = Depends(get_db), admin: models.
             "current_year": utils.get_business_now().year,
             "is_approval_required": is_approval_required,
             "time_granularity_minutes": int(getattr(setting, "time_granularity_minutes", 60) or 60),
-            "work_start_minute": int(getattr(setting, "work_start_minute", 9 * 60) or (9 * 60)),
+            "work_start_minute": int(setting.work_start_minute),
             "work_end_minute": int(getattr(setting, "work_end_minute", 18 * 60) or (18 * 60)),
             "lunch_start_minute": getattr(setting, "lunch_start_minute", None),
             "lunch_end_minute": getattr(setting, "lunch_end_minute", None),

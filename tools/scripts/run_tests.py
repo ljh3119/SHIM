@@ -23,6 +23,7 @@ SMOKE_SCRIPTS = (
     ("test_ops_safety.py",),
     ("test_http_security.py",),
     ("test_half_day_policy.py",),
+    ("test_review_regressions.py",),
 )
 RELEASE_ONLY_SCRIPTS = (
     ("test_graceful_shutdown.py",),
@@ -59,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
 
     scripts = SMOKE_SCRIPTS + (RELEASE_ONLY_SCRIPTS if args.mode == "release" else ())
     base_env = os.environ.copy()
+    base_env["PYTHONUTF8"] = "1"
+    base_env["PYTHONIOENCODING"] = "utf-8"
     base_env.pop("SHIM_SECRET_KEY", None)
     base_env.pop("SHIM_ENABLE_OPENAPI", None)
     base_env["PYTHONPATH"] = os.pathsep.join(

@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 import sys
@@ -46,13 +47,29 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-from fastapi import Request
+from fastapi import Request, HTTPException
+
+
+def begin_write_transaction(db):
+    """SQLite 검증과 저장을 같은 쓰기 트랜잭션 안에서 직렬화합니다."""
+    connection = db.connection()
+    if not connection.connection.driver_connection.in_transaction:
+        db.execute(text("BEGIN IMMEDIATE"))
+        db.expire_all()
 
 def get_db(request: Request = None):
     db = SessionLocal()
     if request is not None:
         request.state.db = db
     try:
+        if request is not None and request.method in {"POST", "PUT", "PATCH", "DELETE"} and request.url.path.startswith("/api/"):
+            try:
+                begin_write_transaction(db)
+            except OperationalError as exc:
+                db.rollback()
+                if "locked" in str(exc).lower() or "busy" in str(exc).lower():
+                    raise HTTPException(status_code=503, detail="다른 요청을 처리 중입니다. 잠시 후 다시 시도해 주세요.") from exc
+                raise
         yield db
     finally:
         db.close()

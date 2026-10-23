@@ -43,6 +43,8 @@ SHIM은 단일 SQLite 데이터베이스를 사용하는 서버 렌더링 FastAP
 이 앱은 서버형 DB보다 SQLite를 중심으로 설계되었습니다. 이 선택은 여러 구현 세부에 영향을 줍니다.
 - 연결 시 `src/app/database.py`에서 WAL mode, foreign key, durability 관련 PRAGMA를 활성화합니다.
 - `SessionLocal`을 요청 범위 세션으로 사용합니다.
+- 변경 API(`/api/`의 POST·PUT·PATCH·DELETE)는 인증/상태 조회 전에 `BEGIN IMMEDIATE`로 쓰기 권한을 확보합니다. 연차 상태·잔여량 확인과 저장을 같은 트랜잭션에서 수행하여 동시 승인·취소 및 초과 신청을 방지합니다. SQLite 특성상 API 쓰기는 직렬 처리되며 잠금 대기 실패는 503으로 응답합니다.
+- 종료 시 이미 실행 중인 백업 스레드가 끝날 때까지 기다린 후 엔진을 dispose합니다.
 - 데이터 디렉터리는 `SHIM_DATA_DIR`, 포터블 EXE 폴더, `var/data/` 순으로 해석합니다.
 - `src/app/services/ops.py`의 복구 로직은 손상된 DB를 격리하고, 현재 테이블·필수 컬럼·migration 집합·단일 설정 행·키 지문을 모두 만족하는 최신 호환 백업만 복원합니다. 백업 사전검증부터 설치 후 최종 재검증까지 실패하면 원본 DB·WAL·SHM을 역순 원복하며 파일을 삭제하지 않습니다.
 

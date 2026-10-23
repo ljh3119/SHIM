@@ -15,7 +15,7 @@ from src.app import models, database, auth, utils
 from src.app.database import get_db
 from src.app.dependencies import get_current_admin
 from src.app.services import admin_service
-from src.app.services.leave_service import resolve_user_yearly_allocated_hours
+from src.app.services.leave_service import resolve_user_yearly_allocated_hours, allocated_hours_or_default
 from src.app.services.leave_policy import (
     apply_leave_status_transition,
     LeaveStatusTransitionError,
@@ -346,7 +346,7 @@ def export_admin_leaves_timeline(
     ])
 
     for u in users:
-        allocated = alloc_map.get(u.user_id, u.total_leave_hours or 120)
+        allocated = allocated_hours_or_default(u, alloc_map.get(u.user_id))
         approved = leave_hours_map.get(u.user_id, {}).get("APPROVED", 0.0)
         pending = leave_hours_map.get(u.user_id, {}).get("PENDING", 0.0)
         remaining = float(allocated) - approved - pending
@@ -564,7 +564,7 @@ def admin_leaves_calendar(
             yearly_leaves = user_yearly_leaves_map.get(u.user_id, [])
             yearly_used = sum(float(l.snapshot_deduction_hours or 0) for l in yearly_leaves)
 
-        allocated_hours = float(allocation_map.get(u.user_id, u.total_leave_hours or 0))
+        allocated_hours = float(allocated_hours_or_default(u, allocation_map.get(u.user_id)))
         yearly_remain = allocated_hours - float(yearly_used)
 
         if is_year_view:
@@ -894,7 +894,7 @@ def admin_leaves_yearly_partial(
             for m in range(1, 13)
         }
 
-        allocated_hours = float(allocation_map.get(u.user_id, u.total_leave_hours or 0))
+        allocated_hours = float(allocated_hours_or_default(u, allocation_map.get(u.user_id)))
         yearly_remain = allocated_hours - float(yearly_used)
 
         user_stats.append(

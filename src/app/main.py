@@ -10,7 +10,7 @@ import os
 import sys
 from pathlib import Path
 import holidays
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 
 import asyncio
 import sqlite3
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: 연결 풀을 먼저 닫고 WAL을 명시적으로 병합해 포터블 종료 후 보조 파일을 남기지 않습니다.
     database.engine.dispose()
     try:
-        with sqlite3.connect(DB_PATH, timeout=5.0) as connection:
+        with closing(sqlite3.connect(DB_PATH, timeout=5.0)) as connection:
             checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE);").fetchone()
         if checkpoint and checkpoint[0] != 0:
             print(f"[SHIM WARNING] Database shutdown wal_checkpoint was busy: {checkpoint}")
@@ -428,6 +428,9 @@ def startup_event():
                 )
             )
 
+        # autoflush=False이므로 최초 생성한 설정도 아래 키 지문 검증에 포함합니다.
+        db.flush()
+
         # 4. 비밀키 일관성(Fail-Fast) 검증 추가
         from .key_material import resolve_key_fingerprint
 
@@ -528,7 +531,7 @@ def startup_event():
 def _database_is_healthy(db_path: Path) -> bool:
     try:
         uri = f"{db_path.resolve().as_uri()}?mode=ro"
-        with sqlite3.connect(uri, uri=True, timeout=1.0) as connection:
+        with closing(sqlite3.connect(uri, uri=True, timeout=1.0)) as connection:
             connection.execute("SELECT 1").fetchone()
             connection.execute("SELECT 1 FROM system_settings LIMIT 1").fetchone()
             connection.execute("SELECT 1 FROM schema_versions LIMIT 1").fetchone()

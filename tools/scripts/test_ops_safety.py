@@ -53,9 +53,12 @@ def main() -> int:
         from src.app.services import ops
 
         database.Base.metadata.create_all(bind=database.engine)
+        from src.app.migrations import run_all_migrations
+        from src.app.key_material import resolve_key_fingerprint
+        run_all_migrations(database.engine)
         db = database.SessionLocal()
         try:
-            settings = models.SystemSettings()
+            settings = models.SystemSettings(key_hash_snapshot=resolve_key_fingerprint(database.DB_PATH.parent))
             user = models.Users(
                 user_id="ops_user",
                 user_name="ops_user",

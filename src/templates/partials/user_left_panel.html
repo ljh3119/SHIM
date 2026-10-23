@@ -51,7 +51,7 @@
                     <label class="text-[9px] font-bold">시작</label>
                     <select id="easy-start-g_desktop" name="start_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
-                        <option value="{{ t }}" {% if t == '09:00' %}selected{% endif %}>{{ t }}</option>
+                        <option value="{{ t }}" {% if loop.first %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -59,7 +59,7 @@
                     <label class="text-[9px] font-bold">종료</label>
                     <select id="easy-end-g_desktop" name="end_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
-                        <option value="{{ t }}" {% if t == '18:00' %}selected{% endif %}>{{ t }}</option>
+                        <option value="{{ t }}" {% if loop.last %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -127,14 +127,14 @@
         if (!timeStart || !timeEnd) return;
 
         if (type === 'full') {
-            timeStart.value = '09:00';
-            timeEnd.value = '18:00';
+            timeStart.value = window.shimWorkHours.start;
+            timeEnd.value = window.shimWorkHours.end;
         } else if (type === 'morning') {
             if (halfDaySlots && halfDaySlots.morning) {
                 timeStart.value = halfDaySlots.morning.start_time;
                 timeEnd.value = halfDaySlots.morning.end_time;
             } else {
-                timeStart.value = '09:00';
+                timeStart.value = window.shimWorkHours.start;
                 timeEnd.value = '14:00';
             }
         } else if (type === 'afternoon') {
@@ -143,7 +143,7 @@
                 timeEnd.value = halfDaySlots.afternoon.end_time;
             } else {
                 timeStart.value = '14:00';
-                timeEnd.value = '18:00';
+                timeEnd.value = window.shimWorkHours.end;
             }
         }
         updateEstimatedTimeG(prefix);
@@ -162,7 +162,7 @@
         const aEnd = (halfDaySlots && halfDaySlots.afternoon) ? halfDaySlots.afternoon.end_time : '18:00';
 
         let activeType = 'custom';
-        if (s === '09:00' && e === '18:00') activeType = 'full';
+        if (s === window.shimWorkHours.start && e === window.shimWorkHours.end) activeType = 'full';
         else if (s === mStart && e === mEnd) activeType = 'morning';
         else if (s === aStart && e === aEnd) activeType = 'afternoon';
 
@@ -266,8 +266,8 @@
         
         if (startInput && endInput && timeStart && timeEnd) {
             if (startInput.value && endInput.value && startInput.value !== endInput.value) {
-                timeStart.value = '09:00';
-                timeEnd.value = '18:00';
+                timeStart.value = window.shimWorkHours.start;
+                timeEnd.value = window.shimWorkHours.end;
                 timeStart.setAttribute('disabled', 'disabled');
                 timeEnd.setAttribute('disabled', 'disabled');
             } else {

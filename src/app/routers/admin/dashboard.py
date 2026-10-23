@@ -4,7 +4,8 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from src.app import models, utils, auth
-from src.app.database import get_db
+from src.app.database import get_db, DB_PATH
+from src.app.services.ops import get_backup_recovery_status
 from src.app.services import admin_service
 from src.app.dependencies import get_current_admin
 
@@ -62,6 +63,22 @@ def admin_dashboard(
     
     # 헬스 체크 임계치 및 지연 상태 판정 (26시간 임계치)
     is_healthy = True
+    settings_count = db.query(models.SystemSettings).count()
+    try:
+        recovery = get_backup_recovery_status(DB_PATH)
+    except Exception:
+        recovery = {"latest_compatible": False, "compatible_backup": None}
+    recovery_warnings = []
+    if settings_count != 1:
+        recovery_warnings.append("시스템 설정이 중복되었거나 누락되었습니다. 설정을 비교·정리해야 합니다.")
+    if not recovery["latest_compatible"]:
+        recovery_warnings.append("최근 백업이 없거나 현재 버전의 자동 복구 검사를 통과하지 못했습니다.")
+        if recovery["compatible_backup"]:
+            recovery_warnings.append(f"복구 가능한 최근 백업: {recovery['compatible_backup']}")
+        else:
+            recovery_warnings.append("현재 버전으로 자동 복구할 수 있는 백업이 없습니다.")
+    if recovery_warnings:
+        is_healthy = False
     
     if settings:
         if settings.last_backup_time is not None:
@@ -94,7 +111,8 @@ def admin_dashboard(
         "db_size": db_size_str,
         "last_backup_time": last_backup_time_str,
         "last_backup_count": last_backup_count,
-        "last_cleanup_time": last_cleanup_time_str
+        "last_cleanup_time": last_cleanup_time_str,
+        "recovery_warnings": recovery_warnings
     }
     
     return _templates(request).TemplateResponse(request=request, name="admin_dashboard.html", context={

@@ -81,6 +81,7 @@ def test_graceful_shutdown():
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
 
     env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONPATH"] = project_root
 
     process = subprocess.Popen(
@@ -91,6 +92,7 @@ def test_graceful_shutdown():
         creationflags=creation_flags,
         env=env,
         text=True,
+        encoding="utf-8",
         bufsize=1
     )
 

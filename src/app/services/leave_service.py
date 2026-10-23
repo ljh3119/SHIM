@@ -1,8 +1,9 @@
 from datetime import datetime, date as date_cls
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func
 
 from .. import models, utils
+from ..database import begin_write_transaction
 from .leave_policy import (
     LEAVE_REASON_MAX_LENGTH,
     LeaveInputValidationError,
@@ -11,14 +12,16 @@ from .leave_policy import (
     get_system_settings,
 )
 
+def allocated_hours_or_default(user: models.Users, allocated_hours: int | None) -> int:
+    return int(user.total_leave_hours or 0) if allocated_hours is None else int(allocated_hours)
+
+
 def resolve_user_yearly_allocated_hours(db: Session, user: models.Users, year: int) -> int:
     allocation = db.query(models.UserYearlyLeaveAllocations).filter(
         models.UserYearlyLeaveAllocations.user_id == user.user_id,
         models.UserYearlyLeaveAllocations.year == year
     ).first()
-    if allocation:
-        return int(allocation.allocated_hours)
-    return int(user.total_leave_hours or 0)
+    return allocated_hours_or_default(user, allocation.allocated_hours if allocation else None)
 
 def validate_and_apply_leave(
     db: Session,
@@ -50,7 +53,7 @@ def validate_and_apply_leave(
 
     try:
         # 동시 요청이 같은 검증 결과를 보지 않도록 SQLite 쓰기 예약 잠금을 먼저 획득합니다.
-        db.execute(text("BEGIN IMMEDIATE"))
+        begin_write_transaction(db)
         # 1. 정책 및 데이터 설정 로드
         (
             granularity,
@@ -128,7 +131,7 @@ def validate_and_apply_leave(
         # 점심시간 공제 후 일일 최대 순수 근무 시간 계산
         lunch_minutes = 0
         if lunch_start is not None and lunch_end is not None and lunch_end > lunch_start:
-            lunch_minutes = lunch_end - lunch_start
+            lunch_minutes = max(0, min(work_end, lunch_end) - max(work_start, lunch_start))
         max_daily_hours = (work_end - work_start - lunch_minutes) / 60.0
 
         # 개별 날짜별 중복 및 일일 한도 체크 (N+1 쿼리 방지 일괄 조회)

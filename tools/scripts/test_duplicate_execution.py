@@ -53,6 +53,7 @@ def test_duplicate_execution():
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
 
     env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONPATH"] = project_root
 
     proc_a = subprocess.Popen(
@@ -63,6 +64,7 @@ def test_duplicate_execution():
         creationflags=creation_flags,
         env=env,
         text=True,
+        encoding="utf-8",
         bufsize=1
     )
 
@@ -109,6 +111,7 @@ def test_duplicate_execution():
         creationflags=creation_flags,
         env=env,
         text=True,
+        encoding="utf-8",
         bufsize=1
     )
 

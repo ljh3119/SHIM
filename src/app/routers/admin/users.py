@@ -10,6 +10,7 @@ from src.app import models, auth, utils
 from src.app.database import get_db
 from src.app.dependencies import get_current_admin
 from src.app.services import admin_service
+from src.app.services.leave_service import allocated_hours_or_default
 from src.app.constants import VALID_ROLES
 
 page_router = APIRouter()
@@ -87,7 +88,7 @@ def admin_users(
     year_options = utils.build_year_options(now_year, leave_years + allocation_years)
     allocation_map = admin_service.get_yearly_allocation_map(db, [u.user_id for u in users], selected_year)
     user_leave_days_map = {
-        u.user_id: int(allocation_map.get(u.user_id, u.total_leave_hours or 0)) // 8
+        u.user_id: int(allocated_hours_or_default(u, allocation_map.get(u.user_id))) // 8
         for u in users
     }
     def _user_sort_tuple(u: models.Users):
@@ -242,6 +243,9 @@ def update_user(
     role_value = (role or "STAFF").strip().upper()
     if role_value not in VALID_ROLES:
         role_value = "STAFF"
+
+    if user.role == "ADMIN" and role_value != "ADMIN":
+        return JSONResponse(status_code=400, content={"message": "관리자 계정의 역할은 변경할 수 없습니다."})
 
     if role_value == "ADMIN" and user.role != "ADMIN":
         return JSONResponse(

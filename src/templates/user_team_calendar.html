@@ -731,7 +731,7 @@
     }
 
     function clearCellHighlight(dateStr) {
-        const userId = "{{ user.user_id }}";
+        const userId = {{ user.user_id | tojson }};
         const btn = document.getElementById(`timeline-cell-${userId}-${dateStr}`);
         if (!btn) return;
         
@@ -751,7 +751,7 @@
         const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
         if (!start || !end) return;
         
-        const userId = "{{ user.user_id }}";
+        const userId = {{ user.user_id | tojson }};
         
         // Clear highlights first
         document.querySelectorAll(`td[id^="timeline-cell-${userId}-"]`).forEach(btn => {
@@ -903,7 +903,7 @@
         // 2. Collision Check during Input sync
         if (startVal && endVal && startVal <= endVal) {
             const dates = getDatesInRange(startVal, endVal);
-            const userId = "{{ user.user_id }}";
+            const userId = {{ user.user_id | tojson }};
             let collisionCell = null;
             
             for (const d of dates) {
@@ -968,7 +968,7 @@
     };
 
     function cancelMultiSelect() {
-        const userId = "{{ user.user_id }}";
+        const userId = {{ user.user_id | tojson }};
         if (rangeStartDate) {
             const start = window.parseLocalDate(rangeStartDate);
             const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
@@ -1155,7 +1155,7 @@
         const hasLeave = td.getAttribute('data-has-leave') === 'true';
         const userId = td.getAttribute('data-user-id');
         const cellDate = td.getAttribute('data-cell-date');
-        const currentUserId = "{{ user.user_id }}";
+        const currentUserId = {{ user.user_id | tojson }};
         const isMe = td.getAttribute('data-is-me') === 'true';
 
         // 본인 행의 주말/공휴일 클릭 차단

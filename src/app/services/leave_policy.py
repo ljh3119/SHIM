@@ -104,7 +104,8 @@ def resolve_time_policy_setting(db: Session) -> tuple[int, int | None, int | Non
     granularity = int(getattr(setting, "time_granularity_minutes", 60) or 60)
     lunch_start = getattr(setting, "lunch_start_minute", None)
     lunch_end = getattr(setting, "lunch_end_minute", None)
-    work_start = int(getattr(setting, "work_start_minute", 9 * 60) or (9 * 60))
+    work_start_value = getattr(setting, "work_start_minute", None)
+    work_start = 9 * 60 if work_start_value is None else int(work_start_value)
     work_end = int(getattr(setting, "work_end_minute", 18 * 60) or (18 * 60))
     if granularity not in ALLOWED_TIME_GRANULARITIES:
         granularity = 60
@@ -118,7 +119,7 @@ def resolve_time_policy_setting(db: Session) -> tuple[int, int | None, int | Non
     return granularity, lunch_start, lunch_end, work_start, work_end
 
 
-def _parse_hhmm_to_minutes(value: str, field_name: str) -> int:
+def _parse_hhmm_to_minutes(value: str, field_name: str, *, allow_day_end: bool = False) -> int:
     text = (value or "").strip()
     try:
         hh_str, mm_str = text.split(":")
@@ -126,6 +127,8 @@ def _parse_hhmm_to_minutes(value: str, field_name: str) -> int:
         mm = int(mm_str)
     except (ValueError, AttributeError):
         raise LeaveInputValidationError(f"{field_name} 형식이 올바르지 않습니다. HH:MM 형식으로 입력해 주세요.")
+    if allow_day_end and hh == 24 and mm == 0:
+        return 1440
     if hh < 0 or hh > 23 or mm < 0 or mm > 59:
         raise LeaveInputValidationError(f"{field_name} 값이 올바르지 않습니다.")
     return hh * 60 + mm
@@ -213,7 +216,7 @@ def build_snapshot_from_timerange(
         raise LeaveInputValidationError("지원하지 않는 시간 단위 정책입니다.")
 
     start_min = _parse_hhmm_to_minutes(start_time, "시작 시간")
-    end_min = _parse_hhmm_to_minutes(end_time, "종료 시간")
+    end_min = _parse_hhmm_to_minutes(end_time, "종료 시간", allow_day_end=True)
     if end_min <= start_min:
         raise LeaveInputValidationError("종료 시간은 시작 시간보다 늦어야 합니다.")
 

@@ -146,7 +146,8 @@ class UserYearlyLeaveAllocations(Base):
 class SystemSettings(Base):
     __tablename__ = "system_settings"
 
-    id = Column(Integer, primary_key=True, index=True)
+    # 신규 설정은 항상 같은 PK를 사용해 동시 초기화로 두 행이 생기지 않게 합니다.
+    id = Column(Integer, primary_key=True, index=True, default=1)
     is_approval_required = Column(Boolean, default=False, nullable=False)
     time_granularity_minutes = Column(Integer, default=60, nullable=False)
     work_start_minute = Column(Integer, default=9 * 60, nullable=False)

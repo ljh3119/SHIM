@@ -21,6 +21,12 @@
     </div>
     {% endif %}
 
+    {% if system_metrics.recovery_warnings %}
+    <div role="alert" class="rounded-xl border border-dense-danger bg-dense-danger-soft p-4 text-sm text-dense-danger">
+        {% for warning in system_metrics.recovery_warnings %}<p>{{ warning }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
     <!-- 통계 카드 섹션 -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-3">
         <!-- 부여 연차 -->

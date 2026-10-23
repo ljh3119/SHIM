@@ -100,7 +100,7 @@ def main() -> None:
     engine = create_engine(f"sqlite:///{two_settings.as_posix()}")
     session = sessionmaker(bind=engine)()
     try:
-        session.add(models.SystemSettings(key_hash_snapshot=FINGERPRINT))
+        session.add(models.SystemSettings(id=2, key_hash_snapshot=FINGERPRINT))
         session.commit()
     finally:
         session.close()

@@ -13,6 +13,7 @@ from src.app.utils import get_business_now, get_business_timezone
 from src.app import models
 from src.app.database import DB_PATH
 from src.app.migrations import MIGRATIONS
+from src.app.key_material import resolve_key_fingerprint
 
 # 전역 백업 스레드 락 도입 (동시 백업 쓰기 방지 및 SQLite 락 충돌 우회)
 _backup_lock = threading.Lock()
@@ -56,6 +57,12 @@ def run_backup_and_rotate(db_path: Path, max_backups: int = 5) -> Path | None:
         except Exception as e:
             print(f"[SHIM BACKUP ERROR] Failed to create backup: {e}")
             return None
+
+        compatible, reason = _validate_recovery_candidate(backup_path, resolve_key_fingerprint(db_path.parent))
+        if not compatible:
+            # 복구 불가 신규본 때문에 마지막 호환 백업이 회전 삭제되지 않게 합니다.
+            print(f"[SHIM BACKUP WARNING] Backup preserved but rotation skipped: {reason}")
+            return backup_path
 
         backup_files = None
         try:
@@ -105,7 +112,13 @@ async def daily_backup_scheduler(db_path: Path):
             if not has_recent_backup:
                 print("[SHIM BACKUP] No recent backup found in last 24 hours. Running scheduled backup...")
                 from fastapi.concurrency import run_in_threadpool
-                await run_in_threadpool(run_backup_and_rotate, db_path)
+                backup_job = asyncio.create_task(run_in_threadpool(run_backup_and_rotate, db_path))
+                try:
+                    await asyncio.shield(backup_job)
+                except asyncio.CancelledError:
+                    # 스레드는 task 취소로 중단되지 않으므로 DB dispose 전에 완료를 기다립니다.
+                    await backup_job
+                    raise
         except asyncio.CancelledError:
             print("[SHIM BACKUP] Daily backup scheduler task cancelled. Exiting cleanly.")
             raise
@@ -217,6 +230,31 @@ def _validate_recovery_candidate(db_path: Path, current_key_fingerprint: str) ->
     finally:
         if conn is not None:
             conn.close()
+
+
+def get_backup_recovery_status(db_path: Path) -> dict:
+    """파일 존재/무결성과 별도로 현재 버전의 복구 가능 여부를 확인합니다."""
+    backups = sorted(
+        (db_path.parent / "backup").glob(f"{db_path.stem}_*.bak"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    fingerprint = resolve_key_fingerprint(db_path.parent)
+    latest_compatible = False
+    latest_reason = "no backup"
+    compatible_name = None
+    for index, backup in enumerate(backups):
+        compatible, reason = _validate_recovery_candidate(backup, fingerprint)
+        if index == 0:
+            latest_compatible, latest_reason = compatible, reason
+        if compatible:
+            compatible_name = backup.name
+            break
+    return {
+        "latest_compatible": latest_compatible,
+        "latest_reason": latest_reason,
+        "compatible_backup": compatible_name,
+    }
 
 
 def _recovery_suffix() -> str:
