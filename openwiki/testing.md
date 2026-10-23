@@ -27,7 +27,13 @@
 - 각 하위 검사는 별도 임시 `SHIM_DATA_DIR`에서 실행되어 운영·개발 DB를 건드리지 않습니다.
 - `test_http_security.py`는 단독 실행 시에도 호출자의 `SHIM_DATA_DIR`와 키 환경을 사용하지 않고 별도 임시 폴더를 사용합니다. 공통 실행기는 자식 프로세스의 Python 입출력을 UTF-8로 고정합니다.
 - 의존성은 별도 가상환경에 `requirements-dev.txt`로 설치한 후 검사합니다. 전역 Python의 설치 버전만으로 프로젝트 의존성 충족을 판단하지 않습니다.
-- ASGI 테스트는 개발 전용 `httpx2==2.7.0`의 명시적 transport를 사용합니다.
+- ASGI 테스트는 개발 전용 `httpx2==2.12.0`의 명시적 transport를 사용합니다.
+
+## 2026-10-23 개발 의존성 보안 패치
+- `httpx2` 2.7.0 → 2.12.0: Dependabot 경고 #14~18의 수정 버전을 반영했습니다. HTTP 헤더 처리, SSE 버퍼링, SOCKS 경유 TLS, 압축 해제 메모리 관련 경고입니다. [보안 권고](https://github.com/advisories/GHSA-8xx6-hgc6-gc2m)
+- Tailwind 빌드의 간접 의존성 `source-map-js` 1.2.1 → 1.2.2: 경고 #19의 서비스 거부 취약점 수정 버전을 lockfile에 반영했습니다. [보안 권고](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)
+- 운영용 `requirements.txt`는 변경하지 않습니다. Python 개발 환경은 `python -m pip install -r requirements-dev.txt`, Node 빌드 환경은 `npm ci`로 갱신합니다.
+- 패치 버전 환경에서 release 19개 스크립트, CSS 빌드, `pip check`가 통과했습니다. npm 감사 결과는 취약점 0건이며 CSS 생성 결과는 기존과 동일했습니다.
 
 ## 이런 테스트가 존재하는 이유
 최근 커밋 이력은 다음 영역의 하드닝에 집중되어 있습니다.
