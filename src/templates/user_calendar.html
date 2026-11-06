@@ -670,6 +670,7 @@ let mobileCalendarYearG = Number({{ selected_year }});
 let mobileCalendarMonthG = Number({{ selected_month }});
 let mobileCalendarDataG = null;
 let mobileCalendarLoadedG = false;
+let mobileCalendarRequestIdG = 0;
 let desktopCalendarLoadedG = false;
 const desktopCalendarMediaG = window.matchMedia('(min-width: 1024px)');
 
@@ -772,22 +773,30 @@ function renderMobileCalendarG() {
 async function loadMobileCalendarG(year, month) {
     mobileCalendarYearG = Number(year);
     mobileCalendarMonthG = Number(month);
+    const reqYear = mobileCalendarYearG;
+    const reqMonth = mobileCalendarMonthG;
+    const reqId = ++mobileCalendarRequestIdG;
+    mobileCalendarDataG = null;
+    mobileCalendarLoadedG = false;
     mobileCalendarMessageG('월간 캘린더를 불러오는 중입니다.', false);
     try {
-        const response = await fetch(`/api/user/calendar-month?year=${mobileCalendarYearG}&month=${mobileCalendarMonthG}`);
+        const response = await fetch(`/api/user/calendar-month?year=${reqYear}&month=${reqMonth}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        mobileCalendarDataG = await response.json();
+        const data = await response.json();
+        if (reqId !== mobileCalendarRequestIdG) return;
+        mobileCalendarDataG = data;
         mobileCalendarLoadedG = true;
         const yearSelect = document.getElementById('mobile-calendar-year-g');
         const monthSelect = document.getElementById('mobile-calendar-month-g');
-        if (yearSelect) yearSelect.value = String(mobileCalendarYearG);
-        if (monthSelect) monthSelect.value = String(mobileCalendarMonthG);
+        if (yearSelect) yearSelect.value = String(reqYear);
+        if (monthSelect) monthSelect.value = String(reqMonth);
         const url = new URL(window.location.href);
-        url.searchParams.set('year', mobileCalendarYearG);
-        url.searchParams.set('month', mobileCalendarMonthG);
+        url.searchParams.set('year', reqYear);
+        url.searchParams.set('month', reqMonth);
         window.history.replaceState({}, '', url);
         renderMobileCalendarG();
     } catch (error) {
+        if (reqId !== mobileCalendarRequestIdG) return;
         console.error('[SHIM personal mobile calendar load]', error);
         mobileCalendarMessageG('월간 캘린더를 불러오지 못했습니다.', true);
     }

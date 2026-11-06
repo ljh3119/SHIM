@@ -17,6 +17,7 @@
 - `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
+- `test_mobile_ui.py` — 모바일 팀·개인 달력의 부분 렌더링, 월별 가시성·권한, 윤달·월 이동 경계를 검증합니다. 렌더링된 JavaScript를 Node.js vm에서 실행해 연속 월 이동, 역순 응답·오래된 오류·JSON 지연, 실패 후 재시도, 로딩 중 클릭 차단과 날짜·연차 ID 일치를 확인합니다.
 - `test_review_regressions.py` — HTML 사유/따옴표 이름, 동시 승인·취소·반려 및 잔여량 경쟁, 관리자 보호, 연도별 할당 0/누락, 점심 겹침과 00:00/24:00, 중복 설정·호환 백업 보존 검증. 렌더링된 JavaScript 검증에 Node.js를 사용합니다.
 - `test_timezone_utils.py` — IANA 시간대, DST 경계, UTC 저장, 기동 실패, 화면 ISO 파싱, 서반구 날짜 보존 검증
 - `run_remaining_tests.py` — 남은 시나리오 커버리지 실행
@@ -54,6 +55,7 @@
 - 연도별 할당 동작
 - 승인 상태 전이
 - 캘린더 렌더링 전제
+- 모바일 달력 비동기 월 이동 응답 역전 방지 및 날짜·연차 ID 정합성
 
 ### 인증 및 사용자 생명주기
 다음 항목을 바꿀 때는 다시 검증합니다.
