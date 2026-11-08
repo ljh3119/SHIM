@@ -1,0 +1,100 @@
+:root {
+  color-scheme: light;
+
+  --color-paper: oklch(99.0% 0.005 88);
+  --color-paper-2: oklch(96.6% 0.007 88);
+  --color-paper-3: oklch(94.0% 0.009 88);
+  --color-paper-4: oklch(91.2% 0.011 88);
+
+  --color-ink: oklch(22.5% 0.010 88);
+  --color-ink-2: oklch(34.0% 0.010 88);
+  --color-muted: oklch(44.5% 0.010 88);
+  --color-field-edge: oklch(54.0% 0.012 88);
+
+  --color-rule: oklch(85.5% 0.011 88);
+  --color-rule-strong: oklch(74.0% 0.012 88);
+
+  --color-accent: oklch(50.8% 0.194 259.6);
+  --color-accent-hover: oklch(45.5% 0.188 259.6);
+  --color-accent-ink: oklch(99.0% 0.005 88);
+  --color-accent-soft: oklch(94.2% 0.026 255);
+  --color-accent-text: oklch(40.5% 0.165 259.6);
+  --color-focus: oklch(50.8% 0.200 259.6);
+
+  --color-warning: oklch(42.0% 0.110 62);
+  --color-warning-soft: oklch(94.8% 0.030 80);
+  --color-success: oklch(41.0% 0.105 155);
+  --color-success-soft: oklch(94.5% 0.026 155);
+  --color-error: oklch(44.5% 0.170 28);
+  --color-error-soft: oklch(94.6% 0.026 28);
+
+  --font-display: "Pretendard Variable", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-body: "Pretendard Variable", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-outlier: var(--font-body);
+
+  --display-weight: 600;
+  --tracking-display: -0.02em;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --text-display-s: 1.375rem;
+  --text-display: 1.625rem;
+  --text-section: 1.125rem;
+  --text-title: 1rem;
+  --text-lead: 0.9375rem;
+
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  --radius-xs: 2px;
+  --radius-card: 4px;
+  --radius-shell: 6px;
+  --radius-pill: 999px;
+  --rule-hair: 1px;
+
+  --container: 1360px;
+  --gutter: 32px;
+  --gap-columns: 24px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 200ms;
+  --dur-long: 360ms;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+@media (max-width: 60rem) {
+  :root {
+    --gutter: 20px;
+    --gap-columns: 16px;
+  }
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 12px;
+    --gap-columns: 12px;
+  }
+}

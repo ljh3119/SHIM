@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="fade-in space-y-6 bg-dense-bg pb-2">
-    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+<div class="fade-in space-y-4 bg-dense-bg pb-2">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text">감사 로그 (Audit Logs)</h2>
-            <p class="mt-1 text-sm font-semibold text-dense-muted">시스템 설정 변경, 사원 관리, 백업 등 주요 작업 이력을 확인합니다.</p>
+            <h2 class="text-xl font-semibold tracking-tight text-dense-text">감사 로그 (Audit Logs)</h2>
+            <p class="mt-0.5 text-xs text-dense-muted">시스템 설정 변경, 사원 관리, 백업 등 주요 작업 이력을 확인합니다.</p>
         </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <a href="/admin/audit/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-blue hover:bg-dense-blue-soft">엑셀 다운로드</a>
-            <a href="/admin/audit" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-3 py-2 text-sm font-bold text-dense-nav-text hover:bg-dense-surface-soft">필터 초기화</a>
+        <div class="flex shrink-0 items-center gap-1.5">
+            <a href="/admin/audit/export?{{ export_query }}" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors">엑셀 다운로드</a>
+            <a href="/admin/audit" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text transition-colors">필터 초기화</a>
         </div>
     </div>
 
     <!-- Error message alert banner -->
     {% if error_msg %}
-    <div class="flex items-center gap-2 rounded-xl border border-dense-danger-soft bg-dense-danger-soft/20 px-4 py-3 text-xs font-bold text-dense-danger mb-4">
+    <div class="flex items-center gap-2 rounded-[4px] border border-dense-danger/30 bg-dense-danger-soft/20 px-3 py-2 text-xs font-medium text-dense-danger">
         <svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
@@ -24,10 +24,10 @@
     {% endif %}
 
     <!-- Audit Filters -->
-    <form method="get" id="audit-filter-form" class="grid grid-cols-2 gap-3 sm:grid-cols-5 rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-xs font-semibold mb-4">
+    <form method="get" id="audit-filter-form" class="grid grid-cols-2 gap-2.5 sm:grid-cols-5 rounded-[4px] border border-dense-line bg-dense-surface p-2.5 text-xs">
         <div>
-            <label for="audit-user" class="block mb-1 text-dense-muted">수행자 (Actor)</label>
-            <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+            <label for="audit-user" class="block mb-0.5 text-[11px] font-medium text-dense-muted">수행자 (Actor)</label>
+            <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                 <option value="" {% if not actor_id %}selected{% endif %}>전체</option>
                 {% for u in users %}
                 <option value="{{ u.user_id }}" {% if actor_id == u.user_id %}selected{% endif %}>{{ u.user_name }}({{ u.user_id }})</option>
@@ -35,45 +35,44 @@
             </select>
         </div>
         <div>
-            <label for="audit-action" class="block mb-1 text-dense-muted">수행 작업 (Action)</label>
-            <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue" autocomplete="off">
+            <label for="audit-action" class="block mb-0.5 text-[11px] font-medium text-dense-muted">수행 작업 (Action)</label>
+            <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue" autocomplete="off">
         </div>
         <div>
-            <label for="audit-start-date" class="block mb-1 text-dense-muted">조회 시작일</label>
-            <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+            <label for="audit-start-date" class="block mb-0.5 text-[11px] font-medium text-dense-muted">조회 시작일</label>
+            <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
         </div>
         <div>
-            <label for="audit-end-date" class="block mb-1 text-dense-muted">조회 종료일</label>
-            <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="w-full border rounded-xl p-1.5 bg-dense-surface font-bold text-xs shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+            <label for="audit-end-date" class="block mb-0.5 text-[11px] font-medium text-dense-muted">조회 종료일</label>
+            <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
         </div>
         <div class="flex items-end gap-1.5">
-            <button type="submit" class="flex-1 py-1.5 bg-dense-blue text-white rounded-xl font-bold hover:brightness-95 transition-all shadow-xs">검색</button>
-            <a href="/admin/audit" class="flex-1 text-center py-1.5 bg-dense-surface border text-dense-muted hover:bg-dense-surface-soft rounded-xl font-bold transition-all shadow-xs">초기화</a>
+            <button type="submit" class="flex-1 py-1 bg-dense-blue text-white rounded-[4px] text-xs font-medium hover:brightness-95 transition-all">검색</button>
+            <a href="/admin/audit" class="flex-1 text-center py-1 bg-dense-surface border border-dense-line text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text rounded-[4px] text-xs font-medium transition-all">초기화</a>
         </div>
     </form>
 
-    <div class="glass-panel overflow-hidden rounded-[18px] border border-dense-line bg-dense-surface">
-
+    <div class="glass-panel overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface">
         <!-- Table Section -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-dense-line text-sm">
+            <table class="min-w-full divide-y divide-dense-line text-xs">
                 <thead class="bg-dense-surface-soft">
                     <tr>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">로그 시각</th>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">수행자</th>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">액션</th>
-                        <th scope="col" class="whitespace-nowrap px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">대상 정보</th>
-                        <th scope="col" class="px-3 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-dense-muted">변경 내역 (이전 -> 이후)</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold text-dense-muted tracking-tight">로그 시각</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold text-dense-muted tracking-tight">수행자</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold text-dense-muted tracking-tight">액션</th>
+                        <th scope="col" class="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold text-dense-muted tracking-tight">대상 정보</th>
+                        <th scope="col" class="px-3 py-2 text-left text-[11px] font-semibold text-dense-muted tracking-tight">변경 내역 (이전 -> 이후)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dense-line bg-dense-surface">
                     {% for log in logs %}
-                    <tr class="transition-colors hover:bg-dense-surface-soft">
-                        <td class="whitespace-nowrap px-3 py-3 text-xs font-semibold text-dense-muted">{{ log.timestamp | format_datetime_business('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td class="whitespace-nowrap px-3 py-3">
-                            <span class="inline-flex items-center text-xs font-bold text-dense-text">
+                    <tr class="transition-colors hover:bg-dense-surface-soft/60">
+                        <td class="whitespace-nowrap px-3 py-2 text-xs text-dense-muted font-mono">{{ log.timestamp | format_datetime_business('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="whitespace-nowrap px-3 py-2">
+                            <span class="inline-flex items-center text-xs font-medium text-dense-text">
                                 {{ log.actor.user_name if log.actor else (log.actor_name if log.actor_name else '시스템') }}
-                                <span class="font-semibold text-dense-muted">
+                                <span class="font-normal text-dense-muted font-mono text-[11px]">
                                     {% if log.actor_id %}
                                         ({{ log.actor_id }})
                                     {% elif log.actor_name %}
@@ -81,32 +80,29 @@
                                     {% endif %}
                                 </span>
                                 {% if log.actor_department or (log.actor and (log.actor.company or log.actor.team)) %}
-                                <span class="ml-1.5 rounded bg-dense-surface-soft px-1 py-0.5 text-[10px] font-semibold text-dense-muted">
+                                <span class="ml-1 rounded-[2px] bg-dense-surface-soft px-1 py-0.5 text-[10px] text-dense-muted border border-dense-line">
                                     {{ log.actor_department if log.actor_department else ((log.actor.company or "") + " " + (log.actor.team or "")).strip() }}
                                 </span>
                                 {% endif %}
                             </span>
                         </td>
-                        <td class="whitespace-nowrap px-3 py-3">
-                            <span class="inline-flex rounded-full border border-dense-line bg-dense-surface-soft px-2 py-0.5 text-[11px] font-bold text-dense-nav-text" title="{{ log.action }}">{{ log.action_label }}</span>
+                        <td class="whitespace-nowrap px-3 py-2">
+                            <span class="inline-flex rounded-[2px] border border-dense-line bg-dense-surface-soft px-1.5 py-0.5 text-[10px] font-medium text-dense-text" title="{{ log.action }}">{{ log.action_label }}</span>
                         </td>
-                        <td class="whitespace-nowrap px-3 py-3 text-[11px] font-bold text-dense-nav-text" title="{{ log.target_info }}">{{ log.target_label if log.target_label else log.target_info }}</td>
-                        <td class="px-3 py-3 text-xs font-medium">
+                        <td class="whitespace-nowrap px-3 py-2 text-xs text-dense-text" title="{{ log.target_info }}">{{ log.target_label if log.target_label else log.target_info }}</td>
+                        <td class="px-3 py-2 text-xs">
                             <div class="max-w-md break-all flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[#d92d20] line-through decoration-1 opacity-70">{{ log.old_data if log.old_data else '-' }}</span>
-                                <span class="text-dense-muted font-bold">→</span>
-                                <span class="text-dense-blue font-bold">{{ log.new_data if log.new_data else '-' }}</span>
+                                <span class="text-rose-600 line-through decoration-1 opacity-70">{{ log.old_data if log.old_data else '-' }}</span>
+                                <span class="text-dense-muted font-semibold">→</span>
+                                <span class="text-dense-blue font-medium">{{ log.new_data if log.new_data else '-' }}</span>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-dense-muted font-semibold">
-                            <div class="flex flex-col items-center justify-center gap-2">
-                                <span class="text-3xl">🔍</span>
-                                <p class="text-xs font-bold text-dense-text">검색 조건에 맞는 감사 로그가 없습니다.</p>
-                                <p class="text-[10px] text-dense-muted">입력하신 필터나 날짜 범위를 다시 확인해 주시기 바랍니다.</p>
-                            </div>
+                        <td colspan="5" class="px-6 py-8 text-center text-dense-muted">
+                            <p class="text-xs font-medium text-dense-text">검색 조건에 맞는 감사 로그가 없습니다.</p>
+                            <p class="mt-0.5 text-[11px] text-dense-muted">입력하신 필터나 날짜 범위를 다시 확인해 주시기 바랍니다.</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -116,32 +112,32 @@
 
         <!-- Pagination Section -->
         {% if total_pages > 1 %}
-        <div class="flex items-center justify-between border-t border-dense-line bg-dense-surface px-4 py-3 sm:px-6">
+        <div class="flex items-center justify-between border-t border-dense-line bg-dense-surface px-4 py-2.5">
             <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-dense-muted">
-                        총 <span class="font-extrabold text-dense-text">{{ total_count }}</span>개 중 
-                        <span class="font-extrabold text-dense-text">{{ (page-1)*50 + 1 }}</span> ~ 
-                        <span class="font-extrabold text-dense-text">{{ min(page*50, total_count) }}</span> 표시
+                    <p class="text-xs text-dense-muted">
+                        총 <span class="font-semibold text-dense-text font-mono">{{ total_count }}</span>개 중
+                        <span class="font-semibold text-dense-text font-mono">{{ (page-1)*50 + 1 }}</span> ~
+                        <span class="font-semibold text-dense-text font-mono">{{ min(page*50, total_count) }}</span> 표시
                     </p>
                 </div>
                 <div>
-                    <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm" aria-label="Pagination">
+                    <nav class="isolate inline-flex -space-x-px rounded-[4px] shadow-xs" aria-label="Pagination">
                         {% if page > 1 %}
-                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs text-dense-muted hover:bg-dense-surface-soft">
                             <span class="sr-only">이전</span>
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
                         </a>
                         {% endif %}
                         
                         {% for p in range(max(1, page-2), min(total_pages, page+2) + 1) %}
-                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ p }}" class="relative inline-flex items-center border {% if p == page %}z-10 border-dense-blue bg-dense-blue-soft text-dense-blue{% else %}border-dense-line bg-dense-surface text-dense-nav-text hover:bg-dense-surface-soft{% endif %} px-4 py-2 text-sm font-bold">{{ p }}</a>
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ p }}" class="relative inline-flex items-center border {% if p == page %}z-10 border-dense-blue bg-dense-blue/10 text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text{% endif %} px-2.5 py-1 text-xs font-mono">{{ p }}</a>
                         {% endfor %}
 
                         {% if page < total_pages %}
-                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-xl border border-dense-line bg-dense-surface px-2 py-2 text-dense-muted hover:bg-dense-surface-soft">
+                        <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs text-dense-muted hover:bg-dense-surface-soft">
                             <span class="sr-only">다음</span>
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
                         </a>
                         {% endif %}
                     </nav>
@@ -162,7 +158,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const startVal = startDateInput.value;
         if (startVal) {
             const startDate = new Date(startVal);
-            // 90 days after start date
             const maxDate = new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000);
             const yyyy = maxDate.getFullYear();
             const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
@@ -188,7 +183,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 const d1 = new Date(startVal);
                 const d2 = new Date(endVal);
                 
-                // 타임존/서머타임 시차 영향을 배제하도록 Date.UTC 기반으로 일수 차이 계산
                 const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
                 const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
                 const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
@@ -212,7 +206,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
 
-            // 다중 클릭 및 다중 제출 방지를 위해 제출 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;

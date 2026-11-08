@@ -138,12 +138,12 @@ def main() -> int:
             assert "block md:hidden" not in approvals.text
             for mobile_page in (team_shell, history, approvals):
                 assert 'aria-label="캘린더 홈으로"' in mobile_page.text
-                assert 'class="flex min-h-11 w-fit items-center gap-2 rounded-lg' in mobile_page.text
+                assert 'class="flex min-h-11 w-fit items-center gap-2 rounded-[4px]' in mobile_page.text
                 assert '<svg aria-hidden="true" viewBox="0 0 20 20"' in mobile_page.text
 
 
             lead_calendar = lead.get("/user/calendar?year=2024&month=2")
-            assert "✅ 결재 관리" in lead_calendar.text
+            assert "결재 관리" in lead_calendar.text
             assert "신청 승인·반려" in lead_calendar.text
             assert 'href="/user/approvals" class="quick-card flex min-h-[4.75rem]' in lead_calendar.text
             assert 'href="/user/history" class="quick-card flex min-h-[4.75rem]' in lead_calendar.text
