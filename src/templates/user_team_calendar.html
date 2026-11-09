@@ -649,6 +649,11 @@
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             container.innerHTML = await response.text();
             desktopTeamLoadedG = true;
+            restoreTeamCalendarSelection();
+            highlightSelectedDates();
+            if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                updateTimeSelectorAvailabilityG('desktop');
+            }
         } catch (error) {
             console.error('[SHIM team calendar desktop load]', error);
             container.textContent = 'PC용 팀 캘린더를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
@@ -1226,6 +1231,47 @@
         syncCalendarToInputs();
     }
 
+    function restoreTeamCalendarSelection() {
+        const savedStart = sessionStorage.getItem('shim_timeline_start_date');
+        const savedEnd = sessionStorage.getItem('shim_timeline_end_date');
+        if (!savedStart) return;
+
+        if (!isMultiSelectMode) {
+            toggleMultiSelectMode();
+        }
+        rangeStartDate = savedStart;
+        if (savedEnd && savedEnd >= savedStart) {
+            rangeEndDate = savedEnd;
+            selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
+        } else {
+            rangeEndDate = null;
+            selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
+        }
+        highlightSelectedDates();
+        updateFloatingBar();
+        
+        isSyncing = true;
+        try {
+            const dStart = document.getElementById('easy-start-date-g_desktop');
+            const dEnd = document.getElementById('easy-end-date-g_desktop');
+            const mStart = document.getElementById('easy-start-date-g_mobile');
+            const mEnd = document.getElementById('easy-end-date-g_mobile');
+            if (dStart) dStart.value = rangeStartDate;
+            if (dEnd) dEnd.value = rangeEndDate || rangeStartDate;
+            if (mStart) mStart.value = rangeStartDate;
+            if (mEnd) mEnd.value = rangeEndDate || rangeStartDate;
+            
+            inputFilledByCalendar = true;
+            if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                if (dStart) updateTimeSelectorAvailabilityG('desktop');
+                if (mStart) updateTimeSelectorAvailabilityG('mobile');
+            }
+        } finally {
+            isSyncing = false;
+        }
+    }
+    window.restoreTeamCalendarSelection = restoreTeamCalendarSelection;
+
     document.addEventListener('DOMContentLoaded', () => {
         initializeTeamResponsiveG();
         
@@ -1248,44 +1294,7 @@
             sessionStorage.removeItem('shim_timeline_start_date');
             sessionStorage.removeItem('shim_timeline_end_date');
         } else {
-            // Restore selection from sessionStorage if present
-            const savedStart = sessionStorage.getItem('shim_timeline_start_date');
-            const savedEnd = sessionStorage.getItem('shim_timeline_end_date');
-            if (savedStart) {
-                if (!isMultiSelectMode) {
-                    toggleMultiSelectMode();
-                }
-                rangeStartDate = savedStart;
-                if (savedEnd && savedEnd >= savedStart) {
-                    rangeEndDate = savedEnd;
-                    selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
-                } else {
-                    rangeEndDate = null;
-                    selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
-                }
-                highlightSelectedDates();
-                updateFloatingBar();
-                
-                isSyncing = true;
-                try {
-                    const dStart = document.getElementById('easy-start-date-g_desktop');
-                    const dEnd = document.getElementById('easy-end-date-g_desktop');
-                    const mStart = document.getElementById('easy-start-date-g_mobile');
-                    const mEnd = document.getElementById('easy-end-date-g_mobile');
-                    if (dStart) dStart.value = rangeStartDate;
-                    if (dEnd) dEnd.value = rangeEndDate || rangeStartDate;
-                    if (mStart) mStart.value = rangeStartDate;
-                    if (mEnd) mEnd.value = rangeEndDate || rangeStartDate;
-                    
-                    inputFilledByCalendar = true;
-                    if (typeof updateTimeSelectorAvailabilityG === 'function') {
-                        updateTimeSelectorAvailabilityG('desktop');
-                        updateTimeSelectorAvailabilityG('mobile');
-                    }
-                } finally {
-                    isSyncing = false;
-                }
-            }
+            restoreTeamCalendarSelection();
         }
         
         // 키보드 숏컷 (ArrowLeft/ArrowRight / Escape)

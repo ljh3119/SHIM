@@ -82,6 +82,13 @@ def _add_user_layout_context(db: Session, user: models.Users, ctx: dict):
         }))
     else:
         time_options = utils.build_minute_options(work_start_minute, work_end_minute, time_granularity_minutes)
+        half_endpoints = {
+            half_day_slots["morning"]["start_time"],
+            half_day_slots["morning"]["end_time"],
+            half_day_slots["afternoon"]["start_time"],
+            half_day_slots["afternoon"]["end_time"],
+        }
+        time_options = sorted(list(set(time_options) | half_endpoints))
 
     ctx.update({
         "time_granularity_minutes": time_granularity_minutes,

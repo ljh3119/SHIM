@@ -804,6 +804,9 @@ async function loadCalendarDesktopG() {
         container.innerHTML = await response.text();
         desktopCalendarLoadedG = true;
         showMonth(currentMonth);
+        if (typeof updateTimeSelectorAvailabilityG === 'function') {
+            updateTimeSelectorAvailabilityG('desktop');
+        }
     } catch (error) {
         console.error('[SHIM personal desktop calendar load]', error);
         container.className = 'hidden lg:block rounded-[4px] border border-dense-line bg-dense-surface p-6 text-center text-xs font-medium text-dense-muted';
@@ -889,6 +892,9 @@ function nextMonth() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeCalendarResponsiveG();
+    if (typeof updateTimeSelectorAvailabilityG === 'function') {
+        updateTimeSelectorAvailabilityG('mobile');
+    }
     
     // 키보드 숏컷 (ArrowLeft/ArrowRight)
     document.addEventListener('keydown', (e) => {
@@ -1925,9 +1931,15 @@ window.onCalendarModalTimeChange = function() {
     const aEnd = (halfSlots && halfSlots.afternoon) ? halfSlots.afternoon.end_time : '18:00';
 
     let activeType = 'custom';
-    if (s === window.shimWorkHours.start && e === window.shimWorkHours.end) activeType = 'full';
-    else if (s === mStart && e === mEnd) activeType = 'morning';
-    else if (s === aStart && e === aEnd) activeType = 'afternoon';
+    const timeRow = document.getElementById('cal-modal-time-row');
+    if (timeRow && !timeRow.classList.contains('hidden')) {
+        activeType = 'custom';
+    } else {
+        const workHours = window.shimWorkHours || { start: '09:00', end: '18:00' };
+        if (s === workHours.start && e === workHours.end) activeType = 'full';
+        else if (s === mStart && e === mEnd) activeType = 'morning';
+        else if (s === aStart && e === aEnd) activeType = 'afternoon';
+    }
 
     ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
         const btn = document.getElementById(`cal-modal-preset-${p}`);
