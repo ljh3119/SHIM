@@ -4,37 +4,260 @@
 @source "../../app/**/*.py";
 
 /*
- * Dense UI 팔레트 — design/ui-handoff/samples/reference/dense-tokens.css 와 동일 값.
- * 유틸 예: bg-dense-bg, text-dense-text, border-dense-line, bg-dense-blue-soft 등
+ * C BASELINE Design Tokens
+ * Braun instrument neutral surfaces + Linear dense information hierarchy + SHIM accent signal
  */
+:root {
+  color-scheme: light;
+
+  --color-paper: oklch(99.0% 0.005 88);
+  --color-paper-2: oklch(96.6% 0.007 88);
+  --color-paper-3: oklch(94.0% 0.009 88);
+  --color-paper-4: oklch(91.2% 0.011 88);
+
+  --color-ink: oklch(22.5% 0.010 88);
+  --color-ink-2: oklch(34.0% 0.010 88);
+  --color-muted: oklch(44.5% 0.010 88);
+  --color-field-edge: oklch(54.0% 0.012 88);
+
+  --color-rule: oklch(85.5% 0.011 88);
+  --color-rule-strong: oklch(74.0% 0.012 88);
+
+  --color-accent: oklch(50.8% 0.194 259.6);
+  --color-accent-hover: oklch(45.5% 0.188 259.6);
+  --color-accent-ink: oklch(99.0% 0.005 88);
+  --color-accent-soft: oklch(94.2% 0.026 255);
+  --color-accent-text: oklch(40.5% 0.165 259.6);
+  --color-focus: oklch(50.8% 0.200 259.6);
+
+  --color-warning: oklch(42.0% 0.110 62);
+  --color-warning-soft: oklch(94.8% 0.030 80);
+  --color-success: oklch(41.0% 0.105 155);
+  --color-success-soft: oklch(94.5% 0.026 155);
+  --color-error: oklch(44.5% 0.170 28);
+  --color-error-soft: oklch(94.6% 0.026 28);
+
+  --font-sans: "Pretendard Variable", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --radius-xs: 2px;
+  --radius-card: 4px;
+  --radius-shell: 6px;
+  --radius-pill: 999px;
+
+  --dur-micro: 120ms;
+  --dur-short: 200ms;
+}
+
 @theme {
-  --color-dense-bg: #f7f8fb;
-  --color-dense-surface: #ffffff;
-  --color-dense-surface-soft: #f9fafb;
-  --color-dense-line: #d0d5dd;
-  --color-dense-grid: rgb(208 213 221 / 0.55);
-  --color-dense-line-strong: #98a2b3;
-  --color-dense-text: #101828;
-  --color-dense-muted: #475467;
-  --color-dense-nav-text: #1d2939;
-  --color-dense-blue: #175cd3;
-  --color-dense-blue-soft: #eff8ff;
-  --color-dense-amber: #b54708;
-  --color-dense-amber-soft: #fffaeb;
-  --color-dense-green: #067647;
-  --color-dense-green-soft: #ecfdf3;
-  --color-dense-gray-soft: #f2f4f7;
-  --color-dense-danger: #d92d20;
-  --color-dense-danger-soft: #fef3f2;
+  --color-paper: oklch(99.0% 0.005 88);
+  --color-paper-2: oklch(96.6% 0.007 88);
+  --color-paper-3: oklch(94.0% 0.009 88);
+  --color-paper-4: oklch(91.2% 0.011 88);
+
+  --color-ink: oklch(22.5% 0.010 88);
+  --color-ink-2: oklch(34.0% 0.010 88);
+  --color-muted: oklch(44.5% 0.010 88);
+  --color-field-edge: oklch(54.0% 0.012 88);
+
+  --color-rule: oklch(85.5% 0.011 88);
+  --color-rule-strong: oklch(74.0% 0.012 88);
+
+  --color-accent: oklch(50.8% 0.194 259.6);
+  --color-accent-hover: oklch(45.5% 0.188 259.6);
+  --color-accent-ink: oklch(99.0% 0.005 88);
+  --color-accent-soft: oklch(94.2% 0.026 255);
+  --color-accent-text: oklch(40.5% 0.165 259.6);
+  --color-focus: oklch(50.8% 0.200 259.6);
+
+  --color-warning: oklch(42.0% 0.110 62);
+  --color-warning-soft: oklch(94.8% 0.030 80);
+  --color-success: oklch(41.0% 0.105 155);
+  --color-success-soft: oklch(94.5% 0.026 155);
+  --color-error: oklch(44.5% 0.170 28);
+  --color-error-soft: oklch(94.6% 0.026 28);
+
+  /* Dense UI legacy token mapping to C BASELINE */
+  --color-dense-bg: oklch(96.6% 0.007 88);
+  --color-dense-surface: oklch(99.0% 0.005 88);
+  --color-dense-surface-soft: oklch(96.6% 0.007 88);
+  --color-dense-line: oklch(85.5% 0.011 88);
+  --color-dense-grid: oklch(85.5% 0.011 88);
+  --color-dense-line-strong: oklch(74.0% 0.012 88);
+  --color-dense-text: oklch(22.5% 0.010 88);
+  --color-dense-muted: oklch(44.5% 0.010 88);
+  --color-dense-nav-text: oklch(34.0% 0.010 88);
+  --color-dense-blue: oklch(50.8% 0.194 259.6);
+  --color-dense-blue-soft: oklch(94.2% 0.026 255);
+  --color-dense-amber: oklch(42.0% 0.110 62);
+  --color-dense-amber-soft: oklch(94.8% 0.030 80);
+  --color-dense-green: oklch(41.0% 0.105 155);
+  --color-dense-green-soft: oklch(94.5% 0.026 155);
+  --color-dense-gray-soft: oklch(94.0% 0.009 88);
+  --color-dense-danger: oklch(44.5% 0.170 28);
+  --color-dense-danger-soft: oklch(94.6% 0.026 28);
+
+  --font-sans: "Pretendard Variable", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
 }
 
-/* Quick Apply Card Hover micro-interaction */
-.quick-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
-}
-.quick-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+/* Focus Visible Outline */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
 }
 
+/* Base Body Typography & Colors */
+body {
+  font-family: "Pretendard Variable", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  color: var(--color-ink);
+  background-color: var(--color-paper-2);
+}
+
+/* Mobile Input 16px (prevent iOS zoom) & Major Touch Target 44px */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+@layer components {
+  /* Common Surfaces & Panels */
+  .glass-panel {
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink) 6%, transparent);
+  }
+
+  .quick-card {
+    transition: border-color 120ms ease-out, background-color 120ms ease-out;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .quick-card:hover {
+    border-color: var(--color-rule-strong);
+    background-color: var(--color-paper-2);
+  }
+
+  /* Sidebar & Navigation Rail */
+  .shim-side-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--color-ink-2);
+    transition: background-color 120ms ease-out, color 120ms ease-out;
+  }
+  .shim-side-link:hover {
+    background-color: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+
+  .shim-side-svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Braun Instrument Stat Strip */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    background: var(--color-paper-3);
+    border-top: 1px solid var(--color-rule-strong);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  @media (min-width: 640px) {
+    .stat-strip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .stat-cell {
+    padding: 0.625rem 0.875rem;
+    border-right: 1px solid var(--color-rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .stat-cell:last-child {
+    border-right: 0;
+  }
+  .stat-cell dt {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    font-weight: 400;
+  }
+  .stat-cell dd {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+  .stat-cell dd.is-accent {
+    color: var(--color-accent-text);
+  }
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.shim-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  transform: translateX(120%);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+  opacity: 0;
+  pointer-events: auto;
+  white-space: pre-line;
+}
+.shim-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+.shim-toast-success { border-left: 3px solid var(--color-success); }
+.shim-toast-info { border-left: 3px solid var(--color-accent); }
+.shim-toast-warning { border-left: 3px solid var(--color-warning); }
+.shim-toast-error { border-left: 3px solid var(--color-error); }
+
+/* Tabular Numerics */
+.tabular-nums, [data-tabular], .stat-cell dd, .cal-day-head, .leave-slot {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessibility & Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

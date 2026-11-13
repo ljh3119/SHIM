@@ -2,62 +2,62 @@
 <!-- Left Sidebar Panel (Option G Layout) -->
 <div class="w-full lg:w-[280px] shrink-0 space-y-4">
     <!-- Stats Summary Card -->
-    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
-        <h3 class="text-xs font-bold text-dense-muted mb-2">나의 연차 현황</h3>
-        <div class="space-y-1.5 text-xs font-bold">
-            <div class="flex justify-between"><span>총 연차</span><span>{{ fmt_hours(total_allocated_hours) }}h</span></div>
-            <div class="flex justify-between text-dense-blue"><span>사용</span><span id="myUsedG_desktop">{{ fmt_hours(used_hours) }}h</span></div>
-            <div class="flex justify-between text-dense-green"><span>잔여</span><span id="myRemainingG_desktop">{{ fmt_hours(remaining_hours) }}h</span></div>
-            <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-1">
-                <div id="myProgressG_desktop" class="bg-dense-blue h-1.5 rounded-full" style="width: {% if total_allocated_hours > 0 %}{{ (used_hours / total_allocated_hours) * 100 }}{% else %}0{% endif %}%"></div>
+    <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 shadow-xs">
+        <h3 class="text-xs font-semibold text-dense-muted mb-2">나의 연차 현황</h3>
+        <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between"><span class="text-dense-muted">총 연차</span><span class="font-semibold text-dense-text tabular-nums">{{ fmt_hours(total_allocated_hours) }}h</span></div>
+            <div class="flex justify-between"><span class="text-dense-muted">사용</span><span id="myUsedG_desktop" class="font-semibold text-dense-text tabular-nums">{{ fmt_hours(used_hours) }}h</span></div>
+            <div class="flex justify-between"><span class="text-dense-muted">잔여</span><span id="myRemainingG_desktop" class="font-semibold text-dense-blue tabular-nums">{{ fmt_hours(remaining_hours) }}h</span></div>
+            <div class="w-full bg-dense-gray-soft rounded-full h-1.5 mt-2">
+                <div id="myProgressG_desktop" class="bg-dense-blue h-1.5 rounded-full transition-all" style="width: {% if total_allocated_hours > 0 %}{{ (used_hours / total_allocated_hours) * 100 }}{% else %}0{% endif %}%"></div>
             </div>
         </div>
     </div>
 
     <!-- Quick Apply Card -->
-    <div class="rounded-2xl border border-dense-line bg-dense-blue-soft/20 p-4 shadow-sm">
-        <h3 class="text-xs font-extrabold text-dense-blue mb-2">📅 간편 신청</h3>
+    <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 shadow-xs">
+        <h3 class="text-xs font-semibold text-dense-text mb-2">간편 신청</h3>
         <form id="easyApplyFormDesktop" onsubmit="submitEasyApply('desktop'); return false;" class="space-y-3">
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label class="text-[10px] font-bold">시작일</label>
-                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('desktop'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('desktop');" class="w-full rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold">
+                    <label class="text-[11px] font-semibold text-dense-nav-text">시작일</label>
+                    <input type="date" id="easy-start-date-g_desktop" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('desktop'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('desktop');" class="w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue shadow-xs">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold">종료일</label>
-                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('desktop'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('desktop');" class="w-full rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold">
+                    <label class="text-[11px] font-semibold text-dense-nav-text">종료일</label>
+                    <input type="date" id="easy-end-date-g_desktop" name="end_date" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('desktop'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('desktop');" class="w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue shadow-xs">
                 </div>
             </div>
             <!-- 유형 퀵 선택 버튼 (전일 / 오전반차 / 오후반차 / 직접선택) -->
             <div>
-                <label class="text-[9px] font-bold text-dense-muted block mb-1">신청 유형</label>
-                <div class="grid grid-cols-4 gap-1 p-0.5 bg-dense-surface border border-dense-line rounded-lg text-center" id="easy-preset-group_desktop">
-                    <button type="button" onclick="selectLeavePreset('desktop', 'full')" id="preset-full_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
-                    <button type="button" onclick="selectLeavePreset('desktop', 'morning')" id="preset-morning_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
-                    <button type="button" onclick="selectLeavePreset('desktop', 'afternoon')" id="preset-afternoon_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                <label class="text-[11px] font-semibold text-dense-muted block mb-1">신청 유형</label>
+                <div class="grid grid-cols-4 gap-0.5 p-0.5 bg-paper-4 border border-dense-line rounded-[4px] text-center" id="easy-preset-group_desktop">
+                    <button type="button" onclick="selectLeavePreset('desktop', 'full')" id="preset-full_desktop" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] bg-dense-blue text-white transition-colors">전일(1일)</button>
+                    <button type="button" onclick="selectLeavePreset('desktop', 'morning')" id="preset-morning_desktop" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                    <button type="button" onclick="selectLeavePreset('desktop', 'afternoon')" id="preset-afternoon_desktop" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
                     {% if time_granularity_minutes != 240 %}
-                    <button type="button" onclick="selectLeavePreset('desktop', 'custom')" id="preset-custom_desktop" class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                    <button type="button" onclick="selectLeavePreset('desktop', 'custom')" id="preset-custom_desktop" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
                     {% else %}
-                    <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1 px-0.5 text-[10px] font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                    <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1 px-0.5 text-[11px] font-normal rounded-[2px] text-dense-muted/50 cursor-not-allowed">직접선택</button>
                     {% endif %}
                 </div>
             </div>
             <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
-            <div id="easy-preset-badge_desktop" class="py-1.5 px-2.5 rounded-lg bg-dense-surface border border-dense-line text-center text-xs font-extrabold text-dense-blue">
+            <div id="easy-preset-badge_desktop" class="py-1 px-2 rounded-[2px] bg-dense-blue-soft border border-dense-line text-center text-xs font-semibold text-dense-blue">
                 전일 신청
             </div>
             <div id="easy-time-row_desktop" class="hidden grid grid-cols-2 gap-2">
                 <div>
-                    <label class="text-[9px] font-bold">시작</label>
-                    <select id="easy-start-g_desktop" name="start_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <label class="text-[11px] font-medium text-dense-muted">시작</label>
+                    <select id="easy-start-g_desktop" name="start_time" class="w-full rounded-[4px] border border-field-edge bg-dense-surface p-1 text-xs text-dense-text" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if loop.first %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label class="text-[9px] font-bold">종료</label>
-                    <select id="easy-end-g_desktop" name="end_time" class="w-full rounded border border-dense-line-strong bg-dense-surface p-1 text-xs" onchange="updateEstimatedTimeG('desktop')">
+                    <label class="text-[11px] font-medium text-dense-muted">종료</label>
+                    <select id="easy-end-g_desktop" name="end_time" class="w-full rounded-[4px] border border-field-edge bg-dense-surface p-1 text-xs text-dense-text" onchange="updateEstimatedTimeG('desktop')">
                         {% for t in time_options %}
                         <option value="{{ t }}" {% if loop.last %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -65,15 +65,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
-                <input type="checkbox" id="easy-deductive-g_desktop" onchange="toggleDeductiveG('desktop')" class="rounded text-dense-blue h-3.5 w-3.5">
-                <label for="easy-deductive-g_desktop" class="text-[10px] font-bold cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
+                <input type="checkbox" id="easy-deductive-g_desktop" onchange="toggleDeductiveG('desktop')" class="rounded-[2px] text-dense-blue h-3.5 w-3.5 border-field-edge">
+                <label for="easy-deductive-g_desktop" class="text-xs text-dense-text cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
             </div>
             <div id="easy-reason-container-g_desktop">
-                <label class="text-[10px] font-bold">신청 사유 <span id="easy-reason-star-g_desktop" class="text-dense-danger hidden">*</span></label>
-                <textarea id="easy-reason-g_desktop" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded-lg border border-dense-line-strong bg-dense-surface p-1.5 text-xs font-bold"></textarea>
+                <label class="text-[11px] font-semibold text-dense-nav-text">신청 사유 <span id="easy-reason-star-g_desktop" class="text-dense-danger hidden">*</span></label>
+                <textarea id="easy-reason-g_desktop" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text shadow-xs"></textarea>
             </div>
-            <div id="easy-calc-g_desktop" class="text-[10px] font-bold text-dense-blue">예상 차감 시간: 8시간</div>
-            <button type="submit" id="easy-submit-btn-g_desktop" class="w-full bg-dense-blue rounded-xl text-white font-bold py-2 text-xs hover:bg-dense-blue/90 transition-colors">신청하기</button>
+            <div id="easy-calc-g_desktop" class="text-xs font-semibold text-dense-blue tabular-nums">예상 차감 시간: 8시간</div>
+            <button type="submit" id="easy-submit-btn-g_desktop" class="w-full bg-dense-blue rounded-[4px] text-white font-medium py-2 text-xs hover:bg-accent-hover transition-colors shadow-xs">신청하기</button>
         </form>
     </div>
 

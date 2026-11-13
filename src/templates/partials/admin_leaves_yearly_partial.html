@@ -1,20 +1,20 @@
 {% from "partials/macros.html" import fmt_hours %}
 
-<div class="fade-in space-y-4">
+<div class="fade-in space-y-3">
     <!-- Hidden data elements to update parent card header dynamically -->
     <span id="yearly-count-data" data-count="{{ user_stats|length }}" style="display:none;"></span>
     <span id="yearly-export-url" data-url="/admin/leave/timeline/export?year={{ selected_year }}&user_id={{ selected_user_id }}&company={{ selected_company }}&team={{ selected_team }}&active_state={{ selected_active_state }}" style="display:none;"></span>
 
     <!-- Filter Form -->
     <div>
-        <form method="get" id="yr-filter-form" class="rounded-xl border border-dense-line bg-dense-surface-soft p-4">
+        <form method="get" id="yr-filter-form" class="rounded-[4px] border border-dense-line bg-dense-surface p-2.5">
             <input type="hidden" name="sort" value="{{ sort_key or '' }}">
             <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
             <input type="hidden" name="year" value="{{ selected_year }}">
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs font-semibold">
+            <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 text-xs">
                 <div>
-                    <label for="yr-user" class="mb-1 block text-dense-muted text-[10px]">사용자</label>
-                    <select id="yr-user" name="user_id" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <label for="yr-user" class="mb-0.5 block text-dense-muted text-[11px] font-medium">사용자</label>
+                    <select id="yr-user" name="user_id" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                         {% for u in users %}
                         <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -22,8 +22,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="yr-company" class="mb-1 block text-dense-muted text-[10px]">회사</label>
-                    <select id="yr-company" name="company" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <label for="yr-company" class="mb-0.5 block text-dense-muted text-[11px] font-medium">회사</label>
+                    <select id="yr-company" name="company" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                         {% for c in company_options %}
                         <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
@@ -31,8 +31,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="yr-team" class="mb-1 block text-dense-muted text-[10px]">팀</label>
-                    <select id="yr-team" name="team" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <label for="yr-team" class="mb-0.5 block text-dense-muted text-[11px] font-medium">팀</label>
+                    <select id="yr-team" name="team" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                         {% for t in team_options %}
                         <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
@@ -40,8 +40,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="yr-active" class="mb-1 block text-dense-muted text-[10px]">계정 상태</label>
-                    <select id="yr-active" name="active_state" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                    <label for="yr-active" class="mb-0.5 block text-dense-muted text-[11px] font-medium">계정 상태</label>
+                    <select id="yr-active" name="active_state" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
                         <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
                         <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
@@ -52,17 +52,17 @@
     </div>
 
     <!-- Guide / Legend -->
-    <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 text-[10px] font-semibold text-dense-muted leading-relaxed">
-        <strong class="text-dense-text">💡 연간 종합 캘린더 안내</strong>
-        <ul class="mt-1 list-inside list-disc space-y-0.5 text-dense-muted/90">
-            <li>잔여 연차, 연간 누적 사용(연사용), 월별 사용 칸의 수치 기준은 모두 <strong class="text-dense-text">8시간 = 1일</strong>입니다.</li>
-            <li>연차 사용 이력이 없는 월이나 값이 0인 항목은 <strong class="text-dense-text">-</strong>로 표기됩니다.</li>
-            <li>공간 최적화를 위해 표기는 <code class="rounded bg-dense-gray-soft px-1 font-mono text-[9px] text-dense-nav-text">9일2h</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[9px] text-dense-nav-text">8일</code>, <code class="rounded bg-dense-gray-soft px-1 font-mono text-[9px] text-dense-nav-text">4h</code> 등으로 줄여 표시하며, 마우스 오버 시 전체 상세 문구가 툴팁으로 제공됩니다.</li>
+    <div class="rounded-[4px] border border-dense-line bg-dense-surface-soft/60 p-2.5 text-[11px] text-dense-muted leading-relaxed">
+        <strong class="font-semibold text-dense-text">연간 종합 캘린더 안내</strong>
+        <ul class="mt-0.5 list-inside list-disc space-y-0.5 text-dense-muted">
+            <li>잔여 연차, 연간 누적 사용(연사용), 월별 사용 칸의 수치 기준은 모두 <strong class="text-dense-text font-medium">8시간 = 1일</strong>입니다.</li>
+            <li>연차 사용 이력이 없는 월이나 값이 0인 항목은 <strong class="text-dense-text font-medium">-</strong>로 표기됩니다.</li>
+            <li>공간 최적화를 위해 표기는 <code class="rounded-[2px] bg-dense-surface px-1 font-mono text-[10px] text-dense-text border border-dense-line">9일2h</code>, <code class="rounded-[2px] bg-dense-surface px-1 font-mono text-[10px] text-dense-text border border-dense-line">8일</code> 등으로 줄여 표시하며, 마우스 오버 시 상세 툴팁이 제공됩니다.</li>
         </ul>
     </div>
 
     <!-- Yearly Table inside rounded boundary -->
-    <div class="overflow-x-auto rounded-xl border border-dense-line bg-dense-surface shadow-xs">
+    <div class="overflow-x-auto rounded-[6px] border border-dense-line bg-dense-surface">
         <table class="cal-table cal-one-line cal-year-view">
             <thead>
                 <tr>
@@ -83,13 +83,13 @@
                         <a href="{{ sort_urls.period_used }}" class="cal-sort-head">연사용{% if sort_key == 'period_used' %}<span class="text-dense-blue">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a>
                     </th>
                     {% for m in range(1, 13) %}
-                    <th class="col-month-sum">{{ m }}월</th>
+                    <th class="col-month-sum font-mono">{{ m }}월</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for stat in user_stats %}
-                <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
+                <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-surface-soft/60">
                     <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
                         <div class="info-one-line text-dense-text">
                             {{ stat.user_name }}
@@ -97,36 +97,36 @@
                     </td>
                     <td class="col-meta text-center" title="{{ stat.company or '' }}">
                         {% if stat.company %}
-                        <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                        <span class="inline-flex items-center rounded-[2px] px-1 py-0.5 text-[9px] font-medium max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
                         {% else %}
                         <span class="text-dense-muted">—</span>
                         {% endif %}
                     </td>
                     <td class="col-meta text-center" title="{{ stat.team or '' }}">
                         {% if stat.team %}
-                        <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                        <span class="inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[9px] font-medium max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
                         {% else %}
                         <span class="text-dense-muted">—</span>
                         {% endif %}
                     </td>
-                    <td class="col-stat text-center font-semibold text-dense-muted">
+                    <td class="col-stat text-center font-mono text-dense-muted">
                         <span class="stat-compact" title="{{ fmt_hours(stat.total_hours) }}h">{{ fmt_hours(stat.total_hours) }}h</span>
                     </td>
-                    <td class="col-stat {% if (stat.yearly_remain | default(0) or 0) <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
+                    <td class="col-stat font-mono {% if (stat.yearly_remain | default(0) or 0) <= 0 %}font-semibold text-dense-danger{% else %}font-medium text-dense-green{% endif %}">
                         <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
                     </td>
-                    <td class="col-stat font-semibold text-dense-blue">
+                    <td class="col-stat font-mono font-medium text-dense-blue">
                         <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
                     </td>
                     {% for m in range(1, 13) %}
-                    <td class="col-month-sum text-dense-text">
+                    <td class="col-month-sum font-mono text-dense-text">
                         <span class="stat-compact text-dense-blue" title="{{ stat.month_used_labels[m] }}">{{ stat.month_used_short_labels[m] }}</span>
                     </td>
                     {% endfor %}
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="18" class="py-8 text-sm font-semibold text-dense-muted text-center">표시할 사원 데이터가 없습니다.</td>
+                    <td colspan="18" class="py-8 text-xs font-medium text-dense-muted text-center">표시할 사원 데이터가 없습니다.</td>
                 </tr>
                 {% endfor %}
             </tbody>
