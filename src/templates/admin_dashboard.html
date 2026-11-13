@@ -1,84 +1,83 @@
 {% extends "base.html" %}
 {% from "partials/macros.html" import fmt_hours %}
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-4">
     <!-- 대시보드 헤더 -->
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-[28px] font-extrabold tracking-tight text-dense-text">관리자 대시보드</h2>
-            <p class="mt-1 text-sm font-semibold text-dense-muted">시스템 전체 운영 현황을 한눈에 파악합니다.</p>
+            <h2 class="text-xl font-semibold tracking-tight text-dense-text">관리자 대시보드</h2>
+            <p class="mt-0.5 text-xs text-dense-muted">시스템 전체 운영 현황을 한눈에 파악합니다.</p>
         </div>
     </div>
 
     <!-- 올해 연차 등록 권장 알림 배너 -->
     {% if show_setup_banner %}
-    <div class="rounded-2xl border border-red-200 bg-red-50 p-4 sm:p-5 flex items-start gap-3 shadow-sm">
-        <span class="text-xl shrink-0 mt-0.5">⚠️</span>
-        <div class="space-y-1">
-            <h4 class="text-sm font-extrabold text-red-900">{{ next_year }}년도 연차 관리 미설정 경고</h4>
-            <p class="text-[10.5px] text-red-700 font-semibold leading-relaxed mt-0.5">원활한 새해 연차 신청 관리를 위해 사원 관리 탭의 '새해 연차 등록' 기능을 이용해 {{ next_year }}년도 기본 연차를 등록해 주시기 바랍니다.</p>
+    <div class="rounded-[4px] border border-dense-danger/30 bg-dense-danger-soft/20 p-3 flex items-start gap-2.5">
+        <div class="space-y-0.5">
+            <h4 class="text-xs font-semibold text-dense-danger">{{ next_year }}년도 연차 관리 미설정 경고</h4>
+            <p class="text-[11px] text-dense-danger leading-relaxed">원활한 새해 연차 신청 관리를 위해 사원 관리 탭의 '연차 일괄' 기능을 이용해 {{ next_year }}년도 기본 연차를 등록해 주시기 바랍니다.</p>
         </div>
     </div>
     {% endif %}
 
     {% if system_metrics.recovery_warnings %}
-    <div role="alert" class="rounded-xl border border-dense-danger bg-dense-danger-soft p-4 text-sm text-dense-danger">
+    <div role="alert" class="rounded-[4px] border border-dense-danger/30 bg-dense-danger-soft/20 p-3 text-xs text-dense-danger">
         {% for warning in system_metrics.recovery_warnings %}<p>{{ warning }}</p>{% endfor %}
     </div>
     {% endif %}
 
     <!-- 통계 카드 섹션 -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <!-- 부여 연차 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
-                <span class="text-2xl">📊</span>
-                <span class="rounded bg-dense-gray-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-nav-text">부여</span>
+                <span class="text-xs font-medium text-dense-muted">부여 연차</span>
+                <span class="rounded-[2px] bg-dense-surface-soft border border-dense-line px-1.5 py-0.5 text-[10px] font-medium text-dense-muted">총량</span>
             </div>
-            <div class="mt-4 space-y-1">
-                <h3 class="text-2xl font-extrabold text-dense-text tabular-nums">{{ fmt_hours(stats.total_granted_hours) }} <span class="text-xs font-bold text-dense-muted">h</span></h3>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">올해 부여된 총 연차 시간</span>
+            <div class="mt-2 space-y-0.5">
+                <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ fmt_hours(stats.total_granted_hours) }} <span class="text-xs font-normal text-dense-muted">h</span></h3>
+                <span class="block text-[11px] text-dense-muted">올해 부여된 총 연차 시간</span>
             </div>
         </div>
 
         <!-- 사용 연차 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
-                <span class="text-2xl">✅</span>
-                <span class="rounded bg-dense-green-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-green">사용</span>
+                <span class="text-xs font-medium text-dense-muted">사용 연차</span>
+                <span class="rounded-[2px] bg-emerald-500/10 border border-emerald-300/40 px-1.5 py-0.5 text-[10px] font-medium text-dense-green">승인됨</span>
             </div>
-            <div class="mt-4 space-y-1">
-                <h3 class="text-2xl font-extrabold text-dense-text tabular-nums">{{ fmt_hours(stats.total_used_hours) }} <span class="text-xs font-bold text-dense-muted">h</span></h3>
-                <span class="block text-[10.5px] font-semibold text-dense-muted mt-1">승인 완료된 총 연차 시간</span>
+            <div class="mt-2 space-y-0.5">
+                <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ fmt_hours(stats.total_used_hours) }} <span class="text-xs font-normal text-dense-muted">h</span></h3>
+                <span class="block text-[11px] text-dense-muted">승인 완료된 총 연차 시간</span>
             </div>
         </div>
 
         <!-- 소진율 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm">
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
-                <span class="text-2xl">📈</span>
-                <span class="rounded bg-dense-blue-soft px-2 py-0.5 text-[10px] font-extrabold text-dense-blue">소진율</span>
+                <span class="text-xs font-medium text-dense-muted">연차 소진율</span>
+                <span class="rounded-[2px] bg-dense-blue/10 border border-dense-blue/30 px-1.5 py-0.5 text-[10px] font-medium text-dense-blue">비율</span>
             </div>
-            <div class="mt-4 space-y-1">
-                <h3 class="text-2xl font-extrabold text-dense-text tabular-nums">{{ stats.exhaustion_rate }} <span class="text-xs font-bold text-dense-muted">%</span></h3>
-                <span class="block text-xs font-extrabold text-dense-muted">전체 연차 소진율</span>
+            <div class="mt-2 space-y-0.5">
+                <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ stats.exhaustion_rate }} <span class="text-xs font-normal text-dense-muted">%</span></h3>
+                <span class="block text-[11px] text-dense-muted">전체 연차 소진율</span>
             </div>
         </div>
     </div>
 
     <!-- 차트 영역 -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <!-- 팀별 연차 사용 현황 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm flex flex-col h-[300px]">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider mb-4">📊 팀별 연차 사용 현황 (누적)</h3>
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 flex flex-col h-[280px]">
+            <h3 class="text-xs font-semibold text-dense-text mb-2">팀별 연차 사용 현황 (누적)</h3>
             <div class="flex-1 min-h-0 relative">
                 <canvas id="teamChart"></canvas>
             </div>
         </div>
 
         <!-- 월별 연차 사용 트렌드 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm flex flex-col h-[300px]">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider mb-4">📈 월별 연차 사용 트렌드</h3>
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 flex flex-col h-[280px]">
+            <h3 class="text-xs font-semibold text-dense-text mb-2">월별 연차 사용 트렌드</h3>
             <div class="flex-1 min-h-0 relative">
                 <canvas id="trendChart"></canvas>
             </div>
@@ -86,125 +85,122 @@
     </div>
 
     <!-- 최근 휴가자 및 로그 영역 -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <!-- 오늘 휴가자 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
-            <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider border-b border-dense-grid pb-2 flex items-center gap-1.5">
-                🌴 오늘 휴가/공가/출장자
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 space-y-2.5 flex flex-col min-h-[260px]">
+            <h3 class="text-xs font-semibold text-dense-text border-b border-dense-line pb-1.5">
+                오늘 휴가/공가/출장자
             </h3>
-            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-grid pr-1">
+            <div class="flex-1 overflow-y-auto max-h-[240px] divide-y divide-dense-line pr-1">
                 {% for leave in today_leaves %}
-                <div class="py-2.5 flex items-center justify-between text-xs first:pt-0 last:pb-0">
-                    <div class="space-y-1">
+                <div class="py-2 flex items-center justify-between text-xs first:pt-0 last:pb-0">
+                    <div class="space-y-0.5">
                         <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-dense-text">{{ leave.user.user_name }}</span>
-                            <span class="text-[10px] font-semibold text-dense-muted">| {{ leave.user.team or "부서 없음" }}</span>
+                            <span class="font-medium text-dense-text">{{ leave.user.user_name }}</span>
+                            <span class="text-[11px] text-dense-muted">| {{ leave.user.team or "부서 없음" }}</span>
                         </div>
-                        <p class="text-[10px] text-dense-muted font-semibold">사유: {{ leave.reason or "—" }}</p>
+                        <p class="text-[11px] text-dense-muted">사유: {{ leave.reason or "—" }}</p>
                     </div>
-                    <div class="text-right space-y-1">
+                    <div class="text-right space-y-0.5">
                         {% if leave.is_deductive %}
-                        <span class="rounded bg-dense-blue-soft border border-dense-blue/10 px-1.5 py-0.5 text-[9px] font-extrabold text-dense-blue">연차 사용</span>
+                        <span class="rounded-[2px] bg-dense-blue/10 border border-dense-blue/30 px-1.5 py-0.5 text-[10px] font-medium text-dense-blue">연차</span>
                         {% else %}
-                        <span class="rounded bg-purple-100 border border-purple-200 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-700">공가/출장</span>
+                        <span class="rounded-[2px] bg-purple-500/10 border border-purple-300/40 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">공가/출장</span>
                         {% endif %}
-                        <span class="block text-[10px] text-dense-muted font-semibold">⏱️ {{ leave.snapshot_slot_label or "시간 정보 없음" }}</span>
+                        <span class="block text-[10px] text-dense-muted font-mono tabular-nums">{{ leave.snapshot_slot_label or "시간 정보 없음" }}</span>
                     </div>
                 </div>
                 {% else %}
-                <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
-                    <span class="text-3xl">💼</span>
-                    <p class="text-[10px] text-dense-muted">모든 사원이 정상 근무 중이거나 오늘 휴가 예정자가 없습니다.</p>
+                <div class="flex flex-col items-center justify-center py-8 text-center space-y-1 h-full">
+                    <p class="text-xs text-dense-muted">모든 사원이 정상 근무 중이거나 오늘 휴가 예정자가 없습니다.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
         <!-- 최근 주요 활동 로그 -->
-        <div class="rounded-2xl border border-dense-line bg-dense-surface p-5 shadow-sm space-y-3 flex flex-col min-h-[300px]">
-            <div class="flex items-center justify-between border-b border-dense-grid pb-2">
-                <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider flex items-center gap-1.5">
-                    🔍 최근 주요 활동 로그
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 space-y-2.5 flex flex-col min-h-[260px]">
+            <div class="flex items-center justify-between border-b border-dense-line pb-1.5">
+                <h3 class="text-xs font-semibold text-dense-text">
+                    최근 주요 활동 로그
                 </h3>
-                <a href="/admin/audit" class="text-[10px] text-dense-blue font-bold hover:underline">전체 보기 →</a>
+                <a href="/admin/audit" class="text-xs text-dense-blue font-medium hover:underline">전체 보기 →</a>
             </div>
-            <div class="flex-1 overflow-y-auto max-h-[280px] divide-y divide-dense-grid pr-1">
+            <div class="flex-1 overflow-y-auto max-h-[240px] divide-y divide-dense-line pr-1">
                 {% for log in recent_audits %}
-                <div class="py-2.5 text-xs first:pt-0 last:pb-0">
+                <div class="py-2 text-xs first:pt-0 last:pb-0">
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-dense-text">
+                        <span class="font-medium text-dense-text">
                             {% if log.actor %}
-                            {{ log.actor.user_name }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id }})</span>
+                            {{ log.actor.user_name }}<span class="text-[11px] text-dense-muted font-mono">({{ log.actor_id }})</span>
                             {% else %}
-                            {{ log.actor_name or "알 수 없는 사용자" }}<span class="text-[10px] text-dense-muted font-semibold">({{ log.actor_id or "system" }})</span>
+                            {{ log.actor_name or "알 수 없는 사용자" }}<span class="text-[11px] text-dense-muted font-mono">({{ log.actor_id or "system" }})</span>
                             {% endif %}
                         </span>
-                        <span class="text-[10px] text-dense-muted font-semibold">{{ log.timestamp | format_datetime_business('%m-%d %H:%M') }}</span>
+                        <span class="text-[11px] text-dense-muted font-mono tabular-nums">{{ log.timestamp | format_datetime_business('%m-%d %H:%M') }}</span>
                     </div>
-                    <div class="mt-1 flex items-start gap-1.5">
-                        <span class="shrink-0 rounded bg-dense-gray-soft px-1.5 py-0.5 text-[9px] font-extrabold text-dense-nav-text">{{ log.action }}</span>
-                        <p class="text-dense-muted font-semibold truncate flex-1" data-tooltip="{{ log.target_info }}">{{ log.target_info }}</p>
+                    <div class="mt-0.5 flex items-start gap-1.5">
+                        <span class="shrink-0 rounded-[2px] bg-dense-surface-soft border border-dense-line px-1 py-0.5 text-[10px] font-medium text-dense-text">{{ log.action }}</span>
+                        <p class="text-dense-muted truncate flex-1 text-[11px]" data-tooltip="{{ log.target_info }}">{{ log.target_info }}</p>
                     </div>
                 </div>
                 {% else %}
-                <div class="flex flex-col items-center justify-center py-12 text-center space-y-2 h-full">
-                    <span class="text-3xl">📋</span>
-                    <h4 class="text-xs font-bold text-dense-text">감사 로그가 존재하지 않습니다.</h4>
+                <div class="flex flex-col items-center justify-center py-8 text-center space-y-1 h-full">
+                    <p class="text-xs text-dense-muted">감사 로그가 존재하지 않습니다.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 
-    <!-- 시스템 운영 현황 (제일 밑에 가로 1단으로 배치) -->
-    <div class="rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-dense-grid pb-3">
-            <div class="flex items-center gap-2">
-                <span class="text-sm">⚙️</span>
-                <h3 class="text-xs font-extrabold text-dense-text uppercase tracking-wider">시스템 운영 현황</h3>
+    <!-- 시스템 운영 현황 -->
+    <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dense-line pb-2.5">
+            <div class="flex items-center gap-1.5">
+                <h3 class="text-xs font-semibold text-dense-text">시스템 운영 현황</h3>
             </div>
-            <div class="flex items-center gap-1.5 rounded-full border border-dense-line bg-dense-surface-soft px-2.5 py-1">
+            <div class="flex items-center gap-1.5 rounded-[2px] border border-dense-line bg-dense-surface-soft px-2 py-0.5">
                 <span class="h-2 w-2 rounded-full {% if system_metrics.is_healthy %}bg-dense-green{% else %}bg-dense-danger animate-pulse{% endif %}"></span>
-                <span class="text-[10px] font-extrabold {% if system_metrics.is_healthy %}text-dense-green{% else %}text-dense-danger{% endif %}">
+                <span class="text-[10px] font-medium {% if system_metrics.is_healthy %}text-dense-green{% else %}text-dense-danger{% endif %}">
                     상태: {% if system_metrics.is_healthy %}정상 작동 중{% else %}동작 지연/점검필요{% endif %}
                 </span>
             </div>
         </div>
         
-        <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 text-xs">
+        <div class="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-xs">
             <!-- 활성 사원 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">활성 사원</span>
-                <span class="font-extrabold text-dense-text mt-1 text-sm">{{ stats.active_users_count }}명</span>
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">활성 사원</span>
+                <span class="font-semibold text-dense-text mt-1 text-sm font-mono tabular-nums">{{ stats.active_users_count }}명</span>
             </div>
             <!-- 가동 시간 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">가동 시간 (Uptime)</span>
-                <span class="font-extrabold text-dense-text mt-1 text-sm truncate" title="{{ system_metrics.uptime }}">{{ system_metrics.uptime }}</span>
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">가동 시간</span>
+                <span class="font-semibold text-dense-text mt-1 text-sm truncate font-mono tabular-nums" title="{{ system_metrics.uptime }}">{{ system_metrics.uptime }}</span>
             </div>
             <!-- DB 용량 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">데이터베이스 용량</span>
-                <span class="font-extrabold text-dense-text mt-1 text-sm">{{ system_metrics.db_size }}</span>
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">데이터베이스</span>
+                <span class="font-semibold text-dense-text mt-1 text-sm font-mono tabular-nums">{{ system_metrics.db_size }}</span>
             </div>
             <!-- PII 보안 모드 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">PII 보안 모드</span>
-                <span class="font-extrabold mt-1 text-sm {% if '보안 활성' in system_metrics.security_mode %}text-dense-green{% else %}text-dense-amber{% endif %}">
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">PII 보안</span>
+                <span class="font-semibold mt-1 text-xs truncate {% if '보안 활성' in system_metrics.security_mode %}text-dense-green{% else %}text-dense-amber{% endif %}">
                     {{ system_metrics.security_mode }}
                 </span>
             </div>
             <!-- 최종 자동 백업 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">최종 자동 백업</span>
-                <span class="font-extrabold text-dense-text mt-1 text-[11px] truncate" title="{{ system_metrics.last_backup_time }} (보관: {{ system_metrics.last_backup_count }}개)">
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">최종 자동 백업</span>
+                <span class="font-semibold text-dense-text mt-1 text-xs truncate font-mono tabular-nums" title="{{ system_metrics.last_backup_time }} (보관: {{ system_metrics.last_backup_count }}개)">
                     {{ system_metrics.last_backup_time }} {% if system_metrics.last_backup_count > 0 %}({{ system_metrics.last_backup_count }}개){% endif %}
                 </span>
             </div>
             <!-- 최종 알림 정리 -->
-            <div class="rounded-xl border border-dense-line bg-dense-surface-soft p-3 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-dense-muted">최종 알림 정리</span>
-                <span class="font-extrabold text-dense-text mt-1 text-[11px] truncate" title="{{ system_metrics.last_cleanup_time }}">
+            <div class="rounded-[3px] border border-dense-line bg-dense-surface-soft/60 p-2 flex flex-col justify-between">
+                <span class="text-[11px] text-dense-muted">최종 알림 정리</span>
+                <span class="font-semibold text-dense-text mt-1 text-xs truncate font-mono tabular-nums" title="{{ system_metrics.last_cleanup_time }}">
                     {{ system_metrics.last_cleanup_time }}
                 </span>
             </div>
@@ -217,7 +213,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const denseGridColor = getComputedStyle(document.documentElement)
       .getPropertyValue('--color-dense-grid').trim()
-      || 'rgb(208 213 221 / 0.55)';
+      || 'rgba(0, 0, 0, 0.1)';
     const chartData = {{ chart_data | tojson | safe }};
     
     // 1. 팀별 차트
@@ -231,15 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: '사용 연차 (h)',
                         data: chartData.used_hours,
-                        backgroundColor: 'rgba(23, 92, 211, 0.85)',
-                        borderColor: 'rgb(23, 92, 211)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                        borderColor: 'rgb(37, 99, 235)',
                         borderWidth: 1
                     },
                     {
                         label: '잔여 연차 (h)',
                         data: chartData.remaining_hours,
-                        backgroundColor: 'rgba(208, 213, 221, 0.5)',
-                        borderColor: 'rgb(208, 213, 221)',
+                        backgroundColor: 'rgba(209, 213, 219, 0.5)',
+                        borderColor: 'rgb(209, 213, 219)',
                         borderWidth: 1
                     }
                 ]
@@ -254,8 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     legend: {
                         labels: {
-                            boxWidth: 10,
-                            font: { size: 10, weight: 'bold' }
+                            boxWidth: 8,
+                            font: { size: 10, weight: '500' }
                         }
                     }
                 },
@@ -263,12 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     x: {
                         stacked: true,
                         grid: { display: false },
-                        ticks: { font: { size: 9, weight: 'bold' } }
+                        ticks: { font: { size: 9, weight: '500' } }
                     },
                     y: {
                         stacked: true,
                         grid: { color: denseGridColor },
-                        ticks: { font: { size: 9, weight: 'bold' } }
+                        ticks: { font: { size: 9, weight: '500' } }
                     }
                 }
             }
@@ -287,13 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: '월별 사용 시간 (h)',
                         data: chartData.monthly_hours,
-                        borderColor: 'rgb(6, 118, 71)',
-                        backgroundColor: 'rgba(6, 118, 71, 0.08)',
+                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
                         fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
+                        tension: 0.25,
+                        borderWidth: 1.5,
                         pointHitRadius: 12,
-                        pointBackgroundColor: 'rgb(6, 118, 71)'
+                        pointBackgroundColor: 'rgb(37, 99, 235)'
                     }
                 ]
             },
@@ -303,19 +299,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     legend: {
                         labels: {
-                            boxWidth: 10,
-                            font: { size: 10, weight: 'bold' }
+                            boxWidth: 8,
+                            font: { size: 10, weight: '500' }
                         }
                     }
                 },
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { size: 9, weight: 'bold' } }
+                        ticks: { font: { size: 9, weight: '500' } }
                     },
                     y: {
                         grid: { color: denseGridColor },
-                        ticks: { font: { size: 9, weight: 'bold' } }
+                        ticks: { font: { size: 9, weight: '500' } }
                     }
                 }
             }
@@ -323,4 +319,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-{% endblock %}}
+{% endblock %}

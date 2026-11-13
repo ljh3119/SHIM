@@ -1,29 +1,37 @@
 {# 사용자 전용 사이드바 — 메인 내비. #}
 {% set path = request.url.path %}
-<aside id="shim-sidebar-user" data-shim-sidebar class="shim-sidebar relative flex w-full md:w-[220px] shrink-0 flex-col gap-2 md:gap-3 self-start overflow-visible transition-[width] duration-200 ease-out min-h-0 md:min-h-[calc(100vh-6rem)]">
-  <button type="button" class="shim-sidebar-toggle hidden md:flex absolute -right-3 top-2.5 z-10 h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dense-line-strong bg-white text-dense-nav-text shadow-sm transition-colors hover:bg-dense-surface-soft" aria-label="사이드 패널 접기·펼치기" aria-expanded="true" aria-controls="shim-sidebar-user-nav"></button>
+<aside id="shim-sidebar-user" data-shim-sidebar class="shim-sidebar relative flex w-full md:w-[188px] shrink-0 flex-col gap-2 md:gap-3 self-start overflow-visible min-h-0 md:min-h-[calc(100vh-6rem)]">
+  <button type="button" class="shim-sidebar-toggle hidden md:flex absolute -right-3 top-2.5 z-10 h-7 w-7 shrink-0 items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface text-dense-nav-text shadow-xs transition-colors hover:bg-dense-surface-soft" aria-label="사이드 패널 접기·펼치기" aria-expanded="true" aria-controls="shim-sidebar-user-nav"></button>
   
   <!-- Navigation Card -->
-  <div class="rounded-xl md:rounded-2xl border border-dense-line bg-dense-surface p-1.5 md:p-3 md:pr-4 shadow-sm flex flex-col gap-1 md:gap-2">
-    <nav id="shim-sidebar-user-nav" class="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-none pb-0.5 md:pb-0" aria-label="사용자 메뉴">
-      <a href="/user/calendar" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path.startswith('/user/calendar') %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm shrink-0">🗓️</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">개인 캘린더</span>
+  <div class="rounded-[4px] border border-dense-line bg-dense-surface md:bg-dense-gray-soft p-1.5 md:p-2 shadow-xs flex flex-col gap-1">
+    <nav id="shim-sidebar-user-nav" class="flex flex-row md:flex-col gap-0.5 overflow-x-auto md:overflow-visible scrollbar-none pb-0.5 md:pb-0" aria-label="사용자 메뉴">
+      <a href="/user/calendar" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] px-2 py-1.5 text-xs md:text-[13px] rounded-[4px] {% if path.startswith('/user/calendar') %}bg-dense-blue-soft text-dense-blue font-semibold{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji flex items-center justify-center w-4 h-4 shrink-0">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </span>
+        <span class="shim-nav-label min-w-0 truncate">개인 캘린더</span>
       </a>
-      <a href="/user/history" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm shrink-0">📋</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">신청 내역</span>
+      <a href="/user/history" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] px-2 py-1.5 text-xs md:text-[13px] rounded-[4px] {% if path == '/user/history' %}bg-dense-blue-soft text-dense-blue font-semibold{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji flex items-center justify-center w-4 h-4 shrink-0">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </span>
+        <span class="shim-nav-label min-w-0 truncate">신청 내역</span>
       </a>
       {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
-      <a href="/user/team-calendar" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm shrink-0">📅</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">{% if company_calendar_visible or (user_role in ['PM', 'ADMIN'] and not team_calendar_visible) %}프로젝트 캘린더{% else %}📅 팀 캘린더{% endif %}</span>
+      <a href="/user/team-calendar" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] px-2 py-1.5 text-xs md:text-[13px] rounded-[4px] {% if path == '/user/team-calendar' %}bg-dense-blue-soft text-dense-blue font-semibold{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji flex items-center justify-center w-4 h-4 shrink-0">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </span>
+        <span class="shim-nav-label min-w-0 truncate">{% if company_calendar_visible or (user_role in ['PM', 'ADMIN'] and not team_calendar_visible) %}프로젝트 캘린더{% else %}팀 캘린더{% endif %}</span>
       </a>
       {% endif %}
       {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-      <a href="/user/approvals" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] md:min-h-[2.625rem] px-2.5 py-1.5 md:px-2.5 md:py-2 text-xs md:text-sm rounded-lg md:rounded-[0.7rem] {% if path == '/user/approvals' %}bg-dense-blue-soft text-dense-blue font-bold shadow-xs{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
-        <span class="shim-side-emoji text-sm shrink-0">📥</span>
-        <span class="shim-nav-label min-w-0 truncate font-semibold">결재 관리</span>
+      <a href="/user/approvals" class="shim-side-link shrink-0 whitespace-nowrap min-h-[2.25rem] px-2 py-1.5 text-xs md:text-[13px] rounded-[4px] {% if path == '/user/approvals' %}bg-dense-blue-soft text-dense-blue font-semibold{% else %}text-dense-nav-text hover:bg-dense-surface-soft{% endif %}">
+        <span class="shim-side-emoji flex items-center justify-center w-4 h-4 shrink-0">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </span>
+        <span class="shim-nav-label min-w-0 truncate">결재 관리</span>
       </a>
       {% endif %}
     </nav>
@@ -31,20 +39,20 @@
 
   {% if total_allocated_hours is defined %}
   <!-- User Stats Card (Desktop only) -->
-  <div class="system-stats-card hidden md:block rounded-2xl border border-dense-line bg-dense-surface p-4 shadow-sm space-y-2.5">
-    <h4 class="text-[10px] font-extrabold text-dense-muted uppercase tracking-wider">내 연차 현황</h4>
+  <div class="system-stats-card hidden md:block rounded-[4px] border border-dense-line bg-dense-surface p-3 shadow-xs space-y-2">
+    <h4 class="text-[11px] font-semibold text-dense-muted">내 연차 현황</h4>
     <div class="space-y-1 text-xs">
-      <div class="flex justify-between font-semibold">
+      <div class="flex justify-between font-normal">
         <span class="text-dense-muted">올해 부여</span>
-        <span class="text-dense-text font-bold">{{ total_allocated_hours|int if total_allocated_hours == total_allocated_hours|int else '%.1f'|format(total_allocated_hours) }}h</span>
+        <span class="text-dense-text font-semibold tabular-nums">{{ total_allocated_hours|int if total_allocated_hours == total_allocated_hours|int else '%.1f'|format(total_allocated_hours) }}h</span>
       </div>
-      <div class="flex justify-between font-semibold">
+      <div class="flex justify-between font-normal">
         <span class="text-dense-muted">사용 완료</span>
-        <span class="text-dense-text font-bold">{{ used_hours|int if used_hours == used_hours|int else '%.1f'|format(used_hours) }}h</span>
+        <span class="text-dense-text font-semibold tabular-nums">{{ used_hours|int if used_hours == used_hours|int else '%.1f'|format(used_hours) }}h</span>
       </div>
-      <div class="flex justify-between font-semibold">
+      <div class="flex justify-between font-normal">
         <span class="text-dense-muted">잔여 연차</span>
-        <span class="text-dense-blue font-extrabold">{{ remaining_hours|int if remaining_hours == remaining_hours|int else '%.1f'|format(remaining_hours) }}h</span>
+        <span class="text-dense-blue font-semibold tabular-nums">{{ remaining_hours|int if remaining_hours == remaining_hours|int else '%.1f'|format(remaining_hours) }}h</span>
       </div>
     </div>
   </div>

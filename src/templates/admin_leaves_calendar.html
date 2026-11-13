@@ -8,11 +8,11 @@
     .cal-table.cal-month-view { table-layout: auto; width: max-content; min-width: 100%; }
     .cal-table.cal-month-view.cal-one-line { table-layout: fixed; width: 100%; max-width: 100%; }
     .cal-table.cal-year-view { table-layout: fixed; }
-    .cal-table th, .cal-table td { border: 1px solid var(--color-dense-grid); text-align: center; vertical-align: middle; }
-    .cal-table .col-day { width: auto; min-width: 30px; padding: 2px 1px; }
-    .cal-table.cal-year-view .col-month-sum { padding: 6px 2px; font-size: 10px; line-height: 1.3; font-weight: 600; color: #175cd3; }
-    .cal-table.cal-year-view thead .col-month-sum { color: #475467; }
-    .cal-table .stat-compact { display: inline; white-space: nowrap; font-size: 8px; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; font-weight: 700; vertical-align: middle; }
+    .cal-table th, .cal-table td { border: 1px solid var(--color-dense-line); text-align: center; vertical-align: middle; }
+    .cal-table .col-day { width: auto; min-width: 28px; padding: 2px 1px; }
+    .cal-table.cal-year-view .col-month-sum { padding: 4px 2px; font-size: 10px; line-height: 1.3; font-weight: 500; color: var(--color-dense-blue); }
+    .cal-table.cal-year-view thead .col-month-sum { color: var(--color-dense-muted); }
+    .cal-table .stat-compact { display: inline; white-space: nowrap; font-size: 9px; line-height: 1.15; font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; font-weight: 600; vertical-align: middle; }
     .cal-table.cal-one-line td.col-stat,
     .cal-table.cal-one-line td.col-month-sum {
         white-space: nowrap !important;
@@ -24,16 +24,16 @@
         padding-bottom: 2px !important;
     }
     .cal-table.cal-year-view.cal-one-line td.col-month-sum { max-width: 3.75rem; font-size: 9px !important; }
-    .cal-table.cal-year-view.cal-one-line .col-month-sum .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
+    .cal-table.cal-year-view.cal-one-line .col-month-sum .stat-compact { font-size: 9px; font-weight: 600; }
     .cal-table.cal-year-view.cal-one-line .col-stat { width: auto; min-width: 2.65rem; max-width: 3.35rem; padding: 2px 1px; box-sizing: border-box; }
-    .cal-table.cal-year-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
-    .cal-table.cal-one-line .col-info-compact { padding-top: 4px !important; padding-bottom: 4px !important; line-height: 1.2 !important; }
+    .cal-table.cal-year-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 600; }
+    .cal-table.cal-one-line .col-info-compact { padding-top: 3px !important; padding-bottom: 3px !important; line-height: 1.2 !important; }
     .cal-table.cal-one-line .col-info-compact .info-one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 600; }
-    /* 월별: 일·요일·공휴일 3줄 + 좁은 열로 한 달 한눈에 */
+    /* 월별 헤더 */
     .cal-table.cal-month-view.cal-one-line thead th.col-day {
         white-space: normal;
-        padding: 3px 1px;
-        font-size: 7px;
+        padding: 2px 1px;
+        font-size: 8px;
         line-height: 1.15;
         vertical-align: middle;
         word-break: keep-all;
@@ -41,18 +41,22 @@
         min-width: 0;
         max-width: 2.30%;
     }
-    .cal-table.cal-month-view.cal-one-line thead th.col-day .day-num { display: block; font-weight: 700; font-size: 9px; line-height: 1.1; }
+    .cal-table.cal-month-view.cal-one-line thead th.col-day .day-num { display: block; font-weight: 600; font-size: 9px; line-height: 1.1; font-family: ui-monospace, monospace; }
     .cal-table.cal-month-view.cal-one-line thead th.col-day .weekday-label { display: block; font-size: 7px; line-height: 1.1; margin-top: 1px; }
     .cal-table.cal-month-view.cal-one-line thead th.col-day .holiday-chip {
         display: block;
-        margin: 2px auto 0;
+        margin: 1px auto 0;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 6px;
+        font-size: 7px;
         line-height: 1.15;
         padding: 0 1px;
+        border-radius: 2px;
+        background: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
     }
     .cal-table.cal-month-view.cal-one-line tbody td.col-day {
         width: 2.30%;
@@ -61,63 +65,38 @@
         padding: 2px;
         vertical-align: middle;
     }
-    /* 일별: 칸 전체 채움 — 잔여·월사용과 동일 9px / 700 */
     .cal-table.cal-month-view.cal-one-line .day-block {
         width: 100%;
-        min-height: 1.45rem;
-        height: 1.45rem;
+        min-height: 1.35rem;
+        height: 1.35rem;
         margin: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        border-radius: 4px;
+        border-radius: 2px;
         font-size: 9px;
-        font-weight: 700;
+        font-weight: 600;
         line-height: 1;
-        letter-spacing: -0.04em;
-        border: 1px solid rgba(255,255,255,0.25);
-        color: #fff;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        font-family: ui-monospace, monospace;
         cursor: default;
-        background: #175cd3;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+        transition: opacity 0.15s ease;
     }
-    /* 빈 일자: 값 있는 칸과 동일 높이·폭 유지(시각적 줄바꿈 없음) */
     .cal-table.cal-month-view.cal-one-line .day-block.day-block--empty {
         background: transparent;
         border-color: transparent;
         color: transparent;
-        text-shadow: none;
-        box-shadow: none;
         cursor: default;
         pointer-events: none;
     }
-    .cal-table.cal-month-view.cal-one-line .day-block.leave-light {
-        background: #eff8ff;
-        color: #175cd3;
-        border: none !important;
-    }
-    .cal-table.cal-month-view.cal-one-line .day-block.leave-medium {
-        background: #84caff;
-        color: #175cd3;
-        border: none !important;
-    }
-    .cal-table.cal-month-view.cal-one-line .day-block.leave-dark {
-        background: #175cd3;
-        color: #ffffff;
-        border: none !important;
-    }
-    .cal-table.cal-month-view.cal-one-line .day-block.public {
-        background: #7e22ce;
-        color: #ffffff;
-        border: none !important;
-    }
+    .cal-table.cal-month-view.cal-one-line .day-block.leave-light { background: var(--color-accent-soft) !important; color: var(--color-accent-text) !important; border: 1px solid var(--color-rule) !important; }
+    .cal-table.cal-month-view.cal-one-line .day-block.leave-medium { background: var(--color-accent-soft) !important; color: var(--color-accent-text) !important; border: 1px solid var(--color-accent) !important; }
+    .cal-table.cal-month-view.cal-one-line .day-block.leave-dark { background: var(--color-accent) !important; color: var(--color-accent-ink) !important; border: 1px solid var(--color-accent) !important; }
+    .cal-table.cal-month-view.cal-one-line .day-block.public { background: var(--color-paper-3) !important; color: var(--color-ink) !important; border: 1px solid var(--color-rule-strong) !important; }
     .cal-table.cal-year-view.cal-one-line .sticky-col.col-info { width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem; }
     .cal-table.cal-month-view.cal-one-line .sticky-col.col-info { width: 7%; min-width: 4rem; max-width: 4.25rem; }
     .cal-table.cal-month-view.cal-one-line thead th.col-meta,
     .cal-table.cal-month-view.cal-one-line tbody td.col-meta { width: 7.5%; min-width: 5.5rem; max-width: 6.5rem; }
-    /* 잔여·월사용: 14일6h 수준만 필요 → 열 축소 후 일자 칸 확대 */
     .cal-table.cal-month-view.cal-one-line thead th.col-stat,
     .cal-table.cal-month-view.cal-one-line tbody td.col-stat {
         width: 3.75%;
@@ -126,80 +105,46 @@
         padding-left: 1px !important;
         padding-right: 1px !important;
     }
-    .cal-table.cal-month-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 700; letter-spacing: -0.04em; }
+    .cal-table.cal-month-view.cal-one-line .col-stat .stat-compact { font-size: 9px; font-weight: 600; }
     .cal-table thead th.col-meta { text-align: center !important; vertical-align: middle; }
     .cal-table tbody td.col-meta { text-align: center !important; }
     .cal-table .col-meta { max-width: 7rem; min-width: 5.5rem; font-size: 9px; padding: 2px 1px; }
     .cal-table .col-meta .meta-txt { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 auto; max-width: 100%; }
     .cal-table thead th.col-meta a.cal-sort-head { justify-content: center; width: 100%; }
-    .cal-table thead th { background: #f9fafb; font-size: 10px; font-weight: 600; color: #475467; padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
+    .cal-table thead th { background: var(--color-dense-surface-soft); font-size: 10px; font-weight: 600; color: var(--color-dense-muted); padding: 4px 2px; position: sticky; top: 0; z-index: 5; }
     .cal-table tbody td { padding: 3px 1px; font-size: 10px; }
     .cal-table.cal-one-line tbody td.col-day { font-size: 9px; }
     .cal-table.cal-one-line thead th.col-stat,
     .cal-table.cal-one-line thead th.col-month-sum { white-space: nowrap; font-size: 9px; padding: 3px 2px; }
-    .cal-table .sticky-col { position: sticky; left: 0; z-index: 10; background: #ffffff; }
-    .cal-table thead .sticky-col { z-index: 15; background: #f9fafb; }
-    .day-block { display: inline-block; border-radius: 3px; padding: 1px 3px; font-size: 9px; line-height: 1.3; margin: 1px 0; cursor: default; }
-    .day-block.leave-light {
-        background: #eff8ff;
-        color: #175cd3;
-        border: none !important;
-    }
-    .day-block.leave-medium {
-        background: #84caff;
-        color: #175cd3;
-        border: none !important;
-    }
-    .day-block.leave-dark {
-        background: #175cd3;
-        color: #ffffff;
-        border: none !important;
-    }
-    .day-block.public {
-        background: #7e22ce;
-        color: #ffffff;
-        border: none !important;
-    }
-    .day-block.pending {
-        background: #f2f4f7 !important;
-        color: #475467 !important;
-        border: none !important;
-        opacity: 1 !important;
-        filter: none !important;
-        text-shadow: none !important;
-        box-shadow: none !important;
-    }
-    .weekend-head { color: #d92d20 !important; background: #fef3f2 !important; }
-    .holiday-head { color: #d92d20 !important; background: #fef3f2 !important; }
-    .weekday-label { display: block; font-size: 9px; line-height: 1.1; margin-top: 1px; }
-    .holiday-chip {
-        display: inline-block;
-        margin-top: 2px;
-        padding: 0 2px;
-        border-radius: 3px;
-        font-size: 8px;
-        line-height: 1.2;
-        background: #d92d20;
-        color: #fff;
-    }
+    .cal-table .sticky-col { position: sticky; left: 0; z-index: 10; background: var(--color-dense-surface); }
+    .cal-table thead .sticky-col { z-index: 15; background: var(--color-dense-surface-soft); }
+    .day-block { display: inline-block; border-radius: 2px; padding: 1px 3px; font-size: 9px; line-height: 1.3; margin: 1px 0; cursor: default; }
+    .day-block.leave-light { background: var(--color-accent-soft) !important; color: var(--color-accent-text) !important; border: 1px solid var(--color-rule) !important; }
+    .day-block.leave-medium { background: var(--color-accent-soft) !important; color: var(--color-accent-text) !important; border: 1px solid var(--color-accent) !important; }
+    .day-block.leave-dark { background: var(--color-accent) !important; color: var(--color-accent-ink) !important; border: 1px solid var(--color-accent) !important; }
+    .day-block.public { background: var(--color-paper-3) !important; color: var(--color-ink) !important; border: 1px solid var(--color-rule-strong) !important; }
+    .day-block.pending { background: var(--color-warning-soft) !important; color: var(--color-warning) !important; border: 1px solid var(--color-warning) !important; }
+    .weekend-head { color: var(--color-dense-danger) !important; }
+    .holiday-head { color: var(--color-dense-danger) !important; }
+    .weekday-label { display: block; font-size: 8px; line-height: 1.1; margin-top: 1px; }
     .cal-table thead th a.cal-sort-head { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 2px; justify-content: center; max-width: 100%; }
-    .cal-table thead th a.cal-sort-head:hover { color: #175cd3; }
+    .cal-table thead th a.cal-sort-head:hover { color: var(--color-dense-blue); }
     .cal-table thead th.sticky-col a.cal-sort-head { justify-content: flex-start; padding-left: 2px; }
 </style>
 
-<div class="fade-in space-y-6 bg-dense-bg pb-2">
+<div class="fade-in space-y-4 bg-dense-bg pb-2">
     <!-- Header -->
-    <div id="leaves-header-area" class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div id="leaves-header-area" class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h2 class="text-[26px] font-extrabold tracking-tight text-dense-text flex items-center gap-2">
-                <span id="leaves-header-title">📅 연차 및 일정 종합 관리</span>
+            <h2 class="text-xl font-semibold tracking-tight text-dense-text flex items-center gap-2">
+                <span id="leaves-header-title">연차 및 일정 종합 관리</span>
             </h2>
-            <p id="leaves-header-subtitle" class="mt-1 text-sm font-semibold text-dense-muted">사원별 캘린더, 연간 요약 통계를 통합 관리합니다.</p>
+            <p id="leaves-header-subtitle" class="mt-0.5 text-xs text-dense-muted">사원별 캘린더, 연간 요약 통계를 통합 관리합니다.</p>
         </div>
     </div>
 
     <!-- 1. Calendar View Container (Server Side Rendered initially) -->
-    <div id="calendar-view-container" class="space-y-4">
+    <div id="calendar-view-container" class="space-y-3">
         <form method="get" action="/admin/leave/calendar" id="cal-form-params" class="space-y-3">
             <input type="hidden" name="sort" value="{{ sort_key or '' }}">
             <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
@@ -209,42 +154,42 @@
         </form>
 
         <!-- Table Card Container -->
-        <div class="overflow-hidden rounded-2xl border border-dense-line bg-dense-surface shadow-sm">
+        <div class="overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface">
             {% set prev_year = selected_year - 1 if selected_month == 1 else selected_year %}
             {% set prev_month = 12 if selected_month == 1 else selected_month - 1 %}
             {% set next_year = selected_year + 1 if selected_month == 12 else selected_year %}
             {% set next_month = 1 if selected_month == 12 else selected_month + 1 %}
             {% set base_qs = "user_id=" ~ selected_user_id ~ "&company=" ~ selected_company ~ "&team=" ~ selected_team ~ "&active_state=" ~ selected_active_state ~ "&sort=" ~ (sort_key or '') ~ "&sort_dir=" ~ sort_dir %}
             
-            <div class="flex flex-col gap-3 border-b border-dense-grid px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
-                <div class="flex flex-wrap items-center gap-3">
-                    <div id="cal-month-controller" class="flex items-center gap-1.5">
+            <div class="flex flex-col gap-2 border-b border-dense-line px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div id="cal-month-controller" class="flex items-center gap-1">
                         {% if view != 'year' %}
-                        <a href="/admin/leave/calendar?year={{ prev_year }}&month={{ prev_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                        <a href="/admin/leave/calendar?year={{ prev_year }}&month={{ prev_month }}&view={{ view }}&{{ base_qs }}" class="rounded-[3px] border border-dense-line bg-dense-surface p-1 text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-colors select-none">
                             <svg viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                         </a>
-                        <h3 class="text-sm font-extrabold tracking-tight text-dense-text w-20 text-center">{{ selected_year }}년 {{ selected_month }}월</h3>
-                        <a href="/admin/leave/calendar?year={{ next_year }}&month={{ next_month }}&view={{ view }}&{{ base_qs }}" class="rounded-lg border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                        <h3 class="text-xs font-semibold tracking-tight text-dense-text w-20 text-center font-mono">{{ selected_year }}년 {{ selected_month }}월</h3>
+                        <a href="/admin/leave/calendar?year={{ next_year }}&month={{ next_month }}&view={{ view }}&{{ base_qs }}" class="rounded-[3px] border border-dense-line bg-dense-surface p-1 text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-colors select-none">
                             <svg viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
                         </a>
                         {% else %}
-                        <h3 class="text-sm font-extrabold tracking-tight text-dense-text">{{ selected_year }}년 전체</h3>
+                        <h3 class="text-xs font-semibold tracking-tight text-dense-text font-mono">{{ selected_year }}년 전체</h3>
                         {% endif %}
 
-                        <!-- 연도 및 월 바로가기 드롭다운 추가 -->
-                        <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1.5 ml-2">
+                        <!-- 연도 및 월 바로가기 드롭다운 -->
+                        <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1 ml-1.5">
                             <input type="hidden" name="view" value="{{ view }}">
                             <input type="hidden" name="user_id" value="{{ selected_user_id }}">
                             <input type="hidden" name="company" value="{{ selected_company }}">
                             <input type="hidden" name="team" value="{{ selected_team }}">
                             <input type="hidden" name="active_state" value="{{ selected_active_state }}">
-                            <select name="year" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-0.5 px-1.5 text-[11px] font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                                 {% endfor %}
                             </select>
                             {% if view != 'year' %}
-                            <select name="month" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-0.5 px-1.5 text-[11px] font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                            <select name="month" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 {% for m in range(1, 13) %}
                                 <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
                                 {% endfor %}
@@ -254,57 +199,57 @@
                     </div>
 
                     <div id="cal-yearly-controller" class="flex items-center gap-1.5" style="display: none;">
-                        <h3 class="text-sm font-extrabold tracking-tight text-dense-text flex items-center gap-1.5">
-                            <span>📊 연간 연차 요약 통계</span>
-                            <span class="text-xs font-semibold text-dense-muted" id="yearly-user-count">({{ user_stats|length }}명)</span>
+                        <h3 class="text-xs font-semibold tracking-tight text-dense-text flex items-center gap-1">
+                            <span>연간 요약 통계</span>
+                            <span class="text-[11px] text-dense-muted font-mono" id="yearly-user-count">({{ user_stats|length }}명)</span>
                         </h3>
-                        <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1.5 ml-2">
+                        <form method="get" action="/admin/leave/calendar" class="flex items-center gap-1 ml-1.5">
                             <input type="hidden" name="view" value="year">
                             <input type="hidden" name="user_id" value="{{ selected_user_id }}">
                             <input type="hidden" name="company" value="{{ selected_company }}">
                             <input type="hidden" name="team" value="{{ selected_team }}">
                             <input type="hidden" name="active_state" value="{{ selected_active_state }}">
-                            <select name="year" onchange="this.form.submit()" class="rounded-xl border border-dense-line bg-dense-surface py-0.5 px-1.5 text-[11px] font-semibold text-dense-text shadow-sm focus:border-dense-blue focus:ring-dense-blue">
+                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                                 {% endfor %}
                             </select>
                         </form>
-                        <div class="flex items-center gap-1.5 ml-2">
-                            <a id="yearly-excel-btn" href="/admin/leave/timeline/export?year={{ selected_year }}&user_id={{ selected_user_id }}&company={{ selected_company }}&team={{ selected_team }}&active_state={{ selected_active_state }}" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-2.5 py-1 text-[11px] font-bold text-dense-blue hover:bg-dense-blue-soft shadow-xs">엑셀</a>
-                            <button type="button" onclick="refreshYearly()" class="inline-flex items-center justify-center rounded-xl border border-dense-line bg-dense-surface px-2.5 py-1 text-[11px] font-bold text-dense-nav-text hover:bg-dense-surface-soft shadow-xs">🔄 새로고침</button>
+                        <div class="flex items-center gap-1 ml-1.5">
+                            <a id="yearly-excel-btn" href="/admin/leave/timeline/export?year={{ selected_year }}&user_id={{ selected_user_id }}&company={{ selected_company }}&team={{ selected_team }}&active_state={{ selected_active_state }}" class="inline-flex items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue">엑셀</a>
+                            <button type="button" onclick="refreshYearly()" class="inline-flex items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text">새로고침</button>
                         </div>
                     </div>
                 </div>
                 
-                <div class="inline-flex rounded-xl bg-dense-surface-soft p-0.5 border border-dense-line self-start sm:self-auto shadow-xs">
+                <div class="inline-flex rounded-[4px] bg-dense-surface-soft p-0.5 border border-dense-line self-start sm:self-auto">
                     <button type="button" id="btn-view-month" onclick="switchViewMode('month')" 
-                       class="rounded-lg px-2.5 py-0.5 text-xs font-bold transition-all focus:outline-none {% if view == 'month' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
+                       class="rounded-[3px] px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none {% if view == 'month' %}text-dense-blue bg-dense-surface font-semibold shadow-xs{% else %}text-dense-muted hover:text-dense-text{% endif %}">
                         타임라인형
                     </button>
                     <button type="button" id="btn-view-month_grid" onclick="switchViewMode('month_grid')" 
-                       class="rounded-lg px-2.5 py-0.5 text-xs font-bold transition-all focus:outline-none {% if view == 'month_grid' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
+                       class="rounded-[3px] px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none {% if view == 'month_grid' %}text-dense-blue bg-dense-surface font-semibold shadow-xs{% else %}text-dense-muted hover:text-dense-text{% endif %}">
                         달력형
                     </button>
                     <button type="button" id="btn-view-year" onclick="switchViewMode('year')" 
-                       class="rounded-lg px-2.5 py-0.5 text-xs font-bold transition-all focus:outline-none {% if view == 'year' %}text-dense-blue bg-dense-surface shadow-sm{% else %}text-dense-muted hover:text-dense-text{% endif %}">
+                       class="rounded-[3px] px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none {% if view == 'year' %}text-dense-blue bg-dense-surface font-semibold shadow-xs{% else %}text-dense-muted hover:text-dense-text{% endif %}">
                         연간 요약
                     </button>
                 </div>
             </div>
 
-            <div id="cal-view-content" class="border-b border-dense-grid p-4 sm:p-5">
-                <form method="get" action="/admin/leave/calendar" id="cal-form" class="rounded-xl border border-dense-grid bg-dense-surface-soft p-4">
+            <div id="cal-view-content" class="border-b border-dense-line p-3">
+                <form method="get" action="/admin/leave/calendar" id="cal-form" class="rounded-[4px] border border-dense-line bg-dense-surface p-2.5">
                     <input type="hidden" name="sort" value="{{ sort_key or '' }}">
                     <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
                     <input type="hidden" name="year" value="{{ selected_year }}">
                     <input type="hidden" name="view" value="{{ view }}">
                     <input type="hidden" name="month" value="{{ selected_month }}">
 
-                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs font-semibold">
+                    <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 text-xs">
                         <div>
-                            <label for="cal-user" class="mb-1 block text-dense-muted text-[10px]">사용자</label>
-                            <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <label for="cal-user" class="mb-0.5 block text-dense-muted text-[11px] font-medium">사용자</label>
+                            <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                                 {% for u in users %}
                                 <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — {{ u.team or '—' }} / {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -312,8 +257,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="cal-company" class="mb-1 block text-dense-muted text-[10px]">회사</label>
-                            <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <label for="cal-company" class="mb-0.5 block text-dense-muted text-[11px] font-medium">회사</label>
+                            <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                                 {% for c in company_options %}
                                 <option value="{{ c }}" {% if selected_company == c %}selected{% endif %} title="{{ c }}">{{ c }}</option>
@@ -321,8 +266,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="cal-team" class="mb-1 block text-dense-muted text-[10px]">팀</label>
-                            <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <label for="cal-team" class="mb-0.5 block text-dense-muted text-[11px] font-medium">팀</label>
+                            <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                                 {% for t in team_options %}
                                 <option value="{{ t }}" {% if selected_team == t %}selected{% endif %} title="{{ t }}">{{ t }}</option>
@@ -330,8 +275,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="cal-active" class="mb-1 block text-dense-muted text-[10px]">계정 상태</label>
-                            <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-xl border-0 bg-dense-surface py-1.5 px-2.5 text-xs font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue">
+                            <label for="cal-active" class="mb-0.5 block text-dense-muted text-[11px] font-medium">계정 상태</label>
+                            <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
                                 <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
                                 <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
@@ -340,13 +285,13 @@
                     </div>
                 </form>
 
-                <div class="mb-3 mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-dense-muted">
-                    <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded bg-[#eff8ff] text-[#175cd3] text-center text-[8px] font-extrabold shadow-sm"></span>반일 이하 (4h 미만)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded bg-[#84caff] text-[#175cd3] text-center text-[8px] font-extrabold shadow-sm"></span>반일 (4h~8h 미만)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded bg-[#175cd3] text-white text-center text-[8px] font-extrabold shadow-sm"></span>전일 (8h 이상)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-3.5 rounded bg-[#7e22ce] text-white text-center text-[8px] font-extrabold shadow-sm"></span>공가/출장 (미차감)</span>
-                    <span class="flex items-center gap-1.5 border-l border-dense-line pl-4"><span class="inline-block h-3.5 w-3.5 rounded bg-[#f2f4f7] text-[#475467] text-center text-[8px] font-extrabold shadow-sm"></span>결재 대기 (미결재)</span>
-                    <span class="w-full font-semibold text-dense-muted/80 sm:w-auto sm:ml-auto">* 각 셀에 마우스를 올리면 상세 정보가 표시되며, 클릭 시 팝업 안내창이 열립니다.</span>
+                <div class="mb-2 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-dense-muted">
+                    <span class="flex items-center gap-1"><span class="inline-block h-3 w-3 rounded-[2px] bg-accent-soft border border-rule"></span>반일 이하 (4h 미만)</span>
+                    <span class="flex items-center gap-1"><span class="inline-block h-3 w-3 rounded-[2px] bg-accent-soft border border-accent"></span>반일 (4h~8h 미만)</span>
+                    <span class="flex items-center gap-1"><span class="inline-block h-3 w-3 rounded-[2px] bg-accent border border-accent"></span>전일 (8h 이상)</span>
+                    <span class="flex items-center gap-1"><span class="inline-block h-3 w-3 rounded-[2px] bg-paper-3 border border-rule-strong"></span>공가/출장</span>
+                    <span class="flex items-center gap-1 border-l border-dense-line pl-3"><span class="inline-block h-3 w-3 rounded-[2px] bg-warning-soft border border-warning border-dashed"></span>결재 대기</span>
+                    <span class="w-full text-[10px] text-dense-muted sm:w-auto sm:ml-auto">* 셀 호버 시 상세 정보, 클릭 시 팝업 확인</span>
                 </div>
 
                 <div id="cal-table-div">
@@ -385,7 +330,7 @@
                         </thead>
                         <tbody>
                             {% for stat in user_stats %}
-                            <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-blue-soft/50">
+                            <tr class="{% if not stat.is_active %}opacity-40{% endif %} hover:bg-dense-surface-soft/60">
                                 <td class="sticky-col col-info col-info-compact text-left !px-2 !py-1" title="{{ stat.user_name }} ({{ stat.user_id }}){% if stat.company or stat.team %} · {{ stat.company | default('') }}{% if stat.team %} / {{ stat.team }}{% endif %}{% endif %}">
                                     <div class="info-one-line text-dense-text">
                                         {{ stat.user_name }}
@@ -393,22 +338,22 @@
                                 </td>
                                 <td class="col-meta text-center" title="{{ stat.company or '' }}">
                                     {% if stat.company %}
-                                    <span class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-bold max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
+                                    <span class="inline-flex items-center rounded-[2px] px-1 py-0.5 text-[9px] font-medium max-w-full truncate" style="{{ string_to_badge_style(stat.company, is_team=False) }}">{{ stat.company }}</span>
                                     {% else %}
                                     <span class="text-dense-muted">—</span>
                                     {% endif %}
                                 </td>
                                 <td class="col-meta text-center" title="{{ stat.team or '' }}">
                                     {% if stat.team %}
-                                    <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
+                                    <span class="inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[9px] font-medium max-w-full truncate" style="{{ string_to_badge_style(stat.team, is_team=True) }}">{{ stat.team }}</span>
                                     {% else %}
                                     <span class="text-dense-muted">—</span>
                                     {% endif %}
                                 </td>
-                                <td class="col-stat {% if (stat.yearly_remain | default(0) or 0) <= 0 %}font-bold text-dense-danger{% else %}font-semibold text-dense-green{% endif %}">
+                                <td class="col-stat font-mono {% if (stat.yearly_remain | default(0) or 0) <= 0 %}font-semibold text-dense-danger{% else %}font-medium text-dense-green{% endif %}">
                                     <span class="stat-compact" title="{{ stat.yearly_remain_label }}">{{ stat.yearly_remain_short }}</span>
                                 </td>
-                                <td class="col-stat font-semibold text-dense-blue">
+                                <td class="col-stat font-mono font-medium text-dense-blue">
                                     <span class="stat-compact" title="{{ stat.period_used_label }}">{{ stat.period_used_short }}</span>
                                 </td>
                                 {% for day in days %}
@@ -461,7 +406,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="{{ days|length + 5 }}" class="py-8 text-sm font-semibold text-dense-muted">표시할 사원 데이터가 없습니다.</td>
+                                <td colspan="{{ days|length + 5 }}" class="py-8 text-xs font-medium text-dense-muted">표시할 사원 데이터가 없습니다.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -469,18 +414,18 @@
                 </div>
                 {% else %}
                 <!-- Grid Calendar View Container (Default for 'month_grid' or 'year' compatibility fallback) -->
-                <div class="rounded-xl border border-dense-line bg-dense-surface p-4">
-                    <div class="mb-2 grid grid-cols-7 gap-2">
+                <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3">
+                    <div class="mb-2 grid grid-cols-7 gap-1.5">
                         {% for wd in ['일', '월', '화', '수', '목', '금', '토'] %}
-                        <div class="text-center text-xs font-extrabold py-2 rounded-lg bg-dense-surface-soft border border-dense-grid {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
+                        <div class="text-center text-xs font-semibold py-1 rounded-[3px] bg-dense-surface-soft border border-dense-line {% if wd in ['일', '토'] %}text-dense-danger{% else %}text-dense-muted{% endif %}">
                             {{ wd }}
                         </div>
                         {% endfor %}
                     </div>
 
-                    <div class="grid grid-cols-7 gap-2">
+                    <div class="grid grid-cols-7 gap-1.5">
                         {% for _ in range(offset) %}
-                        <div class="min-h-[9rem] rounded-xl border border-dashed border-dense-grid bg-dense-surface-soft/40 opacity-40"></div>
+                        <div class="min-h-[8rem] rounded-[4px] border border-dashed border-dense-line bg-dense-surface-soft/40 opacity-40"></div>
                         {% endfor %}
 
                         {% for day in days %}
@@ -488,17 +433,17 @@
                         {% set holiday = holiday_day_map.get(day) %}
                         {% set is_weekend = weekday_idx in [0, 6] %}
                         
-                        <div class="min-h-[9rem] rounded-xl border p-2 flex flex-col justify-between transition-all bg-dense-surface border-dense-grid {% if is_weekend or holiday %}bg-dense-gray-soft/20{% endif %} hover:shadow-sm">
+                        <div class="min-h-[8rem] rounded-[4px] border p-1.5 flex flex-col justify-between transition-colors bg-dense-surface border-dense-line {% if is_weekend or holiday %}bg-dense-surface-soft/30{% endif %}">
                           <div class="flex items-center justify-between w-full leading-none mb-1">
-                                <span class="text-xs {% if is_weekend or holiday %}font-extrabold text-dense-danger{% else %}font-bold text-dense-text{% endif %}">
+                                <span class="text-xs font-mono {% if is_weekend or holiday %}font-semibold text-dense-danger{% else %}font-medium text-dense-text{% endif %}">
                                     {{ day }}
                                 </span>
                                 {% if holiday %}
-                                <span class="truncate text-[8px] font-bold text-dense-danger bg-dense-danger-soft px-1 rounded border border-dense-danger/10" title="{{ holiday.name }}">{{ holiday.name }}</span>
+                                <span class="truncate text-[8px] font-medium text-dense-danger bg-dense-danger-soft px-1 rounded-[2px] border border-rose-200" title="{{ holiday.name }}">{{ holiday.name }}</span>
                                 {% endif %}
                           </div>
 
-                          <div class="flex-1 overflow-y-auto max-h-[96px] space-y-1 pr-0.5">
+                          <div class="flex-1 overflow-y-auto max-h-[96px] space-y-0.5 pr-0.5">
                                 {% for stat in user_stats %}
                                     {% set m_leaves = user_leaves_map.get(stat.user_id, {}).get(day, []) %}
                                     {% for lv in m_leaves %}
@@ -506,12 +451,12 @@
                                             {% set is_deduct = lv.is_deductive %}
                                             {% set total_h = lv.snapshot_deduction_hours %}
                                             {% set is_pending = lv.status == 'PENDING' %}
-                                            <div class="rounded px-1.5 py-0.5 text-[9px] font-bold truncate leading-tight shadow-sm transform hover:scale-[1.02] transition-transform cursor-pointer border-0
-                                                        {% if is_pending %}bg-dense-gray-soft text-dense-muted
-                                                        {% elif not is_deduct %}bg-purple-600 text-white
-                                                        {% elif total_h >= 8 %}bg-blue-700 text-white
-                                                        {% elif total_h >= 4 %}bg-blue-300 text-blue-800
-                                                        {% else %}bg-blue-50 text-blue-700
+                                            <div class="rounded-[2px] px-1 py-0.5 text-[9px] font-mono truncate leading-tight transition-colors cursor-pointer border
+                                                        {% if is_pending %}bg-warning-soft text-warning border-warning border-dashed
+                                                        {% elif not is_deduct %}bg-paper-3 text-ink border-rule-strong
+                                                        {% elif total_h >= 8 %}bg-accent text-accent-ink border-accent
+                                                        {% elif total_h >= 4 %}bg-accent-soft text-accent-text border-accent
+                                                        {% else %}bg-accent-soft text-accent-text border-rule
                                                         {% endif %}"
                                                  title="{{ stat.user_name }} ({{ stat.team or '' }}) - {{ '[공가/출장] ' if not is_deduct }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
                                                  data-user-name="{{ stat.user_name }}"
@@ -519,8 +464,8 @@
                                                  data-day="{{ day }}"
                                                  data-slots="{{ lv.snapshot_slot_label }}"
                                                  onclick="showLeaveTimeDetails(this)">
-                                                {{ stat.user_name }}
-                                                <span class="opacity-75 font-semibold text-[8px] ml-0.5">
+                                                <span class="font-sans font-medium">{{ stat.user_name }}</span>
+                                                <span class="opacity-80 text-[8px] ml-0.5">
                                                     {% if total_h == 8.0 %}전일{% elif total_h == 4.0 %}{{ fmt_slot_short(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% else %}{{ fmt_hours(total_h) }}h{% endif %}{% if is_pending %}(대){% endif %}
                                                 </span>
                                             </div>
@@ -537,9 +482,9 @@
         </div>
 
         <!-- Yearly Summary View Content Container (Unified inside the card) -->
-        <div id="yearly-view-content" class="p-4 sm:p-5" style="display: none;">
+        <div id="yearly-view-content" class="p-3" style="display: none;">
             <div class="flex items-center justify-center py-12" id="yearly-spinner" style="display: none;">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-dense-blue"></div>
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-dense-blue"></div>
             </div>
             <div id="yearly-content"></div>
         </div>
@@ -549,7 +494,7 @@
     <!-- 2. Request Timeline Container (Loaded via fetch) -->
     <div id="timeline-view-container" class="hidden min-h-[400px] relative">
         <div class="absolute inset-0 flex items-center justify-center bg-dense-bg/70 z-10" id="timeline-spinner">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-dense-blue"></div>
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-dense-blue"></div>
         </div>
         <div id="timeline-content"></div>
     </div>
@@ -566,7 +511,6 @@ const tabCache = {
 let currentActiveTab = 'calendar';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Determine active tab on load
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
     const viewParam = urlParams.get('view');
@@ -582,7 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initialMode = 'year';
     }
     
-    // Switch to active tab
     if (initialMode === 'timeline') {
         switchTab('timeline', false);
     } else if (initialMode === 'year') {
@@ -593,7 +536,6 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab('calendar', false);
     }
 
-    // Setup event delegation for timeline partial container
     const timelineContainer = document.getElementById('timeline-view-container');
     
     timelineContainer.addEventListener('click', async (e) => {
@@ -629,7 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Setup event delegation for yearly partial container
     const yearlyContainer = document.getElementById('yearly-view-content');
     
     yearlyContainer.addEventListener('click', async (e) => {
@@ -668,12 +609,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function switchViewMode(mode, updateUrl = true) {
     document.querySelectorAll('#btn-view-month, #btn-view-month_grid, #btn-view-year').forEach(btn => {
-        btn.classList.remove('text-dense-blue', 'bg-dense-surface', 'shadow-sm');
+        btn.classList.remove('text-dense-blue', 'bg-dense-surface', 'font-semibold', 'shadow-xs');
         btn.classList.add('text-dense-muted', 'hover:text-dense-text');
     });
     const activeBtn = document.getElementById(`btn-view-${mode}`);
     if (activeBtn) {
-        activeBtn.classList.add('text-dense-blue', 'bg-dense-surface', 'shadow-sm');
+        activeBtn.classList.add('text-dense-blue', 'bg-dense-surface', 'font-semibold', 'shadow-xs');
         activeBtn.classList.remove('text-dense-muted', 'hover:text-dense-text');
     }
     
@@ -699,7 +640,6 @@ function switchViewMode(mode, updateUrl = true) {
 function switchTab(tabName, updateUrl = true) {
     currentActiveTab = tabName;
 
-    // Show/hide containers
     document.getElementById('calendar-view-container').style.display = tabName === 'calendar' || tabName === 'yearly' ? 'block' : 'none';
     document.getElementById('timeline-view-container').style.display = tabName === 'timeline' ? 'block' : 'none';
     
@@ -713,25 +653,21 @@ function switchTab(tabName, updateUrl = true) {
     const headerSubtitle = document.getElementById('leaves-header-subtitle');
 
     if (headerArea) headerArea.style.display = 'flex';
-    if (headerTitle) headerTitle.innerHTML = '<span>📅 연차 및 일정 종합 관리</span>';
+    if (headerTitle) headerTitle.innerHTML = '<span>연차 및 일정 종합 관리</span>';
     if (headerSubtitle) headerSubtitle.textContent = '사원별 캘린더, 연간 요약 통계를 통합 관리합니다.';
 
-    // 캘린더 페이지 내의 필터 폼, 범례 및 월 제어기 영역 제어
     const calViewContent = document.getElementById('cal-view-content');
     const monthController = document.getElementById('cal-month-controller');
     const yearlyController = document.getElementById('cal-yearly-controller');
 
     if (tabName === 'timeline') {
-        // No extra action needed for timeline view components since they are in a separate container
         if (monthController) monthController.style.display = 'none';
         if (yearlyController) yearlyController.style.display = 'none';
     } else if (tabName === 'yearly') {
-        // 연간 요약 뷰일 때 캘린더 전용 본문 컨텐츠 및 월 제어기 숨김, 연간 제어기 노출
         if (calViewContent) calViewContent.style.display = 'none';
         if (monthController) monthController.style.display = 'none';
         if (yearlyController) yearlyController.style.display = 'flex';
     } else {
-        // 캘린더 뷰일 때 캘린더 본문 컨텐츠 및 월 제어기 노출, 연간 제어기 숨김
         if (calViewContent) calViewContent.style.display = '';
         if (monthController) monthController.style.display = 'flex';
         if (yearlyController) yearlyController.style.display = 'none';
@@ -753,7 +689,6 @@ function switchTab(tabName, updateUrl = true) {
         window.history.pushState({}, '', url.toString());
     }
 
-    // Load data if not already cached
     if (tabName === 'timeline') {
         if (!tabCache.timeline) {
             loadTimelineData();
@@ -794,7 +729,7 @@ async function loadTimelineData(query = '') {
         tabCache.timeline = html;
         
     } catch (err) {
-        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-bold">오류가 발생했습니다: ${err.message}</div>`;
+        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-medium text-xs">오류가 발생했습니다: ${err.message}</div>`;
     } finally {
         spinner.style.display = 'none';
     }
@@ -819,7 +754,6 @@ async function loadYearlyData(query = '') {
             calParams.delete('tab');
             calParams.delete('view');
             
-            // year 파라미터가 없거나 undefined인 경우 캘린더 드롭다운의 연도나 현재 선택된 연도로 보정
             const yearVal = calParams.get('year');
             if (!yearVal || yearVal === 'undefined') {
                 const yearSelect = document.querySelector('select[name="year"]');
@@ -839,7 +773,6 @@ async function loadYearlyData(query = '') {
         content.innerHTML = html;
         tabCache.yearly = html;
         
-        // Update user count and export URL in the parent header
         const countData = content.querySelector('#yearly-count-data');
         if (countData) {
             const count = countData.dataset.count;
@@ -853,7 +786,7 @@ async function loadYearlyData(query = '') {
             if (btn) btn.setAttribute('href', url);
         }
     } catch (err) {
-        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-bold">오류가 발생했습니다: ${err.message}</div>`;
+        content.innerHTML = `<div class="p-8 text-center text-dense-danger font-medium text-xs">오류가 발생했습니다: ${err.message}</div>`;
     } finally {
         spinner.style.display = 'none';
     }
@@ -907,7 +840,7 @@ function showLeaveTimeDetails(el) {
     window.shimModal.confirm(`${userName} / ${when} 연차 사용 구분\n\n${details}`, { okOnly: true });
 }
 
-// Global Timeline Action script functions (transferred from old timeline view)
+// Global Timeline Action script functions
 async function deleteLeave(id, btn) {
     if(!await shimModal.confirm('정말 이 연차 기록을 삭제하시겠습니까?', { destructive: true })) return;
     simulateButtonLoading(btn, async () => {
@@ -1021,4 +954,3 @@ async function changeType(leaveId, targetIsDeductive, btn) {
 }
 </script>
 {% endblock %}
-
