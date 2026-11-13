@@ -330,6 +330,8 @@ def _compact_kr_holiday_name(name: str) -> str:
     compact_map = {
         "\uc124\ub0a0 \uc5f0\ud734": "\uc124 \uc5f0\ud734",
         "\ucd94\uc11d \uc5f0\ud734": "\ucd94\uc11d \uc5f0\ud734",
+        "기독탄신일": "크리스마스",
+        "기독탄신일 대체 휴일": "크리스마스 대체 휴일",
     }
     normalized = str(name).strip()
     return compact_map.get(normalized, normalized)

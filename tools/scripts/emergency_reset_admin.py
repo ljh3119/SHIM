@@ -7,13 +7,13 @@ sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 from app import models, database, auth
 from app.database import SessionLocal
 
-def reset_admin_password():
+def reset_admin_password() -> int:
     db = SessionLocal()
     try:
         admin = db.query(models.Users).filter(models.Users.user_id == "admin").first()
         if not admin:
             print("[오류] 'admin' 계정이 존재하지 않습니다.")
-            return
+            return 1
 
         # 비밀번호를 '0000'으로 초기화 및 세션 즉시 만료 처리
         new_hash = auth.get_password_hash("0000")
@@ -27,17 +27,19 @@ def reset_admin_password():
             action="RESET_ADMIN_PASSWORD",
             target_info="Admin:admin",
             old_data="*****",
-            new_data="0000 (Emergency Reset)"
+            new_data="***** (Emergency Reset)"
         ))
         
         db.commit()
         print("[성공] 'admin' 계정의 비밀번호가 '0000'으로 초기화되었습니다.")
         print("로그인 후 반드시 비밀번호를 변경해 주세요.")
-    except Exception as e:
+        return 0
+    except Exception:
         db.rollback()
-        print(f"[오류] 초기화 중 문제가 발생했습니다: {str(e)}")
+        print("[오류] 초기화 중 문제가 발생했습니다.")
+        return 1
     finally:
         db.close()
 
 if __name__ == "__main__":
-    reset_admin_password()
+    sys.exit(reset_admin_password())

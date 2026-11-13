@@ -412,11 +412,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-xs">시작일</label>
-                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
+                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
                         </div>
                         <div>
                             <label class="text-xs">종료일</label>
-                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="typeof syncInputsToCalendar==='function' ? syncInputsToCalendar('mobile') : updateTimeSelectorAvailabilityG('mobile')" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
+                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs">
                         </div>
                     </div>
                     <!-- 유형 퀵 선택 버튼 (전일 / 오전반차 / 오후반차 / 직접선택) -->
@@ -826,7 +826,14 @@ async function loadCalendarDesktopG() {
         container.className = 'hidden lg:block';
         container.innerHTML = await response.text();
         desktopCalendarLoadedG = true;
+        if (typeof window.initializeEasyApplyG === 'function') {
+            window.initializeEasyApplyG('desktop');
+        }
         showMonth(currentMonth);
+        const mStart = document.getElementById('easy-start-date-g_mobile');
+        if (mStart && mStart.value && typeof window.syncInputsToCalendarImmediate === 'function') {
+            window.syncInputsToCalendarImmediate('mobile');
+        }
     } catch (error) {
         console.error('[SHIM personal desktop calendar load]', error);
         container.className = 'hidden lg:block rounded-xl border border-dense-line bg-dense-surface p-8 text-center text-sm font-bold text-dense-muted';
@@ -1243,18 +1250,21 @@ function toggleMultiSelectMode() {
     isMultiSelectMode = !isMultiSelectMode;
     const btn = document.getElementById('multiSelectToggleBtn');
     const circle = document.getElementById('multiSelectToggleCircle');
+    if (!btn || !circle) return;
     
     if (isMultiSelectMode) {
         btn.classList.remove('bg-transparent', 'bg-dense-line-strong');
         btn.classList.add('bg-dense-blue');
         circle.classList.remove('translate-x-0');
         circle.classList.add('translate-x-4');
+        // 직접 ON: 선택 모드만 활성화. 기존 폼 날짜를 임의로 달력 선택으로 가져오지 않음
     } else {
         btn.classList.remove('bg-dense-blue');
         btn.classList.add('bg-dense-line-strong');
         circle.classList.remove('translate-x-4');
         circle.classList.add('translate-x-0');
-        cancelMultiSelect();
+        // 직접 OFF: 달력 선택배열/하이라이트는 지우되 폼 날짜/사유는 유지
+        cancelMultiSelect(true);
     }
 }
 
@@ -1326,8 +1336,9 @@ function handleDayClick(event, dateStr) {
 function updateFloatingBar() {
     const bar = document.getElementById('multiSelectFloatingBar');
     const countSpan = document.getElementById('selectedCount');
+    if (!bar || !countSpan) return;
     
-    if (selectedDates.length > 0) {
+    if (isMultiSelectMode && selectedDates.length > 0) {
         countSpan.textContent = selectedDates.length;
         bar.classList.remove('hidden');
     } else {
@@ -1335,7 +1346,7 @@ function updateFloatingBar() {
     }
 }
 
-function cancelMultiSelect() {
+function cancelMultiSelect(preserveInputs = false) {
     if (rangeStartDate) {
         const start = window.parseLocalDate(rangeStartDate);
         const end = rangeEndDate ? window.parseLocalDate(rangeEndDate) : start;
@@ -1357,8 +1368,8 @@ function cancelMultiSelect() {
     rangeEndDate = null;
     updateFloatingBar();
     
-    // C-5. inputFilledByCalendar 플래그가 참인 경우에만 좌측 패널 Input 초기화
-    if (inputFilledByCalendar) {
+    // C-5. inputFilledByCalendar 플래그가 참이고 preserveInputs가 거짓인 경우에만 좌측 패널 Input 초기화
+    if (!preserveInputs && inputFilledByCalendar) {
         const dStart = document.getElementById('easy-start-date-g_desktop');
         const dEnd = document.getElementById('easy-end-date-g_desktop');
         const mStart = document.getElementById('easy-start-date-g_mobile');
@@ -1373,7 +1384,9 @@ function cancelMultiSelect() {
             updateTimeSelectorAvailabilityG('mobile');
         }
     }
-    inputFilledByCalendar = false;
+    if (!preserveInputs) {
+        inputFilledByCalendar = false;
+    }
 }
 
 function openCalendarApplyModal(dateStr) {
@@ -1563,6 +1576,9 @@ function syncCalendarToInputs() {
 
 let syncInputsDebounceTimer = null;
 window.syncInputsToCalendar = function(prefix) {
+    if (typeof updateTimeSelectorAvailabilityG === 'function') {
+        updateTimeSelectorAvailabilityG(prefix);
+    }
     if (syncInputsDebounceTimer) clearTimeout(syncInputsDebounceTimer);
     syncInputsDebounceTimer = setTimeout(() => {
         window.syncInputsToCalendarImmediate(prefix);
@@ -1583,9 +1599,12 @@ window.syncInputsToCalendarImmediate = function(prefix) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (startVal && !dateRegex.test(startVal)) return;
     if (endVal && !dateRegex.test(endVal)) return;
+
+    // PC 달력 DOM 마운트 여부 확인
+    const hasDesktopCalendar = Boolean(document.getElementById('multiSelectToggleBtn'));
     
-    // Collision Check
-    if (startVal && endVal && startVal <= endVal) {
+    // Collision Check (PC 달력 마운트 & isMultiSelectMode가 ON일 때만 검사)
+    if (hasDesktopCalendar && isMultiSelectMode && startVal && endVal && startVal <= endVal) {
         const dates = getDatesInRange(startVal, endVal);
         let collisionCell = null;
         for (const d of dates) {
@@ -1623,13 +1642,14 @@ window.syncInputsToCalendarImmediate = function(prefix) {
             updateTimeSelectorAvailabilityG('mobile');
         }
         
+        // PC 달력 DOM이 마운트되지 않았거나, isMultiSelectMode가 OFF인 경우 달력 선택 배열/하이라이트/플로팅바는 건너뜀
+        if (!hasDesktopCalendar || !isMultiSelectMode) {
+            return;
+        }
+
         if (!startVal) {
             cancelMultiSelect();
             return;
-        }
-        
-        if (!isMultiSelectMode) {
-            toggleMultiSelectMode();
         }
         
         rangeStartDate = startVal;

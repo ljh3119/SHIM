@@ -366,6 +366,243 @@ const getState = () => run('({ year: mobileCalendarYearG, month: mobileCalendarM
                 check=True,
             )
 
+            # Verify initial shell contains easy apply script and partials do not
+            assert "window.selectLeavePreset = selectLeavePreset" in calendar_shell.text
+            assert "window.initializeEasyApplyG = initializeEasyApplyG" in calendar_shell.text
+            assert "window.selectLeavePreset" not in calendar_partial.text
+            assert "window.selectLeavePreset" not in team_partial.text
+            assert "initializeEasyApplyG('desktop')" in calendar_shell.text
+            assert "initializeEasyApplyG('desktop')" in team_shell.text
+            assert "const hasDesktopCalendar = Boolean(document.getElementById('multiSelectToggleBtn'));" in calendar_shell.text
+            assert "const hasDesktopCalendar = Boolean(document.getElementById('multiSelectToggleBtn'));" in team_shell.text
+            assert "isMultiSelectMode && selectedDates.length > 0" in calendar_shell.text
+            assert "isMultiSelectMode && selectedDates.length > 0" in team_shell.text
+            assert "cancelMultiSelect(true);" in calendar_shell.text
+            assert "cancelMultiSelect(true);" in team_shell.text
+            assert "기간 신청은 전일만 가능합니다" in calendar_shell.text
+            assert history.text.count("window.selectLeavePreset = selectLeavePreset") == 1
+            assert approvals.text.count("window.selectLeavePreset = selectLeavePreset") == 1
+
+            # Extract user_easy_apply_script for standalone Node vm testing
+            script_start = calendar_shell.text.index("window.selectLeavePreset = selectLeavePreset")
+            script_open = calendar_shell.text.rfind("<script>", 0, script_start)
+            script_close = calendar_shell.text.find("</script>", script_start)
+            easy_apply_js = calendar_shell.text[script_open + len("<script>"):script_close]
+
+            node_easy_apply_test = r"""
+const vm = require('vm');
+const assert = require('assert/strict');
+
+function createMockElement(id) {
+    return {
+        id,
+        value: '',
+        textContent: '',
+        placeholder: '',
+        checked: false,
+        disabled: false,
+        options: [],
+        classList: {
+            classes: new Set(),
+            add(...c) { c.forEach(x => this.classes.add(x)); },
+            remove(...c) { c.forEach(x => this.classes.delete(x)); },
+            contains(x) { return this.classes.has(x); },
+            toggle(x) { if (this.classes.has(x)) this.classes.delete(x); else this.classes.add(x); }
+        },
+        setAttribute(k, v) { this[k] = v; },
+        removeAttribute(k) { delete this[k]; }
+    };
+}
+
+const elements = {};
+function getOrCreateElement(id) {
+    if (!elements[id]) {
+        elements[id] = createMockElement(id);
+    }
+    return elements[id];
+}
+
+function createMockSelect(id, optionValues) {
+    const el = getOrCreateElement(id);
+    el.options = optionValues.map(v => ({ value: v, text: v }));
+    let _val = optionValues[0] || '';
+    Object.defineProperty(el, 'value', {
+        get() { return _val; },
+        set(v) {
+            _val = optionValues.includes(v) ? v : '';
+        }
+    });
+    return el;
+}
+
+const timeOptions = ['09:00', '11:00', '13:00', '14:00', '15:00', '17:00', '18:00'];
+['desktop', 'mobile'].forEach(prefix => {
+    getOrCreateElement(prefix === 'mobile' ? 'easyApplyFormMobile' : 'easyApplyFormDesktop');
+    getOrCreateElement(`easy-start-date-g_${prefix}`);
+    getOrCreateElement(`easy-end-date-g_${prefix}`);
+    createMockSelect(`easy-start-g_${prefix}`, timeOptions);
+    createMockSelect(`easy-end-g_${prefix}`, timeOptions);
+    getOrCreateElement(`preset-full_${prefix}`);
+    getOrCreateElement(`preset-morning_${prefix}`);
+    getOrCreateElement(`preset-afternoon_${prefix}`);
+    getOrCreateElement(`preset-custom_${prefix}`);
+    getOrCreateElement(`easy-preset-badge_${prefix}`);
+    getOrCreateElement(`easy-time-row_${prefix}`);
+    getOrCreateElement(`easy-deductive-g_${prefix}`);
+    getOrCreateElement(`easy-reason-g_${prefix}`);
+    getOrCreateElement(`easy-reason-star-g_${prefix}`);
+    getOrCreateElement(`easy-calc-g_${prefix}`);
+    getOrCreateElement(`easy-submit-btn-g_${prefix}`);
+});
+
+let fetchCalls = [];
+
+class MockFormData {
+    constructor() { this.data = {}; }
+    append(k, v) { this.data[k] = v; }
+}
+
+const mockWindow = {
+    shimTime: { parseDateOnly: s => new Date(s + 'T00:00:00') },
+    shimWorkHours: { start: '09:00', end: '18:00' },
+    holidayMapDates: ['2024-05-05'],
+    FormData: MockFormData
+};
+
+const sandbox = {
+    FormData: MockFormData,
+    window: mockWindow,
+    document: {
+        readyState: 'complete',
+        getElementById: id => getOrCreateElement(id),
+        addEventListener: () => {}
+    },
+    showToast: () => {},
+    showToastAndReload: () => {},
+    simulateButtonLoading: (btn, fn) => fn(),
+    shimModal: {
+        confirm: async () => true
+    },
+    fetch: async (url, opts) => {
+        fetchCalls.push({ url, opts });
+        return { ok: true, json: async () => ({ message: '신청 완료' }) };
+    },
+    setTimeout: (fn) => fn(),
+    console
+};
+mockWindow.window = mockWindow;
+mockWindow.document = sandbox.document;
+
+vm.createContext(sandbox);
+vm.runInContext(INPUT.code, sandbox);
+
+assert.equal(typeof sandbox.window.selectLeavePreset, 'function');
+assert.equal(typeof sandbox.window.toggleDeductiveG, 'function');
+assert.equal(typeof sandbox.window.updateTimeSelectorAvailabilityG, 'function');
+assert.equal(typeof sandbox.window.updateEstimatedTimeG, 'function');
+assert.equal(typeof sandbox.window.submitEasyApply, 'function');
+assert.equal(typeof sandbox.window.initializeEasyApplyG, 'function');
+
+(async () => {
+    for (const prefix of ['desktop', 'mobile']) {
+        sandbox.window.initializeEasyApplyG(prefix);
+
+        sandbox.window.selectLeavePreset(prefix, 'morning');
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '오전 반차 신청');
+        assert.equal(elements[`easy-start-g_${prefix}`].value, '09:00');
+        assert.equal(elements[`easy-end-g_${prefix}`].value, '14:00');
+        assert.ok(elements[`preset-morning_${prefix}`].classList.contains('bg-dense-blue'));
+        assert.ok(elements[`easy-time-row_${prefix}`].classList.contains('hidden'));
+
+        sandbox.window.selectLeavePreset(prefix, 'afternoon');
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '오후 반차 신청');
+        assert.equal(elements[`easy-start-g_${prefix}`].value, '14:00');
+        assert.equal(elements[`easy-end-g_${prefix}`].value, '18:00');
+        assert.ok(elements[`preset-afternoon_${prefix}`].classList.contains('bg-dense-blue'));
+
+        sandbox.window.selectLeavePreset(prefix, 'custom');
+        assert.ok(elements[`preset-custom_${prefix}`].classList.contains('bg-dense-blue'));
+        assert.ok(!elements[`easy-time-row_${prefix}`].classList.contains('hidden'));
+        assert.ok(elements[`easy-preset-badge_${prefix}`].classList.contains('hidden'));
+
+        sandbox.window.selectLeavePreset(prefix, 'full');
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '전일 신청');
+        assert.equal(elements[`easy-start-g_${prefix}`].value, '09:00');
+        assert.equal(elements[`easy-end-g_${prefix}`].value, '18:00');
+        assert.ok(elements[`preset-full_${prefix}`].classList.contains('bg-dense-blue'));
+
+        elements[`easy-start-date-g_${prefix}`].value = '2024-05-10';
+        elements[`easy-end-date-g_${prefix}`].value = '2024-05-10';
+        sandbox.window.selectLeavePreset(prefix, 'morning');
+        fetchCalls.length = 0;
+        await sandbox.window.submitEasyApply(prefix);
+        assert.equal(fetchCalls.length, 1);
+        assert.equal(fetchCalls[0].url, '/api/user/leave');
+        assert.equal(fetchCalls[0].opts.body.data.start_time, '09:00');
+        assert.equal(fetchCalls[0].opts.body.data.end_time, '14:00');
+        assert.equal(fetchCalls[0].opts.body.data.date_str, '2024-05-10');
+
+        // Test date -> period -> single transitions
+        elements[`easy-start-date-g_${prefix}`].value = '2024-05-10';
+        elements[`easy-end-date-g_${prefix}`].value = '2024-05-14';
+        sandbox.window.updateTimeSelectorAvailabilityG(prefix);
+        assert.ok(elements[`preset-morning_${prefix}`].disabled);
+        assert.ok(elements[`preset-afternoon_${prefix}`].disabled);
+        assert.ok(elements[`preset-custom_${prefix}`].disabled);
+        assert.ok(!elements[`preset-full_${prefix}`].disabled);
+        assert.ok(elements[`preset-full_${prefix}`].classList.contains('bg-dense-blue'));
+        assert.ok(elements[`easy-time-row_${prefix}`].classList.contains('hidden'));
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '전일 신청');
+        assert.ok(elements[`easy-calc-g_${prefix}`].textContent.includes('기간 신청은 전일만 가능합니다'));
+
+        // Preset selection during period must force 'full'
+        sandbox.window.selectLeavePreset(prefix, 'morning');
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '전일 신청');
+        assert.equal(elements[`easy-start-g_${prefix}`].value, '09:00');
+        assert.equal(elements[`easy-end-g_${prefix}`].value, '18:00');
+        assert.ok(elements[`preset-full_${prefix}`].classList.contains('bg-dense-blue'));
+
+        // Return to single date (start === end)
+        elements[`easy-start-date-g_${prefix}`].value = '2024-05-10';
+        elements[`easy-end-date-g_${prefix}`].value = '2024-05-10';
+        sandbox.window.updateTimeSelectorAvailabilityG(prefix);
+        assert.ok(!elements[`preset-morning_${prefix}`].disabled);
+        assert.ok(!elements[`preset-afternoon_${prefix}`].disabled);
+        assert.ok(elements[`preset-full_${prefix}`].classList.contains('bg-dense-blue'));
+        assert.ok(!elements[`easy-calc-g_${prefix}`].textContent.includes('기간 신청은 전일만 가능합니다'));
+
+        // Rapid clicks simulation
+        ['morning', 'afternoon', 'custom', 'full'].forEach(t => {
+            sandbox.window.selectLeavePreset(prefix, t);
+        });
+        assert.equal(elements[`easy-preset-badge_${prefix}`].textContent, '전일 신청');
+
+        if (prefix === 'mobile') {
+            assert.equal(elements['multiSelectToggleBtn'], undefined);
+            const startInput = elements['easy-start-date-g_mobile'];
+            const endInput = elements['easy-end-date-g_mobile'];
+            startInput.value = '2024-05-15';
+            endInput.value = '2024-05-15';
+            const hasDesktop = Boolean(elements['multiSelectToggleBtn']);
+            assert.equal(hasDesktop, false);
+            sandbox.window.updateTimeSelectorAvailabilityG('mobile');
+            assert.ok(!elements['easy-start-g_mobile'].disabled);
+            assert.ok(!elements['easy-end-g_mobile'].disabled);
+        }
+    }
+})().catch(err => {
+    console.error(err);
+    process.exitCode = 1;
+});
+""";
+            subprocess.run(
+                ["node"],
+                input="const INPUT=" + json.dumps({"code": easy_apply_js}) + ";\n" + node_easy_apply_test,
+                text=True,
+                encoding="utf-8",
+                check=True,
+            )
+
             print(
                 "[PASS] MOB-001~006 mobile UI checks completed "
                 f"(team shell={len(team_shell.content)}B/{team_shell.text.count('<td')}td, "

@@ -1,0 +1,501 @@
+<script>
+(() => {
+    // Time policy context constants injected from Jinja
+    const workStartMin = {{ work_start_minute | default(540) }};
+    const workEndMin = {{ work_end_minute | default(1080) }};
+    const lunchStartMin = {{ lunch_start_minute if lunch_start_minute is not none else -1 }};
+    const lunchEndMin = {{ lunch_end_minute if lunch_end_minute is not none else -1 }};
+    const timeGranularity = {{ time_granularity_minutes | default(30) }};
+    const halfDaySlots = {{ half_day_slots | tojson | safe if half_day_slots else '{}' }};
+    const isHalfDayPolicy = {{ 'true' if time_granularity_minutes == 240 else 'false' }};
+
+    function isPeriodRange(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        if (!startInput || !endInput) return false;
+        const s = startInput.value;
+        const e = endInput.value;
+        return Boolean(s && e && s < e);
+    }
+
+    function updatePresetButtonActiveState(prefix) {
+        if (isPeriodRange(prefix)) {
+            ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+                const btn = document.getElementById(`preset-${p}_${prefix}`);
+                if (btn) {
+                    if (p === 'full') {
+                        btn.classList.add('bg-dense-blue', 'text-white');
+                        btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                    } else {
+                        btn.classList.remove('bg-dense-blue', 'text-white');
+                        btn.classList.add('text-dense-text');
+                    }
+                }
+            });
+            return;
+        }
+
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        if (!timeStart || !timeEnd) return;
+
+        const s = timeStart.value;
+        const e = timeEnd.value;
+        const mStart = (halfDaySlots && halfDaySlots.morning) ? halfDaySlots.morning.start_time : '09:00';
+        const mEnd = (halfDaySlots && halfDaySlots.morning) ? halfDaySlots.morning.end_time : '14:00';
+        const aStart = (halfDaySlots && halfDaySlots.afternoon) ? halfDaySlots.afternoon.start_time : '14:00';
+        const aEnd = (halfDaySlots && halfDaySlots.afternoon) ? halfDaySlots.afternoon.end_time : '18:00';
+
+        let activeType = 'custom';
+        const workStart = (window.shimWorkHours && window.shimWorkHours.start) || '09:00';
+        const workEnd = (window.shimWorkHours && window.shimWorkHours.end) || '18:00';
+        if (s === workStart && e === workEnd) activeType = 'full';
+        else if (s === mStart && e === mEnd) activeType = 'morning';
+        else if (s === aStart && e === aEnd) activeType = 'afternoon';
+
+        ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+            const btn = document.getElementById(`preset-${p}_${prefix}`);
+            if (btn) {
+                if (p === activeType) {
+                    btn.classList.add('bg-dense-blue', 'text-white');
+                    btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                } else {
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+                }
+            }
+        });
+    }
+
+    function parseTimeStr(timeStr) {
+        if (!timeStr) return null;
+        const parts = timeStr.split(':');
+        if (parts.length < 2) return null;
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+
+    function calculateDeductedHoursForRange(startTimeStr, endTimeStr) {
+        const startMin = parseTimeStr(startTimeStr);
+        const endMin = parseTimeStr(endTimeStr);
+        if (startMin === null || endMin === null || startMin >= endMin) return 0;
+
+        const totalMinutes = endMin - startMin;
+        let lunchOverlap = 0;
+        if (lunchStartMin >= 0 && lunchEndMin > lunchStartMin) {
+            const overlapStart = Math.max(startMin, lunchStartMin);
+            const overlapEnd = Math.min(endMin, lunchEndMin);
+            if (overlapStart < overlapEnd) {
+                lunchOverlap = overlapEnd - overlapStart;
+            }
+        }
+        return (totalMinutes - lunchOverlap) / 60;
+    }
+
+    function getValidDaysCount(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return 0;
+        const parseDate = (window.shimTime && window.shimTime.parseDateOnly) || (d => new Date(d));
+        const start = parseDate(startDateStr);
+        const end = parseDate(endDateStr);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
+
+        let count = 0;
+        let curr = new Date(start);
+        while (curr <= end) {
+            const dayOfWeek = curr.getDay(); // 0: Sunday, 6: Saturday
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+            let isHoliday = false;
+            if (window.holidayMapDates) {
+                const yyyy = curr.getFullYear();
+                const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                const dd = String(curr.getDate()).padStart(2, '0');
+                const dateKey = `${yyyy}-${mm}-${dd}`;
+                if (window.holidayMapDates.includes(dateKey)) {
+                    isHoliday = true;
+                }
+            }
+
+            if (!isWeekend && !isHoliday) {
+                count++;
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
+        return count;
+    }
+
+    function selectLeavePreset(prefix, type) {
+        if (isPeriodRange(prefix)) {
+            type = 'full';
+        }
+
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const timeRow = document.getElementById(`easy-time-row_${prefix}`);
+        const badge = document.getElementById(`easy-preset-badge_${prefix}`);
+
+        if (type === 'custom') {
+            if (timeRow) timeRow.classList.remove('hidden');
+            if (badge) badge.classList.add('hidden');
+        } else {
+            if (timeRow) timeRow.classList.add('hidden');
+            if (badge) {
+                badge.classList.remove('hidden');
+                if (type === 'full') badge.textContent = '전일 신청';
+                else if (type === 'morning') badge.textContent = '오전 반차 신청';
+                else if (type === 'afternoon') badge.textContent = '오후 반차 신청';
+            }
+        }
+
+        if (timeStart && timeEnd) {
+            const workStart = (window.shimWorkHours && window.shimWorkHours.start) || '09:00';
+            const workEnd = (window.shimWorkHours && window.shimWorkHours.end) || '18:00';
+            if (type === 'full') {
+                timeStart.value = workStart;
+                timeEnd.value = workEnd;
+            } else if (type === 'morning') {
+                if (halfDaySlots && halfDaySlots.morning) {
+                    timeStart.value = halfDaySlots.morning.start_time;
+                    timeEnd.value = halfDaySlots.morning.end_time;
+                } else {
+                    timeStart.value = workStart;
+                    timeEnd.value = '14:00';
+                }
+            } else if (type === 'afternoon') {
+                if (halfDaySlots && halfDaySlots.afternoon) {
+                    timeStart.value = halfDaySlots.afternoon.start_time;
+                    timeEnd.value = halfDaySlots.afternoon.end_time;
+                } else {
+                    timeStart.value = '14:00';
+                    timeEnd.value = workEnd;
+                }
+            }
+        }
+
+        updateEstimatedTimeG(prefix);
+
+        // 명시적 프리셋 클릭 강조 처리를 계산 호출 뒤에 적용하여 사용자가 클릭한 프리셋 강조를 유지
+        ['full', 'morning', 'afternoon', 'custom'].forEach(p => {
+            const btn = document.getElementById(`preset-${p}_${prefix}`);
+            if (btn) {
+                if (p === type) {
+                    btn.classList.add('bg-dense-blue', 'text-white');
+                    btn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+                } else {
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text', 'hover:bg-dense-surface-soft');
+                }
+            }
+        });
+    }
+
+    function toggleDeductiveG(prefix) {
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+        const reasonTextarea = document.getElementById(`easy-reason-g_${prefix}`);
+        const star = document.getElementById(`easy-reason-star-g_${prefix}`);
+
+        if (deductiveCheckbox) {
+            const isOfficialLeave = deductiveCheckbox.checked;
+            if (!isOfficialLeave) {
+                if (reasonTextarea) {
+                    reasonTextarea.removeAttribute('required');
+                    reasonTextarea.placeholder = "사유를 기입해 주세요. (선택 사항)";
+                }
+                if (star) star.classList.add('hidden');
+            } else {
+                if (reasonTextarea) {
+                    reasonTextarea.setAttribute('required', 'required');
+                    reasonTextarea.placeholder = "사유를 기입해 주세요. (필수 입력)";
+                }
+                if (star) star.classList.remove('hidden');
+            }
+        }
+        updateEstimatedTimeG(prefix);
+    }
+
+    function updateTimeSelectorAvailabilityG(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const timeRow = document.getElementById(`easy-time-row_${prefix}`);
+        const badge = document.getElementById(`easy-preset-badge_${prefix}`);
+
+        const isPeriod = isPeriodRange(prefix);
+        const workStart = (window.shimWorkHours && window.shimWorkHours.start) || '09:00';
+        const workEnd = (window.shimWorkHours && window.shimWorkHours.end) || '18:00';
+
+        if (isPeriod) {
+            // 기간 신청 (start < end): 현재 근무시간으로 full 강제 및 오전/오후/custom disabled
+            if (timeStart) {
+                timeStart.value = workStart;
+                timeStart.setAttribute('disabled', 'disabled');
+            }
+            if (timeEnd) {
+                timeEnd.value = workEnd;
+                timeEnd.setAttribute('disabled', 'disabled');
+            }
+            if (timeRow) timeRow.classList.add('hidden');
+            if (badge) {
+                badge.classList.remove('hidden');
+                badge.textContent = '전일 신청';
+            }
+            ['morning', 'afternoon', 'custom'].forEach(p => {
+                const btn = document.getElementById(`preset-${p}_${prefix}`);
+                if (btn) {
+                    btn.setAttribute('disabled', 'disabled');
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.classList.remove('bg-dense-blue', 'text-white');
+                    btn.classList.add('text-dense-text');
+                }
+            });
+            const fullBtn = document.getElementById(`preset-full_${prefix}`);
+            if (fullBtn) {
+                fullBtn.removeAttribute('disabled');
+                fullBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                fullBtn.classList.add('bg-dense-blue', 'text-white');
+                fullBtn.classList.remove('text-dense-text', 'hover:bg-dense-surface-soft');
+            }
+        } else {
+            // 단일 날짜 (start === end) 또는 미입력:
+            if (timeStart) timeStart.removeAttribute('disabled');
+            if (timeEnd) timeEnd.removeAttribute('disabled');
+
+            ['morning', 'afternoon'].forEach(p => {
+                const btn = document.getElementById(`preset-${p}_${prefix}`);
+                if (btn) {
+                    btn.removeAttribute('disabled');
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+            const fullBtn = document.getElementById(`preset-full_${prefix}`);
+            if (fullBtn) {
+                fullBtn.removeAttribute('disabled');
+                fullBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            const customBtn = document.getElementById(`preset-custom_${prefix}`);
+            if (customBtn) {
+                if (isHalfDayPolicy) {
+                    customBtn.setAttribute('disabled', 'disabled');
+                    customBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    customBtn.removeAttribute('disabled');
+                    customBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        updateEstimatedTimeG(prefix);
+    }
+
+    function updateEstimatedTimeG(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const calcEl = document.getElementById(`easy-calc-g_${prefix}`);
+        const submitBtn = document.getElementById(`easy-submit-btn-g_${prefix}`);
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+
+        if (!startInput || !endInput || !calcEl) return;
+
+        const isDeductive = deductiveCheckbox ? !deductiveCheckbox.checked : true;
+        const typeStr = isDeductive ? '차감' : '부재';
+
+        if (!startInput.value || !endInput.value) {
+            calcEl.textContent = `예상 ${typeStr} 시간: 0시간`;
+            return;
+        }
+
+        const startVal = startInput.value;
+        const endVal = endInput.value;
+
+        if (startVal > endVal) {
+            calcEl.textContent = '시작일이 종료일보다 늦습니다.';
+            if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+            return;
+        }
+
+        const workdays = getValidDaysCount(startVal, endVal);
+        if (workdays === 0) {
+            calcEl.textContent = '영업일 기준 0일입니다.';
+            if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+            return;
+        }
+
+        if (submitBtn) submitBtn.removeAttribute('disabled');
+
+        if (startVal === endVal) {
+            if (!timeStart || !timeEnd) return;
+            const hours = calculateDeductedHoursForRange(timeStart.value, timeEnd.value);
+            if (hours === 8) {
+                calcEl.textContent = `신청 단위: 전일 (1일 / 8시간)`;
+            } else if (hours === 4) {
+                const s = timeStart.value;
+                const isMorning = (halfDaySlots && halfDaySlots.morning) ? (s === halfDaySlots.morning.start_time) : (s < '12:00');
+                const halfName = isMorning ? '오전 반차' : '오후 반차';
+                calcEl.textContent = `신청 단위: ${halfName} (0.5일)`;
+            } else {
+                calcEl.textContent = `예상 ${typeStr} 시간: ${hours}시간`;
+            }
+            updatePresetButtonActiveState(prefix);
+        } else {
+            calcEl.textContent = `신청 단위: 전일 ${workdays}일 (기간 신청은 전일만 가능합니다)`;
+            updatePresetButtonActiveState(prefix);
+        }
+    }
+
+    async function submitEasyApply(prefix) {
+        const startInput = document.getElementById(`easy-start-date-g_${prefix}`);
+        const endInput = document.getElementById(`easy-end-date-g_${prefix}`);
+        const timeStart = document.getElementById(`easy-start-g_${prefix}`);
+        const timeEnd = document.getElementById(`easy-end-g_${prefix}`);
+        const deductiveCheckbox = document.getElementById(`easy-deductive-g_${prefix}`);
+        const reasonTextarea = document.getElementById(`easy-reason-g_${prefix}`);
+        const btn = document.getElementById(`easy-submit-btn-g_${prefix}`);
+
+        if (!startInput || !endInput || !timeStart || !timeEnd) return;
+
+        const startDate = startInput.value;
+        const endDate = endInput.value;
+        const startTime = timeStart.value;
+        const endTime = timeEnd.value;
+        const isDeductive = deductiveCheckbox ? !deductiveCheckbox.checked : true;
+        const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+
+        if (!startDate || !endDate) {
+            showToast('날짜를 입력해 주세요.', 'error');
+            return;
+        }
+
+        if (startDate > endDate) {
+            showToast('시작일이 종료일보다 늦습니다.', 'error');
+            return;
+        }
+
+        if (!isDeductive && !reason) {
+            showToast('공가/출장 신청 시 사유 입력은 필수입니다.', 'error');
+            return;
+        }
+
+        if (startDate === endDate) {
+            const startMin = parseTimeStr(startTime);
+            const endMin = parseTimeStr(endTime);
+            if (startMin === null || endMin === null || startMin >= endMin) {
+                showToast('시작/종료 시간을 다시 확인해 주세요.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('date_str', startDate);
+            formData.append('start_time', startTime);
+            formData.append('end_time', endTime);
+            formData.append('is_deductive', isDeductive ? 'true' : 'false');
+            formData.append('reason', reason);
+
+            if (!await shimModal.confirm(`[${isDeductive ? '연차' : '공가/출장'}] 신청하시겠습니까?`)) return;
+
+            simulateButtonLoading(btn, async () => {
+                try {
+                    const response = await fetch('/api/user/leave', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToastAndReload(result.message || '성공적으로 신청되었습니다.', 'success');
+                    } else {
+                        showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
+                    }
+                } catch (err) {
+                    showToast('네트워크 오류가 발생했습니다.', 'error');
+                }
+            });
+        } else {
+            const parseDate = (window.shimTime && window.shimTime.parseDateOnly) || (d => new Date(d));
+            const dates = [];
+            let curr = parseDate(startDate);
+            const end = parseDate(endDate);
+            while (curr <= end) {
+                const yyyy = curr.getFullYear();
+                const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                const dd = String(curr.getDate()).padStart(2, '0');
+                const dateStrVal = `${yyyy}-${mm}-${dd}`;
+                const dayOfWeek = curr.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+                let isHoliday = false;
+                if (window.holidayMapDates) {
+                    if (window.holidayMapDates.includes(dateStrVal)) {
+                        isHoliday = true;
+                    }
+                }
+
+                if (!isWeekend && !isHoliday) {
+                    dates.push(dateStrVal);
+                }
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            if (dates.length === 0) {
+                showToast('선택한 범위 내에 신청 가능한 영업일이 없습니다.', 'error');
+                return;
+            }
+
+            if (!await shimModal.confirm(`선택한 기간 중 주말/공휴일을 제외한 ${dates.length}일에 대해 하루종일 [${isDeductive ? '연차' : '공가/출장'}] 일괄 신청을 진행하시겠습니까?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('date_str', dates.join(','));
+            formData.append('start_time', '');
+            formData.append('end_time', '');
+            formData.append('is_deductive', isDeductive ? 'true' : 'false');
+            formData.append('reason', reason);
+
+            simulateButtonLoading(btn, async () => {
+                try {
+                    const response = await fetch('/api/user/leave', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToastAndReload(result.message || '성공적으로 신청되었습니다.', 'success');
+                    } else {
+                        showToast(result.message || result.detail || '오류가 발생했습니다.', 'error');
+                    }
+                } catch (e) {
+                    showToast('네트워크 오류가 발생했습니다.', 'error');
+                }
+            });
+        }
+    }
+
+    function initializeEasyApplyG(prefix) {
+        const form = document.getElementById(prefix === 'mobile' ? 'easyApplyFormMobile' : 'easyApplyFormDesktop');
+        if (!form) return;
+
+        updateTimeSelectorAvailabilityG(prefix);
+        toggleDeductiveG(prefix);
+        updateEstimatedTimeG(prefix);
+    }
+
+    window.selectLeavePreset = selectLeavePreset;
+    window.toggleDeductiveG = toggleDeductiveG;
+    window.updateTimeSelectorAvailabilityG = updateTimeSelectorAvailabilityG;
+    window.updateEstimatedTimeG = updateEstimatedTimeG;
+    window.submitEasyApply = submitEasyApply;
+    window.initializeEasyApplyG = initializeEasyApplyG;
+
+    function initOnReady() {
+        initializeEasyApplyG('desktop');
+        initializeEasyApplyG('mobile');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initOnReady);
+    } else {
+        initOnReady();
+    }
+})();
+</script>

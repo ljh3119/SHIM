@@ -21,6 +21,27 @@ api_router = APIRouter()
 def _templates(request: Request):
     return request.app.state.templates
 
+def _normalize_setting_times(setting: models.SystemSettings) -> None:
+    if not getattr(setting, "time_granularity_minutes", None):
+        setting.time_granularity_minutes = 60
+    if getattr(setting, "work_start_minute", None) is None:
+        setting.work_start_minute = 9 * 60
+    if not getattr(setting, "work_end_minute", None):
+        setting.work_end_minute = 18 * 60
+    if setting.work_end_minute <= setting.work_start_minute:
+        setting.work_start_minute = 9 * 60
+        setting.work_end_minute = 18 * 60
+    if setting.work_start_minute % 30 != 0:
+        setting.work_start_minute = (setting.work_start_minute // 30) * 30
+    if setting.work_end_minute % 30 != 0:
+        setting.work_end_minute = ((setting.work_end_minute + 29) // 30) * 30
+    if setting.work_end_minute > 24 * 60:
+        setting.work_end_minute = 24 * 60
+    if setting.work_end_minute <= setting.work_start_minute:
+        setting.work_start_minute = 9 * 60
+        setting.work_end_minute = 18 * 60
+
+
 def _ensure_system_setting(db: Session) -> models.SystemSettings:
     if db.query(models.SystemSettings).count() > 1:
         raise HTTPException(status_code=409, detail="시스템 설정이 중복되어 있습니다. 설정을 비교·정리한 후 다시 시도해 주세요.")
@@ -41,32 +62,42 @@ def _ensure_system_setting(db: Session) -> models.SystemSettings:
         db.add(setting)
         db.commit()
         db.refresh(setting)
-    if not getattr(setting, "time_granularity_minutes", None):
-        setting.time_granularity_minutes = 60
-    if getattr(setting, "work_start_minute", None) is None:
-        setting.work_start_minute = 9 * 60
-    if not getattr(setting, "work_end_minute", None):
-        setting.work_end_minute = 18 * 60
-    if setting.work_end_minute <= setting.work_start_minute:
-        setting.work_start_minute = 9 * 60
-        setting.work_end_minute = 18 * 60
-    if setting.work_start_minute % 30 != 0:
-        setting.work_start_minute = (setting.work_start_minute // 30) * 30
-    if setting.work_end_minute % 30 != 0:
-        setting.work_end_minute = ((setting.work_end_minute + 29) // 30) * 30
-    if setting.work_end_minute > 24 * 60:
-        setting.work_end_minute = 24 * 60
-    if setting.work_end_minute <= setting.work_start_minute:
-        setting.work_start_minute = 9 * 60
-        setting.work_end_minute = 18 * 60
+    _normalize_setting_times(setting)
     db.commit()
     db.refresh(setting)
     return setting
 
 
+def _get_system_setting_for_display(db: Session) -> models.SystemSettings:
+    if db.query(models.SystemSettings).count() > 1:
+        raise HTTPException(status_code=409, detail="시스템 설정이 중복되어 있습니다. 설정을 비교·정리한 후 다시 시도해 주세요.")
+    row = db.query(models.SystemSettings).first()
+    if row is not None:
+        setting = models.SystemSettings(
+            **{column.name: getattr(row, column.name) for column in models.SystemSettings.__table__.columns}
+        )
+    else:
+        setting = models.SystemSettings(
+            is_approval_required=False,
+            time_granularity_minutes=60,
+            work_start_minute=9 * 60,
+            work_end_minute=18 * 60,
+            lunch_start_minute=12 * 60,
+            lunch_end_minute=13 * 60,
+            product_display_name="SHIM",
+            product_nav_short="",
+            brand_initial="S",
+            team_calendar_visible=True,
+            company_calendar_visible=False,
+            key_hash_snapshot=None,
+        )
+    _normalize_setting_times(setting)
+    return setting
+
+
 @api_router.get("/settings/approval")
 def get_approval_setting(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
-    setting = _ensure_system_setting(db)
+    setting = _get_system_setting_for_display(db)
     return JSONResponse(
         status_code=200,
         content={
@@ -304,7 +335,7 @@ def run_backup(request: Request, db: Session = Depends(get_db), admin: models.Us
 
 @page_router.get("/master", response_class=HTMLResponse)
 def admin_master(request: Request, db: Session = Depends(get_db), admin: models.Users = Depends(get_current_admin)):
-    setting = _ensure_system_setting(db)
+    setting = _get_system_setting_for_display(db)
     is_approval_required = bool(setting.is_approval_required) if setting else False
     return _templates(request).TemplateResponse(
         request=request,

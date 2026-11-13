@@ -108,7 +108,7 @@
                         {% else %}
                         <span class="rounded bg-purple-100 border border-purple-200 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-700">공가/출장</span>
                         {% endif %}
-                        <span class="block text-[10px] text-dense-muted font-semibold">⏱️ {{ leave.start_time or "09:00" }} ~ {{ leave.end_time or "18:00" }}</span>
+                        <span class="block text-[10px] text-dense-muted font-semibold">⏱️ {{ leave.snapshot_slot_label or "시간 정보 없음" }}</span>
                     </div>
                 </div>
                 {% else %}

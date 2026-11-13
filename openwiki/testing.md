@@ -13,12 +13,14 @@
 - `test_auth_password_limits.py` — bcrypt UTF-8 72바이트 경계 검증
 - `test_login_security.py` — 존재·미존재 계정의 실제 HTTP 및 bcrypt 호출 구조, ASCII·다중바이트 72/73바이트, 빈·손상 해시, 비활성 계정과 HS256 고정 검증
 - `test_portable_logging.py` — 항상 격리된 임시 데이터 폴더에서 포터블 단일 파일 writer, 한글 UTF-8 순환, 백업·DB 초기화 오류, handler 오류 재귀 방지, 로그 초기화 실패·자식 조기 종료·worker 실패 코드 보존·트레이 등록 실패 중단을 검증하고 Windows에서는 실제 master·worker·트레이 종료 event, lifespan·Uvicorn 종료와 WAL/SHM 정리까지 확인
-- `test_ops_safety.py` — 백업 원자성·무결성·회전과 알림 정리 실패 메트릭 검증
+- `test_ops_safety.py` — 백업 원자성·무결성·회전, 일간 스케줄러의 24시간 호환 백업 판정 경계, 알림 정리 실패 메트릭 검증
 - `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
-- `test_mobile_ui.py` — 모바일 팀·개인 달력의 부분 렌더링, 월별 가시성·권한, 윤달·월 이동 경계를 검증합니다. 렌더링된 JavaScript를 Node.js vm에서 실행해 연속 월 이동, 역순 응답·오래된 오류·JSON 지연, 실패 후 재시도, 로딩 중 클릭 차단과 날짜·연차 ID 일치를 확인합니다.
-- `test_review_regressions.py` — HTML 사유/따옴표 이름, 동시 승인·취소·반려 및 잔여량 경쟁, 관리자 보호, 연도별 할당 0/누락, 점심 겹침과 00:00/24:00, 중복 설정·호환 백업 보존 검증. 렌더링된 JavaScript 검증에 Node.js를 사용합니다.
+- `test_mobile_ui.py` — 모바일 팀·개인 달력의 부분 렌더링, 월별 가시성·권한, 윤달·월 이동 경계, 간편 신청 스크립트 단일 로드 및 데스크톱/모바일 폼 동적 초기화·반차 프리셋 선택·제출 동작, 기간 신청(`start < end`) 시 전일 강제 및 반차 비활성화, 기간 선택 토글의 독립 상태 동작을 검증합니다. 렌더링된 JavaScript를 Node.js vm에서 실행해 연속 월 이동, 역순 응답·오래된 오류·JSON 지연, 실패 후 재시도, 로딩 중 클릭 차단과 날짜·연차 ID 일치 및 간편 신청 폼 동작을 확인합니다.
+- `test_half_day_policy.py` — 240분 반일 정책 및 비240분 정책 하에서 표준 반차 경계의 time_options 포함 여부와 반차 시간 차감 정합성 검증
+- `test_holiday_names.py` — 기독탄신일(크리스마스) 및 대체 휴일 레이블 정규화, 노동절·제헌절 시딩, 관리자 편집 보존 및 감사 로그 기반 시딩 재실행 멱등성 검증
+- `test_review_regressions.py` — HTML 사유/따옴표 이름, 동시 승인·취소·반려 및 잔여량 경쟁, 관리자 보호, 연도별 할당 0/누락, 점심 겹침과 00:00/24:00, 중복 설정·호환 백업 보존, 설정 GET 조회 시 DB 불변 및 transient 인스턴스 검증, 대시보드 부재자 시간 표시, 비상 초기화 CLI 종료 코드 및 마스킹 검증. 렌더링된 JavaScript 검증에 Node.js를 사용합니다.
 - `test_timezone_utils.py` — IANA 시간대, DST 경계, UTC 저장, 기동 실패, 화면 ISO 파싱, 서반구 날짜 보존 검증
 - `run_remaining_tests.py` — 남은 시나리오 커버리지 실행
 

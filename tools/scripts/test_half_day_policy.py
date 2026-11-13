@@ -7,6 +7,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Ensure isolated temporary data directory before importing application modules
+_temp_dir = tempfile.TemporaryDirectory(prefix="shim_policy_test_")
+os.environ["SHIM_DATA_DIR"] = _temp_dir.name
+os.environ.pop("SHIM_SECRET_KEY", None)
+
 from src.app.services.leave_policy import (
     ALLOWED_TIME_GRANULARITIES,
     HALF_DAY_MINUTES,
@@ -157,18 +162,15 @@ def test_half_day_preset_allowed_in_other_granularities():
 
 
 def test_admin_settings_time_policy_endpoint():
-    with tempfile.TemporaryDirectory(prefix="shim_policy_test_") as temp_dir:
-        os.environ["SHIM_DATA_DIR"] = temp_dir
-        os.environ.pop("SHIM_SECRET_KEY", None)
+    from fastapi.testclient import TestClient
+    from src.app import auth, database, models
+    from src.app.main import app
 
-        from fastapi.testclient import TestClient
-        from src.app import auth, database, models
-        from src.app.main import app
-
-        database.Base.metadata.create_all(bind=database.engine)
-        db = database.SessionLocal()
-        try:
-            # Seed admin user
+    database.Base.metadata.create_all(bind=database.engine)
+    db = database.SessionLocal()
+    try:
+        admin = db.query(models.Users).filter_by(user_id="admin_test").first()
+        if not admin:
             admin = models.Users(
                 user_id="admin_test",
                 user_name="Admin Test",
@@ -177,6 +179,8 @@ def test_admin_settings_time_policy_endpoint():
                 is_active=True,
             )
             db.add(admin)
+        setting = db.query(models.SystemSettings).first()
+        if not setting:
             setting = models.SystemSettings(
                 time_granularity_minutes=60,
                 work_start_minute=540,
@@ -185,61 +189,108 @@ def test_admin_settings_time_policy_endpoint():
                 lunch_end_minute=780,
             )
             db.add(setting)
-            db.commit()
+        else:
+            setting.time_granularity_minutes = 60
+            setting.work_start_minute = 540
+            setting.work_end_minute = 1080
+            setting.lunch_start_minute = 720
+            setting.lunch_end_minute = 780
+        db.commit()
 
-            token = auth.create_access_token(data={"sub": "admin_test", "role": "ADMIN", "token_version": 0})
-        finally:
-            db.close()
+        token = auth.create_access_token(data={"sub": "admin_test", "role": "ADMIN", "token_version": 0})
+    finally:
+        db.close()
 
-        client = TestClient(app)
-        client.cookies.set("access_token", token)
+    client = TestClient(app)
+    client.cookies.set("access_token", token)
 
-        # 1) Set granularity to 240 -> should succeed
-        res = client.post(
-            "/api/admin/settings/time-policy",
-            data={
-                "time_granularity_minutes": "240",
-                "work_start_minute": "540",
-                "work_end_minute": "1080",
-                "lunch_start_minute": "720",
-                "lunch_end_minute": "780",
-            },
-        )
-        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+    # 1) Set granularity to 240 -> should succeed
+    res = client.post(
+        "/api/admin/settings/time-policy",
+        data={
+            "time_granularity_minutes": "240",
+            "work_start_minute": "540",
+            "work_end_minute": "1080",
+            "lunch_start_minute": "720",
+            "lunch_end_minute": "780",
+        },
+    )
+    assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
 
-        # Verify DB updated
-        db = database.SessionLocal()
-        try:
-            saved_setting = db.query(models.SystemSettings).first()
-            assert saved_setting.time_granularity_minutes == 240
+    # Verify DB updated
+    db = database.SessionLocal()
+    try:
+        saved_setting = db.query(models.SystemSettings).first()
+        assert saved_setting.time_granularity_minutes == 240
 
-            # Verify audit log recorded
-            audit = db.query(models.AuditLogs).order_by(models.AuditLogs.id.desc()).first()
-            assert "granularity=240" in audit.new_data
-        finally:
-            db.close()
+        # Verify audit log recorded
+        audit = db.query(models.AuditLogs).order_by(models.AuditLogs.id.desc()).first()
+        assert "granularity=240" in audit.new_data
+    finally:
+        db.close()
 
-        # 2) Set granularity to invalid 999 -> should fail with 400
-        res_invalid = client.post(
-            "/api/admin/settings/time-policy",
-            data={
-                "time_granularity_minutes": "999",
-                "work_start_minute": "540",
-                "work_end_minute": "1080",
-                "lunch_start_minute": "720",
-                "lunch_end_minute": "780",
-            },
-        )
-        assert res_invalid.status_code == 400, f"Expected 400, got {res_invalid.status_code}"
-        assert "30/60/120/240" in res_invalid.json()["message"]
+    # 2) Set granularity to invalid 999 -> should fail with 400
+    res_invalid = client.post(
+        "/api/admin/settings/time-policy",
+        data={
+            "time_granularity_minutes": "999",
+            "work_start_minute": "540",
+            "work_end_minute": "1080",
+            "lunch_start_minute": "720",
+            "lunch_end_minute": "780",
+        },
+    )
+    assert res_invalid.status_code == 400, f"Expected 400, got {res_invalid.status_code}"
+    assert "30/60/120/240" in res_invalid.json()["message"]
+
+
+def test_non_240_time_options_contain_half_day_boundaries():
+    from fastapi.testclient import TestClient
+    from src.app import database, models, auth
+    from src.app.main import app
+    from src.app.services.leave_policy import get_system_settings
+    from src.app.routers.api_user import _add_user_layout_context
+
+    with database.SessionLocal() as db:
+        user = db.query(models.Users).filter_by(user_id="policy_user").first()
+        if not user:
+            user = models.Users(
+                user_id="policy_user", user_name="정책유저", company="SHIM", team="개발",
+                password=auth.get_password_hash("0000"), role="STAFF", total_leave_hours=120
+            )
+            db.add(user)
+        setting = db.query(models.SystemSettings).first()
+        setting.time_granularity_minutes = 120
+        setting.work_start_minute = 540
+        setting.work_end_minute = 1080
+        setting.lunch_start_minute = 720
+        setting.lunch_end_minute = 780
+        db.commit()
+        get_system_settings(db, force_reload=True)
+
+        ctx = {}
+        _add_user_layout_context(db, user, ctx)
+        assert "14:00" in ctx["time_options"], f"14:00 must be in time_options: {ctx['time_options']}"
+        assert ctx["time_options"] == ["09:00", "11:00", "13:00", "14:00", "15:00", "17:00", "18:00"]
+
+    client = TestClient(app)
+    token = auth.create_access_token({"sub": "policy_user", "token_version": 0})
+    client.cookies.set("access_token", f"Bearer {token}")
+    cal_res = client.get("/user/calendar?year=2026")
+    assert cal_res.status_code == 200
+    assert '<option value="14:00"' in cal_res.text
 
 
 if __name__ == "__main__":
-    test_allowed_granularities()
-    test_resolve_half_day_slots_default_work_hours()
-    test_resolve_half_day_slots_without_lunch()
-    test_half_day_snapshot_deduction()
-    test_half_day_rejects_arbitrary_ranges()
-    test_half_day_preset_allowed_in_other_granularities()
-    test_admin_settings_time_policy_endpoint()
-    print("[PASS] test_half_day_policy passed successfully.")
+    try:
+        test_allowed_granularities()
+        test_resolve_half_day_slots_default_work_hours()
+        test_resolve_half_day_slots_without_lunch()
+        test_half_day_snapshot_deduction()
+        test_half_day_rejects_arbitrary_ranges()
+        test_half_day_preset_allowed_in_other_granularities()
+        test_admin_settings_time_policy_endpoint()
+        test_non_240_time_options_contain_half_day_boundaries()
+        print("[PASS] test_half_day_policy passed successfully.")
+    finally:
+        _temp_dir.cleanup()

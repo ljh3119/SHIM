@@ -671,6 +671,25 @@
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             container.innerHTML = await response.text();
             desktopTeamLoadedG = true;
+            if (typeof window.initializeEasyApplyG === 'function') {
+                window.initializeEasyApplyG('desktop');
+            }
+            const savedStart = sessionStorage.getItem('shim_timeline_start_date');
+            const savedEnd = sessionStorage.getItem('shim_timeline_end_date');
+            if (savedStart) {
+                const dStart = document.getElementById('easy-start-date-g_desktop');
+                const dEnd = document.getElementById('easy-end-date-g_desktop');
+                if (dStart) dStart.value = savedStart;
+                if (dEnd) dEnd.value = savedEnd || savedStart;
+                if (typeof updateTimeSelectorAvailabilityG === 'function') {
+                    updateTimeSelectorAvailabilityG('desktop');
+                }
+            } else {
+                const mStart = document.getElementById('easy-start-date-g_mobile');
+                if (mStart && mStart.value && typeof window.syncInputsToCalendarImmediate === 'function') {
+                    window.syncInputsToCalendarImmediate('mobile');
+                }
+            }
         } catch (error) {
             console.error('[SHIM team calendar desktop load]', error);
             container.textContent = 'PC용 팀 캘린더를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
@@ -793,18 +812,21 @@
         isMultiSelectMode = !isMultiSelectMode;
         const btn = document.getElementById('multiSelectToggleBtn');
         const circle = document.getElementById('multiSelectToggleCircle');
+        if (!btn || !circle) return;
         
         if (isMultiSelectMode) {
             btn.classList.remove('bg-dense-line-strong');
             btn.classList.add('bg-dense-blue');
             circle.classList.remove('translate-x-0');
             circle.classList.add('translate-x-4');
+            // 직접 ON: 선택 모드만 활성화. 기존 폼 날짜를 임의로 달력 선택으로 가져오지 않음
         } else {
             btn.classList.remove('bg-dense-blue');
             btn.classList.add('bg-dense-line-strong');
             circle.classList.remove('translate-x-4');
             circle.classList.add('translate-x-0');
-            cancelMultiSelect();
+            // 직접 OFF: 달력 선택배열/하이라이트는 지우되 폼 날짜/사유/팀저장날짜 유지
+            cancelMultiSelect(true);
         }
     }
 
@@ -880,6 +902,9 @@
 
     let syncInputsDebounceTimer = null;
     window.syncInputsToCalendar = function(prefix) {
+        if (typeof updateTimeSelectorAvailabilityG === 'function') {
+            updateTimeSelectorAvailabilityG(prefix);
+        }
         if (syncInputsDebounceTimer) clearTimeout(syncInputsDebounceTimer);
         syncInputsDebounceTimer = setTimeout(() => {
             window.syncInputsToCalendarImmediate(prefix);
@@ -899,9 +924,12 @@
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (startVal && !dateRegex.test(startVal)) return;
         if (endVal && !dateRegex.test(endVal)) return;
+
+        // PC 달력 DOM 마운트 여부 확인
+        const hasDesktopCalendar = Boolean(document.getElementById('multiSelectToggleBtn'));
         
-        // 2. Collision Check during Input sync
-        if (startVal && endVal && startVal <= endVal) {
+        // 2. Collision Check during Input sync (PC 달력 마운트 & isMultiSelectMode가 ON일 때만 검사)
+        if (hasDesktopCalendar && isMultiSelectMode && startVal && endVal && startVal <= endVal) {
             const dates = getDatesInRange(startVal, endVal);
             const userId = {{ user.user_id | tojson }};
             let collisionCell = null;
@@ -938,14 +966,18 @@
                 updateTimeSelectorAvailabilityG('desktop');
                 updateTimeSelectorAvailabilityG('mobile');
             }
+
+            sessionStorage.setItem('shim_timeline_start_date', startVal);
+            sessionStorage.setItem('shim_timeline_end_date', endVal);
+
+            // PC 달력 DOM이 마운트되지 않았거나, isMultiSelectMode가 OFF인 경우 타임라인 하이라이트/토글 동기화는 건너뜀
+            if (!hasDesktopCalendar || !isMultiSelectMode) {
+                return;
+            }
             
             if (!startVal) {
                 cancelMultiSelect();
                 return;
-            }
-            
-            if (!isMultiSelectMode) {
-                toggleMultiSelectMode();
             }
             
             rangeStartDate = startVal;
@@ -959,15 +991,12 @@
             
             highlightSelectedDates();
             updateFloatingBar();
-            
-            sessionStorage.setItem('shim_timeline_start_date', startVal);
-            sessionStorage.setItem('shim_timeline_end_date', endVal);
         } finally {
             isSyncing = false;
         }
     };
 
-    function cancelMultiSelect() {
+    function cancelMultiSelect(preserveInputs = false) {
         const userId = {{ user.user_id | tojson }};
         if (rangeStartDate) {
             const start = window.parseLocalDate(rangeStartDate);
@@ -990,7 +1019,7 @@
         rangeEndDate = null;
         updateFloatingBar();
         
-        if (inputFilledByCalendar) {
+        if (!preserveInputs && inputFilledByCalendar) {
             const dStart = document.getElementById('easy-start-date-g_desktop');
             const dEnd = document.getElementById('easy-end-date-g_desktop');
             const mStart = document.getElementById('easy-start-date-g_mobile');
@@ -1005,10 +1034,11 @@
                 updateTimeSelectorAvailabilityG('mobile');
             }
         }
-        inputFilledByCalendar = false;
-        
-        sessionStorage.removeItem('shim_timeline_start_date');
-        sessionStorage.removeItem('shim_timeline_end_date');
+        if (!preserveInputs) {
+            inputFilledByCalendar = false;
+            sessionStorage.removeItem('shim_timeline_start_date');
+            sessionStorage.removeItem('shim_timeline_end_date');
+        }
     }
 
     function openCalendarApplyModal(dateStr) {
@@ -1142,8 +1172,9 @@
     function updateFloatingBar() {
         const bar = document.getElementById('multiSelectFloatingBar');
         const countSpan = document.getElementById('selectedCount');
+        if (!bar || !countSpan) return;
         
-        if (selectedDates.length > 0) {
+        if (isMultiSelectMode && selectedDates.length > 0) {
             countSpan.textContent = selectedDates.length;
             bar.classList.remove('hidden');
         } else {
@@ -1270,36 +1301,22 @@
             sessionStorage.removeItem('shim_timeline_start_date');
             sessionStorage.removeItem('shim_timeline_end_date');
         } else {
-            // Restore selection from sessionStorage if present
+            // Restore form dates from sessionStorage if present (팀 기존 복원 허용 조건은 유지하고 폼날짜만 복원, 선택 mode/배열 복원 금지)
             const savedStart = sessionStorage.getItem('shim_timeline_start_date');
             const savedEnd = sessionStorage.getItem('shim_timeline_end_date');
             if (savedStart) {
-                if (!isMultiSelectMode) {
-                    toggleMultiSelectMode();
-                }
-                rangeStartDate = savedStart;
-                if (savedEnd && savedEnd >= savedStart) {
-                    rangeEndDate = savedEnd;
-                    selectedDates = getDatesInRange(rangeStartDate, rangeEndDate);
-                } else {
-                    rangeEndDate = null;
-                    selectedDates = isBusinessDay(rangeStartDate) ? [rangeStartDate] : [];
-                }
-                highlightSelectedDates();
-                updateFloatingBar();
-                
                 isSyncing = true;
                 try {
                     const dStart = document.getElementById('easy-start-date-g_desktop');
                     const dEnd = document.getElementById('easy-end-date-g_desktop');
                     const mStart = document.getElementById('easy-start-date-g_mobile');
                     const mEnd = document.getElementById('easy-end-date-g_mobile');
-                    if (dStart) dStart.value = rangeStartDate;
-                    if (dEnd) dEnd.value = rangeEndDate || rangeStartDate;
-                    if (mStart) mStart.value = rangeStartDate;
-                    if (mEnd) mEnd.value = rangeEndDate || rangeStartDate;
+                    if (dStart) dStart.value = savedStart;
+                    if (dEnd) dEnd.value = savedEnd || savedStart;
+                    if (mStart) mStart.value = savedStart;
+                    if (mEnd) mEnd.value = savedEnd || savedStart;
                     
-                    inputFilledByCalendar = true;
+                    inputFilledByCalendar = false;
                     if (typeof updateTimeSelectorAvailabilityG === 'function') {
                         updateTimeSelectorAvailabilityG('desktop');
                         updateTimeSelectorAvailabilityG('mobile');

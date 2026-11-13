@@ -158,6 +158,95 @@ def main() -> int:
             db.expire_all()
             assert db.query(models.SystemSettings).first().last_backup_count == len(healthy_after_failure)
 
+            # OPS-002: 일간 백업 스케줄러 24시간 최근 호환 백업 판정 검증
+            import asyncio
+            import sqlite3
+            from unittest.mock import MagicMock
+
+            base_backup_dir = Path(temp_dir) / "template_backups"
+            base_backup_dir.mkdir(parents=True, exist_ok=True)
+            proto_compatible = base_backup_dir / "proto_compat.bak"
+            with sqlite3.connect(database.DB_PATH) as src, sqlite3.connect(proto_compatible) as dest:
+                src.backup(dest)
+
+            proto_incompatible = base_backup_dir / "proto_incompat.bak"
+            with sqlite3.connect(proto_compatible) as src, sqlite3.connect(proto_incompatible) as dest:
+                src.backup(dest)
+                dest.execute(
+                    "INSERT INTO system_settings (id, is_approval_required, time_granularity_minutes, "
+                    "work_start_minute, work_end_minute, product_display_name, product_nav_short, "
+                    "brand_initial, team_calendar_visible, company_calendar_visible) "
+                    "VALUES (2, 0, 60, 540, 1080, 'S', '', 'S', 1, 0)"
+                )
+                dest.commit()
+
+            fingerprint = resolve_key_fingerprint(database.DB_PATH.parent)
+            assert ops._validate_recovery_candidate(proto_compatible, fingerprint)[0] is True
+            assert ops._validate_recovery_candidate(proto_incompatible, fingerprint)[0] is False
+
+            fixed_now_ts = 1_794_484_800.0
+            fixed_now = datetime.fromtimestamp(fixed_now_ts, tz=timezone.utc)
+
+            class FixedDatetime(datetime):
+                @classmethod
+                def now(cls, tz=None):
+                    if tz is not None:
+                        return fixed_now.astimezone(tz)
+                    return fixed_now
+
+            scenarios = [
+                ("백업 없음", [], True),
+                ("1시간 전 비호환본만", [("incompat", 3600)], True),
+                ("최신 비호환(1h)+2시간 전 호환", [("incompat", 3600), ("compat", 7200)], False),
+                ("호환본 age 0", [("compat", 0)], False),
+                ("24시간 직전(24h - 1s)", [("compat", 24 * 3600 - 1)], False),
+                ("정확히 24시간", [("compat", 24 * 3600)], True),
+                ("미래 1초(-1s)", [("compat", -1)], True),
+            ]
+
+            async def run_scheduler_test(case_db: Path, expect_create: bool):
+                real_sleep = asyncio.sleep
+
+                async def mock_sleep(seconds):
+                    if seconds == 3600:
+                        raise asyncio.CancelledError()
+                    return await real_sleep(seconds)
+
+                mock_rotate = MagicMock(return_value=case_db.parent / "backup" / "new.bak")
+
+                with patch.object(ops, "datetime", FixedDatetime), \
+                     patch.object(ops.asyncio, "sleep", side_effect=mock_sleep), \
+                     patch.object(ops, "run_backup_and_rotate", mock_rotate):
+                    try:
+                        await ops.daily_backup_scheduler(case_db)
+                    except asyncio.CancelledError:
+                        pass
+
+                assert mock_rotate.called is expect_create, (
+                    f"Expected create={expect_create}, but got called={mock_rotate.called}"
+                )
+
+            for idx, (name, file_specs, expect_create) in enumerate(scenarios):
+                case_dir = Path(temp_dir) / f"sched_case_{idx}"
+                case_backup_dir = case_dir / "backup"
+                case_backup_dir.mkdir(parents=True, exist_ok=True)
+                case_db = case_dir / "shim_internal.db"
+
+                with sqlite3.connect(database.DB_PATH) as src, sqlite3.connect(case_db) as dest:
+                    src.backup(dest)
+                if (database.DB_PATH.parent / "secret.key").exists():
+                    (case_dir / "secret.key").write_bytes((database.DB_PATH.parent / "secret.key").read_bytes())
+
+                for f_idx, (ftype, age) in enumerate(file_specs):
+                    target_file = case_backup_dir / f"shim_internal_{idx}_{f_idx}.bak"
+                    src_proto = proto_compatible if ftype == "compat" else proto_incompatible
+                    with sqlite3.connect(src_proto) as src, sqlite3.connect(target_file) as dest:
+                        src.backup(dest)
+                    mtime = fixed_now_ts - age
+                    os.utime(target_file, (mtime, mtime))
+
+                asyncio.run(run_scheduler_test(case_db, expect_create))
+
             print("[PASS] OPS-001/002 cleanup and backup safety checks completed.")
             return 0
         finally:

@@ -36,7 +36,7 @@ OpenAPI 문서는 운영에서 기본 비공개입니다. 개발 목적으로만
 `src/app/services/ops.py`가 운영 안전망을 담당합니다.
 - 백업 복사 전에 WAL checkpoint 수행
 - 백업은 같은 디렉터리의 임시 `.tmp` 파일로 만든 뒤 `PRAGMA quick_check;`를 통과하면 `os.replace`로 최종 `.bak`를 원자적으로 교체합니다.
-- 손상 백업은 `.invalid`로 격리하고, 건강한 백업만 회전·최근성 판단·`last_backup_count` 집계에 포함합니다.
+- 손상 백업은 `.invalid`로 격리하고, 물리적으로 건강한 백업만 회전 및 `last_backup_count` 집계에 포함합니다. 자동 백업 스케줄러의 최근 백업 유무(24시간 이내)는 물리 무결성뿐만 아니라 복구 호환성 검증까지 통과한 백업을 기준으로 판단합니다.
 - 삭제 실패 파일은 목록에서 임의로 제외하지 않고 실제 건강한 백업 수를 다시 집계합니다.
 - `PRAGMA quick_check;`를 통한 손상 탐지
 - 자동복구 후보는 읽기 전용으로 `quick_check`, 외래키, 현재 모델 7개 테이블과 필수 컬럼, `schema_versions`의 현재 migration ID 완전 일치, 단일 `system_settings` 행과 현재 키 지문 일치를 검사합니다.

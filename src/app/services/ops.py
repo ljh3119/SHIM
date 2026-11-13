@@ -104,8 +104,10 @@ async def daily_backup_scheduler(db_path: Path):
         try:
             backup_files = _healthy_backup_files(db_path)
             now_ts = datetime.now(timezone.utc).timestamp()
+            fingerprint = resolve_key_fingerprint(db_path.parent)
             has_recent_backup = any(
-                now_ts - backup.stat().st_mtime < 24 * 3600
+                0 <= now_ts - backup.stat().st_mtime < 24 * 3600
+                and _validate_recovery_candidate(backup, fingerprint)[0]
                 for backup in backup_files
             )
             

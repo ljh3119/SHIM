@@ -155,6 +155,8 @@ def seed_data(reset: bool = False):
             compact_map = {
                 "설날 연휴": "설 연휴",
                 "추석 연휴": "추석 연휴",
+                "기독탄신일": "크리스마스",
+                "기독탄신일 대체 휴일": "크리스마스 대체 휴일",
             }
             normalized = str(name).strip()
             return compact_map.get(normalized, normalized)

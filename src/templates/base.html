@@ -1491,5 +1491,8 @@
         } catch (e) {}
     });
     </script>
+    {% if half_day_slots is defined %}
+    {% include "partials/user_easy_apply_script.html" %}
+    {% endif %}
 </body>
 </html>

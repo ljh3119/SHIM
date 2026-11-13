@@ -23,6 +23,7 @@ SMOKE_SCRIPTS = (
     ("test_ops_safety.py",),
     ("test_http_security.py",),
     ("test_half_day_policy.py",),
+    ("test_holiday_names.py",),
     ("test_review_regressions.py",),
 )
 RELEASE_ONLY_SCRIPTS = (
