@@ -1,203 +1,190 @@
-# 쉼(休) SHIM (Smart Holiday Information Management) / 연차 관리 시스템
+# 쉼(休) SHIM: 현장의 부재 일정을 함께 보는 연차 관리 도구
 
-**릴리스 버전:** 1.12.1
+**릴리스 버전:** 1.12.2
 
-폐쇄망 및 내부망 환경에서 안정적으로 운영 가능한 FastAPI 기반의 연차 관리 시스템입니다. 사용자 시각 입력 방식의 정밀한 차감 로직과 관리자용 타임라인/캘린더 검증 기능을 통해 조직의 연차 운영 효율을 극대화합니다.
+SHIM(Smart Holiday Information Management)은 **누가 언제 휴가·출장으로 자리를 비우는지 한 화면에서 공유하는 내부망용 도구**입니다. 여러 회사가 함께 일하는 단기 프로젝트에서 팀과 PM이 일정을 조율하고 가용 인력을 파악하도록 돕기 위해 만들었습니다.
 
----
+출발점은 폐쇄망 현장의 협업입니다. 외부 서비스를 연결하기 어려운 환경에서도 회사와 팀을 넘나드는 부재 일정을 모아 보고, 신청과 결재를 같은 곳에서 처리하는 데 초점을 맞췄습니다. 이 배경과 범위는 [프로젝트 설계서의 설계 철학](docs/4-1_SHIM_프로젝트_설계서.md#0-설계-철학-및-시스템-정체성-design-philosophy--identity)에 기록되어 있습니다.
 
-## 1. 프로젝트 개요 및 주요 기능
+## 어떤 현장에 맞나요?
 
-### 기술 스택
-- **Backend**: `FastAPI`, `SQLAlchemy` (ORM), `SQLite` (Database)
-- **Frontend**: `Jinja2 Template`, `Tailwind CSS v4`
-- **Infrastructure**: 로컬 Python, Docker 컨테이너 또는 Windows 포터블 패키지 기반 배포
+- 외부 서비스 호출 없이 내부망에서 직접 운영해야 하는 현장
+- 여러 회사가 컨소시엄으로 참여하며, 한 프로젝트의 부재 일정을 함께 확인하는 조직
+- 별도 DB 서버 없이 PC나 NAS에서 운영하려는 소규모 팀
+- 급여·인사 시스템과 별개로 연차 신청, 결재, 일정 공유가 필요한 단기 프로젝트
 
-### 핵심 기능
-- **정밀한 연차 신청**: 시작/종료 시각 입력 기반 차감 및 정책 단위(30/60/120분) 검증, 그리고 에어비앤비 스타일의 시작일~종료일 **기간 범위 선택(Range Selection)** 및 좌측 간편 신청 입력창과의 실시간 양방향 동기화(개인 달력 및 팀 타임라인 테이블 동시 지원, 150ms 디바운싱 탑재) 지원
-- **조직 관리**: 회사/팀별로 구분이 명확한 동적 HSL 및 엄선된 웜톤/녹색계열 고대비 HSL 색상 배지가 적용된 전사 캘린더, 타임라인, 사원 관리 뷰 (팀 색상 간섭 배제)
-- **결재 워크플로우**: 단선 결재(팀장·PM·관리자의 단일 승인/반려)와 관리자의 승인 취소(기록 보존·차감 연차 복구) 지원
-- **모바일 사용자 업무**: 1024px 미만 화면에서 월간 캘린더, 연차 신청·조회·취소, 팀 일정과 권한별 결재 관리를 터치 중심 UI로 제공하며 필요한 월 데이터만 지연 조회
-- **일관된 화면 계층**: 관리자·사용자 PC 주요 패널과 모바일 카드의 외곽선·라운딩·그림자를 통일하고, 표·차트·달력·내부 목록은 공통 저강도 그리드로 구분
-- **브랜딩 및 커스터마이징**: 조직의 명칭, 로고 배지, 업무 시간 정책(점심시간 등) 설정
-- **운영 편의성**: 2020~2050년 한국 공휴일 자동 시딩(2026년 이후 제헌절 및 대체공휴일 포함), 퇴사자 비활성화, 연도별 연차 할당 관리
-- **시스템 운영 모니터링**: 데이터베이스 용량, Uptime(가동 시간), PII 보안 상태, 백그라운드 스케줄러(회전식 백업 및 30일 경과 알림 정리) 최종 실행 일시의 영속적 메트릭 관리자 실시간 대시보드 모니터링 (26시간 초과 시 지연/점검 경고 자동 표출)
-- **포터블 장애 진단**: 백그라운드 실행은 `data/log/shim-master.log`와 `shim-app.log`를 UTF-8 순환 로그(파일당 2MiB, 백업 3개)로 보존하며, 자식 프로세스 조기 종료를 런처가 즉시 감지합니다.
-- **보수적 자동복구**: 손상 DB 자동복구는 현재 애플리케이션이 요구하는 스키마 완료 상태, 마이그레이션 집합과 현재 키 지문이 모두 일치하는 백업만 사용합니다. 호환 백업이 없으면 원본을 보존하고 기동을 중단합니다.
+Windows 무설치 패키지와 Docker 실행을 지원합니다. 운영자는 서버 접근, 계정, 백업과 키를 관리해야 합니다. MIT 라이선스로 사용할 수 있지만 장비와 운영 관리 비용까지 없어지는 것은 아닙니다.
 
-## 2. ⚠️ 한계 및 주의사항 (Limitations)
+## 무엇을 할 수 있나요?
 
-본 프로젝트는 특정 환경(폐쇄망, 소규모 팀)을 타겟으로 설계되었습니다. 도입 전 아래 제약 사항을 반드시 확인하십시오.
+| 필요한 일 | SHIM이 제공하는 기능 |
+| --- | --- |
+| 함께 일하는 사람의 부재 확인 | 여러 회사·팀의 연차와 출장·공가 같은 비차감 일정을 캘린더와 타임라인에서 조회합니다. 회사·팀 배지는 소속을 구분하는 표시입니다. |
+| 신청과 결재 처리 | 승인 필요 여부를 설정하고, 팀장·PM·관리자가 권한 범위에서 단일 승인·반려를 처리합니다. 관리자는 승인 취소 시 기록을 남기고 차감 연차를 복구할 수 있습니다. |
+| 현장 근무 정책 반영 | 근무·점심시간, 신청 단위 30/60/120/240분을 설정합니다. 240분 정책에서는 전일 또는 표준 오전·오후 반차를 신청합니다. |
+| 과거 신청 기준 보존 | 신청 시점의 시간과 차감량을 스냅샷으로 저장하고, 연차 할당을 연도별로 관리합니다. |
+| 운영 상태 확인 | 앱 내 알림, 감사 로그, 공휴일 관리, 백업과 스케줄러 상태 조회를 제공합니다. 조직명·약칭·배지 문자도 설정할 수 있습니다. |
 
-### 1. 기능적 제약
-- **동시성**: SQLite 엔진 특성상 수백 명 이상의 동시 쓰기가 발생하는 대규모 환경에는 적합하지 않습니다.
-- **알림 부재**: 폐쇄망 운영을 전제로 하므로 이메일, 슬랙 등 외부망 연동 알림 기능이 기본 제외되어 있습니다.
+팀장은 **같은 회사·팀**의 요청을 결재하며, PM은 전사 범위를 다룹니다. 캘린더 공유 범위는 역할과 설정에 따라 달라집니다. 회사·팀 표시는 회사별로 독립된 보안 테넌트를 제공한다는 뜻이 아닙니다.
 
-- **인사 시스템 연동**: AD/LDAP 등 외부 인사 시스템과의 자동 동기화 기능이 없으며, 수동 또는 스크립트 기반 관리가 필요합니다.
-- **관리자 모바일 범위**: 관리자 모바일 화면은 현황 조회 수준만 보장합니다. 사원·조직·연차 데이터의 등록, 수정, 삭제와 같은 운영 처리는 PC에서 수행해야 합니다.
-### 2. 보안적 제약
-- **통신 보안**: 기본 HTTP로 동작합니다. 공개망 운영 시 반드시 Nginx/NPMPlus 등을 통해 HTTPS(SSL/TLS)를 적용하고 `SHIM_SECURE_COOKIE=true`를 설정하십시오.
-- **데이터 보호**: `SHIM_SECRET_KEY`를 설정하면 사원명과 휴가 사유 등 민감정보가 암호화됩니다. DB와 키를 모두 안전하게 백업하고, 운영 중 키를 변경하거나 분실하지 마십시오.
-- **키 사고 대응**: 키 유출·분실이 의심되면 서비스를 중지하고 DB, 현재 키와 설정 파일을 한 세트로 보존하십시오. 검증된 로테이션 도구가 제공되기 전에는 운영 키를 수동 변경하거나 재생성하지 마십시오.
-- **파일 권한**: DB, `.env`, `secret.key`에 대한 OS 접근 권한과 물리적 보안을 제한해야 합니다.
-- **인증 보안**: 무차별 대입 공격 방지(계정 잠금)나 2차 인증(MFA) 기능은 현재 포함되어 있지 않습니다.
-- **HTTP 방어선**: 모든 응답에 기본 CSP, MIME 추론·프레임·리퍼러·브라우저 권한 제한 헤더를 적용합니다. 기본 HTTP 배포 호환성을 위해 HSTS는 강제하지 않습니다.
+직원(`STAFF`), 팀장(`TEAM_LEAD`), PM은 모바일에서 신청·조회·취소와 권한별 팀 일정·결재를 사용할 수 있습니다. 관리자(`ADMIN`) 모바일 화면은 조회 위주이며, 등록·수정·삭제 같은 운영 업무는 PC에서 처리합니다.
 
----
+## 지원 범위와 한계
 
-## 3. 🛠️ 사전 요구사항 (Prerequisites)
+등록된 부재 일정은 협업을 위한 참고 정보입니다. 출퇴근을 실측하거나, 일정이 비어 있는 사람이 실제로 업무에 투입될 수 있음을 보장하지 않습니다.
 
-시스템 구축을 시작하기 전, 아래 환경이 준비되었는지 확인하십시오.
-### 로컬 개발 환경 (Local Development)
+- 급여·노무 정산, 인사 평가, 법정 연차 자동 발생이나 입사일 기준 자동 산정 엔진은 제공하지 않습니다. 연도별 할당량은 운영자가 관리합니다.
+- 다단계 결재, AD/LDAP/SSO 자동 동기화, 외부 메일·메신저 연동은 지원하지 않습니다. 알림은 앱 안에서 확인합니다.
+- SQLite를 쓰는 단일 인스턴스 운영이 기본입니다. 대규모 동시 쓰기, 다중 서버 고가용성, 독립된 다중 프로젝트 테넌트 운영은 보장하지 않습니다. 적정 규모는 실제 장비와 신청·조회 패턴으로 측정해야 합니다.
+- `python-jose` 의존성의 취약점 경고가 남아 있습니다. 현재 SHIM의 인증 방식은 검토한 공격 조건과 다르지만, 라이브러리 자체의 수정은 완료되지 않았습니다. [현재 개선 과제와 검토 상태](docs/3-1_향후_개선계획.md)를 확인하세요.
 
-- **Python**: 3.10 이상
-- **Node.js**: 18 이상 (Tailwind CSS 빌드용)
-- **OS**: Windows (PowerShell 사용 권장) 또는 Linux/macOS
-### 운영 환경 (Production)
-- **Docker**: Docker Engine 20.10+
-- **Docker Compose**: v2.0+
+### 운영 전 보안 조건
 
----
+기본 사용 환경은 신뢰 가능한 내부망이며 통신은 HTTP입니다. 로그인 시도 제한·계정 잠금과 MFA는 없습니다. 인터넷에 직접 노출하지 마세요. HTTPS 역방향 프록시를 사용할 때는 `SHIM_SECURE_COOKIE=true`도 설정해야 하지만, 이것만으로 공개망 운영의 보안 검증이 끝나는 것은 아닙니다.
 
-## 🚀 4. 빠른 시작 (Quick Start)
+**신규 DB를 암호화해서 시작하려면 첫 실행 전에 `SHIM_SECRET_KEY`를 설정하세요.** 이 키는 JWT 서명과 사원명·휴가 사유 같은 민감 컬럼 암호화에 사용됩니다. 키를 지정하지 않았을 때 자동 생성되는 데이터 폴더의 `secret.key`는 로그인용 JWT 키이며, 민감 컬럼은 평문 모드일 수 있습니다. 자동 생성 키가 있다는 이유로 암호화됐다고 판단하지 마세요.
 
-설치는 **[환경 설정] → [서버 실행] → [시스템 접속]** 순으로 진행됩니다.
-### Step 1. 환경 설정 및 보안 구성
-Docker와 로컬 실행은 환경변수 적용 방법이 다릅니다.
+**기존 DB는 사용하던 키와 암호화 모드를 그대로 유지하세요.** 평문 DB에 키만 추가해도 자동 암호화되지 않습니다. 키·모드가 불일치하면 기동이 거부되거나 데이터를 읽지 못할 수 있습니다. 암호화 전환·키 교체 도구는 제공하지 않습니다. 키 유출·분실이 의심되면 서비스를 중지하고 DB, 기존 키와 설정을 보존하세요.
 
-#### Docker 운영
+DB와 백업, `.env`, `secret.key`의 파일 접근 권한을 제한하세요. DB와 키는 함께 복구할 수 있도록 대응 관계를 유지하되 별도로 안전하게 보관해야 합니다. 복구 조건과 절차는 [백업·복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md)와 [운영 및 유지보수](openwiki/operations.md)를 참고하세요.
 
-1.  **설정 파일 준비**: 예제 파일을 프로젝트 루트의 `.env`로 복사합니다.
-    ```powershell
-    Copy-Item ./infra/docker/.env.example ./.env
-    ```
-2.  **보안키 생성**: 암호학적으로 안전한 무작위 키를 생성합니다.
-    ```powershell
-    python -c "import secrets; print(secrets.token_urlsafe(48))"
-    ```
-3.  **값 반영**: 생성된 문자열을 `.env`의 `SHIM_SECRET_KEY=` 뒤에 붙여넣습니다.
-    - 이 키는 JWT 서명과 PII 암호화에 함께 사용됩니다.
+## 빠른 시작: 받은 파일로 폐쇄망에서 실행
 
-    - 운영 중 키를 변경하지 말고, 실제 `.env`는 DB와 별도로 안전하게 백업하십시오.
-4.  **사업장 시간대 확인**: 국내 운영은 `SHIM_TIMEZONE=Asia/Seoul`을 유지합니다. 잘못된 IANA 이름이면 앱이 기동되지 않습니다.
-5.  **HTTPS 쿠키 설정**: Nginx/NPMPlus로 HTTPS를 제공할 때는 `SHIM_SECURE_COOKIE=true`, 직접 HTTP로 시험할 때는 `false`를 사용합니다.
-6.  **데이터 경로 확인**: 예제의 `SHIM_DATA_DIR=../../var/data`는 프로젝트 루트의 `var/data`를 Docker 데이터 폴더로 사용합니다.
-7.  **운영 키 확인**: 운영 배포에서는 `SHIM_SECRET_KEY`를 비워두지 말고, 시작 로그에 `SECURE ENCRYPTION mode (PII Protected)`가 표시되는지 확인합니다.
-#### 로컬 개발
-루트 `.env`는 `npm run dev`에서 자동으로 로드되지 않습니다. 필요한 값을 현재 PowerShell 세션에 직접 설정합니다.
+아래는 관리자로부터 **이미 준비된 패키지**를 받은 경우의 안내입니다. 현재 공개 GitHub Release에 바이너리를 게시하지 않았습니다. 패키지의 실행 안내와 체크섬 파일도 함께 받으세요.
+
+| 받은 파일 | 대상 환경 | 실행 PC에 필요한 것 |
+| --- | --- | --- |
+| `SHIM_Portable_1.12.2_windows-x64.zip` | Windows x64 | 쓰기 가능한 폴더. Python 3.12.16 런타임 동봉 |
+| `SHIM_Docker_1.12.2_linux-amd64.tar` | Linux amd64 컨테이너를 실행하는 PC·NAS | 설치된 Docker. ARM NAS 지원을 뜻하지 않음 |
+
+이 패키지의 실행에는 인터넷 연결이나 별도 Python·Node.js 설치가 필요하지 않습니다. 소스에서 패키지를 만드는 준비사항은 아래 개발·빌드 안내에서 다룹니다. 패키지별 소스·아카이브 검사 결과는 함께 제공하는 manifest에 기록합니다. 제작 환경에서는 실제 Docker·Windows 기동을 검증하지 못했습니다. [릴리스 검증 범위](docs/2-1_운영_릴리즈_통합_산출물.md)를 확인하고 대상 장비에서 접속과 종료를 점검하세요.
+
+### Windows CMD ZIP
+
+1. ZIP을 쓰기 가능한 새 폴더에 **전체 압축 해제**합니다. `START_SHIM.cmd`, `START_SHIM_CONSOLE.cmd`, `runtime/`, `app/`을 함께 유지하세요.
+2. 신규 암호화 DB라면 첫 실행 전에 아래 절차로 키를 준비합니다. 기존 DB를 옮기는 경우에는 기존 `data/`와 키·설정을 보존합니다.
+3. `START_SHIM.cmd`로 시작합니다. 최초 실행 시 패키지 루트에 `data/`가 생성됩니다. 오류를 콘솔에서 확인하려면 `START_SHIM_CONSOLE.cmd`를 실행합니다. 이 파일은 `--foreground` 모드로 동작합니다.
+4. 종료할 때는 트레이의 SHIM 아이콘에서 **종료**를 선택합니다. 콘솔 모드는 `Ctrl+C`로 종료합니다.
+
+신규 암호화 설치에서는 패키지 루트의 PowerShell에서 다음 명령으로 키를 생성하고 안전하게 보관합니다. **기존 DB의 키를 새로 생성하거나 덮어쓰는 용도로 사용하지 마세요.**
+
 ```powershell
-
-$env:SHIM_SECRET_KEY = Read-Host "보관 중인 SHIM_SECRET_KEY"
-$env:SHIM_TIMEZONE = "Asia/Seoul"
-
+.\runtime\python.exe -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-처음 생성한 키를 안전하게 보관하고 이후 실행에서도 같은 값을 재사용해야 합니다.
-`SHIM_DATA_DIR`를 설정하지 않으면 로컬 DB는 프로젝트 루트의 `var/data`에 저장됩니다.
-### Step 2. 서버 실행
-환경에 따라 세 가지 방식 중 하나를 선택하여 실행합니다.
-#### 방식 A. 로컬 환경에서 즉시 실행 (Local)
+보관한 키를 같은 PowerShell 세션에 입력하고 시작합니다. 이후 실행에서도 같은 키를 설정해야 합니다. 이 방식으로 시작한 뒤에는 환경변수 없이 CMD를 더블 클릭해 재시작하지 마세요.
 
 ```powershell
-# 의존성 설치
-pip install -r requirements.txt
-npm install
+$env:SHIM_SECRET_KEY = Read-Host "보관한 SHIM_SECRET_KEY"
+$env:SHIM_TIMEZONE = "Asia/Seoul"
+.\START_SHIM.cmd
+```
 
-# 서버 기동 (Tailwind watch 포함)
+백그라운드 로그는 `data/log/shim-master.log`와 `data/log/shim-app.log`에 있습니다. 이 CMD ZIP은 아래의 PyInstaller EXE 패키지와 다른 형태입니다.
+
+### Docker TAR
+
+Docker가 설치된 대상 장비에서 이미지를 불러옵니다.
+
+```sh
+docker load -i SHIM_Docker_1.12.2_linux-amd64.tar
+```
+
+아래 실행 예시는 **새 DB용**입니다. 기존 운영 DB는 기존 볼륨·키·모드를 보존하고 [백업·복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md)에 따라 이전하세요. 같은 SQLite 데이터 볼륨을 두 컨테이너에서 동시에 사용하지 마세요.
+
+신규 암호화 DB의 키는 불러온 이미지로 생성할 수 있습니다. 호스트에 Python을 설치할 필요가 없습니다.
+
+```sh
+docker run --rm --network none --entrypoint python shim:1.12.2 -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+생성된 키를 안전하게 보관한 뒤 현재 폴더에 `.env`를 만듭니다. 아래의 안내 문구를 실제 키로 바꾸세요. `.env`를 저장소에 커밋하지 마세요.
+
+```dotenv
+SHIM_SECRET_KEY=생성하여_보관한_키로_교체
+SHIM_TIMEZONE=Asia/Seoul
+SHIM_SECURE_COOKIE=false
+```
+
+새 전용 볼륨 `shim-data`에 데이터를 보관하며 실행합니다. 이미 같은 이름의 볼륨이 있다면 내용과 키를 확인한 뒤 사용하세요.
+
+```sh
+docker run -d --name shim --env-file .env -p 8000:8000 -v shim-data:/app/var/data --restart unless-stopped shim:1.12.2
+```
+
+DB는 볼륨 안의 `shim_internal.db`에 저장됩니다. 시작 상태는 `docker logs shim`으로 확인하고, 종료는 `docker stop shim`으로 합니다. 신규 암호화 설치에서는 로그의 `SECURE ENCRYPTION mode (PII Protected)` 표시를 확인하세요.
+
+### 최초 접속
+
+1. Docker는 `http://localhost:8000`에 접속합니다. 포터블은 안내된 주소를 사용합니다. 기본 8000번이 사용 중이면 8001번 등으로 바뀔 수 있습니다.
+2. 초기 관리자 `admin` / `0000`으로 로그인합니다.
+3. 화면의 **비밀번호 변경** 메뉴에서 관리자 비밀번호를 즉시 변경합니다.
+4. 회사·팀과 사용자, 연도별 할당량, 근무시간, 공유·승인 정책을 현장에 맞게 설정합니다. 공휴일도 확인하세요.
+
+`http://localhost:8000/health`의 정상 응답은 `{"status":"ok"}`입니다. 포트가 바뀌면 실제 포트로 확인하세요. `/docs`, `/redoc`, `/openapi.json`은 기본 비공개입니다.
+
+모바일은 같은 신뢰 가능한 사내망·Wi-Fi에서 `http://<서버 PC IPv4>:<실행 포트>`로 접속합니다. Windows 서버 주소는 `ipconfig`로 확인할 수 있습니다. 휴대폰의 `localhost`는 서버 PC를 가리키지 않습니다. 연결되지 않으면 방화벽에서 해당 TCP 포트를 신뢰 가능한 사내 네트워크에 허용했는지 확인하세요.
+
+### 테스트 데이터가 필요한 경우
+
+두 패키지에 `seed_test_data.py`가 동봉되어 있습니다. 앱을 한 번 정상 기동하여 DB를 초기화한 뒤 **테스트용 DB에만 수동으로 한 번** 실행하세요. 샘플 데이터는 앱 시작 때 자동 입력되지 않습니다. 반복 실행하면 기록이 추가될 수 있고, `--reset`은 데이터를 삭제하므로 아래 명령에 붙이지 마세요.
+
+Docker에서는 실제 컨테이너 이름을 사용합니다. 위 예시의 이름은 `shim`입니다.
+
+```sh
+docker exec shim python /app/tools/scripts/seed_test_data.py
+```
+
+Windows CMD ZIP은 패키지 루트의 PowerShell에서 앱과 같은 데이터 경로를 명시합니다. 암호화 DB라면 앞서 설정한 것과 동일한 `SHIM_SECRET_KEY`도 이 세션에 있어야 합니다.
+
+```powershell
+$env:SHIM_DATA_DIR = Join-Path (Get-Location) 'data'
+.\runtime\python.exe .\app\tools\scripts\seed_test_data.py
+```
+
+## 개발·빌드 준비
+
+기술 구성은 FastAPI, SQLAlchemy, SQLite, Jinja2, Tailwind CSS v4입니다. 검증에 사용한 환경은 Python 3.12와 Node.js 22입니다. 잠금 파일의 `@tailwindcss/oxide`가 요구하는 Node.js 최소 버전은 20입니다. 다른 Python 버전 전체의 호환성을 검증했다는 뜻은 아닙니다.
+
+소스의 `pip`, `npm`, Docker 빌드는 의존성·기본 이미지 다운로드를 위해 인터넷 또는 미리 준비한 wheel·npm 캐시·이미지가 필요합니다. 제공 Dockerfile은 기본적으로 온라인 설치를 사용합니다.
+
+Windows PowerShell의 저장소 루트에서 가상환경을 준비한 뒤 실행합니다. 루트 `.env`는 `npm run dev`가 자동으로 읽지 않으므로, 새 암호화 개발 DB라면 실행 전에 세션에 키를 설정하세요.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+npm ci
 npm run dev
 ```
 
-#### 방식 B. Docker 컨테이너로 실행 (Production)
+개발 서버는 기본 `http://localhost:9090`에서 시작하며 포트가 사용 중이면 다음 포트를 선택합니다. 기본 데이터 위치는 `var/data/shim_internal.db`이고 `SHIM_DATA_DIR`로 바꿀 수 있습니다.
+
+Docker 소스 빌드 전에는 CSS를 생성합니다.
+
 ```powershell
-# 이미지 빌드
-docker build -f infra/docker/Dockerfile -t shim:1.12.1 -t shim:latest .
-
-# 컨테이너 실행
-
-docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
+npm run build:css
+docker build -f infra/docker/Dockerfile -t shim:1.12.2 .
 ```
 
-기동 후 `http://localhost:8000/health`가 `{"status":"ok"}`를 반환하는지 확인합니다. `/docs`, `/redoc`, `/openapi.json`은 기본적으로 비공개이며, 개발 환경에서만 `SHIM_ENABLE_OPENAPI=true`로 활성화합니다. 모든 HTTP 응답에는 CSP, MIME 스니핑·프레임·리퍼러 차단과 브라우저 권한 제한 헤더가 적용되며 HTTP 배포 호환을 위해 HSTS는 강제하지 않습니다.
+Compose를 사용할 때는 [환경변수 예제](infra/docker/.env.example)를 루트 `.env`로 복사해 키와 경로를 설정한 뒤 `docker compose --env-file .env -f infra/docker/docker-compose.yml up -d`로 실행합니다. 예제의 `SHIM_DATA_DIR=../../var/data`는 Compose 파일 기준으로 저장소의 `var/data`를 가리킵니다.
 
-#### 방식 C. 폐쇄망용 포터블 실행 (Portable)
-인터넷이나 Docker 설치가 불가능한 환경에서 사용합니다.
-1.  **빌드**: `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`
-2.  **배포**: 생성된 `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`을 대상 PC로 복사한 뒤 전체 압축을 풉니다.
-3.  **실행**: 해당 폴더 내 `SHIM_Portable.exe`를 더블 클릭하여 실행합니다.
-    - 안내창을 확인하고 아무 키나 눌러 창을 닫아도 백그라운드에서 서버가 유지되며, 시스템 트레이 아이콘을 통해 관리(브라우저 열기, 서비스 종료)할 수 있습니다.
-    - 백그라운드 장애는 실행 파일 옆 `data/log/shim-master.log`와 `data/log/shim-app.log`에서 확인합니다. 포그라운드 실행은 기존처럼 콘솔에 출력합니다.
-    - 상세 안내: [사용자용 가이드](portable/README_PORTABLE.md), [개발자용 디렉토리 가이드](portable/README.md)
-### Step 3. 시스템 최초 접속 및 초기 설정
-서버가 정상적으로 기동되었다면 브라우저를 통해 접속합니다.
+별도 Windows EXE 패키지는 `powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1`로 만듭니다. 생성되는 `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`은 `SHIM_Portable.exe`와 `_internal`을 함께 배포하는 PyInstaller 형태입니다. EXE나 `python.exe` 하나만 복사해서는 실행할 수 없습니다. [포터블 빌드 안내](portable/README.md)와 [EXE 패키지 사용자 안내](portable/README_PORTABLE.md)를 참고하세요.
 
-1.  **브라우저 접속**: 기동한 환경에 맞추어 접속합니다.
-    - **로컬 개발 서버**: 콘솔에 출력된 주소(기본 시작 포트 `http://localhost:9090`, 사용 중이면 다음 포트)
-    - **Docker 및 포터블 환경**: `http://localhost:8000` (포터블의 경우 포트가 이미 사용 중이면 8001 등으로 자동 할당됩니다)
-2.  **최초 로그인**: 아래 기본 관리자 계정으로 로그인합니다.
-    - **ID**: `admin`
-    - **PW**: `0000`
-3.  **보안 조치**: 로그인 직후 **[마스터 관리 > 개인정보 수정]** 메뉴에서 관리자 비밀번호를 반드시 변경하십시오.
+## 운영·개발 문서
 
-#### 모바일 기기에서 접속
+- [OpenWiki 빠른 시작](openwiki/quickstart.md): 구조, 도메인, 작업 흐름을 읽는 순서
+- [초심자 구동 가이드](docs/1-1_초심자_구동_가이드.md), [백업·복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md): 설치와 데이터 보존
+- [연차 관리 도메인](openwiki/domain/leave-management.md), [관리자 워크플로우](openwiki/workflows/admin.md): 연도별 할당, 결재, 공휴일, 감사 관리
+- [테스트 및 검증](openwiki/testing.md): 개발 의존성 준비, `npm test`, `npm run test:release`와 변경별 검사
+- [릴리스 스크립트](tools/scripts/release.ps1): 버전 동기화와 검사·빌드 절차. 정합성만 확인하려면 `python tools/scripts/verify_version_sync.py`를 실행합니다.
+- [릴리스 검증 기록](docs/2-1_운영_릴리즈_통합_산출물.md), [변경 이력](docs/1-4_작업_로그.md), [남은 개선 과제](docs/3-1_향후_개선계획.md)
+- [전체 문서 인덱스](docs/0_문서_인덱스.md), [상세 설계서](docs/4-1_SHIM_프로젝트_설계서.md)
 
-1. 서버 PC와 모바일 기기를 동일한 신뢰 가능한 사내망 또는 Wi-Fi에 연결합니다.
-2. 서버 PC에서 `ipconfig`로 IPv4 주소를 확인한 뒤 모바일 브라우저에서 `http://<서버 PC IPv4>:<실행 포트>`로 접속합니다. 예: `http://192.168.0.20:9090`
-   - 휴대폰의 `localhost`는 서버 PC가 아니라 휴대폰 자신을 가리키므로 사용할 수 없습니다.
-   - 기본 포트는 로컬 개발 `9090`, Docker·포터블 `8000`이며 실행 중 자동으로 바뀐 경우 실제 표시된 포트를 사용합니다.
-3. 연결되지 않으면 Windows Defender 방화벽에서 해당 TCP 포트를 **개인 네트워크에만** 허용했는지 확인합니다.
-4. 기본 통신은 HTTP이므로 공용 Wi-Fi나 인터넷에 직접 노출하지 마십시오. 외부 접속이 필요하면 HTTPS 역방향 프록시와 보안 쿠키를 먼저 구성합니다.
+## 기여하기
 
-모바일 UI는 1024px 미만에서 활성화됩니다. 수동 확인 기준은 세로 `320×568`, `360×800`, `390×844`, `412×915`, `425px` 폭과 가로 화면입니다. `STAFF`는 신청·조회·취소, `TEAM_LEAD`와 `PM`은 권한 범위의 팀 일정·결재까지 사용할 수 있습니다. `ADMIN`은 조회용으로만 사용하고 실제 관리 처리는 PC에서 진행하십시오.
+버그 제보와 기능 제안은 Issue로, 수정은 Pull Request로 제출하세요. 기존 코드 스타일과 [테스트 지침](openwiki/testing.md)을 따릅니다.
 
+## 라이선스
 
----
-
-## 5. 💡 연차 운영 가이드 (Annual Leave Operations)
-
-본 시스템은 **"연도별 연차 격리 방식"**을 채택하여, 특정 연도의 연차를 변경해도 다른 연도에는 영향을 주지 않습니다. 연말/연초에는 관리자 대시보드에 새해 연차 일괄 지급 안내 배너가 자동으로 표시됩니다.
-
-> 📖 연차 격리 정책, 연말/연초 일괄 지급 절차, 결재 모델 등 상세 운영 가이드는 **[설계서 내 운영/결재 모델 절](docs/4-1_SHIM_프로젝트_설계서.md#38-현장-실무-결재-권한-운영-및-연차-지급-모델-operations--approval-models)**을 참조하십시오.
-
----
-
-## 6. 기타 가이드 및 스크립트
-
-### 유용한 단축 명령어 (PowerShell)
-| 기능 | 명령어 | 비고 |
-|:--- |:--- |:--- |
-| **개발 서버 기동** | `.\tools\scripts\dev.ps1` | 로컬 개발용 |
-| **DB 백업** | `.\tools\scripts\backup_db.ps1` | 로컬 기본 경로 `var/data/backup`에 저장 |
-| **버전 동기화** | `.\tools\scripts\release.ps1 -Version 1.12.1` | 릴리즈 시 필수 실행 |
-| **검사 및 Docker 빌드** | `.\tools\scripts\release.ps1 -Version 1.12.1 -RunChecks -BuildImage` | CSS·검사 통과 후 이미지 생성 |
-| **버전 검증** | `.\tools\scripts\verify_version_sync.ps1` | 정합성 체크 |
-| **Git 훅 설치** | `.\tools\scripts\install_git_hooks.ps1` | 최초 1회 실행 |
-| **빠른 회귀 검사** | `npm test` | 핵심 검사, 약 2분 |
-| **릴리스 전체 검사** | `npm run test:release` | 메모리 1,000회 포함, 약 6분 |
-| **UI 스타일 회귀 검사** | `python tools/scripts/test_ui_style.py` | 패널·테두리 계층과 의미색 유지 검증 |
-| **성능 측정** | `python tools/scripts/performance_rehearsal.py` | 운영 규모 시뮬레이션 |
-
-### 주요 문서 및 산출물 목록
-- **운영 가이드**: [초심자 가이드](docs/1-1_초심자_구동_가이드.md), [백업/복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md), [실무 운영/결재 내용(설계서 3.8절)](docs/4-1_SHIM_프로젝트_설계서.md#38-현장-실무-결재-권한-운영-및-연차-지급-모델-operations--approval-models), [포터블 가이드](portable/README_PORTABLE.md)
-- **릴리즈 정보**: [통합 산출물 증적](docs/2-1_운영_릴리즈_통합_산출물.md), [변경 이력](docs/1-4_작업_로그.md)
-- **기술 설계**: [프로젝트 설계서](docs/4-1_SHIM_프로젝트_설계서.md), [AI 인수인계 내용(설계서 8절)](docs/4-1_SHIM_프로젝트_설계서.md#8-검증-및-테스트-세트-가이드-test-suite-guide)
-- **데이터 위치**
-  - 로컬 및 본 Docker 예제: `var/data/shim_internal.db`
-  - 포터블: 실행 파일 옆 `data/shim_internal.db`
-  - 암호화 모드에서는 DB뿐 아니라 `.env` 또는 `data/secret.key`도 별도로 백업해야 합니다.
-
----
-
-## 7. 기여하기 (Contributing)
-
-SHIM은 오픈소스 프로젝트로서 여러분의 기여를 환영합니다.
-1. **Issue**: 버그 제보 및 기능 제안을 남겨주세요.
-2. **Pull Request**: 새로운 기능을 구현하거나 버그를 수정한 경우 PR을 보내주세요.
-3. **Convention**: 기존의 코드 스타일과 테스트 원칙을 준수해 주세요.
-
----
-
-## 8. 라이선스 (License)
-
-본 프로젝트는 **MIT License** 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 확인하십시오.
-
-Copyright (c) 2026 SHIM Authors.
+[MIT License](LICENSE). Copyright (c) 2026 SHIM Authors.
