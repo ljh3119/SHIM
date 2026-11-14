@@ -35,6 +35,10 @@ SHIM의 무설치(Portable) 배포 패키지는 저장소 공식 빌드 도구�
   - `data/`: 첫 실행 시 생성되는 데이터 및 로그 폴더
   - `BUILD_MANIFEST.json`, `README_먼저읽기.txt`
 - **구동 및 종료**: 사용자는 `START_SHIM.cmd`를 실행하며, 종료 시 시스템 트레이 우클릭 종료(권장) 또는 콘솔 실행 시 `Ctrl+C`를 사용합니다. (`run_portable.cmd`라는 명령 파일은 존재하지 않습니다.)
+- **폐쇄망 수동 시드 실행 (유형 B)**: 테스트용 샘플 데이터를 수동 입력하려면 패키지 루트에서 `SHIM_DATA_DIR`를 명시하여 실행합니다:
+  - PowerShell: `$env:SHIM_DATA_DIR = Join-Path (Get-Location) 'data'; .\runtime\python.exe .\app\tools\scripts\seed_test_data.py`
+  - CMD: `set "SHIM_DATA_DIR=%CD%\data" && runtime\python.exe app\tools\scripts\seed_test_data.py`
+  - (유형 A는 독립 Python 인터프리터가 없으므로 스크립트 실행을 지원하지 않으며 웹 UI에서 직접 등록합니다.)
 - **공식 대체 여부**: 이 CMD ZIP 방식은 특정 사용자 시험을 위한 별도 산출물이며, 공식 PyInstaller 빌드 절차를 대체하는 표준 방식이 아닙니다.
 
 ### 2. 빌드 스크립트 (`build_portable.ps1`) 수정 시 주의사항

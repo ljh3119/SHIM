@@ -12,9 +12,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 실행에 필요한 애플리케이션과 DB 초기화 코드만 포함
+# 실행 소스·DB 초기화 코드와 수동 테스트 시드만 포함
 COPY src ./src
 COPY tools/scripts/db_init.py ./tools/scripts/db_init.py
+COPY tools/scripts/seed_test_data.py ./tools/scripts/seed_test_data.py
 COPY LICENSE ./LICENSE
 
 # Tailwind CSS 로컬 빌드 결과물이나 SQLite는 빌드나 런타임에 맞춰 자동 동기화

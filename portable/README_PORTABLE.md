@@ -73,6 +73,24 @@ SHIM Portable은 Python 런타임과 모든 의존성을 단일 패키지로 묶
 2. 서버 PC에서 명령 프롬프트를 열고 `ipconfig`를 실행하여 현재 네트워크의 **IPv4 주소**를 확인합니다.
 3. 휴대폰 브라우저에서 `http://<서버 PC IPv4>:<실행 포트>`로 접속합니다. 예: 서버 PC가 `192.168.0.20`, 실행 포트가 `8000`이면 `http://192.168.0.20:8000`입니다.
    - 휴대폰에서 `localhost`를 입력하면 휴대폰 자신을 가리키므로 SHIM에 연결되지 않습니다.
+
+### 폐쇄망 테스트용 시드 데이터 수동 입력 (선택 사항)
+
+- **유형 B (런타임 동봉 CMD 패키지)**:
+  폐쇄망 환경에서 수동으로 테스트용 초기 계정(STAFF/TEAM_LEAD/PM) 및 샘플 연차를 입력하려면, 패키지 루트 디렉토리에서 `SHIM_DATA_DIR` 환경 변수를 명시하여 동봉된 런타임으로 실행합니다:
+  - **PowerShell**:
+    ```powershell
+    $env:SHIM_DATA_DIR = Join-Path (Get-Location) 'data'
+    .\runtime\python.exe .\app\tools\scripts\seed_test_data.py
+    ```
+  - **명령 프롬프트 (CMD)**:
+    ```cmd
+    set "SHIM_DATA_DIR=%CD%\data"
+    runtime\python.exe app\tools\scripts\seed_test_data.py
+    ```
+  - ⚠️ `--reset` 플래그는 기존 DB를 완전히 초기화하므로 테스트 환경에서만 주의하여 사용하십시오.
+- **유형 A (공식 PyInstaller EXE 패키지)**:
+  독립 Python 인터프리터를 내장하지 않는 단일 바이너리 패키지이므로 명령줄 스크립트 직접 실행을 지원하지 않으며, 관리자 화면(`admin / 0000`)을 통해 웹 UI에서 직접 사원 및 연차를 등록합니다.
    - 시작 시 `8001`, `8002` 등으로 포트가 변경되었다면 화면에 표시된 실제 포트를 사용합니다.
 4. 접속되지 않으면 Windows Defender 방화벽에서 사용 중인 TCP 포트를 **개인 네트워크에만** 허용합니다. 회사 보안 정책상 방화벽 변경이 제한된 경우 담당자에게 요청하십시오.
 
@@ -155,6 +173,6 @@ SHIM Portable은 Python 런타임과 모든 의존성을 단일 패키지로 묶
 
 ---
 
-**최신 업데이트**: 2026-11-14 (v1.12.0)
+**최신 업데이트**: 2026-11-14 (v1.12.1)
 
 **지원**: 시스템 관리자 / SHIM 개발팀
