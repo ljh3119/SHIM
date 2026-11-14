@@ -32,7 +32,7 @@
         <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-dense-muted">부여 연차</span>
-                <span class="rounded-[2px] bg-dense-surface-soft border border-dense-line px-1.5 py-0.5 text-[10px] font-medium text-dense-muted">총량</span>
+                <span class="text-[11px] font-normal text-dense-muted">총량</span>
             </div>
             <div class="mt-2 space-y-0.5">
                 <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ fmt_hours(stats.total_granted_hours) }} <span class="text-xs font-normal text-dense-muted">h</span></h3>
@@ -44,7 +44,7 @@
         <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-dense-muted">사용 연차</span>
-                <span class="rounded-[2px] bg-emerald-500/10 border border-emerald-300/40 px-1.5 py-0.5 text-[10px] font-medium text-dense-green">승인됨</span>
+                <span class="rounded-[2px] bg-dense-green-soft border border-dense-line px-1.5 py-0.5 text-[10px] font-medium text-dense-green">승인됨</span>
             </div>
             <div class="mt-2 space-y-0.5">
                 <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ fmt_hours(stats.total_used_hours) }} <span class="text-xs font-normal text-dense-muted">h</span></h3>
@@ -56,7 +56,7 @@
         <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-dense-muted">연차 소진율</span>
-                <span class="rounded-[2px] bg-dense-blue/10 border border-dense-blue/30 px-1.5 py-0.5 text-[10px] font-medium text-dense-blue">비율</span>
+                <span class="text-[11px] font-normal text-dense-muted">비율</span>
             </div>
             <div class="mt-2 space-y-0.5">
                 <h3 class="text-xl font-semibold text-dense-text font-mono tabular-nums">{{ stats.exhaustion_rate }} <span class="text-xs font-normal text-dense-muted">%</span></h3>
@@ -103,9 +103,9 @@
                     </div>
                     <div class="text-right space-y-0.5">
                         {% if leave.is_deductive %}
-                        <span class="rounded-[2px] bg-dense-blue/10 border border-dense-blue/30 px-1.5 py-0.5 text-[10px] font-medium text-dense-blue">연차</span>
+                        <span class="rounded-[2px] bg-dense-surface-soft border border-dense-line px-1.5 py-0.5 text-[10px] font-medium text-dense-text">연차</span>
                         {% else %}
-                        <span class="rounded-[2px] bg-purple-500/10 border border-purple-300/40 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">공가/출장</span>
+                        <span class="rounded-[2px] bg-dense-surface-soft border border-dense-line px-1.5 py-0.5 text-[10px] font-medium text-dense-text">공가/출장</span>
                         {% endif %}
                         <span class="block text-[10px] text-dense-muted font-mono tabular-nums">{{ leave.snapshot_slot_label or "시간 정보 없음" }}</span>
                     </div>
@@ -211,9 +211,37 @@
 <script src="/static/js/chart.umd.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const denseGridColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-dense-grid').trim()
-      || 'rgba(0, 0, 0, 0.1)';
+    function resolveColor(varName) {
+        try {
+            const probe = document.createElement('div');
+            probe.style.display = 'none';
+            probe.style.color = `var(${varName})`;
+            document.body.appendChild(probe);
+            const computed = getComputedStyle(probe).color;
+            document.body.removeChild(probe);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (ctx && computed) {
+                ctx.fillStyle = computed;
+                ctx.fillRect(0, 0, 1, 1);
+                const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                const alpha = a / 255;
+                return alpha >= 0.995 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+            }
+            return computed;
+        } catch (_) {
+            return '';
+        }
+    }
+
+    const denseGridColor = resolveColor('--color-dense-grid') || 'rgba(0, 0, 0, 0.1)';
+    const colorAccent = resolveColor('--color-accent');
+    const colorPaper3 = resolveColor('--color-paper-3');
+    const colorFieldEdge = resolveColor('--color-field-edge');
+    const colorAccentSoft = resolveColor('--color-accent-soft');
     const chartData = {{ chart_data | tojson | safe }};
     
     // 1. 팀별 차트
@@ -227,15 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: '사용 연차 (h)',
                         data: chartData.used_hours,
-                        backgroundColor: 'rgba(37, 99, 235, 0.85)',
-                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: colorAccent,
+                        borderColor: colorAccent,
                         borderWidth: 1
                     },
                     {
                         label: '잔여 연차 (h)',
                         data: chartData.remaining_hours,
-                        backgroundColor: 'rgba(209, 213, 219, 0.5)',
-                        borderColor: 'rgb(209, 213, 219)',
+                        backgroundColor: colorPaper3,
+                        borderColor: colorFieldEdge,
                         borderWidth: 1
                     }
                 ]
@@ -283,13 +311,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: '월별 사용 시간 (h)',
                         data: chartData.monthly_hours,
-                        borderColor: 'rgb(37, 99, 235)',
-                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        borderColor: colorAccent,
+                        backgroundColor: colorAccentSoft,
                         fill: true,
                         tension: 0.25,
                         borderWidth: 1.5,
                         pointHitRadius: 12,
-                        pointBackgroundColor: 'rgb(37, 99, 235)'
+                        pointBackgroundColor: colorAccent
                     }
                 ]
             },

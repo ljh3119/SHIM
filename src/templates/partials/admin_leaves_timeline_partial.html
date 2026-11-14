@@ -41,7 +41,7 @@
                 <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5 text-xs">
                     <div>
                         <label for="tl-year" class="mb-0.5 block text-dense-muted text-[11px] font-medium">연도</label>
-                        <select id="tl-year" name="year" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select id="tl-year" name="year" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                             {% for y in year_options %}
                             <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                             {% endfor %}
@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <label for="tl-month" class="mb-0.5 block text-dense-muted text-[11px] font-medium">월</label>
-                        <select id="tl-month" name="month" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select id="tl-month" name="month" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                             <option value="0" {% if selected_month == 0 %}selected{% endif %}>전체 월</option>
                             {% for m in range(1, 13) %}
                             <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
@@ -58,7 +58,7 @@
                     </div>
                     <div>
                         <label for="tl-user" class="mb-0.5 block text-dense-muted text-[11px] font-medium">사용자</label>
-                        <select id="tl-user" name="user_id" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select id="tl-user" name="user_id" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                             <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                             {% for u in users %}
                             <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -67,7 +67,7 @@
                     </div>
                     <div>
                         <label for="tl-company" class="mb-0.5 block text-dense-muted text-[11px] font-medium">회사</label>
-                        <select id="tl-company" name="company" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select id="tl-company" name="company" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                             <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                             {% for c in company_options %}
                             <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
@@ -76,7 +76,7 @@
                     </div>
                     <div>
                         <label for="tl-team" class="mb-0.5 block text-dense-muted text-[11px] font-medium">팀</label>
-                        <select id="tl-team" name="team" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select id="tl-team" name="team" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                             <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                             {% for t in team_options %}
                             <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>

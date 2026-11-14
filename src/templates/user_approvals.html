@@ -14,13 +14,13 @@
             </p>
         </div>
         <div class="mt-4 flex gap-2 lg:mt-0">
-            <div class="inline-flex rounded-[4px] bg-paper-4 p-0.5 border border-dense-line shadow-xs">
+            <div class="inline-flex rounded-[4px] bg-paper-4 p-0.5 border border-dense-line">
                 <a href="/user/calendar" class="rounded-[2px] px-3 py-1 text-xs font-medium text-dense-muted hover:text-dense-text transition-colors">캘린더</a>
                 {% if team_calendar_visible or company_calendar_visible or user_role in ['PM', 'ADMIN'] %}
                 <a href="/user/team-calendar" class="rounded-[2px] px-3 py-1 text-xs font-medium text-dense-muted hover:text-dense-text transition-colors">타임라인</a>
                 {% endif %}
                 {% if user_role in ['TEAM_LEAD', 'PM'] and is_approval_required %}
-                <a href="/user/approvals" class="rounded-[2px] px-3 py-1 text-xs font-semibold text-dense-blue bg-dense-surface shadow-xs transition-colors">결재 관리</a>
+                <a href="/user/approvals" class="rounded-[2px] px-3 py-1 text-xs font-semibold text-dense-blue bg-dense-surface transition-colors">결재 관리</a>
                 {% endif %}
                 <a href="/user/history" class="rounded-[2px] px-3 py-1 text-xs font-medium text-dense-muted hover:text-dense-text transition-colors">내 신청 내역</a>
             </div>
@@ -35,7 +35,7 @@
         <!-- Right Content Panel -->
         <div class="min-w-0 flex-1 space-y-4">
 
-            <div class="rounded-[6px] border border-dense-line bg-dense-surface p-4 md:p-5 shadow-xs space-y-4">
+            <div class="rounded-[6px] border border-dense-line bg-dense-surface p-4 md:p-5 space-y-4">
                 <!-- Header Title & Filter Tabs & Bulk Actions (All in One Row) -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-4 gap-3">
                     <div class="flex items-center gap-3">
@@ -46,16 +46,16 @@
                         </h3>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <nav class="inline-flex rounded-[4px] bg-paper-4 p-0.5 border border-dense-line shadow-xs" aria-label="결재 상태 필터">
-                            <a href="/user/approvals?status=PENDING" class="rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'PENDING' %}font-semibold text-dense-blue bg-dense-surface shadow-xs{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">결재 대기</a>
-                            <a href="/user/approvals?status=APPROVED" class="rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'APPROVED' %}font-semibold text-dense-blue bg-dense-surface shadow-xs{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">승인됨</a>
-                            <a href="/user/approvals?status=REJECTED" class="rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'REJECTED' %}font-semibold text-dense-blue bg-dense-surface shadow-xs{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">반려됨</a>
-                            <a href="/user/approvals?status=ALL" class="rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'ALL' %}font-semibold text-dense-blue bg-dense-surface shadow-xs{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">전체</a>
+                        <nav class="inline-flex rounded-[4px] bg-paper-4 p-0.5 border border-dense-line" aria-label="결재 상태 필터">
+                            <a href="/user/approvals?status=PENDING" class="touch-target-44 inline-flex items-center rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'PENDING' %}font-semibold text-dense-blue bg-dense-surface{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">결재 대기</a>
+                            <a href="/user/approvals?status=APPROVED" class="touch-target-44 inline-flex items-center rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'APPROVED' %}font-semibold text-dense-blue bg-dense-surface{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">승인됨</a>
+                            <a href="/user/approvals?status=REJECTED" class="touch-target-44 inline-flex items-center rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'REJECTED' %}font-semibold text-dense-blue bg-dense-surface{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">반려됨</a>
+                            <a href="/user/approvals?status=ALL" class="touch-target-44 inline-flex items-center rounded-[2px] px-3 py-1 text-xs transition-colors {% if selected_status == 'ALL' %}font-semibold text-dense-blue bg-dense-surface{% else %}font-medium text-dense-muted hover:text-dense-text{% endif %}">전체</a>
                         </nav>
                         <div class="inline-flex items-center gap-1.5 bg-dense-surface-soft border border-dense-line py-0.5 px-2 rounded-[4px] {% if selected_status != 'PENDING' %}invisible{% elif not pending_leaves %}opacity-40 select-none pointer-events-none{% endif %}">
                             <span class="text-[11px] text-dense-muted font-medium">일괄 결재:</span>
-                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(true)" class="px-2 py-0.5 rounded-[2px] bg-dense-green text-white text-xs font-medium hover:brightness-95 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed">선택 승인</button>
-                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(false)" class="px-2 py-0.5 rounded-[2px] border border-dense-line bg-dense-surface text-dense-nav-text text-xs font-medium hover:bg-dense-surface-soft transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed">선택 반려</button>
+                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(true)" class="px-2 py-0.5 rounded-[2px] bg-dense-green text-white text-xs font-medium hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">선택 승인</button>
+                            <button {% if not pending_leaves or selected_status != 'PENDING' %}disabled{% endif %} onclick="bulkApproveG(false)" class="px-2 py-0.5 rounded-[2px] border border-dense-line bg-dense-surface text-dense-nav-text text-xs font-medium hover:bg-dense-surface-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed">선택 반려</button>
                         </div>
                     </div>
                 </div>
@@ -120,8 +120,8 @@
                                 <td class="whitespace-nowrap px-3 py-2.5 text-center">
                                     {% if pl.status == 'PENDING' %}
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button type="button" onclick="teamApprove({{ pl.id }}, this)" class="inline-flex rounded-[4px] bg-dense-green px-2 py-0.5 text-xs font-medium text-white hover:brightness-95 transition-colors shadow-xs">승인</button>
-                                        <button type="button" onclick="teamRejectPrompt({{ pl.id }}, this)" class="inline-flex rounded-[4px] border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft transition-colors shadow-xs">반려</button>
+                                        <button type="button" onclick="teamApprove({{ pl.id }}, this)" class="inline-flex rounded-[4px] bg-dense-green px-2 py-0.5 text-xs font-medium text-white hover:brightness-95 transition-colors">승인</button>
+                                        <button type="button" onclick="teamRejectPrompt({{ pl.id }}, this)" class="inline-flex rounded-[4px] border border-dense-line bg-dense-surface px-2 py-0.5 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft transition-colors">반려</button>
                                     </div>
                                     {% elif pl.status == 'APPROVED' %}
                                     <span class="inline-flex rounded-[2px] border border-dense-green/20 bg-dense-green-soft px-2 py-0.5 text-[11px] font-medium text-dense-green">승인 완료</span>
@@ -168,7 +168,7 @@
             <span>캘린더 홈으로</span>
         </a>
 
-        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 shadow-xs space-y-3">
+        <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3.5 space-y-3">
             <div class="flex items-center justify-between border-b border-dense-line pb-2">
                 <h3 class="text-xs font-semibold text-dense-text">결재 관리</h3>
                 <span class="inline-flex h-4 min-w-[1.25rem] items-center justify-center rounded-[2px] bg-dense-amber px-1 text-[10px] font-semibold text-white tabular-nums">{{ pending_leaves|length }}</span>
@@ -176,10 +176,10 @@
 
             <!-- Mobile Filter Tabs -->
             <div class="flex flex-wrap gap-1 border-b border-dense-line pb-2.5">
-                <a href="/user/approvals?status=PENDING" class="rounded-[2px] border {% if selected_status == 'PENDING' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors">대기</a>
-                <a href="/user/approvals?status=APPROVED" class="rounded-[2px] border {% if selected_status == 'APPROVED' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors">승인</a>
-                <a href="/user/approvals?status=REJECTED" class="rounded-[2px] border {% if selected_status == 'REJECTED' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors">반려</a>
-                <a href="/user/approvals?status=ALL" class="rounded-[2px] border {% if selected_status == 'ALL' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors">전체</a>
+                <a href="/user/approvals?status=PENDING" class="rounded-[2px] border {% if selected_status == 'PENDING' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors touch-target-44 flex items-center justify-center">대기</a>
+                <a href="/user/approvals?status=APPROVED" class="rounded-[2px] border {% if selected_status == 'APPROVED' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors touch-target-44 flex items-center justify-center">승인</a>
+                <a href="/user/approvals?status=REJECTED" class="rounded-[2px] border {% if selected_status == 'REJECTED' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors touch-target-44 flex items-center justify-center">반려</a>
+                <a href="/user/approvals?status=ALL" class="rounded-[2px] border {% if selected_status == 'ALL' %}border-dense-line bg-dense-blue-soft text-dense-blue font-semibold{% else %}border-dense-line bg-dense-surface text-dense-nav-text font-normal hover:bg-dense-surface-soft{% endif %} px-2.5 py-1 text-[11px] transition-colors touch-target-44 flex items-center justify-center">전체</a>
             </div>
 
             {% if pending_leaves %}
@@ -188,8 +188,8 @@
             <div id="mobileBulkBar" class="flex justify-between items-center bg-dense-amber-soft/20 border border-dense-amber/20 p-2.5 rounded-[4px] hidden">
                 <span class="text-xs font-semibold text-dense-amber tabular-nums"><span id="mobileSelectCount">0</span>개 선택됨</span>
                 <div class="flex gap-1">
-                    <button onclick="bulkApproveG(true)" class="px-2.5 py-1 rounded-[2px] bg-dense-green text-white text-xs font-medium">일괄 승인</button>
-                    <button onclick="bulkApproveG(false)" class="px-2.5 py-1 rounded-[2px] border border-dense-line bg-dense-surface text-dense-nav-text text-xs font-medium">일괄 반려</button>
+                    <button onclick="bulkApproveG(true)" class="px-2.5 py-1 rounded-[2px] bg-dense-green text-white text-xs font-medium touch-target-44 flex items-center justify-center">일괄 승인</button>
+                    <button onclick="bulkApproveG(false)" class="px-2.5 py-1 rounded-[2px] border border-dense-line bg-dense-surface text-dense-nav-text text-xs font-medium touch-target-44 flex items-center justify-center">일괄 반려</button>
                 </div>
             </div>
             {% endif %}
@@ -198,14 +198,16 @@
                 {% for pl in pending_leaves %}
                 <div class="p-3 rounded-[4px] border border-dense-line bg-dense-surface-soft space-y-1.5">
                     <div class="flex items-start justify-between">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-h-11 touch-target-44-label">
                             {% if selected_status == 'PENDING' %}
-                            <input type="checkbox" name="pending_ids" value="{{ pl.id }}" class="approval-checkbox-mobile h-3.5 w-3.5 rounded-[2px] text-dense-blue cursor-pointer border-field-edge" onchange="updateBulkBarVisibility()">
+                            <input type="checkbox" name="pending_ids" id="chk-mobile-{{ pl.id }}" value="{{ pl.id }}" class="approval-checkbox-mobile h-4 w-4 rounded-[2px] text-dense-blue cursor-pointer border-field-edge" onchange="updateBulkBarVisibility()">
                             {% endif %}
-                            <span class="text-xs font-semibold text-dense-text">{{ pl.user.user_name if pl.user else pl.user_id }}</span>
-                            {% if pl.user and pl.user.team %}
-                            <span class="inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-medium" style="{{ string_to_badge_style(pl.user.team, is_team=True) }}">{{ pl.user.team }}</span>
-                            {% endif %}
+                            <label {% if selected_status == 'PENDING' %}for="chk-mobile-{{ pl.id }}"{% endif %} class="flex items-center gap-2 cursor-pointer touch-target-44-label">
+                                <span class="text-xs font-semibold text-dense-text">{{ pl.user.user_name if pl.user else pl.user_id }}</span>
+                                {% if pl.user and pl.user.team %}
+                                <span class="inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-medium" style="{{ string_to_badge_style(pl.user.team, is_team=True) }}">{{ pl.user.team }}</span>
+                                {% endif %}
+                            </label>
                         </div>
                         <div class="text-[11px] text-dense-muted tabular-nums font-normal">
                             {{ pl.date.strftime('%m-%d') }}
@@ -222,8 +224,8 @@
 
                     <div class="pt-1.5 border-t border-dense-line flex justify-end gap-1.5">
                         {% if pl.status == 'PENDING' %}
-                        <button type="button" onclick="teamApprove({{ pl.id }}, this)" class="rounded-[2px] bg-dense-green px-2.5 py-1 text-xs font-medium text-white hover:brightness-95">승인</button>
-                        <button type="button" onclick="teamRejectPrompt({{ pl.id }}, this)" class="rounded-[2px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft">반려</button>
+                        <button type="button" onclick="teamApprove({{ pl.id }}, this)" class="rounded-[2px] bg-dense-green px-2.5 py-1 text-xs font-medium text-white hover:brightness-95 touch-target-44 flex items-center justify-center">승인</button>
+                        <button type="button" onclick="teamRejectPrompt({{ pl.id }}, this)" class="rounded-[2px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft touch-target-44 flex items-center justify-center">반려</button>
                         {% elif pl.status == 'APPROVED' %}
                         <span class="inline-flex rounded-[2px] border border-dense-green/20 bg-dense-green-soft px-2 py-0.5 text-[11px] font-medium text-dense-green">승인 완료</span>
                         {% elif pl.status == 'REJECTED' %}

@@ -1,38 +1,54 @@
 # Portable 디렉토리 가이드 (Developer & Maintainer)
 
-이 디렉토리는 SHIM 시스템을 Docker 없이 무설치 실행 가능하도록 빌드하고 관리하는 데 필요한 자산들을 포함합니다.
+이 디렉토리는 SHIM 시스템을 Docker 없이 무설치 실행 가능하도록 빌드하고 관리하는 데 필요한 자산들을 포함합니다. 아래 파일 구성은 저장소의 공식 PyInstaller 패키지 빌드에 사용되는 자산 설명입니다.
 
-## 📂 파일 구성 및 역할
+## 📂 파일 구성 및 역할 (공식 PyInstaller 빌드 자산)
 
 | 파일명 | 역할 | 상세 설명 |
 |:--- |:--- |:--- |
 | **`build_portable.ps1`** | **빌드 스크립트** | Tailwind CSS 빌드, 버전 동기화, PyInstaller 패키징 및 최종 산출물 구성을 수행하는 PowerShell 스크립트입니다. |
 | **`README_PORTABLE.md`** | **배포용 가이드** | 최종 사용자(폐쇄망 운영자)에게 전달되는 문서입니다. 설치, 실행, 백업 방법이 기술되어 있습니다. |
-| **`stop_portable.bat`** | **비상 강제 종료 파일** | 트레이 종료가 동작하지 않을 때만 프로세스를 강제 종료합니다. 정상 종료 절차를 우회하므로 일상적인 종료에는 사용하지 않습니다. |
+| **`stop_portable.bat`** | **비상 강제 종료 파일** | 공식 PyInstaller 패키지에 동봉되며, 트레이 종료가 동작하지 않을 때만 프로세스를 강제 종료합니다. 정상 종료 절차를 우회하므로 일상적인 종료에는 사용하지 않습니다. |
 | **`shim_portable.py`** | **실행 진입점** | PyInstaller가 바이너리를 만들 때 참조하는 Python 진입점입니다. 런타임 경로 환경 변수 설정, 시스템 트레이 아이콘 스레드 구동, 포트 탐색 로직을 포함합니다. |
 
 ---
 
 ## 🛠️ 빌드 및 관리 가이드
 
-### 1. 포터블 빌드 원리
-본 프로젝트는 **PyInstaller**로 Python 인터프리터와 소스 코드, 정적 자산(Templates, Static)을 로컬 임시 폴더에 묶고, 패키징 검증을 거친 결과를 `dist/SHIM_Portable_v<버전>_<빌드시각>.zip` 한 파일로 게시합니다.
-- 빌드 과정에서 `src/templates`와 `src/static`은 ZIP의 `_internal` 런타임 패키지에 포함됩니다.
-- 운영 데이터는 번들링된 바이너리 옆의 `data/` 폴더에 생성 및 유지됩니다.
-- IANA 시간대 데이터(`tzdata`)는 `--collect-data tzdata`로 포함되어 폐쇄망에서도 `SHIM_TIMEZONE`을 해석합니다.
+### 1. 포터블 패키지 유형과 원리
+
+SHIM의 무설치(Portable) 배포 패키지는 저장소 공식 빌드 도구와 별도 시험 배포본의 두 가지 형태가 있습니다.
+
+#### 유형 A. 공식 PyInstaller 통합 빌드형 (`dist/SHIM_Portable_v<버전>_<빌드시각>.zip`)
+- **생성 도구**: 저장소에 포함된 `build_portable.ps1` 스크립트를 통해 생성합니다.
+- **패키징 구조**: **PyInstaller**로 Python 인터프리터와 소스 코드, 정적 자산(Templates, Static)을 `_internal` 런타임 패키지로 묶고, 진입점 `SHIM_Portable.exe`, 비상 스크립트 `stop_portable.bat`, `README_PORTABLE.md`를 포함하는 단일 ZIP 패키지로 게시합니다.
+- **데이터 격리**: 번들링된 바이너리 옆의 `data/` 폴더에 DB(`data/shim_internal.db`) 및 로그(`data/log/`)가 자동 생성 및 격리 유지됩니다.
+- **주의**: 배포 시 `SHIM_Portable.exe` 단일 파일만 복사해서는 안 되며, ZIP 전체 압축 해제를 통해 `_internal` 라이브러리 폴더를 반드시 함께 유지해야 합니다.
+
+#### 유형 B. 별도 Windows CPython 런타임 동봉형 (`CMD ZIP`, 시험 배포본)
+- **개념 및 이력**: 과거 v1.11.0 C BASELINE 시험 배포(`SHIM_Portable_Preview_1.11.0_c-baseline1_windows-x64.zip`, 커밋 `38fc92f`) 등에서 제공된 별도 패키징 형태입니다. 현재 저장소의 공식 `build_portable.ps1`이 생성하는 방식이 아니며, 외부 독립형 CPython 런타임(Astral 3.12.16 등)을 직접 번들링한 시험용 배포본입니다.
+- **패키징 구조**:
+  - `START_SHIM.cmd`: 백그라운드 런처 실행 파일 (`runtime\python.exe app\portable\shim_portable.py`)
+  - `START_SHIM_CONSOLE.cmd`: 진단용 포그라운드 실행 파일 (`--foreground`)
+  - `runtime/`: Windows x64용 Python 독립형 런타임
+  - `app/`: 소스 코드 및 템플릿/정적 자산
+  - `data/`: 첫 실행 시 생성되는 데이터 및 로그 폴더
+  - `BUILD_MANIFEST.json`, `README_먼저읽기.txt`
+- **구동 및 종료**: 사용자는 `START_SHIM.cmd`를 실행하며, 종료 시 시스템 트레이 우클릭 종료(권장) 또는 콘솔 실행 시 `Ctrl+C`를 사용합니다. (`run_portable.cmd`라는 명령 파일은 존재하지 않습니다.)
+- **공식 대체 여부**: 이 CMD ZIP 방식은 특정 사용자 시험을 위한 별도 산출물이며, 공식 PyInstaller 빌드 절차를 대체하는 표준 방식이 아닙니다.
 
 ### 2. 빌드 스크립트 (`build_portable.ps1`) 수정 시 주의사항
 - **의존성**: 스크립트가 `requirements.txt`와 `pyinstaller`를 설치하므로 인터넷 연결 또는 준비된 패키지 캐시가 필요합니다.
 - **버전 동기화**: PyInstaller 실행 전에 `release.ps1`을 호출하여 `package.json`, `package-lock.json`, `src/app/constants.py`, Docker 기본 이미지 태그와 배포 문서의 버전을 맞춥니다.
 - **자산 복사**: 빌드가 완료된 후 `stop_portable.bat`와 `README_PORTABLE.md`를 로컬 스테이징 패키지에 포함하고, 운영 DB·비밀키 없이 ZIP으로 게시합니다.
 - **검증 범위**: ZIP 구성·금지 파일·SHA-256은 검사하지만 전체 회귀 테스트와 포터블 실기동은 별도로 수행해야 합니다. 모바일 UI 변경 시에는 `python tools/scripts/test_mobile_ui.py`도 빌드 전에 통과시킵니다.
+- **산출물 확인**: 배포 파일의 버전·소스 커밋·SHA-256·검증 범위는 함께 제공되는 manifest와 실행 안내를 기준으로 확인합니다. 이번 Linux 작업 환경에서는 실제 Windows 기동·트레이·중복 실행을 검증하지 못했습니다.
 
-### 3. 포터블 빌드 실행 방법
+### 3. 공식 포터블 빌드 실행 방법 (PyInstaller 기반)
 
-*이 작업은 인터넷이 가능하고 개발 환경이 세팅된 Local PC에서 수행합니다.*
+*이 작업은 인터넷이 가능하고 개발 환경이 세팅된 Local Windows PC에서 수행합니다.*
 #### 사전 요구사항
 - **Python**: 3.11 이상
-
 - **Node.js**: 18 이상 (Tailwind CSS 빌드용)
 - **의존성**: 프로젝트 루트에서 `npm install` 완료 상태
 #### 빌드 실행 명령어
@@ -46,10 +62,11 @@ powershell -ExecutionPolicy Bypass -File .\portable\build_portable.ps1
 포터블 빌드 스크립트는 CSS 생성, 버전 재확인, PyInstaller 패키징과 ZIP 검증을 수행합니다. 최종 배포 전에는 생성된 EXE를 실제 기동하여 `/health`의 HTTP 200, 기본 OpenAPI 세 경로의 HTTP 404, 주요 화면의 보안 헤더와 정상 종료를 확인하고 버전 표시도 확인하십시오.
 - **결과물**: `dist/SHIM_Portable_v<버전>_<빌드시각>.zip`이 생성됩니다. 기존 산출물은 삭제하거나 덮어쓰지 않습니다.
 - **로그·종료 회귀**: `test_portable_logging.py`는 운영 데이터와 분리된 임시 폴더에서 한글 UTF-8·순환·백업 및 DB 초기화 오류·handler 오류 재귀 방지·자식 조기 종료를 확인합니다. Windows에서는 실제 master → worker를 기동하고 트레이 종료 명령을 보내 정상 종료 event 수신, lifespan·Uvicorn 종료, 강제 종료 미사용과 WAL/SHM 정리까지 검증합니다. 실제 ZIP에서도 같은 경로와 손상 DB 실패 경로를 확인합니다.
+
 ### 4. 배포 주의사항
 
-- 최종 사용자에게는 최신 버전별 ZIP 한 파일을 전달하고, 대상 PC에서 전체 압축을 풀도록 안내합니다.
-- `.exe` 파일만 단독으로 전달할 경우, 내부 자산과 런타임 라이브러리가 누락되어 실행되지 않습니다.
+- 최종 사용자에게는 최신 버전별 ZIP 패키지 한 파일을 전달하고, 대상 PC에서 전체 압축을 풀도록 안내합니다.
+- `SHIM_Portable.exe` 또는 `START_SHIM.cmd`만 단독으로 복사할 경우, 내부 자산과 런타임 라이브러리가 누락되어 실행되지 않습니다. 반드시 ZIP 전체 압축 해제 폴더 구조를 유지해야 합니다.
 
 ---
 

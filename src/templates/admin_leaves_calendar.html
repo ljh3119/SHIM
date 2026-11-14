@@ -6,7 +6,7 @@
 <style>
     .cal-table { border-collapse: collapse; width: 100%; }
     .cal-table.cal-month-view { table-layout: auto; width: max-content; min-width: 100%; }
-    .cal-table.cal-month-view.cal-one-line { table-layout: fixed; width: 100%; max-width: 100%; }
+    .cal-table.cal-month-view.cal-one-line { table-layout: fixed; width: 100%; max-width: 100%; min-width: 1200px; }
     .cal-table.cal-year-view { table-layout: fixed; }
     .cal-table th, .cal-table td { border: 1px solid var(--color-dense-line); text-align: center; vertical-align: middle; }
     .cal-table .col-day { width: auto; min-width: 28px; padding: 2px 1px; }
@@ -42,7 +42,7 @@
         max-width: 2.30%;
     }
     .cal-table.cal-month-view.cal-one-line thead th.col-day .day-num { display: block; font-weight: 600; font-size: 9px; line-height: 1.1; font-family: ui-monospace, monospace; }
-    .cal-table.cal-month-view.cal-one-line thead th.col-day .weekday-label { display: block; font-size: 7px; line-height: 1.1; margin-top: 1px; }
+    .cal-table.cal-month-view.cal-one-line thead th.col-day .weekday-label { display: block; font-size: 11px; line-height: 1.2; margin-top: 1px; }
     .cal-table.cal-month-view.cal-one-line thead th.col-day .holiday-chip {
         display: block;
         margin: 1px auto 0;
@@ -126,7 +126,7 @@
     .day-block.pending { background: var(--color-warning-soft) !important; color: var(--color-warning) !important; border: 1px solid var(--color-warning) !important; }
     .weekend-head { color: var(--color-dense-danger) !important; }
     .holiday-head { color: var(--color-dense-danger) !important; }
-    .weekday-label { display: block; font-size: 8px; line-height: 1.1; margin-top: 1px; }
+    .weekday-label { display: block; font-size: 11px; line-height: 1.2; margin-top: 1px; }
     .cal-table thead th a.cal-sort-head { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 2px; justify-content: center; max-width: 100%; }
     .cal-table thead th a.cal-sort-head:hover { color: var(--color-dense-blue); }
     .cal-table thead th.sticky-col a.cal-sort-head { justify-content: flex-start; padding-left: 2px; }
@@ -183,13 +183,13 @@
                             <input type="hidden" name="company" value="{{ selected_company }}">
                             <input type="hidden" name="team" value="{{ selected_team }}">
                             <input type="hidden" name="active_state" value="{{ selected_active_state }}">
-                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-field-edge bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                                 {% endfor %}
                             </select>
                             {% if view != 'year' %}
-                            <select name="month" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select name="month" onchange="this.form.submit()" class="rounded-[3px] border border-field-edge bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 {% for m in range(1, 13) %}
                                 <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>
                                 {% endfor %}
@@ -209,7 +209,7 @@
                             <input type="hidden" name="company" value="{{ selected_company }}">
                             <input type="hidden" name="team" value="{{ selected_team }}">
                             <input type="hidden" name="active_state" value="{{ selected_active_state }}">
-                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select name="year" onchange="this.form.submit()" class="rounded-[3px] border border-field-edge bg-dense-surface py-0.5 px-1.5 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                                 {% endfor %}
@@ -249,7 +249,7 @@
                     <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 text-xs">
                         <div>
                             <label for="cal-user" class="mb-0.5 block text-dense-muted text-[11px] font-medium">사용자</label>
-                            <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select id="cal-user" name="user_id" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                                 {% for u in users %}
                                 <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — {{ u.team or '—' }} / {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -258,7 +258,7 @@
                         </div>
                         <div>
                             <label for="cal-company" class="mb-0.5 block text-dense-muted text-[11px] font-medium">회사</label>
-                            <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select id="cal-company" name="company" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                                 {% for c in company_options %}
                                 <option value="{{ c }}" {% if selected_company == c %}selected{% endif %} title="{{ c }}">{{ c }}</option>
@@ -267,7 +267,7 @@
                         </div>
                         <div>
                             <label for="cal-team" class="mb-0.5 block text-dense-muted text-[11px] font-medium">팀</label>
-                            <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select id="cal-team" name="team" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                                 {% for t in team_options %}
                                 <option value="{{ t }}" {% if selected_team == t %}selected{% endif %} title="{{ t }}">{{ t }}</option>
@@ -276,7 +276,7 @@
                         </div>
                         <div>
                             <label for="cal-active" class="mb-0.5 block text-dense-muted text-[11px] font-medium">계정 상태</label>
-                            <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select id="cal-active" name="active_state" onchange="document.getElementById('cal-form').submit()" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                                 <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
                                 <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
                                 <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>

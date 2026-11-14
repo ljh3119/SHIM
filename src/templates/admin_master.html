@@ -49,21 +49,21 @@
                     일반 사원 및 팀장이 조회할 수 있는 연차 캘린더의 범위를 지정합니다.
                 </p>
                 <div class="space-y-1 pt-0.5 text-xs text-dense-text">
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="flex items-center gap-2 cursor-pointer touch-target-44-label">
                         <input type="radio" name="calendar_scope" value="none" {% if not team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line text-dense-blue focus:ring-dense-blue">
                         <span class="text-[11px] text-dense-muted">공유 안 함 (본인 전용) — 본인의 휴가 일정만 조회할 수 있습니다.</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="flex items-center gap-2 cursor-pointer touch-target-44-label">
                         <input type="radio" name="calendar_scope" value="team" {% if team_calendar_visible and not company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line text-dense-blue focus:ring-dense-blue">
                         <span class="text-[11px] text-dense-text">소속 팀원 공유 — 동일한 팀 내 사원의 연차를 조회할 수 있습니다.</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="flex items-center gap-2 cursor-pointer touch-target-44-label">
                         <input type="radio" name="calendar_scope" value="company" {% if company_calendar_visible %}checked{% endif %} class="h-3.5 w-3.5 border-dense-line text-dense-blue focus:ring-dense-blue">
                         <span class="text-[11px] text-dense-text">프로젝트 전체 공유 — 모든 사원의 연차를 조회할 수 있습니다.</span>
                     </label>
                 </div>
                 <div class="pt-1">
-                    <button type="button" onclick="saveCalendarScope(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors">공유 범위 저장</button>
+                    <button type="button" onclick="saveCalendarScope(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors touch-target-44">공유 범위 저장</button>
                 </div>
             </div>
 
@@ -73,7 +73,7 @@
                 
                 <div class="space-y-1 text-xs">
                     <label for="policy_granularity" class="block text-dense-muted text-[11px] font-medium">1) 최소 시간 단위</label>
-                    <select id="policy_granularity" class="w-full max-w-[14rem] border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                    <select id="policy_granularity" class="w-full max-w-[14rem] border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                         {% for unit, label in [(30, '30분 단위 차감'), (60, '60분(1시간) 단위 차감'), (120, '120분(2시간) 단위 차감'), (240, '240분(반일/4시간) 단위 차감')] %}
                         <option value="{{ unit }}" {% if time_granularity_minutes == unit %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -85,13 +85,13 @@
                     <div class="space-y-1">
                         <label class="block text-[11px] text-dense-muted font-medium">2) 정규 업무 시간 범위</label>
                         <div class="flex items-center gap-1.5 max-w-[18rem]">
-                            <select id="policy_work_start" class="border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
+                            <select id="policy_work_start" class="border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text touch-target-44">
                                 {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if work_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                             <span class="text-dense-muted text-xs shrink-0">~</span>
-                            <select id="policy_work_end" class="border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
+                            <select id="policy_work_end" class="border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text touch-target-44">
                                 {% for m, label in half_hour_options %}
                                 <option value="{{ m }}" {% if work_end_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
@@ -102,14 +102,14 @@
                         <label class="block text-[11px] text-dense-muted font-medium">3) 점심 시간 범위 (차감 제외)</label>
                         <p class="text-[10px] text-dense-muted">기본값은 12:00~13:00입니다. 미사용하면 09:00~18:00 전일 신청은 9시간으로 계산됩니다.</p>
                         <div class="flex items-center gap-1.5 max-w-[18rem]">
-                            <select id="policy_lunch_start" class="border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
+                            <select id="policy_lunch_start" class="border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text touch-target-44">
                                 <option value="">미사용</option>
                                 {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if lunch_start_minute == m %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                             <span class="text-dense-muted text-xs shrink-0">~</span>
-                            <select id="policy_lunch_end" class="border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text">
+                            <select id="policy_lunch_end" class="border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-xs font-medium focus:border-dense-blue focus:ring-1 focus:ring-dense-blue w-full text-dense-text touch-target-44">
                                 <option value="">미사용</option>
                                 {% for m, label in half_hour_options[:-1] %}
                                 <option value="{{ m }}" {% if lunch_end_minute == m %}selected{% endif %}>{{ label }}</option>
@@ -120,7 +120,7 @@
                 </div>
 
                 <div class="pt-2 border-t border-dense-line">
-                    <button type="button" onclick="saveTimePolicy(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors">시간 정책 저장</button>
+                    <button type="button" onclick="saveTimePolicy(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors touch-target-44">시간 정책 저장</button>
                 </div>
                 <div class="mt-2 text-[10px] text-dense-muted leading-relaxed space-y-0.5">
                     <p>• 입력 시각은 단위 경계만 가능하나, 전일 신청을 위해 업무 종료 시각은 예외 허용됩니다.</p>
@@ -142,19 +142,19 @@
                 <div class="space-y-2 pt-0.5">
                     <div>
                         <label for="brand_product_display_name" class="block mb-0.5 text-dense-muted text-[11px] font-medium">공식 이름</label>
-                        <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="w-full border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue" autocomplete="off">
+                        <input id="brand_product_display_name" type="text" maxlength="120" value="{{ product_display_name | default('SHIM') }}" placeholder="예: 쉼(SHIM) 프로젝트 개발 운영" class="w-full border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44" autocomplete="off">
                     </div>
                     <div>
                         <label for="brand_product_nav_short" class="block mb-0.5 text-dense-muted text-[11px] font-medium">상단 짧은 이름 (선택)</label>
-                        <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: SHIM" class="w-full border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue" autocomplete="off">
+                        <input id="brand_product_nav_short" type="text" maxlength="80" value="{{ product_nav_short_raw }}" placeholder="예: SHIM" class="w-full border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44" autocomplete="off">
                     </div>
                     <div>
                         <label for="brand_initial" class="block mb-0.5 text-dense-muted text-[11px] font-medium">마크 배지 (최대 24자)</label>
-                        <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('S') }}" placeholder="예: S" class="w-full border border-dense-line rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue" autocomplete="off">
+                        <input id="brand_initial" type="text" maxlength="24" value="{{ brand_initial | default('S') }}" placeholder="예: S" class="w-full border border-field-edge rounded-[4px] px-2 py-1 bg-dense-surface text-dense-text text-xs focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44" autocomplete="off">
                     </div>
                 </div>
                 <div class="pt-0.5">
-                    <button type="button" onclick="saveBranding(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors">표시 이름 저장</button>
+                    <button type="button" onclick="saveBranding(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors touch-target-44">표시 이름 저장</button>
                 </div>
             </div>
 
@@ -165,7 +165,7 @@
                     백업 파일은 <code class="rounded-[2px] bg-dense-surface-soft px-1 font-mono text-[10px] text-dense-text border border-dense-line">var/data/backup/</code> 아래에 일시가 포함되어 저장됩니다.
                 </p>
                 <div class="pt-0.5">
-                    <button type="button" onclick="runDbBackup(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors">DB 백업 생성</button>
+                    <button type="button" onclick="runDbBackup(this)" class="inline-flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft hover:text-dense-blue transition-colors touch-target-44">DB 백업 생성</button>
                 </div>
             </div>
 

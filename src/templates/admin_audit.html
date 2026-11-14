@@ -27,7 +27,7 @@
     <form method="get" id="audit-filter-form" class="grid grid-cols-2 gap-2.5 sm:grid-cols-5 rounded-[4px] border border-dense-line bg-dense-surface p-2.5 text-xs">
         <div>
             <label for="audit-user" class="block mb-0.5 text-[11px] font-medium text-dense-muted">수행자 (Actor)</label>
-            <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <select id="audit-user" name="actor_id" onchange="document.getElementById('audit-filter-form').submit()" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                 <option value="" {% if not actor_id %}selected{% endif %}>전체</option>
                 {% for u in users %}
                 <option value="{{ u.user_id }}" {% if actor_id == u.user_id %}selected{% endif %}>{{ u.user_name }}({{ u.user_id }})</option>
@@ -36,19 +36,19 @@
         </div>
         <div>
             <label for="audit-action" class="block mb-0.5 text-[11px] font-medium text-dense-muted">수행 작업 (Action)</label>
-            <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue" autocomplete="off">
+            <input type="text" id="audit-action" name="action" value="{{ action }}" placeholder="예: UPDATE_USER" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44" autocomplete="off">
         </div>
         <div>
             <label for="audit-start-date" class="block mb-0.5 text-[11px] font-medium text-dense-muted">조회 시작일</label>
-            <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <input type="date" id="audit-start-date" name="start_date" value="{{ start_date }}" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
         </div>
         <div>
             <label for="audit-end-date" class="block mb-0.5 text-[11px] font-medium text-dense-muted">조회 종료일</label>
-            <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <input type="date" id="audit-end-date" name="end_date" value="{{ end_date }}" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text font-mono focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
         </div>
         <div class="flex items-end gap-1.5">
-            <button type="submit" class="flex-1 py-1 bg-dense-blue text-white rounded-[4px] text-xs font-medium hover:brightness-95 transition-all">검색</button>
-            <a href="/admin/audit" class="flex-1 text-center py-1 bg-dense-surface border border-dense-line text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text rounded-[4px] text-xs font-medium transition-all">초기화</a>
+            <button type="submit" class="flex-1 py-1 bg-dense-blue text-white rounded-[4px] text-xs font-medium hover:brightness-95 transition-colors touch-target-44 flex items-center justify-center">검색</button>
+            <a href="/admin/audit" class="flex-1 text-center py-1 bg-dense-surface border border-dense-line text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text rounded-[4px] text-xs font-medium transition-colors touch-target-44 flex items-center justify-center">초기화</a>
         </div>
     </form>
 
@@ -92,7 +92,7 @@
                         <td class="whitespace-nowrap px-3 py-2 text-xs text-dense-text" title="{{ log.target_info }}">{{ log.target_label if log.target_label else log.target_info }}</td>
                         <td class="px-3 py-2 text-xs">
                             <div class="max-w-md break-all flex items-center gap-1.5 flex-wrap">
-                                <span class="text-rose-600 line-through decoration-1 opacity-70">{{ log.old_data if log.old_data else '-' }}</span>
+                                <span class="text-dense-danger line-through decoration-1">{{ log.old_data if log.old_data else '-' }}</span>
                                 <span class="text-dense-muted font-semibold">→</span>
                                 <span class="text-dense-blue font-medium">{{ log.new_data if log.new_data else '-' }}</span>
                             </div>

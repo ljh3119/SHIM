@@ -77,7 +77,7 @@ def main() -> int:
     )
     require(
         holidays,
-        "w-24 rounded-[4px] border border-dense-line",
+        "w-24 rounded-[4px] border border-field-edge",
         "공휴일 연도 선택기",
     )
     require(

@@ -1,4 +1,4 @@
 from __future__ import annotations
 
 VALID_ROLES = frozenset({"STAFF", "TEAM_LEAD", "PM", "ADMIN"})
-APP_VERSION = "1.11.0"
+APP_VERSION = "1.12.0"

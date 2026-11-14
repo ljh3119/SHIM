@@ -14,7 +14,7 @@
             <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 text-xs">
                 <div>
                     <label for="yr-user" class="mb-0.5 block text-dense-muted text-[11px] font-medium">사용자</label>
-                    <select id="yr-user" name="user_id" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                    <select id="yr-user" name="user_id" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                         <option value="" {% if not selected_user_id %}selected{% endif %}>전체</option>
                         {% for u in users %}
                         <option value="{{ u.user_id }}" {% if selected_user_id == u.user_id %}selected{% endif %} title="{{ u.user_name }} ({{ u.user_id }}) — 팀: {{ u.team or '—' }}, 회사: {{ u.company or '—' }}">{{ u.user_name }}({{ u.user_id }})</option>
@@ -23,7 +23,7 @@
                 </div>
                 <div>
                     <label for="yr-company" class="mb-0.5 block text-dense-muted text-[11px] font-medium">회사</label>
-                    <select id="yr-company" name="company" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                    <select id="yr-company" name="company" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                         <option value="" {% if not selected_company %}selected{% endif %}>전체 회사</option>
                         {% for c in company_options %}
                         <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
@@ -32,7 +32,7 @@
                 </div>
                 <div>
                     <label for="yr-team" class="mb-0.5 block text-dense-muted text-[11px] font-medium">팀</label>
-                    <select id="yr-team" name="team" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                    <select id="yr-team" name="team" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                         <option value="" {% if not selected_team %}selected{% endif %}>전체 팀</option>
                         {% for t in team_options %}
                         <option value="{{ t }}" {% if selected_team == t %}selected{% endif %}>{{ t }}</option>
@@ -41,7 +41,7 @@
                 </div>
                 <div>
                     <label for="yr-active" class="mb-0.5 block text-dense-muted text-[11px] font-medium">계정 상태</label>
-                    <select id="yr-active" name="active_state" class="block w-full rounded-[4px] border border-dense-line bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                    <select id="yr-active" name="active_state" class="block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1 px-2 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                         <option value="all" {% if selected_active_state == 'all' %}selected{% endif %}>전체</option>
                         <option value="active" {% if selected_active_state == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
                         <option value="inactive" {% if selected_active_state == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>

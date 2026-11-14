@@ -118,6 +118,25 @@ body {
   }
 }
 
+/* Mobile Target 44px opt-in classes for touch targets below 1024px */
+@media (max-width: 1023px) {
+  .touch-target-44 {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+  .touch-target-44-all {
+    min-height: 44px;
+    min-width: 44px;
+    box-sizing: border-box;
+  }
+  .touch-target-44-label {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+}
+
 @layer components {
   /* Common Surfaces & Panels */
   .glass-panel {

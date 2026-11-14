@@ -21,7 +21,7 @@
         word-break: keep-all;
     }
     .cal-table th.col-day .day-num { display: block; font-weight: 600; font-size: 10px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-    .cal-table th.col-day .weekday-label { display: block; font-size: 8px; line-height: 1.1; margin-top: 1px; }
+    .cal-table th.col-day .weekday-label { display: block; font-size: 11px; line-height: 1.2; margin-top: 1px; }
     .cal-table th.col-day .holiday-chip {
         display: block;
         margin: 2px auto 0;
@@ -209,12 +209,12 @@
                                             {% set is_deduct = lv.is_deductive %}
                                             {% set total_h = lv.snapshot_deduction_hours %}
                                             {% set is_pending = lv.status == 'PENDING' %}
-                                            <div class="rounded-[2px] px-1.5 py-0.5 text-xs truncate leading-normal transition-colors cursor-pointer block text-left border-l-2
-                                                        {% if is_pending %}bg-dense-amber-soft text-dense-amber border-dense-amber
-                                                        {% elif not is_deduct %}bg-dense-gray-soft text-dense-text border-dense-line-strong
-                                                        {% elif total_h >= 8 %}bg-dense-blue-soft text-dense-blue font-semibold border-dense-blue
-                                                        {% elif total_h >= 4 %}bg-dense-blue-soft text-dense-blue border-dense-blue
-                                                        {% else %}bg-dense-blue-soft text-dense-blue border-dense-blue
+                                            <div class="rounded-[2px] px-1.5 py-0.5 text-xs truncate leading-normal transition-colors cursor-pointer block text-left
+                                                        {% if is_pending %}bg-dense-amber-soft text-dense-amber
+                                                        {% elif not is_deduct %}bg-dense-gray-soft text-dense-text
+                                                        {% elif total_h >= 8 %}bg-dense-blue-soft text-dense-blue font-semibold
+                                                        {% elif total_h >= 4 %}bg-dense-blue-soft text-dense-blue
+                                                        {% else %}bg-dense-blue-soft text-dense-blue
                                                         {% endif %}"
                                                  title="[본인] {{ '[공가/출장] ' if not is_deduct }}{{ fmt_slot_label(lv.snapshot_slot_label, lv.snapshot_deduction_hours) }}{% if lv.reason %} (사유: {{ lv.reason }}){% endif %} (상태: {% if is_pending %}대기{% else %}승인{% endif %})"
                                                  data-has-leave="true"
@@ -301,7 +301,7 @@
                                 {% if leaves_of_day %}
                                 <div class="mt-1 flex flex-wrap gap-0.5">
                                     {% if ns.total_h > 0 %}
-                                    <div class="inline-block rounded-[2px] px-1 py-0.5 text-[9px] font-semibold bg-dense-blue-soft text-dense-blue border-l-2 border-dense-blue">
+                                    <div class="inline-block rounded-[2px] px-1 py-0.5 text-[9px] font-semibold bg-dense-blue-soft text-dense-blue">
                                         {{ fmt_hours(ns.total_h) }}h
                                     </div>
                                     {% endif %}
@@ -389,35 +389,35 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[11px] font-semibold text-dense-nav-text">시작일</label>
-                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text shadow-xs">
+                            <input type="date" id="easy-start-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text">
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-dense-nav-text">종료일</label>
-                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text shadow-xs">
+                            <input type="date" id="easy-end-date-g_mobile" required lang="en-CA" placeholder="YYYY-MM-DD" oninput="if (typeof updateTimeSelectorAvailabilityG==='function') updateTimeSelectorAvailabilityG('mobile'); if (typeof syncInputsToCalendar==='function') syncInputsToCalendar('mobile');" class="mt-1 min-h-11 w-full rounded-[4px] border border-field-edge bg-dense-surface p-1.5 text-xs text-dense-text">
                         </div>
                     </div>
                     <!-- 유형 퀵 선택 버튼 (전일 / 오전반차 / 오후반차 / 직접선택) -->
                     <div>
                         <label class="text-[11px] font-semibold text-dense-muted block mb-1">신청 유형</label>
-                        <div class="grid grid-cols-4 gap-0.5 p-0.5 bg-paper-4 border border-dense-line rounded-[4px] text-center" id="easy-preset-group_mobile">
-                            <button type="button" onclick="selectLeavePreset('mobile', 'full')" id="preset-full_mobile" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] bg-dense-blue text-white transition-colors">전일(1일)</button>
-                            <button type="button" onclick="selectLeavePreset('mobile', 'morning')" id="preset-morning_mobile" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
-                            <button type="button" onclick="selectLeavePreset('mobile', 'afternoon')" id="preset-afternoon_mobile" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                        <div class="grid grid-cols-2 min-[375px]:grid-cols-4 gap-1 p-1 bg-paper-4 border border-dense-line rounded-[4px] text-center" id="easy-preset-group_mobile">
+                            <button type="button" onclick="selectLeavePreset('mobile', 'full')" id="preset-full_mobile" class="touch-target-44 min-h-11 flex items-center justify-center py-1 px-0.5 text-xs font-medium rounded-[2px] bg-dense-blue text-white transition-colors">전일(1일)</button>
+                            <button type="button" onclick="selectLeavePreset('mobile', 'morning')" id="preset-morning_mobile" class="touch-target-44 min-h-11 flex items-center justify-center py-1 px-0.5 text-xs font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                            <button type="button" onclick="selectLeavePreset('mobile', 'afternoon')" id="preset-afternoon_mobile" class="touch-target-44 min-h-11 flex items-center justify-center py-1 px-0.5 text-xs font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
                             {% if time_granularity_minutes != 240 %}
-                            <button type="button" onclick="selectLeavePreset('mobile', 'custom')" id="preset-custom_mobile" class="py-1 px-0.5 text-[11px] font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                            <button type="button" onclick="selectLeavePreset('mobile', 'custom')" id="preset-custom_mobile" class="touch-target-44 min-h-11 flex items-center justify-center py-1 px-0.5 text-xs font-medium rounded-[2px] text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
                             {% else %}
-                            <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1 px-0.5 text-[11px] font-normal rounded-[2px] text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                            <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="touch-target-44 min-h-11 flex items-center justify-center py-1 px-0.5 text-xs font-normal rounded-[2px] text-dense-muted/50 cursor-not-allowed">직접선택</button>
                             {% endif %}
                         </div>
                     </div>
                     <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
-                    <div id="easy-preset-badge_mobile" class="py-1 px-2 rounded-[2px] bg-dense-blue-soft border border-dense-line text-center text-xs font-semibold text-dense-blue">
+                    <div id="easy-preset-badge_mobile" class="py-1 px-2 text-center text-xs font-medium text-dense-muted">
                         전일 신청
                     </div>
                     <div id="easy-time-row_mobile" class="hidden grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-xs">시작</label>
-                            <select id="easy-start-g_mobile" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
+                            <select id="easy-start-g_mobile" class="mt-1 min-h-11 w-full rounded border border-field-edge bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
                                 {% for t in time_options %}
                                 <option value="{{ t }}" {% if loop.first %}selected{% endif %}>{{ t }}</option>
                                 {% endfor %}
@@ -425,38 +425,38 @@
                         </div>
                         <div>
                             <label class="text-xs">종료</label>
-                            <select id="easy-end-g_mobile" class="mt-1 min-h-11 w-full rounded border border-dense-line-strong bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
+                            <select id="easy-end-g_mobile" class="mt-1 min-h-11 w-full rounded border border-field-edge bg-dense-surface p-2 text-xs" onchange="updateEstimatedTimeG('mobile')">
                                 {% for t in time_options %}
                                 <option value="{{ t }}" {% if loop.last %}selected{% endif %}>{{ t }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 min-h-11 touch-target-44-label">
                         <input type="checkbox" id="easy-deductive-g_mobile" onchange="toggleDeductiveG('mobile')" class="rounded text-dense-blue h-5 w-5">
-                        <label for="easy-deductive-g_mobile" class="text-xs font-bold cursor-pointer">공가/출장 신청 (체크 시 연차 미차감)</label>
+                        <label for="easy-deductive-g_mobile" class="text-xs font-medium cursor-pointer touch-target-44-label">공가/출장 신청 (체크 시 연차 미차감)</label>
                     </div>
                     <div id="easy-reason-container-g_mobile">
                         <label class="text-xs font-bold">신청 사유 <span id="easy-reason-star-g_mobile" class="text-dense-danger hidden">*</span></label>
-                        <textarea id="easy-reason-g_mobile" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded border border-dense-line-strong bg-dense-surface p-1 text-xs"></textarea>
+                        <textarea id="easy-reason-g_mobile" maxlength="500" placeholder="사유를 기입해 주세요. (선택 사항)" class="mt-1 h-12 w-full resize-none rounded border border-field-edge bg-dense-surface p-1 text-xs"></textarea>
                     </div>
-                    <div id="easy-calc-g_mobile" class="text-xs font-bold text-dense-blue">예상 차감 시간: 8시간</div>
+                    <div id="easy-calc-g_mobile" class="text-xs font-medium text-dense-muted">예상 차감 시간: 8시간</div>
                     <button type="submit" id="easy-submit-btn-g_mobile" class="min-h-11 w-full bg-dense-blue py-2 rounded-lg text-white font-bold text-sm hover:bg-dense-blue/90 transition-colors">신청 완료</button>
                 </form>
             </div>
 
             <!-- Compact Mobile Month Calendar -->
-            <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3 shadow-xs">
+            <div class="rounded-[4px] border border-dense-line bg-dense-surface p-3">
                 <div class="mb-2.5 flex items-center justify-between">
                     <h3 class="text-xs font-semibold text-dense-text">월간 캘린더</h3>
                     <span class="text-[11px] text-dense-muted">날짜를 눌러 신청·상세 확인</span>
                 </div>
                 <div class="mb-2.5 grid grid-cols-[2.75rem_1fr_1fr_2.75rem] items-center gap-1.5">
                     <button type="button" onclick="moveMobileCalendarMonthG(-1)" class="h-11 w-11 rounded-[4px] border border-dense-line bg-dense-surface font-semibold text-xs" aria-label="이전 달">‹</button>
-                    <select id="mobile-calendar-year-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-[4px] border border-dense-line bg-dense-surface px-2 text-xs font-medium">
+                    <select id="mobile-calendar-year-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-[4px] border border-field-edge bg-dense-surface px-2 text-xs font-medium touch-target-44">
                         {% for y in year_options %}<option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>{% endfor %}
                     </select>
-                    <select id="mobile-calendar-month-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-[4px] border border-dense-line bg-dense-surface px-2 text-xs font-medium">
+                    <select id="mobile-calendar-month-g" onchange="changeMobileCalendarMonthG()" class="h-11 min-w-0 rounded-[4px] border border-field-edge bg-dense-surface px-2 text-xs font-medium touch-target-44">
                         {% for m in range(1, 13) %}<option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}월</option>{% endfor %}
                     </select>
                     <button type="button" onclick="moveMobileCalendarMonthG(1)" class="h-11 w-11 rounded-[4px] border border-dense-line bg-dense-surface font-semibold text-xs" aria-label="다음 달">›</button>
@@ -500,10 +500,10 @@
                     <h3 class="text-xs font-semibold text-dense-text mb-2">나의 신청 현황</h3>
                     <div id="myRequestsListG_mobile" class="space-y-2 text-xs">
                         {% for leave in leaves[:3] %}
-                        <div class="flex items-center justify-between border-b border-dense-line pb-1.5">
+                        <div class="flex items-center justify-between border-b border-dense-line pb-1.5 touch-target-44">
                             <div>
                                 <span class="font-semibold text-dense-text">
-                                    {% if not leave.is_deductive %}<span class="text-purple-600 mr-0.5">[공]</span>{% endif %}
+                                    {% if not leave.is_deductive %}<span class="text-dense-muted mr-0.5">[공]</span>{% endif %}
                                     {{ leave.date }}
                                 </span>
                                 <span class="text-[11px] text-dense-muted ml-1">{{ fmt_hours(leave.snapshot_deduction_hours) }}h</span>
@@ -534,7 +534,7 @@
 </div>
 
 <!-- Floating Action Bar for Multi-Select -->
-<div id="multiSelectFloatingBar" class="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 transform rounded-[6px] border border-dense-line bg-dense-surface p-3.5 shadow-lg transition-all duration-300 md:min-w-[400px]">
+<div id="multiSelectFloatingBar" class="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 transform rounded-[6px] border border-dense-line bg-dense-surface p-3.5 shadow-lg transition-[transform,opacity] duration-300 md:min-w-[400px]">
     <div class="flex items-center justify-between gap-6">
         <div class="text-sm font-bold text-dense-text">
             선택된 날짜: <span id="selectedCount" class="text-dense-blue">0</span>개
@@ -555,50 +555,50 @@
     <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
         <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('calendarApplyModal')"></div>
         <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
             <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <h3 class="mb-4 text-lg font-extrabold leading-6 text-dense-text">연차 신청</h3>
                 <form id="calendarApplyForm" class="space-y-4" onsubmit="submitCalendarApply(); return false;">
                     <div>
                         <label for="calendar_date_str" class="block text-sm font-bold text-dense-nav-text">날짜</label>
-                        <input type="date" id="calendar_date_str" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                        <input type="date" id="calendar_date_str" name="date_str" required lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-field-edge focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                         <div id="calendar_multi_date_container" class="hidden mt-1 p-2 border border-dense-grid rounded-[4px] bg-dense-surface-soft max-h-[80px] overflow-y-auto">
                             <div id="calendar_multi_date_chips" class="flex flex-wrap gap-1"></div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 min-h-11 touch-target-44-label">
                         <input type="checkbox" id="calendar_is_deductive_display" onchange="toggleReason('calendar')" class="h-4 w-4 rounded border-dense-line-strong text-dense-blue focus:ring-dense-blue">
-                        <label for="calendar_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs">공가/출장 신청 (체크 시 연차 미차감)</label>
+                        <label for="calendar_is_deductive_display" class="text-sm font-bold text-dense-nav-text text-xs cursor-pointer touch-target-44-label">공가/출장 신청 (체크 시 연차 미차감)</label>
                         <input type="hidden" name="is_deductive" id="calendar_is_deductive" value="true">
                     </div>
                     <div id="calendar_reason_container">
                         <label for="calendar_reason" class="block text-sm font-bold text-dense-nav-text text-xs">신청 사유 <span id="calendar_reason_required_star" class="text-dense-danger hidden">*</span></label>
-                        <textarea id="calendar_reason" name="reason" maxlength="500" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-[4px] border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
+                        <textarea id="calendar_reason" name="reason" maxlength="500" placeholder="예: 개인 사정, 휴식 등 (선택 사항)" class="mt-1 block w-full rounded-[4px] border-0 bg-dense-surface py-1.5 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-field-edge focus:border-dense-blue focus:ring-dense-blue sm:text-sm" rows="1"></textarea>
                     </div>
                     <div id="calendar_time_input_container">
                         <label class="mb-1 block text-sm font-bold text-dense-nav-text">사용 시간 입력</label>
                         <!-- 캘린더 모달 유형 퀵 선택 버튼 -->
                         <div class="mb-2">
                             <label class="mb-1 block text-xs font-bold text-dense-muted">신청 유형</label>
-                            <div class="grid grid-cols-4 gap-1 p-0.5 bg-dense-surface border border-dense-line rounded-lg text-center" id="calendar_preset_group">
-                                <button type="button" onclick="selectCalendarModalPreset('full')" id="cal-modal-preset-full" class="py-1.5 px-0.5 text-xs font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
-                                <button type="button" onclick="selectCalendarModalPreset('morning')" id="cal-modal-preset-morning" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
-                                <button type="button" onclick="selectCalendarModalPreset('afternoon')" id="cal-modal-preset-afternoon" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
+                            <div class="grid grid-cols-2 min-[375px]:grid-cols-4 gap-1 p-1 bg-dense-surface border border-dense-line rounded-lg text-center" id="calendar_preset_group">
+                                <button type="button" onclick="selectCalendarModalPreset('full')" id="cal-modal-preset-full" class="touch-target-44 min-h-11 lg:min-h-9 flex items-center justify-center py-1.5 px-0.5 text-xs font-bold rounded bg-dense-blue text-white transition-colors">전일(1일)</button>
+                                <button type="button" onclick="selectCalendarModalPreset('morning')" id="cal-modal-preset-morning" class="touch-target-44 min-h-11 lg:min-h-9 flex items-center justify-center py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오전(0.5)</button>
+                                <button type="button" onclick="selectCalendarModalPreset('afternoon')" id="cal-modal-preset-afternoon" class="touch-target-44 min-h-11 lg:min-h-9 flex items-center justify-center py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">오후(0.5)</button>
                                 {% if time_granularity_minutes != 240 %}
-                                <button type="button" onclick="selectCalendarModalPreset('custom')" id="cal-modal-preset-custom" class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
+                                <button type="button" onclick="selectCalendarModalPreset('custom')" id="cal-modal-preset-custom" class="touch-target-44 min-h-11 lg:min-h-9 flex items-center justify-center py-1.5 px-0.5 text-xs font-bold rounded text-dense-text hover:bg-dense-surface-soft transition-colors">직접선택</button>
                                 {% else %}
-                                <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="py-1.5 px-0.5 text-xs font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
+                                <button type="button" disabled title="반일 단위 정책에서는 전일 또는 오전/오후 반차만 선택할 수 있습니다." class="touch-target-44 min-h-11 lg:min-h-9 flex items-center justify-center py-1.5 px-0.5 text-xs font-bold rounded text-dense-muted/50 cursor-not-allowed">직접선택</button>
                                 {% endif %}
                             </div>
                         </div>
                         <!-- 신청 유형 텍스트 배지 (전일/반차 시 시간 드롭다운 대신 노출) -->
-                        <div id="cal-modal-preset-badge" class="py-2 px-3 rounded-[4px] bg-dense-surface border border-dense-line text-center text-xs font-extrabold text-dense-blue">
+                        <div id="cal-modal-preset-badge" class="py-2 px-3 text-center text-xs font-medium text-dense-muted">
                             전일 신청
                         </div>
                         <div id="cal-modal-time-row" class="hidden grid grid-cols-1 gap-2 md:grid-cols-2">
                             <div>
                                 <label for="calendar_start_time" class="mb-1 block text-xs font-bold text-dense-muted">시작 시간</label>
-                                <select id="calendar_start_time" name="start_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                <select id="calendar_start_time" name="start_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-field-edge focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                     <option value="">선택</option>
                                     {% for t in time_options %}
                                     <option value="{{ t }}" {% if loop.first %}selected{% endif %}>{{ t }}</option>
@@ -607,7 +607,7 @@
                             </div>
                             <div>
                                 <label for="calendar_end_time" class="mb-1 block text-xs font-bold text-dense-muted">종료 시간</label>
-                                <select id="calendar_end_time" name="end_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                <select id="calendar_end_time" name="end_time" required onchange="onCalendarModalTimeChange()" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-field-edge focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                     <option value="">선택</option>
                                     {% for t in time_options %}
                                     <option value="{{ t }}" {% if loop.last %}selected{% endif %}>{{ t }}</option>
@@ -624,17 +624,17 @@
                     <!-- 캘린더 다중 신청 시 노출할 힌트 레이어 -->
                     <div id="calendar_time_hint_wrapper" class="hidden">
                         <label class="block text-sm font-bold text-dense-nav-text">사용 시간대</label>
-                        <div id="calendar_time_hint" class="mt-1 flex items-center justify-center rounded-[4px] border border-dashed border-dense-line-strong bg-dense-surface-soft px-3 py-1 text-center min-h-[38px]">
-                            <span class="text-[11px] font-bold text-dense-blue">선택한 날짜들에 대해 하루 종일(Full-day) 신청으로 등록됩니다.</span>
+                        <div id="calendar_time_hint" class="mt-1 flex items-center justify-center rounded-[4px] border border-dashed border-field-edge bg-dense-surface-soft px-3 py-1 text-center min-h-[38px]">
+                            <span class="text-[11px] font-medium text-dense-muted">선택한 날짜들에 대해 하루 종일(Full-day) 신청으로 등록됩니다.</span>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
-                <button type="submit" form="calendarApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
+                <button type="submit" form="calendarApplyForm" class="touch-target-44 inline-flex min-h-11 lg:min-h-0 w-full items-center justify-center rounded-[4px] bg-dense-blue px-4 py-2 text-base font-bold text-white hover:brightness-95 focus:outline-none sm:w-auto sm:text-sm">
                     신청하기
                 </button>
-                <button type="button" onclick="closeCalendarApplyModal()" class="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto sm:text-sm">
+                <button type="button" onclick="closeCalendarApplyModal()" class="touch-target-44 inline-flex min-h-11 lg:min-h-0 w-full items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-base font-bold text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto sm:text-sm">
                     취소
                 </button>
             </div>

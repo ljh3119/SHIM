@@ -12,7 +12,7 @@
             <button type="button" onclick="window.shimModal.open('bulkLeaveModal', 'bulk_year', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text hover:bg-dense-surface-soft transition-colors">
                 연차 일괄
             </button>
-            <button type="button" onclick="window.shimModal.open('addUserModal', 'new_user_id', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[4px] bg-dense-blue px-2.5 py-1 text-xs font-medium text-white hover:brightness-95 transition-all">
+            <button type="button" onclick="window.shimModal.open('addUserModal', 'new_user_id', this)" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[4px] bg-dense-blue px-2.5 py-1 text-xs font-medium text-white hover:brightness-95 transition-colors">
                 + 신규 등록
             </button>
         </div>
@@ -24,11 +24,11 @@
         <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
         <div>
             <label class="block mb-1 text-[11px] font-medium text-dense-muted">사원명 또는 초성 검색 (엔터)</label>
-            <input type="text" name="q" placeholder="이름 또는 초성 입력..." value="{{ q or '' }}" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <input type="text" name="q" placeholder="이름 또는 초성 입력..." value="{{ q or '' }}" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
         </div>
         <div>
             <label class="block mb-1 text-[11px] font-medium text-dense-muted">계정 상태</label>
-            <select name="filter" onchange="this.form.submit()" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <select name="filter" onchange="this.form.submit()" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                 <option value="all" {% if current_filter == 'all' %}selected{% endif %}>전체 계정</option>
                 <option value="active" {% if current_filter == 'active' %}selected{% endif %}>활성 (ACTIVE)</option>
                 <option value="inactive" {% if current_filter == 'inactive' %}selected{% endif %}>비활성 (INACTIVE)</option>
@@ -36,7 +36,7 @@
         </div>
         <div>
             <label class="block mb-1 text-[11px] font-medium text-dense-muted">조회 연도</label>
-            <select name="year" onchange="this.form.submit()" class="w-full rounded-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+            <select name="year" onchange="this.form.submit()" class="w-full rounded-[4px] border border-field-edge bg-dense-surface px-2 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue touch-target-44">
                 {% for y in year_options %}
                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                 {% endfor %}
@@ -108,7 +108,7 @@
                         <td class="whitespace-nowrap px-2 py-2 text-xs text-dense-text text-center font-mono">
                             {% if u.role != 'ADMIN' %}
                             <div class="flex items-center justify-center gap-1">
-                                <input id="leave-days-{{ u.user_id }}" type="number" min="0" step="1" value="{{ user_leave_days_map.get(u.user_id, (u.total_leave_hours // 8)) }}" class="w-12 rounded-[3px] border border-dense-line bg-dense-surface py-0.5 px-1 text-xs font-semibold text-center text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                                <input id="leave-days-{{ u.user_id }}" type="number" min="0" step="1" value="{{ user_leave_days_map.get(u.user_id, (u.total_leave_hours // 8)) }}" class="w-12 rounded-[3px] border border-field-edge bg-dense-surface py-0.5 px-1 text-xs font-semibold text-center text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <button data-user-action="leave-days" data-user-id="{{ u.user_id }}" type="button" class="shrink-0 rounded-[3px] border border-dense-line bg-dense-surface px-1.5 py-0.5 text-[10px] font-medium text-dense-blue hover:bg-dense-surface-soft">저장</button>
                             </div>
                             {% else %}
@@ -134,18 +134,18 @@
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-2 py-2 text-right">
-                            <div class="flex items-center justify-end gap-1">
-                                <button type="button" title="정보 수정" data-user-action="edit" data-user-id="{{ u.user_id }}" data-name="{{ u.user_name }}" data-company="{{ u.company or '' }}" data-team="{{ u.team or '' }}" data-role="{{ u.role }}" data-position="{{ u.position or '' }}" data-active="{{ 'true' if u.is_active else 'false' }}" class="flex h-6 w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-blue hover:bg-dense-surface-soft transition-colors">
+                            <div class="grid grid-cols-2 gap-1 lg:flex lg:items-center lg:justify-end lg:gap-1">
+                                <button type="button" title="정보 수정" data-user-action="edit" data-user-id="{{ u.user_id }}" data-name="{{ u.user_name }}" data-company="{{ u.company or '' }}" data-team="{{ u.team or '' }}" data-role="{{ u.role }}" data-position="{{ u.position or '' }}" data-active="{{ 'true' if u.is_active else 'false' }}" class="touch-target-44-all flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-blue hover:bg-dense-surface-soft transition-colors">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button type="button" title="비밀번호 초기화" data-user-action="reset-password" data-user-id="{{ u.user_id }}" class="flex h-6 w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-amber hover:bg-dense-surface-soft transition-colors">
+                                <button type="button" title="비밀번호 초기화" data-user-action="reset-password" data-user-id="{{ u.user_id }}" class="touch-target-44-all flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-amber hover:bg-dense-surface-soft transition-colors">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                 </button>
                                 {% if u.role != 'ADMIN' %}
-                                <button type="button" title="상태(활성) 전환" data-user-action="toggle" data-user-id="{{ u.user_id }}" data-active="{{ 'true' if u.is_active else 'false' }}" class="flex h-6 w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-colors">
+                                <button type="button" title="상태(활성) 전환" data-user-action="toggle" data-user-id="{{ u.user_id }}" data-active="{{ 'true' if u.is_active else 'false' }}" class="touch-target-44-all flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-text hover:bg-dense-surface-soft transition-colors">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
                                 </button>
-                                <button type="button" title="계정 삭제" data-user-action="delete" data-user-id="{{ u.user_id }}" class="flex h-6 w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-danger hover:bg-dense-danger-soft/30 transition-colors">
+                                <button type="button" title="계정 삭제" data-user-action="delete" data-user-id="{{ u.user_id }}" class="touch-target-44-all flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-[3px] border border-dense-line bg-dense-surface text-dense-muted hover:text-dense-danger hover:bg-dense-danger-soft/30 transition-colors">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                 </button>
                                 {% endif %}
@@ -171,14 +171,14 @@
     <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
         <div class="fixed inset-0 z-0 bg-black/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('bulkLeaveModal')"></div>
         <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-all sm:my-8 sm:max-w-md sm:align-middle">
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
             <div class="px-4 pt-4 pb-3 sm:p-5 sm:pb-4">
                 <h3 class="mb-3 text-sm font-semibold text-dense-text">연차 일괄 설정</h3>
                 <form id="bulkLeaveForm" class="space-y-3" onsubmit="submitBulkLeaveDays(); return false;">
                     <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <div>
                             <label for="bulk_year" class="block text-[11px] font-medium text-dense-muted">적용 연도</label>
-                            <select id="bulk_year" name="year" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select id="bulk_year" name="year" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 {% for y in year_options %}
                                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}년</option>
                                 {% endfor %}
@@ -186,7 +186,7 @@
                         </div>
                         <div>
                             <label for="bulk_leave_days" class="block text-[11px] font-medium text-dense-muted">연차일수</label>
-                            <input type="number" id="bulk_leave_days" name="total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue font-mono">
+                            <input type="number" id="bulk_leave_days" name="total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue font-mono">
                         </div>
                     </div>
                     <div>
@@ -196,10 +196,10 @@
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-2 border-t border-dense-line bg-dense-surface-soft px-4 py-2.5 sm:px-5">
-                <button type="submit" form="bulkLeaveForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto">
+                <button type="submit" form="bulkLeaveForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto touch-target-44 flex items-center">
                     일괄 반영
                 </button>
-                <button type="button" onclick="window.shimModal.close('bulkLeaveModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto">
+                <button type="button" onclick="window.shimModal.close('bulkLeaveModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto touch-target-44 flex items-center">
                     취소
                 </button>
             </div>
@@ -212,33 +212,33 @@
     <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
         <div class="fixed inset-0 z-0 bg-black/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('addUserModal')"></div>
         <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-all sm:my-8 sm:max-w-lg sm:align-middle">
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-[transform,opacity] sm:my-8 sm:max-w-lg sm:align-middle">
             <div class="px-4 pt-4 pb-3 sm:p-5 sm:pb-4">
                 <h3 class="mb-3 text-sm font-semibold text-dense-text" id="modal-title">신규 사원 등록</h3>
                 <form id="addUserForm" class="space-y-2.5" onsubmit="submitAddUser(); return false;">
                     <input type="hidden" name="year" value="{{ selected_year }}">
                     <div>
                         <label for="new_user_id" class="block text-[11px] font-medium text-dense-muted">사용자 ID (필수)</label>
-                        <input type="text" name="user_id" id="new_user_id" required class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <input type="text" name="user_id" id="new_user_id" required class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                     </div>
                     <div>
                         <label for="new_user_name" class="block text-[11px] font-medium text-dense-muted">이름 (필수)</label>
-                        <input type="text" name="user_name" id="new_user_name" required class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <input type="text" name="user_name" id="new_user_name" required class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                     </div>
                     <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <div>
                             <label for="new_company" class="block text-[11px] font-medium text-dense-muted">소속회사</label>
-                            <input type="text" name="company" id="new_company" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="company" id="new_company" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                         <div>
                             <label for="new_team" class="block text-[11px] font-medium text-dense-muted">팀</label>
-                            <input type="text" name="team" id="new_team" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="team" id="new_team" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <div>
                             <label for="new_role" class="block text-[11px] font-medium text-dense-muted">역할</label>
-                            <select name="role" id="new_role" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <select name="role" id="new_role" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                 <option value="STAFF" selected>일반 (STAFF)</option>
                                 <option value="TEAM_LEAD">팀장 (TEAM_LEAD)</option>
                                 <option value="PM">PM</option>
@@ -246,12 +246,12 @@
                         </div>
                         <div>
                             <label for="new_position" class="block text-[11px] font-medium text-dense-muted">직급명 (표시용)</label>
-                            <input type="text" name="position" id="new_position" placeholder="예: 수석" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="position" id="new_position" placeholder="예: 수석" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                     </div>
                     <div>
                         <label for="new_total_leave_days" class="block text-[11px] font-medium text-dense-muted">연차일수 (해당년도)</label>
-                        <input type="number" name="total_leave_days" id="new_total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue font-mono">
+                        <input type="number" name="total_leave_days" id="new_total_leave_days" min="0" step="1" value="15" required class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue font-mono">
                     </div>
                 </form>
                 <div class="mt-2.5">
@@ -259,10 +259,10 @@
                 </div>
             </div>
             <div class="flex flex-row-reverse gap-2 border-t border-dense-line bg-dense-surface-soft px-4 py-2.5 sm:px-5">
-                <button type="submit" form="addUserForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto">
+                <button type="submit" form="addUserForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto touch-target-44 flex items-center">
                     등록하기
                 </button>
-                <button type="button" onclick="window.shimModal.close('addUserModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto">
+                <button type="button" onclick="window.shimModal.close('addUserModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto touch-target-44 flex items-center">
                     취소
                 </button>
             </div>
@@ -275,7 +275,7 @@
     <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
         <div class="fixed inset-0 z-0 bg-black/40 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('editUserModal')"></div>
         <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-all sm:my-8 sm:max-w-lg sm:align-middle">
+        <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-lg transition-[transform,opacity] sm:my-8 sm:max-w-lg sm:align-middle">
             <div class="px-4 pt-4 pb-3 sm:p-5 sm:pb-4">
                 <h3 class="mb-3 text-sm font-semibold text-dense-text" id="modal-title">사원 정보 수정</h3>
                 <form id="editUserForm" class="space-y-2.5" onsubmit="submitEditUser(); return false;">
@@ -286,23 +286,23 @@
                     </div>
                     <div>
                         <label for="edit_user_name" class="block text-[11px] font-medium text-dense-muted">이름 (필수)</label>
-                        <input type="text" name="user_name" id="edit_user_name" required class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <input type="text" name="user_name" id="edit_user_name" required class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                     </div>
                     <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <div>
                             <label for="edit_company" class="block text-[11px] font-medium text-dense-muted">소속회사</label>
-                            <input type="text" name="company" id="edit_company" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="company" id="edit_company" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                         <div>
                             <label for="edit_team" class="block text-[11px] font-medium text-dense-muted">팀</label>
-                            <input type="text" name="team" id="edit_team" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="team" id="edit_team" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <div>
                             <label for="edit_role" class="block text-[11px] font-medium text-dense-muted">역할</label>
                             <div id="edit_role_selector_container">
-                                <select name="role" id="edit_role" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                                <select name="role" id="edit_role" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                                     <option value="STAFF">일반 (STAFF)</option>
                                     <option value="TEAM_LEAD">팀장 (TEAM_LEAD)</option>
                                     <option value="PM">PM</option>
@@ -315,12 +315,12 @@
                         </div>
                         <div>
                             <label for="edit_position" class="block text-[11px] font-medium text-dense-muted">직급명 (표시용)</label>
-                            <input type="text" name="position" id="edit_position" placeholder="예: 수석" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                            <input type="text" name="position" id="edit_position" placeholder="예: 수석" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                         </div>
                     </div>
                     <div id="edit_is_active_container">
                         <label for="edit_is_active" class="block text-[11px] font-medium text-dense-muted">상태</label>
-                        <select name="is_active" id="edit_is_active" class="mt-1 block w-full rounded-[4px] border border-dense-line bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
+                        <select name="is_active" id="edit_is_active" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface px-2.5 py-1 text-xs font-medium text-dense-text focus:border-dense-blue focus:ring-1 focus:ring-dense-blue">
                             <option value="true">재직 중 (활성)</option>
                             <option value="false">비활성</option>
                         </select>
@@ -333,10 +333,10 @@
                 </form>
             </div>
             <div class="flex flex-row-reverse gap-2 border-t border-dense-line bg-dense-surface-soft px-4 py-2.5 sm:px-5">
-                <button type="submit" form="editUserForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto">
+                <button type="submit" form="editUserForm" class="inline-flex w-full justify-center rounded-[4px] bg-dense-blue px-3 py-1 text-xs font-medium text-white hover:brightness-95 sm:w-auto touch-target-44 flex items-center">
                     저장하기
                 </button>
-                <button type="button" onclick="window.shimModal.close('editUserModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto">
+                <button type="button" onclick="window.shimModal.close('editUserModal')" class="inline-flex w-full justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1 text-xs font-medium text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text sm:w-auto touch-target-44 flex items-center">
                     취소
                 </button>
             </div>

@@ -17,6 +17,7 @@
 - `test_http_security.py` — `/health` 읽기 전용 실패 처리, OpenAPI 기본 비공개와 HTTP 보안 헤더 검증
 - `test_string_utils.py` — 문자열 마스킹 / 유틸리티 동작 검증
 - `test_system_metrics.py` — 운영 메트릭 보고 검증
+- `test_ui_style.py` — 패널·모바일 카드 테두리 계층(`dense-line`/`dense-grid`), 상태별 토큰 색상 및 승인·취소 버튼 UI 스타일 회귀 검증
 - `test_mobile_ui.py` — 모바일 팀·개인 달력의 부분 렌더링, 월별 가시성·권한, 윤달·월 이동 경계, 간편 신청 스크립트 단일 로드 및 데스크톱/모바일 폼 동적 초기화·반차 프리셋 선택·제출 동작, 기간 신청(`start < end`) 시 전일 강제 및 반차 비활성화, 기간 선택 토글의 독립 상태 동작을 검증합니다. 렌더링된 JavaScript를 Node.js vm에서 실행해 연속 월 이동, 역순 응답·오래된 오류·JSON 지연, 실패 후 재시도, 로딩 중 클릭 차단과 날짜·연차 ID 일치 및 간편 신청 폼 동작을 확인합니다.
 - `test_half_day_policy.py` — 240분 반일 정책 및 비240분 정책 하에서 표준 반차 경계의 time_options 포함 여부와 반차 시간 차감 정합성 검증
 - `test_holiday_names.py` — 기독탄신일(크리스마스) 및 대체 휴일 레이블 정규화, 노동절·제헌절 시딩, 관리자 편집 보존 및 감사 로그 기반 시딩 재실행 멱등성 검증

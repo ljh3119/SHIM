@@ -192,7 +192,7 @@
         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div class="fixed inset-0 z-0 bg-black/30 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('adminPwdModal')"></div>
             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="mb-4 text-base font-semibold leading-6 text-dense-text">관리자 비밀번호 변경</h3>
                     <form id="adminPwdForm" class="space-y-4" onsubmit="submitAdminPasswordChange(); return false;">
@@ -259,7 +259,7 @@
         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div class="fixed inset-0 z-0 bg-black/30 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('pwdModal')"></div>
             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="mb-4 text-base font-semibold leading-6 text-dense-text">비밀번호 변경</h3>
                     <form id="userPwdForm" class="space-y-4" onsubmit="submitUserPasswordChange(); return false;">
@@ -327,7 +327,7 @@
         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div class="fixed inset-0 z-0 bg-black/30 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('timelineApplyModal')"></div>
             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="mb-4 text-base font-semibold leading-6 text-dense-text">연차 신청</h3>
                     <form id="timelineApplyForm" class="space-y-4" onsubmit="submitTimelineApply(); return false;">
@@ -335,9 +335,9 @@
                             <label for="timeline_date_str" class="block text-xs font-semibold text-dense-nav-text">날짜</label>
                             <input type="date" id="timeline_date_str" name="date_str" required readonly lang="en-CA" placeholder="YYYY-MM-DD" class="mt-1 block w-full rounded-[4px] border border-field-edge bg-dense-surface py-1.5 px-3 text-[13px] text-dense-text shadow-xs focus:border-dense-blue focus:outline-none focus:ring-1 focus:ring-dense-blue">
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 touch-target-44-label">
                             <input type="checkbox" id="timeline_is_deductive_display" onchange="toggleTimelineReason()" class="h-4 w-4 rounded-[2px] border-field-edge text-dense-blue focus:ring-dense-blue">
-                            <label for="timeline_is_deductive_display" class="text-xs font-medium text-dense-nav-text">공가/출장 신청 (체크 시 연차 미차감)</label>
+                            <label for="timeline_is_deductive_display" class="text-xs font-medium text-dense-nav-text cursor-pointer touch-target-44-label">공가/출장 신청 (체크 시 연차 미차감)</label>
                             <input type="hidden" name="is_deductive" id="timeline_is_deductive" value="true">
                         </div>
                         <div id="timeline_reason_container">
@@ -346,16 +346,14 @@
                         </div>
                         <div id="timeline_time_input_container">
                             <label class="mb-2 block text-xs font-semibold text-dense-nav-text">신청 구분</label>
-                            <div class="grid grid-cols-4 gap-1 mb-2">
-                                <button type="button" id="tl-preset-full" onclick="selectTimelinePreset('full')" class="rounded-[4px] border border-dense-line bg-dense-blue text-white px-2 py-1 text-xs font-medium transition-colors">전일</button>
-                                <button type="button" id="tl-preset-morning" onclick="selectTimelinePreset('morning')" class="rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">오전 반차</button>
-                                <button type="button" id="tl-preset-afternoon" onclick="selectTimelinePreset('afternoon')" class="rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">오후 반차</button>
-                                <button type="button" id="tl-preset-custom" onclick="selectTimelinePreset('custom')" class="rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">직접지정</button>
+                            <div class="grid grid-cols-2 min-[375px]:grid-cols-4 gap-1 mb-2">
+                                <button type="button" id="tl-preset-full" onclick="selectTimelinePreset('full')" class="touch-target-44 min-h-11 lg:min-h-8 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-blue text-white px-2 py-1 text-xs font-medium transition-colors">전일</button>
+                                <button type="button" id="tl-preset-morning" onclick="selectTimelinePreset('morning')" class="touch-target-44 min-h-11 lg:min-h-8 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">오전 반차</button>
+                                <button type="button" id="tl-preset-afternoon" onclick="selectTimelinePreset('afternoon')" class="touch-target-44 min-h-11 lg:min-h-8 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">오후 반차</button>
+                                <button type="button" id="tl-preset-custom" onclick="selectTimelinePreset('custom')" class="touch-target-44 min-h-11 lg:min-h-8 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface text-dense-text hover:bg-dense-surface-soft px-2 py-1 text-xs font-medium transition-colors">직접지정</button>
                             </div>
-                            <div id="tl-preset-badge" class="mb-2">
-                                <span class="inline-flex items-center gap-1.5 rounded-[2px] bg-dense-blue-soft px-2 py-0.5 text-xs font-medium text-dense-blue border border-dense-line">
-                                    <span id="tl-preset-badge-text">전일 신청</span>
-                                </span>
+                            <div id="tl-preset-badge" class="mb-2 text-center text-xs font-medium text-dense-muted">
+                                <span id="tl-preset-badge-text">전일 신청</span>
                             </div>
                             <div id="tl-time-row" class="grid grid-cols-1 gap-2 md:grid-cols-2 hidden">
                                 <div>
@@ -386,10 +384,10 @@
                     </form>
                 </div>
                 <div class="flex flex-row-reverse gap-2 border-t border-dense-line bg-dense-surface-soft px-4 py-3 sm:px-6">
-                    <button type="submit" form="timelineApplyForm" class="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] bg-dense-blue px-3 py-1.5 text-xs font-medium text-white hover:brightness-95 focus:outline-none sm:w-auto">
+                    <button type="submit" form="timelineApplyForm" class="touch-target-44 inline-flex min-h-11 sm:min-h-0 w-full items-center justify-center rounded-[4px] bg-dense-blue px-3 py-1.5 text-xs font-medium text-white hover:brightness-95 focus:outline-none sm:w-auto">
                         신청하기
                     </button>
-                    <button type="button" onclick="window.shimModal.close('timelineApplyModal')" class="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto">
+                    <button type="button" onclick="window.shimModal.close('timelineApplyModal')" class="touch-target-44 inline-flex min-h-11 sm:min-h-0 w-full items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-3 py-1.5 text-xs font-medium text-dense-nav-text hover:bg-dense-surface-soft focus:outline-none sm:w-auto">
                         취소
                     </button>
                 </div>
@@ -402,7 +400,7 @@
         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div class="fixed inset-0 z-0 bg-black/30 transition-opacity" aria-hidden="true" onclick="window.shimModal.close('timelineActionModal')"></div>
             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="mb-4 text-base font-semibold leading-6 text-dense-text" id="actionModalTitle">연차 상세 정보</h3>
                     <input type="hidden" id="actionLeaveId">
@@ -757,27 +755,27 @@
         if (isMe) {
             if (status === 'PENDING') {
                 footer.innerHTML = `
-                    <button type="button" id="actionCancelBtn" class="rounded-[4px] bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">신청 취소</button>
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" id="actionCancelBtn" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-colors">신청 취소</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft transition-colors">닫기</button>
                 `;
                 document.getElementById('actionCancelBtn').onclick = (e) => cancelTimelineLeave(leaveId, e.target);
             } else {
                 footer.innerHTML = `
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft transition-colors">닫기</button>
                 `;
             }
         } else {
             if (status === 'PENDING' && canApprove) {
                 footer.innerHTML = `
-                    <button type="button" id="actionApproveBtn" class="rounded-[4px] bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">승인하기</button>
-                    <button type="button" id="actionRejectBtn" class="rounded-[4px] bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-all">반려하기</button>
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">취소</button>
+                    <button type="button" id="actionApproveBtn" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] bg-dense-green px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-colors">승인하기</button>
+                    <button type="button" id="actionRejectBtn" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] bg-dense-danger px-4 py-2 text-sm font-bold text-white hover:brightness-95 transition-colors">반려하기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft transition-colors">취소</button>
                 `;
                 document.getElementById('actionApproveBtn').onclick = (e) => approveTimelineLeave(leaveId, e.target);
                 document.getElementById('actionRejectBtn').onclick = (e) => rejectTimelineLeave(leaveId, e.target);
             } else {
                 footer.innerHTML = `
-                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft">닫기</button>
+                    <button type="button" onclick="window.shimModal.close('timelineActionModal')" class="touch-target-44 min-h-11 sm:min-h-9 flex items-center justify-center rounded-[4px] border border-dense-line bg-dense-surface px-4 py-2 text-sm font-bold hover:bg-dense-surface-soft transition-colors">닫기</button>
                 `;
             }
         }
@@ -915,7 +913,7 @@
                         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
                             <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" data-backdrop></div>
                             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                     <h3 id="shim-confirm-title" class="text-base font-extrabold leading-6 text-dense-text"></h3>
                                     <div class="mt-2">
@@ -993,13 +991,13 @@
                         <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
                             <div class="fixed inset-0 z-0 bg-[#101828]/40 transition-opacity" aria-hidden="true" data-backdrop></div>
                             <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-all sm:my-8 sm:max-w-md sm:align-middle">
+                            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-[6px] border border-dense-line bg-dense-surface text-left align-bottom shadow-md transition-[transform,opacity] sm:my-8 sm:max-w-md sm:align-middle">
                                 <form id="shim-prompt-form" onsubmit="return false;">
                                     <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                         <h3 id="shim-prompt-title" class="text-base font-extrabold leading-6 text-dense-text"></h3>
                                         <div class="mt-2 space-y-3">
                                             <p id="shim-prompt-message" class="text-sm font-semibold text-dense-muted whitespace-pre-line"></p>
-                                            <input type="text" id="shim-prompt-input" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-dense-line-strong focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
+                                            <input type="text" id="shim-prompt-input" class="block w-full rounded-[4px] border-0 bg-dense-surface py-2 px-3 text-sm font-semibold text-dense-text shadow-sm ring-1 ring-inset ring-field-edge focus:border-dense-blue focus:ring-dense-blue sm:text-sm">
                                         </div>
                                     </div>
                                     <div class="flex flex-row-reverse gap-3 border-t border-dense-grid bg-dense-surface-soft px-4 py-3 sm:px-6">
@@ -1134,13 +1132,19 @@
         const toast = document.createElement('div');
         toast.className = `shim-toast shim-toast-${type}`;
         
-        let icon = 'ℹ️';
-        if (type === 'success') icon = '✅';
-        if (type === 'warning') icon = '⚠️';
-        if (type === 'error') icon = '❌';
+        let svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-blue" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><line x1="10" y1="9" x2="10" y2="14"></line><circle cx="10" cy="6" r="0.8" fill="currentColor"></circle></svg>';
+        if (type === 'success') {
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-green" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10.5l3.5 3.5L15 6"></path></svg>';
+        } else if (type === 'warning') {
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-amber" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3 7 13H3z"></path><line x1="10" y1="8" x2="10" y2="11"></line><circle cx="10" cy="13.5" r="0.75" fill="currentColor"></circle></svg>';
+        } else if (type === 'error') {
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><line x1="7" y1="7" x2="13" y2="13"></line><line x1="13" y1="7" x2="7" y2="13"></line></svg>';
+        }
         
         const iconElement = document.createElement('span');
-        iconElement.textContent = icon;
+        iconElement.setAttribute('aria-hidden', 'true');
+        iconElement.className = 'inline-flex shrink-0 items-center justify-center';
+        iconElement.innerHTML = svgHtml;
         const messageElement = document.createElement('span');
         messageElement.textContent = String(message ?? '');
         toast.append(iconElement, messageElement);
