@@ -3,6 +3,7 @@
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours, fmt_slot_label, fmt_slot_short %}
+{% from "partials/icons.html" import icon, empty_state_icon %}
 
 <style>
     .cal-table {
@@ -237,12 +238,12 @@
                         {% set next_year = team_cal_year + 1 if team_cal_month == 12 else team_cal_year %}
                         {% set next_month = 1 if team_cal_month == 12 else team_cal_month + 1 %}
                         <div class="flex items-center gap-1.5">
-                            <a href="/user/team-calendar?year={{ prev_year }}&month={{ prev_month }}" id="prevMonthLink" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
-                                <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            <a href="/user/team-calendar?year={{ prev_year }}&month={{ prev_month }}" id="prevMonthLink" aria-label="이전 달" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                                {{ icon('chevron-left', 'w-4 h-4') }}
                             </a>
                             <h3 class="text-base font-semibold tracking-tight text-dense-text w-28 text-center tabular-nums">{{ team_cal_year }}년 {{ team_cal_month }}월</h3>
-                            <a href="/user/team-calendar?year={{ next_year }}&month={{ next_month }}" id="nextMonthLink" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
-                                <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                            <a href="/user/team-calendar?year={{ next_year }}&month={{ next_month }}" id="nextMonthLink" aria-label="다음 달" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors select-none">
+                                {{ icon('chevron-right', 'w-4 h-4') }}
                             </a>
                         </div>
                         <span class="inline-flex items-center rounded-[2px] bg-dense-blue-soft px-2 py-0.5 text-xs font-medium text-dense-blue">
@@ -432,8 +433,8 @@
                             {% else %}
                             <tr>
                                 <td colspan="{{ team_cal_num_days + (4 if user_role == 'PM' else 2) }}" class="py-12 text-center text-dense-muted font-semibold bg-dense-surface-soft">
-                                    <div class="flex flex-col items-center justify-center gap-2">
-                                        <svg class="h-8 w-8 text-dense-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    <div class="flex flex-col items-center justify-center gap-2" role="status">
+                                        {{ empty_state_icon('users') }}
                                         <p class="text-xs font-semibold text-dense-text">표시할 팀 멤버가 없습니다.</p>
                                         <p class="text-[10px] text-dense-muted">소속 팀에 등록된 멤버가 없거나 조회 권한이 제한되었습니다.</p>
                                     </div>
@@ -462,7 +463,7 @@
         <!-- Mobile Team Schedule View (Absentees list with Date Slider) -->
         <div id="mobile-schedule-view-g" class="space-y-4">
             <a href="/user/calendar" aria-label="캘린더 홈으로" class="flex min-h-11 w-fit items-center gap-2 rounded-[4px] px-1 text-sm font-semibold text-dense-nav-text transition-colors hover:text-dense-blue focus:outline-none">
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-dense-blue"><path d="m12 4-6 6 6 6"/></svg>
+                {{ icon('chevron-left', 'h-5 w-5 shrink-0 text-dense-blue') }}
                 <span>캘린더 홈으로</span>
             </a>
             

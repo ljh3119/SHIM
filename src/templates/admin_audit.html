@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
 
 {% block content %}
 <div class="fade-in space-y-4 bg-dense-bg pb-2">
@@ -16,9 +17,7 @@
     <!-- Error message alert banner -->
     {% if error_msg %}
     <div class="flex items-center gap-2 rounded-[4px] border border-dense-danger/30 bg-dense-danger-soft/20 px-3 py-2 text-xs font-medium text-dense-danger">
-        <svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-        </svg>
+        {{ icon('alert-circle', 'h-4 w-4 shrink-0 text-dense-danger') }}
         <span>{{ error_msg }}</span>
     </div>
     {% endif %}
@@ -126,7 +125,7 @@
                         {% if page > 1 %}
                         <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page-1 }}" class="relative inline-flex items-center rounded-l-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs text-dense-muted hover:bg-dense-surface-soft">
                             <span class="sr-only">이전</span>
-                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                            {{ icon('chevron-left', 'h-4 w-4') }}
                         </a>
                         {% endif %}
                         
@@ -137,7 +136,7 @@
                         {% if page < total_pages %}
                         <a href="?actor_id={{ actor_id }}&action={{ action }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page+1 }}" class="relative inline-flex items-center rounded-r-[4px] border border-dense-line bg-dense-surface px-2 py-1 text-xs text-dense-muted hover:bg-dense-surface-soft">
                             <span class="sr-only">다음</span>
-                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                            {{ icon('chevron-right', 'h-4 w-4') }}
                         </a>
                         {% endif %}
                     </nav>

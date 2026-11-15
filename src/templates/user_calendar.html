@@ -3,6 +3,7 @@
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours, fmt_slot_label, fmt_slot_short %}
+{% from "partials/icons.html" import icon %}
 
 <style>
     .cal-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
@@ -115,12 +116,12 @@
                 <div class="mb-4 flex items-center justify-between border-b border-dense-line pb-4">
                     <div class="flex items-center gap-3">
                         <div id="monthNavWrapper" class="flex items-center gap-1.5">
-                            <button type="button" onclick="prevMonth()" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
-                                <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            <button type="button" onclick="prevMonth()" aria-label="이전 달" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
+                                {{ icon('chevron-left', 'w-4 h-4') }}
                             </button>
                             <h3 id="currentMonthLabel" class="text-base font-semibold tracking-tight text-dense-text w-28 text-center tabular-nums">{{ selected_year }}년 1월</h3>
-                            <button type="button" onclick="nextMonth()" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
-                                <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                            <button type="button" onclick="nextMonth()" aria-label="다음 달" class="rounded-[4px] border border-dense-line bg-dense-surface p-1 text-dense-nav-text hover:bg-dense-surface-soft transition-colors focus:outline-none select-none">
+                                {{ icon('chevron-right', 'w-4 h-4') }}
                             </button>
                         </div>
                         <h3 id="yearlyViewLabel" class="text-base font-semibold tracking-tight text-dense-text hidden">{{ selected_year }}년 연차 캘린더</h3>

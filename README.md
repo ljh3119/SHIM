@@ -1,6 +1,6 @@
 # 쉼(休) SHIM: 현장의 부재 일정을 함께 보는 연차 관리 도구
 
-**릴리스 버전:** 1.12.2
+**릴리스 버전:** 1.12.3
 
 SHIM(Smart Holiday Information Management)은 **누가 언제 휴가·출장으로 자리를 비우는지 한 화면에서 공유하는 내부망용 도구**입니다. 여러 회사가 함께 일하는 단기 프로젝트에서 팀과 PM이 일정을 조율하고 가용 인력을 파악하도록 돕기 위해 만들었습니다.
 
@@ -54,8 +54,8 @@ DB와 백업, `.env`, `secret.key`의 파일 접근 권한을 제한하세요. D
 
 | 받은 파일 | 대상 환경 | 실행 PC에 필요한 것 |
 | --- | --- | --- |
-| `SHIM_Portable_1.12.2_windows-x64.zip` | Windows x64 | 쓰기 가능한 폴더. Python 3.12.16 런타임 동봉 |
-| `SHIM_Docker_1.12.2_linux-amd64.tar` | Linux amd64 컨테이너를 실행하는 PC·NAS | 설치된 Docker. ARM NAS 지원을 뜻하지 않음 |
+| `SHIM_Portable_1.12.3_windows-x64.zip` | Windows x64 | 쓰기 가능한 폴더. Python 3.12.16 런타임 동봉 |
+| `SHIM_Docker_1.12.3_linux-amd64.tar` | Linux amd64 컨테이너를 실행하는 PC·NAS | 설치된 Docker. ARM NAS 지원을 뜻하지 않음 |
 
 이 패키지의 실행에는 인터넷 연결이나 별도 Python·Node.js 설치가 필요하지 않습니다. 소스에서 패키지를 만드는 준비사항은 아래 개발·빌드 안내에서 다룹니다. 패키지별 소스·아카이브 검사 결과는 함께 제공하는 manifest에 기록합니다. 제작 환경에서는 실제 Docker·Windows 기동을 검증하지 못했습니다. [릴리스 검증 범위](docs/2-1_운영_릴리즈_통합_산출물.md)를 확인하고 대상 장비에서 접속과 종료를 점검하세요.
 
@@ -87,7 +87,7 @@ $env:SHIM_TIMEZONE = "Asia/Seoul"
 Docker가 설치된 대상 장비에서 이미지를 불러옵니다.
 
 ```sh
-docker load -i SHIM_Docker_1.12.2_linux-amd64.tar
+docker load -i SHIM_Docker_1.12.3_linux-amd64.tar
 ```
 
 아래 실행 예시는 **새 DB용**입니다. 기존 운영 DB는 기존 볼륨·키·모드를 보존하고 [백업·복구 가이드](docs/1-2_백업_복구_유지보수_가이드.md)에 따라 이전하세요. 같은 SQLite 데이터 볼륨을 두 컨테이너에서 동시에 사용하지 마세요.
@@ -95,7 +95,7 @@ docker load -i SHIM_Docker_1.12.2_linux-amd64.tar
 신규 암호화 DB의 키는 불러온 이미지로 생성할 수 있습니다. 호스트에 Python을 설치할 필요가 없습니다.
 
 ```sh
-docker run --rm --network none --entrypoint python shim:1.12.2 -c "import secrets; print(secrets.token_urlsafe(48))"
+docker run --rm --network none --entrypoint python shim:1.12.3 -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
 생성된 키를 안전하게 보관한 뒤 현재 폴더에 `.env`를 만듭니다. 아래의 안내 문구를 실제 키로 바꾸세요. `.env`를 저장소에 커밋하지 마세요.
@@ -109,7 +109,7 @@ SHIM_SECURE_COOKIE=false
 새 전용 볼륨 `shim-data`에 데이터를 보관하며 실행합니다. 이미 같은 이름의 볼륨이 있다면 내용과 키를 확인한 뒤 사용하세요.
 
 ```sh
-docker run -d --name shim --env-file .env -p 8000:8000 -v shim-data:/app/var/data --restart unless-stopped shim:1.12.2
+docker run -d --name shim --env-file .env -p 8000:8000 -v shim-data:/app/var/data --restart unless-stopped shim:1.12.3
 ```
 
 DB는 볼륨 안의 `shim_internal.db`에 저장됩니다. 시작 상태는 `docker logs shim`으로 확인하고, 종료는 `docker stop shim`으로 합니다. 신규 암호화 설치에서는 로그의 `SECURE ENCRYPTION mode (PII Protected)` 표시를 확인하세요.
@@ -164,7 +164,7 @@ Docker 소스 빌드 전에는 CSS를 생성합니다.
 
 ```powershell
 npm run build:css
-docker build -f infra/docker/Dockerfile -t shim:1.12.2 .
+docker build -f infra/docker/Dockerfile -t shim:1.12.3 .
 ```
 
 Compose를 사용할 때는 [환경변수 예제](infra/docker/.env.example)를 루트 `.env`로 복사해 키와 경로를 설정한 뒤 `docker compose --env-file .env -f infra/docker/docker-compose.yml up -d`로 실행합니다. 예제의 `SHIM_DATA_DIR=../../var/data`는 Compose 파일 기준으로 저장소의 `var/data`를 가리킵니다.

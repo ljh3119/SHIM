@@ -3,6 +3,7 @@
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
+{% from "partials/icons.html" import icon, empty_state_icon %}
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section -->
@@ -40,7 +41,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-dense-line pb-4 gap-3">
                     <div class="flex items-center gap-3">
                         <h3 class="text-sm font-semibold tracking-tight text-dense-text flex items-center gap-1.5">
-                            <svg class="h-4 w-4 text-dense-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                            {{ icon('alert-triangle', 'h-4 w-4 text-dense-amber') }}
                             결재 관리 목록
                             <span class="inline-flex h-4 min-w-[1.25rem] items-center justify-center rounded-[2px] bg-dense-amber px-1 text-[10px] font-semibold text-white tabular-nums">{{ pending_leaves|length }}</span>
                         </h3>
@@ -137,9 +138,9 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="py-12 text-center text-dense-muted">
+                <div class="py-12 text-center text-dense-muted" role="status">
                     <div class="flex flex-col items-center justify-center gap-2">
-                        <span class="text-2xl">📥</span>
+                        {{ empty_state_icon('inbox') }}
                         <p class="text-xs font-medium text-dense-text">결재 대기 중인 신청 건이 없습니다.</p>
                         <p class="text-[11px] text-dense-muted">새로운 연차 신청 건이 들어오면 이곳에 표시됩니다.</p>
                     </div>
@@ -164,7 +165,7 @@
     <!-- 2. Mobile View (Narrow Screen) -->
     <div class="block lg:hidden space-y-4">
         <a href="/user/calendar" aria-label="캘린더 홈으로" class="flex min-h-11 w-fit items-center gap-2 rounded-[4px] px-1 text-sm font-semibold text-dense-nav-text transition-colors hover:text-dense-blue focus:outline-none">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-dense-blue"><path d="m12 4-6 6 6 6"/></svg>
+            {{ icon('chevron-left', 'h-4 w-4 shrink-0 text-dense-blue') }}
             <span>캘린더 홈으로</span>
         </a>
 

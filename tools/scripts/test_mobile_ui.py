@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
 from datetime import date
 from pathlib import Path
+from xml.etree import ElementTree
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -139,7 +141,20 @@ def main() -> int:
             for mobile_page in (team_shell, history, approvals):
                 assert 'aria-label="캘린더 홈으로"' in mobile_page.text
                 assert 'class="flex min-h-11 w-fit items-center gap-2 rounded-[4px]' in mobile_page.text
-                assert '<svg aria-hidden="true" viewBox="0 0 20 20"' in mobile_page.text
+                home_link_match = re.search(
+                    r'<a\b[^>]*aria-label="캘린더 홈으로"[^>]*>.*?</a>',
+                    mobile_page.text,
+                    re.DOTALL,
+                )
+                assert home_link_match is not None
+                home_link = ElementTree.fromstring(home_link_match.group(0))
+                assert home_link.get("href") == "/user/calendar"
+                home_icon = home_link.find("svg")
+                assert home_icon is not None
+                assert home_icon.get("viewBox") == "0 0 24 24"
+                assert home_icon.get("aria-hidden") == "true"
+                assert home_icon.get("stroke-width") == "1.6"
+                assert home_icon.find("polyline") is not None
 
 
             lead_calendar = lead.get("/user/calendar?year=2024&month=2")

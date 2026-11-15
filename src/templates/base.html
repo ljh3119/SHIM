@@ -1,3 +1,4 @@
+{% from "partials/icons.html" import icon %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -118,10 +119,7 @@
                     <!-- Notification Bell -->
                     <div class="relative" id="shim-notification-bell-container">
                         <button type="button" id="shim-notification-bell-btn" aria-label="알림" class="relative flex h-11 w-11 items-center justify-center rounded-[4px] p-1.5 text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text transition-colors focus:outline-none" onclick="toggleNotificationDropdown(event)">
-                            <svg class="h-4 w-4 stroke-current fill-none stroke-[1.8]" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                            </svg>
+                            {{ icon('bell', 'h-4 w-4') }}
                             <span id="shim-notification-badge" class="absolute -top-1 -right-1 hidden h-4 min-w-[1rem] items-center justify-center rounded-[2px] bg-dense-danger px-1 text-[9px] font-bold text-white shadow-xs ring-1 ring-dense-surface">0</span>
                         </button>
                         <!-- Dropdown -->
@@ -145,7 +143,7 @@
                 {% if request.cookies.get('access_token') %}
                     <a href="/logout" class="hidden text-[13px] font-medium text-dense-muted hover:text-dense-text transition-colors md:inline-flex">로그아웃</a>
                     <div class="relative md:hidden" id="shim-account-menu-container">
-                        <button type="button" id="shim-account-menu-btn" class="flex h-11 w-11 items-center justify-center rounded-[4px] text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text" aria-label="계정 메뉴" aria-expanded="false" aria-controls="shim-account-menu" onclick="toggleShimAccountMenu(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5" stroke-width="1.8"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></button>
+                        <button type="button" id="shim-account-menu-btn" class="flex h-11 w-11 items-center justify-center rounded-[4px] text-dense-muted hover:bg-dense-surface-soft hover:text-dense-text" aria-label="계정 메뉴" aria-expanded="false" aria-controls="shim-account-menu" onclick="toggleShimAccountMenu(event)">{{ icon('user', 'h-5 w-5') }}</button>
                         <div id="shim-account-menu" class="absolute right-0 z-50 mt-2 hidden w-48 max-w-[calc(100vw-2rem)] rounded-[6px] border border-dense-line bg-dense-surface p-2 shadow-md" role="menu">
                             <button type="button" role="menuitem" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}if(document.getElementById('pwdModal')){window.shimModal.open('pwdModal', 'current_password', this)}else{window.location.href='/user/calendar'}{% endif %}; closeShimAccountMenu()" class="flex min-h-10 w-full items-center rounded-[4px] px-3 text-left text-[13px] font-medium text-dense-text hover:bg-dense-surface-soft">비밀번호 변경</button>
                             <a href="/logout" role="menuitem" class="flex min-h-10 items-center rounded-[4px] px-3 text-[13px] font-medium text-dense-danger hover:bg-dense-danger-soft">로그아웃</a>
@@ -168,7 +166,7 @@
             {% if is_default_password %}
             <div class="mb-4 flex flex-col gap-3 rounded-[4px] border border-dense-amber-soft bg-dense-amber-soft p-3 text-sm text-dense-amber shadow-xs sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-2">
-                    <svg class="h-4 w-4 shrink-0 text-dense-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    {{ icon('alert-triangle', 'h-4 w-4 shrink-0 text-dense-amber') }}
                     <span><strong>보안 권고:</strong> 현재 기본 비밀번호(0000)를 사용 중입니다. 안전한 사용을 위해 비밀번호를 변경해 주세요.</span>
                 </div>
                 <button type="button" onclick="{% if admin %}window.shimModal.open('adminPwdModal', 'admin_current_password', this){% else %}window.shimModal.open('pwdModal', 'current_password', this){% endif %}" class="min-h-11 w-full shrink-0 rounded-[4px] bg-dense-amber px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:brightness-95 sm:ml-2 sm:w-auto">비밀번호 변경</button>
@@ -843,13 +841,18 @@
     function simulateButtonLoading(btn, callback, duration = 600) {
         if (!btn || btn.disabled) return;
         const originalHTML = btn.innerHTML;
+        const prevMinWidth = btn.style.minWidth;
+        if (btn.offsetWidth) btn.style.minWidth = `${btn.offsetWidth}px`;
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
         btn.style.opacity = '0.6';
-        btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 처리 중...`;
+        btn.innerHTML = `<span class="inline-flex items-center justify-center gap-1.5"><svg class="h-3.5 w-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg><span>처리 중...</span></span>`;
         
         setTimeout(() => {
             btn.disabled = false;
+            btn.removeAttribute('aria-busy');
             btn.style.opacity = '1';
+            btn.style.minWidth = prevMinWidth;
             btn.innerHTML = originalHTML;
             if (callback) callback();
         }, duration);
@@ -1083,8 +1086,8 @@
     (function () {
         function setSidebarToggleIcon(btn, collapsed) {
             btn.innerHTML = collapsed
-                ? '<svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4"><path d="M8 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                : '<svg aria-hidden="true" viewBox="0 0 20 20" class="h-4 w-4"><path d="M12 6l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                ? '<svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+                : '<svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
         }
 
         document.querySelectorAll(".shim-sidebar-toggle").forEach(function (btn) {
@@ -1132,13 +1135,13 @@
         const toast = document.createElement('div');
         toast.className = `shim-toast shim-toast-${type}`;
         
-        let svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-blue" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><line x1="10" y1="9" x2="10" y2="14"></line><circle cx="10" cy="6" r="0.8" fill="currentColor"></circle></svg>';
+        let svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>';
         if (type === 'success') {
-            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-green" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10.5l3.5 3.5L15 6"></path></svg>';
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
         } else if (type === 'warning') {
-            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-amber" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3 7 13H3z"></path><line x1="10" y1="8" x2="10" y2="11"></line><circle cx="10" cy="13.5" r="0.75" fill="currentColor"></circle></svg>';
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>';
         } else if (type === 'error') {
-            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><line x1="7" y1="7" x2="13" y2="13"></line><line x1="13" y1="7" x2="7" y2="13"></line></svg>';
+            svgHtml = '<svg class="h-4 w-4 shrink-0 text-dense-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
         }
         
         const iconElement = document.createElement('span');
@@ -1168,13 +1171,18 @@
             return;
         }
         const originalHTML = btn.innerHTML;
+        const prevMinWidth = btn.style.minWidth;
+        if (btn.offsetWidth) btn.style.minWidth = `${btn.offsetWidth}px`;
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
         btn.style.opacity = '0.6';
-        btn.innerHTML = `<span class="inline-block animate-spin mr-1">🔄</span> 처리 중...`;
+        btn.innerHTML = `<span class="inline-flex items-center justify-center gap-1.5"><svg class="h-3.5 w-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg><span>처리 중...</span></span>`;
         
         setTimeout(() => {
             btn.disabled = false;
+            btn.removeAttribute('aria-busy');
             btn.style.opacity = '1';
+            btn.style.minWidth = prevMinWidth;
             btn.innerHTML = originalHTML;
             if (callback) callback();
         }, duration);

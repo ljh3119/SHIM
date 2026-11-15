@@ -3,6 +3,7 @@
 
 {% block content %}
 {% from "partials/macros.html" import fmt_hours, fmt_slot_label %}
+{% from "partials/icons.html" import icon, empty_state_icon %}
 
 <div class="fade-in space-y-6 bg-dense-bg pb-2">
     <!-- Header Section for PC -->
@@ -112,8 +113,8 @@
                             {% else %}
                             <tr>
                                 <td colspan="6" class="px-4 py-12 text-center text-dense-muted">
-                                    <div class="flex flex-col items-center justify-center gap-2">
-                                        <span class="text-2xl">📋</span>
+                                    <div class="flex flex-col items-center justify-center gap-2" role="status">
+                                        {{ empty_state_icon('clipboard-list') }}
                                         <p class="text-xs font-medium text-dense-text">연차 신청 내역이 없습니다.</p>
                                         <p class="text-[11px] text-dense-muted">대시보드 또는 캘린더에서 연차를 신청해 보세요.</p>
                                     </div>
@@ -130,7 +131,7 @@
     <!-- 2. Mobile View (Narrow Screen) -->
     <div class="block lg:hidden space-y-4">
         <a href="/user/calendar" aria-label="캘린더 홈으로" class="flex min-h-11 w-fit items-center gap-2 rounded-[4px] px-1 text-sm font-semibold text-dense-nav-text transition-colors hover:text-dense-blue focus:outline-none">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-dense-blue"><path d="m12 4-6 6 6 6"/></svg>
+            {{ icon('chevron-left', 'h-4 w-4 shrink-0 text-dense-blue') }}
             <span>캘린더 홈으로</span>
         </a>
 
@@ -210,9 +211,9 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="rounded-[4px] border border-dense-line bg-dense-surface-soft py-10 text-center text-dense-muted">
+                <div class="rounded-[4px] border border-dense-line bg-dense-surface-soft py-10 text-center text-dense-muted" role="status">
                     <div class="flex flex-col items-center justify-center gap-2">
-                        <span class="text-2xl">📋</span>
+                        {{ empty_state_icon('clipboard-list') }}
                         <p class="text-xs font-medium text-dense-text">연차 신청 내역이 없습니다.</p>
                         <p class="text-[11px] text-dense-muted">대시보드 또는 캘린더에서 연차를 신청해 보세요.</p>
                     </div>
